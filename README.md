@@ -1,18 +1,20 @@
-# [Nome do projeto]
+# Hortifruti SL
 
 [Escreva um ou dois  parágrafo resumindo o objetivo do seu projeto.]
 
 ## Alunos integrantes da equipe
 
-* [Nome completo do aluno 1]
-* [Nome completo do aluno 2]
-* [Nome completo do aluno 3]
-* [Nome completo do aluno 4]
+* Bernado Souza Alvim
+* Carlos José Gomes Batista Figueiredo 
+* Gabriela Alvarenga Cardoso
+* Marcos Alberto Ferreira Pinto
+* Mateus Araujo Santos
+* RRafael Ganascini de Moura
 
 ## Professores responsáveis
 
-* [Nome completo do professor 1]
-* [Nome completo do professor 2]
+* Soraia Lúcia da Silva
+* Lucila Ishitani
 
 ## Instruções de utilização
 
