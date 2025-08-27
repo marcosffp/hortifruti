@@ -9,7 +9,7 @@
 * Gabriela Alvarenga Cardoso
 * Marcos Alberto Ferreira Pinto
 * Mateus Araujo Santos
-* RRafael Ganascini de Moura
+* Rafael Ganascini de Moura
 
 ## Professores responsáveis
 
