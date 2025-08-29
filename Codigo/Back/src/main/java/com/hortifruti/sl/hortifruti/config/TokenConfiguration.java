@@ -1,18 +1,15 @@
 package com.hortifruti.sl.hortifruti.config;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.hortifruti.sl.hortifruti.exception.TokenException;
 import com.hortifruti.sl.hortifruti.models.enumeration.Role;
-
 import jakarta.annotation.PostConstruct;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 @Component
 public class TokenConfiguration {
@@ -43,14 +40,9 @@ public class TokenConfiguration {
     }
   }
 
-
   public String validateToken(String token) {
     try {
-      return JWT.require(algoritmo)
-          .withIssuer("auth")
-          .build()
-          .verify(token)
-          .getSubject();
+      return JWT.require(algoritmo).withIssuer("auth").build().verify(token).getSubject();
 
     } catch (Exception e) {
       throw new TokenException("Token inválido", e);
@@ -58,20 +50,18 @@ public class TokenConfiguration {
   }
 
   private Instant generateExpirationDate() {
-    return LocalDateTime.now()
-        .plusMinutes(
-            minutosExpiracao)
-        .toInstant(ZoneOffset.of("-03:00"));
+    return LocalDateTime.now().plusMinutes(minutosExpiracao).toInstant(ZoneOffset.of("-03:00"));
   }
-  
+
   public Role getRoleFromToken(String token) {
     try {
-      String roleString = JWT.require(algoritmo)
-          .withIssuer("auth")
-          .build()
-          .verify(token)
-          .getClaim("role")
-          .asString();
+      String roleString =
+          JWT.require(algoritmo)
+              .withIssuer("auth")
+              .build()
+              .verify(token)
+              .getClaim("role")
+              .asString();
       return Role.fromString(roleString);
     } catch (Exception e) {
       throw new TokenException("Token inválido", e);
