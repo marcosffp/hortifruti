@@ -1,6 +1,6 @@
 # Hortifruti SL
 
-[Escreva um ou dois  parágrafo resumindo o objetivo do seu projeto.]
+Este trabalho aborda o desenvolvimento de um sistema de gestão para o Hortifruti Santa Luzia LTDA, focado em automatizar processos manuais críticos: conciliação bancária via extração de dados de PDF e agrupamento de vendas por cliente. O software visa eliminar tarefas repetitivas, centralizar informações e fornecer controle operacional, modernizando a gestão do negócio e promovendo eficiência.
 
 ## Alunos integrantes da equipe
 
@@ -9,7 +9,7 @@
 * Gabriela Alvarenga Cardoso
 * Marcos Alberto Ferreira Pinto
 * Mateus Araujo Santos
-* RRafael Ganascini de Moura
+* Rafael Ganascini de Moura
 
 ## Professores responsáveis
 
