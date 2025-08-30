@@ -8,7 +8,6 @@ public class HortifrutiSlApplication {
 
   public static void main(String[] args) {
 
-
     SpringApplication.run(HortifrutiSlApplication.class, args);
   }
 }

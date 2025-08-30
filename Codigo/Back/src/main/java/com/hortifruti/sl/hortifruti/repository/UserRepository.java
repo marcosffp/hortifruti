@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.repository;
 
-import com.hortifruti.sl.hortifruti.models.User;
+import com.hortifruti.sl.hortifruti.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

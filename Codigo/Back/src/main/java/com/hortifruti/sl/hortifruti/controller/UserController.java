@@ -3,9 +3,9 @@ package com.hortifruti.sl.hortifruti.controller;
 import com.hortifruti.sl.hortifruti.dto.UserRequest;
 import com.hortifruti.sl.hortifruti.dto.UserResponse;
 import com.hortifruti.sl.hortifruti.service.UserService;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +21,8 @@ public class UserController {
   @Autowired private UserService userService;
 
   @PostMapping("/register")
-  public ResponseEntity<Map<String, UserResponse>> registerUser(@RequestBody UserRequest userRequest) {
+  public ResponseEntity<Map<String, UserResponse>> registerUser(
+      @Valid @RequestBody UserRequest userRequest) {
     return ResponseEntity.ok(userService.saveUser(userRequest));
   }
 

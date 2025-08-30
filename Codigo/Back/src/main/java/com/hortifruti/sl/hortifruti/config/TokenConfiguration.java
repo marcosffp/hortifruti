@@ -3,7 +3,7 @@ package com.hortifruti.sl.hortifruti.config;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.hortifruti.sl.hortifruti.exception.TokenException;
-import com.hortifruti.sl.hortifruti.models.enumeration.Role;
+import com.hortifruti.sl.hortifruti.model.enumeration.Role;
 import jakarta.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -36,7 +36,8 @@ public class TokenConfiguration {
           .withExpiresAt(generateExpirationDate())
           .sign(algoritmo);
     } catch (Exception e) {
-      throw new TokenException("Erro ao gerar token JWT", e);
+      throw new TokenException(
+          "Ocorreu um erro ao gerar o token de acesso. Por favor, tente novamente mais tarde.", e);
     }
   }
 
@@ -45,7 +46,8 @@ public class TokenConfiguration {
       return JWT.require(algoritmo).withIssuer("auth").build().verify(token).getSubject();
 
     } catch (Exception e) {
-      throw new TokenException("Token inválido", e);
+      throw new TokenException(
+          "O token fornecido é inválido ou expirou. Por favor, faça login novamente.", e);
     }
   }
 
@@ -64,7 +66,9 @@ public class TokenConfiguration {
               .asString();
       return Role.fromString(roleString);
     } catch (Exception e) {
-      throw new TokenException("Token inválido", e);
+      throw new TokenException(
+          "Não foi possível extrair o papel do usuário do token. Por favor, forneça um token válido.",
+          e);
     }
   }
 }

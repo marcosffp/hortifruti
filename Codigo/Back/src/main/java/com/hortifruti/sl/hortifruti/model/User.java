@@ -1,6 +1,6 @@
-package com.hortifruti.sl.hortifruti.models;
+package com.hortifruti.sl.hortifruti.model;
 
-import com.hortifruti.sl.hortifruti.models.enumeration.Role;
+import com.hortifruti.sl.hortifruti.model.enumeration.Role;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -35,7 +35,7 @@ public class User implements UserDetails {
   @Column(nullable = false, unique = true)
   private String username;
 
-  @Column(nullable = false, length = 20)
+  @Column(nullable = false)
   private String password;
 
   @Enumerated(EnumType.STRING)

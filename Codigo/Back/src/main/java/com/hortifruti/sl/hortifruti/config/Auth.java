@@ -2,7 +2,7 @@ package com.hortifruti.sl.hortifruti.config;
 
 import com.hortifruti.sl.hortifruti.dto.AuthRequest;
 import com.hortifruti.sl.hortifruti.exception.AuthException;
-import com.hortifruti.sl.hortifruti.models.User;
+import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,16 +21,15 @@ public class Auth {
     String username = authRequest.username();
     String password = authRequest.password();
 
-    System.out.println("Nome de usuário recebido: " + username);
-
     User user = userRepository.findByUsername(username);
     if (user == null) {
       System.out.println("Usuário não encontrado: " + username);
-      throw new AuthException("Usuário não encontrado.");
+      throw new AuthException(
+          "Não encontramos um usuário com o nome informado. Verifique e tente novamente.");
     }
 
     if (!passwordEncoder.matches(password, user.getPassword())) {
-      throw new AuthException("Senha incorreta para usuário.");
+      throw new AuthException("A senha informada está incorreta. Por favor, tente novamente.");
     }
 
     return tokenConfiguration.generateToken(user.getId(), user.getUsername(), user.getRole());

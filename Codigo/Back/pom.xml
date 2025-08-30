@@ -97,6 +97,11 @@
     <scope>provided</scope>
 </dependency>
 <dependency>
+    <groupId>org.projectlombok</groupId>
+    <artifactId>lombok-mapstruct-binding</artifactId>
+    <version>0.2.0</version>
+</dependency>
+<dependency>
   <groupId>me.paulschwarz</groupId>
   <artifactId>spring-dotenv</artifactId>
   <version>4.0.0</version>
@@ -104,6 +109,12 @@
 <dependency>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-validation</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-devtools</artifactId>
+    <scope>runtime</scope>
+    <optional>true</optional>
 </dependency>
 
 	</dependencies>
@@ -118,15 +129,24 @@
 						<path>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
 						</path>
 						<path>
               <groupId>org.mapstruct</groupId>
               <artifactId>mapstruct-processor</artifactId>
               <version>${mapstruct.version}</version>
             </path>
+            <path>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok-mapstruct-binding</artifactId>
+                <version>0.2.0</version>
+            </path>
 					</annotationProcessorPaths>
 					<compilerArgs>
+            <arg>-Amapstruct.defaultComponentModel=spring</arg>
             <arg>-Amapstruct.verbose=true</arg>
+            <arg>-Amapstruct.defaultInjectionStrategy=constructor</arg>
+            <arg>-Amapstruct.defaultGeneratedAnnotation=jakarta</arg>
         </compilerArgs>
 				</configuration>
 			</plugin>
@@ -140,6 +160,21 @@
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>2.43.0</version>
+				<configuration>
+					<java>
+						<googleJavaFormat>
+							<version>1.17.0</version>
+							<style>GOOGLE</style>
+						</googleJavaFormat>
+						<removeUnusedImports />
+						<importOrder />
+					</java>
 				</configuration>
 			</plugin>
 		</plugins>

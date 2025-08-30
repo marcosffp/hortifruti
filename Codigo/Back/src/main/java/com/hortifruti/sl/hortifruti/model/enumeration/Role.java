@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.models.enumeration;
+package com.hortifruti.sl.hortifruti.model.enumeration;
 
 public enum Role {
   GESTOR,
