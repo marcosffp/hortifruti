@@ -1,14 +1,6 @@
-package com.hortifruti.sl.hortifruti.models;
+package com.hortifruti.sl.hortifruti.model;
 
-import java.util.Collection;
-import java.util.List;
-
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-
-import com.hortifruti.sl.hortifruti.models.enumeration.Role;
-
+import com.hortifruti.sl.hortifruti.model.enumeration.Role;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -17,11 +9,16 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.util.Collection;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Builder
 @Getter
@@ -38,13 +35,12 @@ public class User implements UserDetails {
   @Column(nullable = false, unique = true)
   private String username;
 
-  @Column(nullable = false,length = 5)
+  @Column(nullable = false)
   private String password;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private Role role;
-  
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -60,6 +56,4 @@ public class User implements UserDetails {
   public String getUsername() {
     return username;
   }
-
-    
 }
