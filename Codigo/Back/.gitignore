@@ -30,4 +30,8 @@ build/
 !**/src/test/**/build/
 
 ### VS Code ###
-.vscode/
+##.vscode/
+
+## environment variables ##
+.env
+.env.local
