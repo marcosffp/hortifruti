@@ -1,0 +1,53 @@
+name: Post-Merge Checks
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  post-merge-check:
+    name: Verificar Código e Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+
+      - name: Configurar Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Formatar código com Spotless
+        working-directory: Codigo/Back
+        run: ./mvnw spotless:apply
+
+      - name: Buildar o backend
+        working-directory: Codigo/Back
+        run: ./mvnw clean compile
+
+      - name: Instalar dependências do frontend
+        working-directory: Codigo/Front
+        run: npm install
+
+      - name: Verificar formatação com Biome
+        working-directory: Codigo/Front
+        run: npx biome format --write .
+
+      - name: Verificar lint com Biome
+        working-directory: Codigo/Front
+        run: npx biome lint .
+
+      - name: Verificar tipos com TypeScript
+        working-directory: Codigo/Front
+        run: npm run check-types
+
+      - name: Buildar o frontend
+        working-directory: Codigo/Front
+        run: npm run build
+
+      - name: Notificar usuário sobre o erro
+        if: failure()
+        run: echo "Erro nas verificações pós-merge. Verifique o log para mais detalhes."
