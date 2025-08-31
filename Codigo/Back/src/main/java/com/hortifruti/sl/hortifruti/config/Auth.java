@@ -14,6 +14,8 @@ public class Auth {
 
   private final UserRepository userRepository;
 
+  private final String teste = "0";
+
   private final PasswordEncoder passwordEncoder;
   private final TokenConfiguration tokenConfiguration;
 
