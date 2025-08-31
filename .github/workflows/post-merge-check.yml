@@ -17,8 +17,13 @@ jobs:
       - name: Configurar Java
         uses: actions/setup-java@v3
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: "21"
+          distribution: "temurin"
+
+      # Corrigir permissões do mvnw
+      - name: Corrigir permissões do Maven Wrapper
+        working-directory: Codigo/Back
+        run: chmod +x ./mvnw
 
       - name: Formatar código com Spotless
         working-directory: Codigo/Back
@@ -34,7 +39,8 @@ jobs:
 
       - name: Verificar formatação com Biome
         working-directory: Codigo/Front
-        run: npx biome format --write .
+        run: npx biome format --check .
+        # Mudamos de --write para --check para apenas verificar
 
       - name: Verificar lint com Biome
         working-directory: Codigo/Front
@@ -47,7 +53,3 @@ jobs:
       - name: Buildar o frontend
         working-directory: Codigo/Front
         run: npm run build
-
-      - name: Notificar usuário sobre o erro
-        if: failure()
-        run: echo "Erro nas verificações pós-merge. Verifique o log para mais detalhes."

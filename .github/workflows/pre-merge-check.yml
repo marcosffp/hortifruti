@@ -3,7 +3,7 @@ name: Pre-Merge Checks
 on:
   pull_request: # Executa o workflow em Pull Requests
     branches:
-      - dev # Substitua pelo branch principal do seu projeto, se necessário
+      - dev
 
 jobs:
   pre-merge-check:
@@ -19,13 +19,19 @@ jobs:
       - name: Configurar Java
         uses: actions/setup-java@v3
         with:
-          java-version: '21' # Substitua pela versão do Java que você usa
-          distribution: 'temurin'
+          java-version: "21"
+          distribution: "temurin"
+
+      # Corrigir permissões do mvnw
+      - name: Corrigir permissões do Maven Wrapper
+        working-directory: Codigo/Back
+        run: chmod +x ./mvnw
 
       # Backend: Formatação com Spotless
       - name: Formatar código com Spotless
         working-directory: Codigo/Back
         run: ./mvnw spotless:apply
+        # Importante: Não vamos usar continue-on-error aqui para garantir que o workflow falhe
 
       # Backend: Build e compilação
       - name: Buildar o backend
@@ -40,7 +46,8 @@ jobs:
       # Frontend: Verificar formatação com Biome
       - name: Verificar formatação com Biome
         working-directory: Codigo/Front
-        run: npx biome format --write .
+        run: npx biome format --check .
+        # Mudamos de --write para --check para apenas verificar sem modificar
 
       # Frontend: Verificar lint com Biome
       - name: Verificar lint com Biome
