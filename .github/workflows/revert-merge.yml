@@ -1,5 +1,10 @@
 name: Revert Merge on Failure
 
+# Adicione estas permissões
+permissions:
+  contents: write # Para permitir push na branch
+  issues: write # Para criar issues
+
 on:
   workflow_run:
     workflows: ["Post-Merge Checks"]
