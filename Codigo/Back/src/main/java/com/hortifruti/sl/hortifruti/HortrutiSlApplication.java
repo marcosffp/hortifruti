@@ -4,8 +4,5 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class HortifrutiSlApplication {
-  public static void main(String[] args) {
-    SpringApplication.run(HortifrutiSlApplication.class, args);
-  }
-}
+public class HortrutiSlApplication {
+  publfghfghfghfghf
