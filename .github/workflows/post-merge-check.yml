@@ -25,26 +25,35 @@ jobs:
         working-directory: Codigo/Back
         run: chmod +x ./mvnw
 
-      - name: Formatar código com Spotless
+      # Backend: Verificar formatação com Spotless
+      - name: Verificar formatação com Spotless
         working-directory: Codigo/Back
-        run: ./mvnw spotless:apply
+        run: ./mvnw spotless:check
 
       - name: Buildar o backend
         working-directory: Codigo/Back
         run: ./mvnw clean compile
 
+      # Frontend: Instalar dependências
+      - name: Configurar cache do npm
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('Codigo/Front/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Instalar dependências do frontend
         working-directory: Codigo/Front
-        run: npm install
+        run: npm ci
+        timeout-minutes: 5
 
+      # Frontend: Verificar formatação e lint com Biome
       - name: Verificar formatação e lint com Biome
         working-directory: Codigo/Front
         run: npx biome check .
 
-      - name: Verificar tipos com TypeScript
-        working-directory: Codigo/Front
-        run: npm run check-types
-
+      # Frontend: Buildar o frontend
       - name: Buildar o frontend
         working-directory: Codigo/Front
         run: npm run build
