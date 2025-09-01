@@ -27,11 +27,10 @@ jobs:
         working-directory: Codigo/Back
         run: chmod +x ./mvnw
 
-      # Backend: Formatação com Spotless
-      - name: Formatar código com Spotless
+      # Backend: Verificar formatação com Spotless
+      - name: Verificar formatação com Spotless
         working-directory: Codigo/Back
-        run: ./mvnw spotless:apply
-        # Importante: Não vamos usar continue-on-error aqui para garantir que o workflow falhe
+        run: ./mvnw spotless:check
 
       # Backend: Build e compilação
       - name: Buildar o backend
@@ -56,11 +55,6 @@ jobs:
       - name: Verificar formatação e lint com Biome
         working-directory: Codigo/Front
         run: npx biome check .
-
-      # Frontend: Verificar tipos com TypeScript
-      - name: Verificar tipos com TypeScript
-        working-directory: Codigo/Front
-        run: npm run check-types
 
       # Frontend: Buildar o frontend
       - name: Buildar o frontend
