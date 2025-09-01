@@ -25,7 +25,12 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="shortcut icon" href="/icon.png" type="image/x-icon" />
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossOrigin="anonymous"></link>
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+          integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD"
+          crossOrigin="anonymous"
+        ></link>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
