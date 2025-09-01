@@ -1,7 +1,7 @@
 name: Pre-Merge Checks
 
 on:
-  pull_request: # Executa o workflow em Pull Requests
+  pull_request:
     branches:
       - dev
 
@@ -11,33 +11,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout do código
       - name: Checkout do código
         uses: actions/checkout@v3
 
-      # Configuração do Java para o backend
       - name: Configurar Java
         uses: actions/setup-java@v3
         with:
           java-version: "21"
           distribution: "temurin"
 
-      # Corrigir permissões do mvnw
       - name: Corrigir permissões do Maven Wrapper
         working-directory: Codigo/Back
         run: chmod +x ./mvnw
 
-      # Backend: Verificar formatação com Spotless
       - name: Verificar formatação com Spotless
         working-directory: Codigo/Back
         run: ./mvnw spotless:check
 
-      # Backend: Build e compilação
       - name: Buildar o backend
         working-directory: Codigo/Back
         run: ./mvnw clean compile
 
-      # Frontend: Instalar dependências
       - name: Configurar cache do npm
         uses: actions/cache@v3
         with:
@@ -51,12 +45,10 @@ jobs:
         run: npm ci
         timeout-minutes: 5
 
-      # Frontend: Verificar formatação e lint com Biome
       - name: Verificar formatação e lint com Biome
         working-directory: Codigo/Front
         run: npx biome check .
 
-      # Frontend: Buildar o frontend
       - name: Buildar o frontend
         working-directory: Codigo/Front
         run: npm run build

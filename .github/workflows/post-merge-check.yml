@@ -20,12 +20,10 @@ jobs:
           java-version: "21"
           distribution: "temurin"
 
-      # Corrigir permissões do mvnw
       - name: Corrigir permissões do Maven Wrapper
         working-directory: Codigo/Back
         run: chmod +x ./mvnw
 
-      # Backend: Verificar formatação com Spotless
       - name: Verificar formatação com Spotless
         working-directory: Codigo/Back
         run: ./mvnw spotless:check
@@ -34,7 +32,6 @@ jobs:
         working-directory: Codigo/Back
         run: ./mvnw clean compile
 
-      # Frontend: Instalar dependências
       - name: Configurar cache do npm
         uses: actions/cache@v3
         with:
@@ -48,12 +45,10 @@ jobs:
         run: npm ci
         timeout-minutes: 5
 
-      # Frontend: Verificar formatação e lint com Biome
       - name: Verificar formatação e lint com Biome
         working-directory: Codigo/Front
         run: npx biome check .
 
-      # Frontend: Buildar o frontend
       - name: Buildar o frontend
         working-directory: Codigo/Front
         run: npm run build
