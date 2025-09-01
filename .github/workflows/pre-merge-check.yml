@@ -43,16 +43,10 @@ jobs:
         working-directory: Codigo/Front
         run: npm install
 
-      # Frontend: Verificar formatação com Biome
-      - name: Verificar formatação com Biome
+      # Frontend: Verificar formatação e lint com Biome
+      - name: Verificar formatação e lint com Biome
         working-directory: Codigo/Front
-        run: npx biome format --check .
-        # Mudamos de --write para --check para apenas verificar sem modificar
-
-      # Frontend: Verificar lint com Biome
-      - name: Verificar lint com Biome
-        working-directory: Codigo/Front
-        run: npx biome lint .
+        run: npx biome check .
 
       # Frontend: Verificar tipos com TypeScript
       - name: Verificar tipos com TypeScript
