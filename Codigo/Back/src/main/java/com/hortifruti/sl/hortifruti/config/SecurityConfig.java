@@ -31,13 +31,10 @@ public class SecurityConfig {
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers(
-                        "/auth",
-                        "/users/register",
-                        "/swagger-ui/**",
-                        "/v3/api-docs/**",
-                        "/transactions/import")
+                auth.requestMatchers("/auth", "/swagger-ui/**", "/v3/api-docs/**")
                     .permitAll()
+                    .requestMatchers("/users")
+                    .hasRole("EMPLOYEE") // Prefixo ROLE_ é automático
                     .anyRequest()
                     .authenticated())
         .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

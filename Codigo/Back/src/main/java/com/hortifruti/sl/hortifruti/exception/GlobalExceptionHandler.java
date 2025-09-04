@@ -84,4 +84,12 @@ public class GlobalExceptionHandler {
 
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
   }
+
+  @ExceptionHandler(TransactionException.class)
+  public ResponseEntity<Map<String, String>> handleTransactionException(TransactionException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro de Transação");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
 }
