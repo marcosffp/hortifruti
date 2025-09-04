@@ -6,8 +6,18 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import jakarta.persistence.GenerationType;
 
+@Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "clients")
 public class Client {
@@ -15,15 +25,12 @@ public class Client {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String clientName;
 
     @Email
     @Column(nullable = false, unique = true)
     private String email;
-
-    @Column(nullable = false)   
-    private String password;
 
     @Column(nullable = false)
     private String phoneNumber;
@@ -31,50 +38,4 @@ public class Client {
     @Column(nullable = false)
     private String address;
 
-//#region Getters
-    
-    public long getId() {
-        return id;
-    }
-
-    public String getClientName() {
-        return clientName;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-//#endregion
-
-//#region Setters
-
-    public void setClientName(String clientName) {
-        this.clientName = clientName;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-//#endregion
 }

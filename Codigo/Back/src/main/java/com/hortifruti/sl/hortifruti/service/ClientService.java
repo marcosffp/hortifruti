@@ -1,6 +1,5 @@
 package com.hortifruti.sl.hortifruti.service;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,10 +24,7 @@ public class ClientService {
         Client savedClient = clientRepository.save(client);
         ClientResponse clientResponse = clientMapper.toClientResponse(savedClient);
 
-        Map<String, ClientResponse> response = new HashMap<>();
-        response.put("client", clientResponse);
-
-        return response;
+        return Map.of("client", clientResponse);
     }
 
     public List<ClientResponse> getAllClients() {
@@ -60,4 +56,10 @@ public class ClientService {
         return clientMapper.toClientResponse(client);
     }
 
+    public void deleteClient(Long id) {
+        if (!clientRepository.existsById(id)) {
+            throw new RuntimeException("Cliente não encontrado");
+        }
+        clientRepository.deleteById(id);
+    }
 }
