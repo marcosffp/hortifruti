@@ -2,12 +2,17 @@ package com.hortifruti.sl.hortifruti.controller;
 
 import com.hortifruti.sl.hortifruti.dto.TransactionRequest;
 import com.hortifruti.sl.hortifruti.dto.TransactionResponse;
+import com.hortifruti.sl.hortifruti.service.TransactionExcelExportService;
 import com.hortifruti.sl.hortifruti.service.TransactionProcessingService;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.TextStyle;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class TransactionController {
 
   private final TransactionProcessingService transactionProcessingService;
+  private final TransactionExcelExportService transactionExcelExportService;
 
   @PreAuthorize("hasRole('MANAGER')")
   @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -72,5 +78,26 @@ public class TransactionController {
   public ResponseEntity<Void> deleteTransaction(@PathVariable Long id) {
     transactionProcessingService.deleteTransaction(id);
     return ResponseEntity.noContent().build();
+  }
+
+  @PreAuthorize("hasRole('MANAGER')")
+  @PostMapping(value = "/export", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+  public ResponseEntity<byte[]> exportTransactionsAsExcel() throws IOException {
+    // Gerar o arquivo Excel
+    byte[] excelFile = transactionExcelExportService.exportTransactionsAsZip();
+
+    // Nome do arquivo Excel
+    String currentMonth =
+        LocalDate.now().getMonth().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pt-BR"));
+    String excelFileName = "Planilha-Hortifruti-Santa-Luzia-" + currentMonth + ".xlsx";
+
+    // Configurar o cabeçalho da resposta
+    HttpHeaders headers = new HttpHeaders();
+    headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + excelFileName);
+
+    return ResponseEntity.ok()
+        .headers(headers)
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .body(excelFile);
   }
 }

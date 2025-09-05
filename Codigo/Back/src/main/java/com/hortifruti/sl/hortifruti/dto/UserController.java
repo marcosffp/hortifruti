@@ -1,7 +1,5 @@
-package com.hortifruti.sl.hortifruti.controller;
+package com.hortifruti.sl.hortifruti.dto;
 
-import com.hortifruti.sl.hortifruti.dto.UserRequest;
-import com.hortifruti.sl.hortifruti.dto.UserResponse;
 import com.hortifruti.sl.hortifruti.service.UserService;
 import jakarta.validation.Valid;
 import java.util.List;
