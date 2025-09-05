@@ -1,9 +1,4 @@
 package com.hortifruti.sl.hortifruti.dto;
 
 public record ClientResponse(
-    Long id,
-    String clientName,
-    String email,
-    String phoneNumber,
-    String address
-) {}
+    Long id, String clientName, String email, String phoneNumber, String address) {}

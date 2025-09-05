@@ -3,6 +3,7 @@ package com.hortifruti.sl.hortifruti.model;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
@@ -11,7 +12,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import jakarta.persistence.GenerationType;
 
 @Builder
 @Getter
@@ -21,21 +21,20 @@ import jakarta.persistence.GenerationType;
 @Entity
 @Table(name = "clients")
 public class Client {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private long id;
 
-    @Column(nullable = false)
-    private String clientName;
+  @Column(nullable = false)
+  private String clientName;
 
-    @Email
-    @Column(nullable = false, unique = true)
-    private String email;
+  @Email
+  @Column(nullable = false, unique = true)
+  private String email;
 
-    @Column(nullable = false)
-    private String phoneNumber;
+  @Column(nullable = false)
+  private String phoneNumber;
 
-    @Column(nullable = false)
-    private String address;
-
+  @Column(nullable = false)
+  private String address;
 }
