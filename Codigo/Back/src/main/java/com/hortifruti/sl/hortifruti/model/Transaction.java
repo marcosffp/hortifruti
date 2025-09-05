@@ -1,13 +1,13 @@
 package com.hortifruti.sl.hortifruti.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.hortifruti.sl.hortifruti.model.enumeration.Category;
+import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
+import com.hortifruti.sl.hortifruti.util.TransactionUtil;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,11 +26,63 @@ public class Transaction {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @Column(nullable = false)
   private String statement;
+
+  @Column(nullable = false)
   private LocalDate transactionDate;
+
+  @Column(nullable = false)
   private String document;
+
+  @Column(nullable = false, length = 500)
   private String history;
+
+  @Column(nullable = false, precision = 15, scale = 2)
   private BigDecimal amount;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private Category category;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private TransactionType transactionType;
+
+  @Column(nullable = false)
   private LocalDateTime updatedAt;
+
+  @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
+
+  @Column(unique = true, nullable = false)
+  private String hash;
+
+  @PrePersist
+  protected void onCreate() {
+    this.createdAt = LocalDateTime.now();
+    this.updatedAt = LocalDateTime.now();
+    this.hash = TransactionUtil.generateTransactionHash(transactionDate, document, amount, history);
+  }
+
+  @PreUpdate
+  protected void onUpdate() {
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(transactionDate, document, history, amount);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (obj == null || getClass() != obj.getClass()) return false;
+    Transaction other = (Transaction) obj;
+    return Objects.equals(transactionDate, other.transactionDate)
+        && Objects.equals(document, other.document)
+        && Objects.equals(history, other.history)
+        && Objects.equals(amount, other.amount);
+  }
 }

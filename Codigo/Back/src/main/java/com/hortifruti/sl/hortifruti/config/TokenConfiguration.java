@@ -32,7 +32,7 @@ public class TokenConfiguration {
           .withIssuer("auth")
           .withSubject(username)
           .withClaim("id", id)
-          .withClaim("role", role.name())
+          .withClaim("role", "ROLE_" + role.name())
           .withExpiresAt(generateExpirationDate())
           .sign(algoritmo);
     } catch (Exception e) {
