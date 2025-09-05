@@ -5,18 +5,16 @@ import com.hortifruti.sl.hortifruti.model.Transaction;
 import com.hortifruti.sl.hortifruti.model.enumeration.Category;
 import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
 import com.hortifruti.sl.hortifruti.repository.TransactionRepository;
+import com.hortifruti.sl.hortifruti.util.PdfUtil;
 import com.hortifruti.sl.hortifruti.util.TransactionUtil;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,46 +28,36 @@ public class TransactionBBService {
   private static final Pattern TRANSACTION_PATTERN =
       Pattern.compile(
           "^(\\d{2}/\\d{2}/\\d{4})\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(.+?)\\s+([\\d.,]+)\\s+([CD])(?:\\s+([\\d.,]+)\\s+([CD]))?$");
-  private static final Pattern DETAIL_PATTERN =
-      Pattern.compile("^\\d{2}/\\d{2}\\s+\\d{2}:\\d{2}\\s+.+");
-  private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
   public List<Transaction> importStatement(MultipartFile file) throws IOException {
-    String text = extractPdf(file);
-
+    String text = PdfUtil.extractPdfText(file);
     List<Transaction> transactions = parseBancoBrasil(text);
 
-    // Gera os hashes das transações e consulta os existentes em uma única operação
-    Map<String, Transaction> transactionMap =
-        transactions.stream()
-            .collect(
-                Collectors.toMap(
-                    tx ->
-                        TransactionUtil.generateTransactionHash(
-                            tx.getTransactionDate(),
-                            tx.getDocument(),
-                            tx.getAmount(),
-                            tx.getHistory()),
-                    tx -> tx));
+    // Log para verificar a ordem das transações antes de salvar
+    transactions.forEach(
+        transaction ->
+            System.out.println(
+                "Antes de salvar: "
+                    + transaction.getTransactionDate()
+                    + " - "
+                    + transaction.getHistory()));
 
-    Set<String> existingHashes = transactionRepository.findHashes(transactionMap.keySet());
-
-    // Filtra as transações que ainda não existem no banco de dados
     List<Transaction> newTransactions =
-        transactionMap.entrySet().stream()
-            .filter(entry -> !existingHashes.contains(entry.getKey()))
-            .map(Map.Entry::getValue)
-            .collect(Collectors.toList());
+        TransactionUtil.filterNewTransactions(transactions, transactionRepository);
 
-    // Salva apenas as novas transações
-    return transactionRepository.saveAll(newTransactions);
-  }
+    // Após salvar as transações
+    List<Transaction> savedTransactions = transactionRepository.saveAll(newTransactions);
 
-  private String extractPdf(MultipartFile file) throws IOException {
-    try (PDDocument document = PDDocument.load(file.getInputStream())) {
-      PDFTextStripper pdfStripper = new PDFTextStripper();
-      return pdfStripper.getText(document);
-    }
+    // Log para verificar a ordem após salvar
+    savedTransactions.forEach(
+        transaction ->
+            System.out.println(
+                "Após salvar: "
+                    + transaction.getTransactionDate()
+                    + " - "
+                    + transaction.getHistory()));
+
+    return savedTransactions;
   }
 
   private List<Transaction> parseBancoBrasil(String text) {
@@ -82,20 +70,35 @@ public class TransactionBBService {
 
       if (matcher.find()) {
         String description = matcher.group(5).trim();
+        String nextLineDescription = "";
 
-        // Verifica se a próxima linha contém detalhes adicionais
-        if (i + 1 < lines.length && DETAIL_PATTERN.matcher(lines[i + 1].trim()).matches()) {
-          description += " - " + lines[++i].trim();
+        // Verifica se a próxima linha contém informações adicionais relevantes
+        if (i + 1 < lines.length && !TRANSACTION_PATTERN.matcher(lines[i + 1].trim()).matches()) {
+          nextLineDescription = " " + lines[i + 1].trim(); // Concatena a próxima linha
+          i++; // Avança para evitar processar a mesma linha novamente
         }
 
-        // Cria a primeira transação
-        transactions.add(
-            createTransaction(matcher, description, matcher.group(6), matcher.group(7)));
+        Transaction transaction =
+            createTransaction(
+                matcher, description + nextLineDescription, matcher.group(6), matcher.group(7));
+        transactions.add(transaction);
 
-        // Cria a segunda transação, se existir
+        // Log para verificar a transação criada
+        System.out.println(
+            "Criada: " + transaction.getTransactionDate() + " - " + transaction.getHistory());
+
         if (matcher.group(8) != null && matcher.group(9) != null) {
-          transactions.add(
-              createTransaction(matcher, description, matcher.group(8), matcher.group(9)));
+          Transaction secondTransaction =
+              createTransaction(
+                  matcher, description + nextLineDescription, matcher.group(8), matcher.group(9));
+          transactions.add(secondTransaction);
+
+          // Log para a segunda transação
+          System.out.println(
+              "Criada (segunda): "
+                  + secondTransaction.getTransactionDate()
+                  + " - "
+                  + secondTransaction.getHistory());
         }
       }
     }
@@ -104,38 +107,76 @@ public class TransactionBBService {
   }
 
   private Transaction createTransaction(
-      Matcher matcher, String description, String value, String balanceType) {
-    LocalDate transactionDate = LocalDate.parse(matcher.group(1), DATE_FORMATTER);
-    String document = matcher.group(4);
-    BigDecimal amount = new BigDecimal(value.replace(".", "").replace(",", "."));
-    TransactionType transactionType =
-        "D".equalsIgnoreCase(balanceType) ? TransactionType.DEBITO : TransactionType.CREDITO;
+      Matcher matcher, String history, String value, String balanceType) {
+    LocalDate transactionDate = TransactionUtil.parseDate(matcher.group(1));
+    String codHistory = matcher.group(4); // Captura o codHistory corretamente
+    BigDecimal amount = TransactionUtil.parseAmount(value, balanceType);
+    TransactionType transactionType = TransactionUtil.determineTransactionType(balanceType);
 
-    if ("D".equalsIgnoreCase(balanceType)) {
-      amount = amount.negate();
-    }
+    // Extrai o número do documento, agência de origem e lote
+    String document = extractDocument(history);
+    String sourceAgency = extractSourceAgency(matcher.group(2)); // Captura da linha do extrato
+    String batch = extractBatch(matcher.group(3)); // Captura da linha do extrato
+    history = cleanDescription(history);
 
-    Category category = determineCategory(description.toLowerCase(), balanceType);
+    Category category = TransactionUtil.determineCategory(history.toLowerCase(), balanceType);
 
-    return transactionMapper.toTransaction(
-        transactionDate.toString(), document, description, amount, "BB", transactionType, category);
+    Transaction transaction =
+        transactionMapper.toTransaction(
+            "BB",
+            codHistory, // Está passando o valor corretamente, mas pode estar sendo ignorado pelo
+            // mapper
+            history,
+            amount,
+            category,
+            transactionType,
+            document,
+            sourceAgency,
+            batch,
+            transactionDate.toString());
+    return transaction;
   }
 
-  private Category determineCategory(String historyLower, String balanceType) {
-    // Busca a categoria diretamente no mapa
-    return TransactionUtil.CATEGORY_KEYWORDS.entrySet().stream()
-        .filter(entry -> historyLower.contains(entry.getKey()))
-        .map(Map.Entry::getValue)
-        .findFirst()
-        .orElseGet(
-            () -> {
-              // Categorias padrão baseadas no tipo de transação
-              if ("D".equalsIgnoreCase(balanceType)) {
-                return Category.FORNECEDOR;
-              } else if ("C".equalsIgnoreCase(balanceType)) {
-                return Category.VENDAS_PIX;
-              }
-              return null;
-            });
+  private String extractDocument(String description) {
+    // Caso específico para "BB Rende Fácil"
+    if (description.toLowerCase().contains("rende fácil")) {
+      // Regex para capturar número após "Rende Fácil"
+      Pattern rendeFacilPattern =
+          Pattern.compile("rende fácil\\s+(\\d+[.,\\d]*)", Pattern.CASE_INSENSITIVE);
+      Matcher matcher = rendeFacilPattern.matcher(description);
+      if (matcher.find()) {
+        return matcher.group(1).replace(",", "."); // Retorna o número com ponto decimal
+      }
+      return null; // Caso não encontre o número, retorna null
+    }
+
+    // Regex para capturar número do documento em outros casos
+    Pattern numeroDocumentoPattern = Pattern.compile("\\d{2,}(\\.\\d{3})+");
+    Matcher matcher = numeroDocumentoPattern.matcher(description);
+    if (matcher.find()) {
+      return matcher.group().replace(",", "."); // Retorna o número com ponto decimal
+    }
+    return null;
+  }
+
+  private String extractSourceAgency(String agenciaOrigemField) {
+    // Valida e retorna a agência de origem
+    return agenciaOrigemField.matches("\\d{4}") ? agenciaOrigemField : null;
+  }
+
+  private String extractBatch(String loteField) {
+    // Valida e retorna o lote
+    return loteField.matches("\\d{5}") ? loteField : null;
+  }
+
+  private String cleanDescription(String description) {
+    // Caso específico para "Rende Fácil"
+    if (description.toLowerCase().contains("rende fácil")) {
+      // Remove o número após "Rende Fácil"
+      return description.replaceAll("rende fácil\\s+\\d+[.,\\d]*", "Rende Fácil").trim();
+    }
+
+    // Remove outros números do documento
+    return description.replaceAll("\\d{2,}(\\.\\d{3})+", "").trim();
   }
 }

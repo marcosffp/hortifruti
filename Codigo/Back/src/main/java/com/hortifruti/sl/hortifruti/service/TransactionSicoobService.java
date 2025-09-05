@@ -1,23 +1,20 @@
 package com.hortifruti.sl.hortifruti.service;
 
-import com.hortifruti.sl.hortifruti.exception.TransactionException;
 import com.hortifruti.sl.hortifruti.mapper.TransactionMapper;
 import com.hortifruti.sl.hortifruti.model.Transaction;
 import com.hortifruti.sl.hortifruti.model.enumeration.Category;
 import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
 import com.hortifruti.sl.hortifruti.repository.TransactionRepository;
+import com.hortifruti.sl.hortifruti.util.PdfUtil;
 import com.hortifruti.sl.hortifruti.util.TransactionUtil;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,38 +27,13 @@ public class TransactionSicoobService {
 
   private static final Pattern DATE_PATTERN = Pattern.compile("^(\\d{2}/\\d{2})");
   private static final Pattern VALUE_PATTERN = Pattern.compile("R\\$\\s*([\\d.,]+)([DC])");
-  private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
   public List<Transaction> importStatement(MultipartFile file) throws IOException {
-    String text = extractPdf(file);
+    String text = PdfUtil.extractPdfText(file);
     List<Transaction> transactions = parseSicoob(text);
-
-    // Gera os hashes das transações e consulta os existentes em uma única operação
-    Map<String, Transaction> transactionMap =
-        transactions.stream()
-            .collect(
-                Collectors.toMap(
-                    tx ->
-                        TransactionUtil.generateTransactionHash(
-                            tx.getTransactionDate(),
-                            tx.getDocument(),
-                            tx.getAmount(),
-                            tx.getHistory()),
-                    tx -> tx));
-
-    Set<String> existingHashes = transactionRepository.findHashes(transactionMap.keySet());
     List<Transaction> newTransactions =
-        transactionMap.entrySet().stream()
-            .filter(entry -> !existingHashes.contains(entry.getKey()))
-            .map(Map.Entry::getValue)
-            .collect(Collectors.toList());
+        TransactionUtil.filterNewTransactions(transactions, transactionRepository);
     return transactionRepository.saveAll(newTransactions);
-  }
-
-  private String extractPdf(MultipartFile file) throws IOException {
-    try (PDDocument document = PDDocument.load(file.getInputStream())) {
-      return new PDFTextStripper().getText(document);
-    }
   }
 
   private List<Transaction> parseSicoob(String text) {
@@ -90,7 +62,7 @@ public class TransactionSicoobService {
         }
 
         String[] parts = line.split("\\s+", 3);
-        currentDate = parseDate(parts[0]);
+        currentDate = TransactionUtil.parseDate(parts[0]);
         document = parts.length > 1 ? parts[1] : null;
         if (parts.length > 2) {
           historyBuffer.append(parts[2]).append(" ");
@@ -121,33 +93,24 @@ public class TransactionSicoobService {
     return transactions;
   }
 
-  private LocalDate parseDate(String datePart) {
-    datePart = datePart.replaceAll("[^0-9/]", "");
-    if (datePart.length() == 5) {
-      int year = LocalDate.now().getYear();
-      return LocalDate.parse(datePart + "/" + year, DATE_FORMATTER);
-    } else if (datePart.length() == 10) {
-      return LocalDate.parse(datePart, DATE_FORMATTER);
-    } else {
-      throw new TransactionException("Formato de data inválido: " + datePart);
-    }
-  }
-
   private Transaction createTransactionFromMatcher(
       LocalDate date, String document, String history, Matcher valueMatcher) {
-    BigDecimal amount = new BigDecimal(valueMatcher.group(1).replace(".", "").replace(",", "."));
     String type = valueMatcher.group(2);
-
-    TransactionType transactionType =
-        "D".equalsIgnoreCase(type) ? TransactionType.DEBITO : TransactionType.CREDITO;
-    if ("D".equalsIgnoreCase(type)) {
-      amount = amount.negate();
-    }
-
-    Category category = determineCategory(history.toLowerCase(), type);
-
+    BigDecimal amount = TransactionUtil.parseAmount(valueMatcher.group(1), type);
+    TransactionType transactionType = TransactionUtil.determineTransactionType(type);
+    Category category = TransactionUtil.determineCategory(history.toLowerCase(), type);
+    history = cleanDescription(history);
     return transactionMapper.toTransaction(
-        date.toString(), document, history, amount, "SICOOB", transactionType, category);
+        "SICOOB",
+        "",
+        history,
+        amount,
+        category,
+        transactionType,
+        document,
+        "",
+        "",
+        date.toString());
   }
 
   private Transaction createTransaction(LocalDate date, String document, String history) {
@@ -157,21 +120,20 @@ public class TransactionSicoobService {
     }
 
     return transactionMapper.toTransaction(
-        date.toString(),
-        document,
+        "SICOOB",
+        "",
         history,
         BigDecimal.ZERO,
-        "SICOOB",
+        Category.FORNECEDOR,
         TransactionType.DEBITO,
-        Category.FORNECEDOR);
+        document,
+        "",
+        "",
+        date.toString());
   }
 
-  private Category determineCategory(String historyLower, String balanceType) {
-    return TransactionUtil.CATEGORY_KEYWORDS.entrySet().stream()
-        .filter(entry -> historyLower.contains(entry.getKey()))
-        .map(Map.Entry::getValue)
-        .findFirst()
-        .orElseGet(
-            () -> "D".equalsIgnoreCase(balanceType) ? Category.FORNECEDOR : Category.VENDAS_PIX);
+  private String cleanDescription(String description) {
+    // Remove padrões de valores como "R$ 3,02D" ou "R$ 3,02C"
+    return description.replaceAll("R\\$\\s*[\\d.,]+[DC]", "").trim();
   }
 }

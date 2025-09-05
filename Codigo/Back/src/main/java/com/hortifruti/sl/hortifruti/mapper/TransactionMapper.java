@@ -18,29 +18,34 @@ public interface TransactionMapper {
 
   void updateTransaction(@MappingTarget Transaction target, Transaction source);
 
-  // Novo método para atualizar diretamente do Request
+  // Atualiza a entidade Transaction a partir do TransactionRequest
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
   @Mapping(target = "hash", ignore = true)
   void updateTransactionFromRequest(@MappingTarget Transaction target, TransactionRequest source);
 
-  @Mapping(target = "id", ignore = true)
-  @Mapping(target = "createdAt", ignore = true)
-  @Mapping(target = "updatedAt", ignore = true)
-  @Mapping(target = "hash", ignore = true)
-  Transaction toTransaction(
-      String transactionDate,
-      String document,
-      String history,
-      BigDecimal amount,
-      String statement,
-      TransactionType transactionType,
-      Category category);
-
+  // Cria uma nova Transaction a partir de TransactionRequest
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
   @Mapping(target = "hash", ignore = true)
   Transaction toTransaction(TransactionRequest transactionRequest);
+
+  // Método para criar uma Transaction com parâmetros individuais
+  @Mapping(target = "id", ignore = true)
+  @Mapping(target = "createdAt", ignore = true)
+  @Mapping(target = "updatedAt", ignore = true)
+  @Mapping(target = "hash", ignore = true)
+  Transaction toTransaction(
+      String statement,
+      String codHistory,
+      String history,
+      BigDecimal amount,
+      Category category,
+      TransactionType transactionType,
+      String document,
+      String sourceAgency,
+      String batch,
+      String transactionDate);
 }
