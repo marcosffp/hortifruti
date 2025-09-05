@@ -1,8 +1,48 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap");
 
 :root {
+  /* Base colors */
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Font families */
+  --font-title: "Public Sans", sans-serif;
+  --font-body: "Inter", sans-serif;
+
+  /* Primary colors (green shades) */
+  --primary: #26a555; /* Main green color */
+  --primary-light: #3cb371;
+  --primary-dark: #1e8449;
+  --primary-bg: #eefaf2; /* Light green background */
+
+  /* Secondary colors (red shades) */
+  --secondary: #e74c3c; /* Red for negative values */
+  --secondary-light: #f5b7b1;
+  --secondary-dark: #c0392b;
+
+  /* Neutral colors */
+  --neutral-50: #fafafa;
+  --neutral-100: #f5f5f5;
+  --neutral-200: #e5e5e5;
+  --neutral-300: #d4d4d4;
+  --neutral-400: #a3a3a3;
+  --neutral-500: #737373;
+  --neutral-600: #525252;
+  --neutral-700: #404040;
+  --neutral-800: #262626;
+  --neutral-900: #171717;
+
+  /* Accent colors for user roles */
+  --accent-green: #26a555; /* For Gestor role */
+  --accent-orange: #f39c12; /* For Funcionário role */
+  --accent-yellow: #f1c40f; /* For Contador role */
+
+  /* Status colors */
+  --success: #2ecc71;
+  --warning: #f39c12;
+  --error: #e74c3c;
+  --info: #3498db;
 }
 
 @theme inline {
@@ -12,15 +52,164 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/*  dark mode styles
 @media (prefers-color-scheme: dark) {
   :root {
+
     --background: #0a0a0a;
     --foreground: #ededed;
+
+
+    --primary: #2ecc71;
+    --primary-light: #58d68d;
+    --primary-dark: #1d8348;
+    --primary-bg: #0f361d;
+
+
+    --secondary: #e74c3c;
+    --secondary-light: #f1948a;
+    --secondary-dark: #922b21;
+
+    --neutral-50: #171717;
+    --neutral-100: #262626;
+    --neutral-200: #404040;
+    --neutral-300: #525252;
+    --neutral-400: #737373;
+    --neutral-500: #a3a3a3;
+    --neutral-600: #d4d4d4;
+    --neutral-700: #e5e5e5;
+    --neutral-800: #f5f5f5;
+    --neutral-900: #fafafa;
+
+    --success: #2ecc71;
+    --warning: #f39c12;
+    --error: #e74c3c;
+    --info: #3498db;
   }
-}
+} */
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-title);
+}
+
+/* Color utility classes */
+.text-primary {
+  color: var(--primary);
+}
+.text-secondary {
+  color: var(--secondary);
+}
+.text-success {
+  color: var(--success);
+}
+.text-warning {
+  color: var(--warning);
+}
+.text-error {
+  color: var(--error);
+}
+.text-info {
+  color: var(--info);
+}
+
+.bg-primary {
+  background-color: var(--primary);
+}
+.bg-primary-light {
+  background-color: var(--primary-light);
+}
+.bg-primary-dark {
+  background-color: var(--primary-dark);
+}
+.bg-primary-bg {
+  background-color: var(--primary-bg);
+}
+.bg-secondary {
+  background-color: var(--secondary);
+}
+.bg-neutral-50 {
+  background-color: var(--neutral-50);
+}
+.bg-neutral-100 {
+  background-color: var(--neutral-100);
+}
+.bg-neutral-200 {
+  background-color: var(--neutral-200);
+}
+
+/* Role-based accent classes */
+.accent-gestor {
+  color: var(--accent-green);
+}
+.accent-funcionario {
+  color: var(--accent-orange);
+}
+.accent-contador {
+  color: var(--accent-yellow);
+}
+
+.bg-gestor {
+  background-color: var(--accent-green);
+}
+.bg-funcionario {
+  background-color: var(--accent-orange);
+}
+.bg-contador {
+  background-color: var(--accent-yellow);
+}
+
+/* Button styles */
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+}
+
+.btn-outline {
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  background-color: transparent;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+}
+
+.btn-outline:hover {
+  background-color: var(--primary-bg);
+}
+
+/* Card and container styles */
+.card {
+  background-color: var(--background);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+}
+
+/* Number formatting for financial values */
+.value-positive {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.value-negative {
+  color: var(--secondary);
+  font-weight: 500;
 }
