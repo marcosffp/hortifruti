@@ -32,8 +32,8 @@ public class Transaction {
   @Column(nullable = false)
   private LocalDate transactionDate;
 
-  @Column(nullable = false)
-  private String document;
+  @Column(nullable = true)
+  private String codHistory; // Corrigido o nome do campo
 
   @Column(nullable = false, length = 500)
   private String history;
@@ -49,14 +49,23 @@ public class Transaction {
   @Column(nullable = false)
   private TransactionType transactionType;
 
+  @Column(nullable = true)
+  private String document;
+
+  @Column(nullable = true)
+  private String sourceAgency;
+
+  @Column(nullable = true)
+  private String batch;
+
+  @Column(unique = true, nullable = false)
+  private String hash;
+
   @Column(nullable = false)
   private LocalDateTime updatedAt;
 
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
-
-  @Column(unique = true, nullable = false)
-  private String hash;
 
   @PrePersist
   protected void onCreate() {
@@ -72,7 +81,7 @@ public class Transaction {
 
   @Override
   public int hashCode() {
-    return Objects.hash(transactionDate, document, history, amount);
+    return Objects.hash(transactionDate, document, amount, history);
   }
 
   @Override

@@ -8,10 +8,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record TransactionRequest(
-    @NotBlank String document,
+    @NotBlank String statement,
+    @NotNull LocalDate transactionDate,
+    @NotBlank String codHistory, // Corrigido o nome do campo
     @NotBlank String history,
+    @NotNull BigDecimal amount,
     @NotNull Category category,
     @NotNull TransactionType transactionType,
-    @NotNull LocalDate transactionDate,
-    @NotNull BigDecimal amount,
-    @NotBlank String statement) {}
+    @NotBlank String document,
+    @NotBlank String sourceAgency,
+    @NotBlank String batch) {}
