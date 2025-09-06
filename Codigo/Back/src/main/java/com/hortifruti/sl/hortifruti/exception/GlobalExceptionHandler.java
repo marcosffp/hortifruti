@@ -34,7 +34,6 @@ public class GlobalExceptionHandler {
     Map<String, String> response = new HashMap<>();
     response.put("error", "Erro de validação");
 
-    // Adiciona a primeira mensagem de erro como mensagem principal
     if (!ex.getBindingResult().getFieldErrors().isEmpty()) {
       String firstErrorMessage = ex.getBindingResult().getFieldErrors().get(0).getDefaultMessage();
       response.put("message", firstErrorMessage);
@@ -70,19 +69,12 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+  @ExceptionHandler(StatementException.class)
+  public ResponseEntity<Map<String, String>> handleStatementException(StatementException ex) {
     Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro interno do servidor");
-    response.put(
-        "message",
-        "Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.");
-
-    // Log do erro real para debug (não expondo para o cliente)
-    // System.err.println("Erro interno: " + ex.getMessage());
-    // ex.printStackTrace();
-
-    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    response.put("error", "Erro de Extrato");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
   @ExceptionHandler(TransactionException.class)
@@ -107,5 +99,15 @@ public class GlobalExceptionHandler {
     response.put("error", "Erro de Usuário");
     response.put("message", ex.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
+
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro interno do servidor");
+    response.put(
+        "message",
+        "Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.");
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
   }
 }

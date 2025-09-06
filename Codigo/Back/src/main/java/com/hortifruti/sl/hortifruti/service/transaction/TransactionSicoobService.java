@@ -1,6 +1,7 @@
-package com.hortifruti.sl.hortifruti.service;
+package com.hortifruti.sl.hortifruti.service.transaction;
 
 import com.hortifruti.sl.hortifruti.mapper.TransactionMapper;
+import com.hortifruti.sl.hortifruti.model.Statement;
 import com.hortifruti.sl.hortifruti.model.Transaction;
 import com.hortifruti.sl.hortifruti.model.enumeration.Category;
 import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
@@ -28,15 +29,16 @@ public class TransactionSicoobService {
   private static final Pattern DATE_PATTERN = Pattern.compile("^(\\d{2}/\\d{2})");
   private static final Pattern VALUE_PATTERN = Pattern.compile("R\\$\\s*([\\d.,]+)([DC])");
 
-  public List<Transaction> importStatement(MultipartFile file) throws IOException {
+  public List<Transaction> importStatement(MultipartFile file, Statement statement)
+      throws IOException {
     String text = PdfUtil.extractPdfText(file);
-    List<Transaction> transactions = parseSicoob(text);
+    List<Transaction> transactions = parseSicoob(text, statement);
     List<Transaction> newTransactions =
         TransactionUtil.filterNewTransactions(transactions, transactionRepository);
     return transactionRepository.saveAll(newTransactions);
   }
 
-  private List<Transaction> parseSicoob(String text) {
+  private List<Transaction> parseSicoob(String text, Statement statement) {
     List<Transaction> transactions = new ArrayList<>();
     String[] lines = text.split("\n");
 
@@ -57,7 +59,7 @@ public class TransactionSicoobService {
       if (dateMatcher.find()) {
         if (currentDate != null && historyBuffer.length() > 0) {
           transactions.add(
-              createTransaction(currentDate, document, historyBuffer.toString().trim()));
+              createTransaction(currentDate, document, historyBuffer.toString().trim(), statement));
           historyBuffer.setLength(0);
         }
 
@@ -75,7 +77,7 @@ public class TransactionSicoobService {
       if (valueMatcher.find() && currentDate != null) {
         transactions.add(
             createTransactionFromMatcher(
-                currentDate, document, historyBuffer.toString().trim(), valueMatcher));
+                currentDate, document, historyBuffer.toString().trim(), valueMatcher, statement));
         historyBuffer.setLength(0);
         document = null;
         currentDate = null;
@@ -87,21 +89,22 @@ public class TransactionSicoobService {
 
     // Adiciona última transação, se houver
     if (currentDate != null && historyBuffer.length() > 0) {
-      transactions.add(createTransaction(currentDate, document, historyBuffer.toString().trim()));
+      transactions.add(
+          createTransaction(currentDate, document, historyBuffer.toString().trim(), statement));
     }
 
     return transactions;
   }
 
   private Transaction createTransactionFromMatcher(
-      LocalDate date, String document, String history, Matcher valueMatcher) {
+      LocalDate date, String document, String history, Matcher valueMatcher, Statement statement) {
     String type = valueMatcher.group(2);
     BigDecimal amount = TransactionUtil.parseAmount(valueMatcher.group(1), type);
     TransactionType transactionType = TransactionUtil.determineTransactionType(type);
     Category category = TransactionUtil.determineCategory(history.toLowerCase(), type);
     history = cleanDescription(history);
     return transactionMapper.toTransaction(
-        "SICOOB",
+        statement,
         "",
         history,
         amount,
@@ -113,14 +116,15 @@ public class TransactionSicoobService {
         date.toString());
   }
 
-  private Transaction createTransaction(LocalDate date, String document, String history) {
+  private Transaction createTransaction(
+      LocalDate date, String document, String history, Statement statement) {
     Matcher valueMatcher = VALUE_PATTERN.matcher(history);
     if (valueMatcher.find()) {
-      return createTransactionFromMatcher(date, document, history, valueMatcher);
+      return createTransactionFromMatcher(date, document, history, valueMatcher, statement);
     }
 
     return transactionMapper.toTransaction(
-        "SICOOB",
+        statement,
         "",
         history,
         BigDecimal.ZERO,

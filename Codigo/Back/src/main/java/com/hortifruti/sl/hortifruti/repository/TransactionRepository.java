@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.repository;
 
 import com.hortifruti.sl.hortifruti.model.Transaction;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,5 +15,16 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
   @Query("SELECT t.hash FROM Transaction t WHERE t.hash IN :hashes")
   Set<String> findHashes(@Param("hashes") Set<String> hashes);
 
-  List<Transaction> findByStatement(String statement);
+  @Query(
+      """
+          SELECT t FROM Transaction t
+          WHERE
+            t.transactionDate >= :startDate
+            AND t.transactionDate <= :endDate
+            AND t.statement.bank = :bank
+      """)
+  List<Transaction> findByTransactionDateBetweenAndStatementBank(
+      @Param("startDate") LocalDate startDate,
+      @Param("endDate") LocalDate endDate,
+      @Param("bank") com.hortifruti.sl.hortifruti.model.enumeration.Bank bank);
 }
