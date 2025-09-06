@@ -31,33 +31,27 @@ public class TransactionProcessingService {
   private final NotificationService notificationService;
 
   @Async
-  public void processFilesAsync(List<MultipartFile> files) {
+  public void processFileAsync(MultipartFile file) {
     try {
-      importStatements(files);
+      importStatement(file);
       notificationService.sendNotification("Processamento concluído com sucesso.");
     } catch (Exception e) {
       notificationService.sendNotification("Erro no processamento: " + e.getMessage());
     }
   }
 
-  /** Importa extratos de uma lista de arquivos fornecidos. */
-  private void importStatements(List<MultipartFile> files) throws IOException {
-    if (files == null || files.isEmpty()) {
+  /** Importa extrato de um arquivo fornecido. */
+  private void importStatement(MultipartFile file) throws IOException {
+    if (file == null || file.isEmpty()) {
       throw new TransactionException("Nenhum arquivo foi fornecido para importação.");
     }
 
-    for (MultipartFile file : files) {
-      if (file.isEmpty()) {
-        throw new TransactionException("Um dos arquivos fornecidos está vazio.");
-      }
-
-      String fileName = file.getOriginalFilename();
-      if (fileName == null) {
-        throw new TransactionException("Um dos arquivos não possui um nome válido.");
-      }
-
-      processFileByType(determineFileType(fileName), file);
+    String fileName = file.getOriginalFilename();
+    if (fileName == null) {
+      throw new TransactionException("O arquivo não possui um nome válido.");
     }
+
+    processFileByType(determineFileType(fileName), file);
   }
 
   /** Determina o tipo de arquivo com base no nome ou conteúdo. */

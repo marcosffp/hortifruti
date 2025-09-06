@@ -38,13 +38,13 @@ public class TransactionController {
 
   @PreAuthorize("hasRole('MANAGER')")
   @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity<String> importStatements(@RequestParam("files") List<MultipartFile> files) {
+  public ResponseEntity<String> importStatements(@RequestParam("file") MultipartFile file) {
     try {
-      if (files == null || files.isEmpty()) {
+      if (file == null || file.isEmpty()) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Nenhum arquivo foi enviado.");
       }
-      files.forEach(file -> System.out.println("Arquivo recebido: " + file.getOriginalFilename()));
-      transactionProcessingService.processFilesAsync(files);
+      System.out.println("Arquivo recebido: " + file.getOriginalFilename());
+      transactionProcessingService.processFileAsync(file);
       return ResponseEntity.status(HttpStatus.ACCEPTED).body("Processamento iniciado.");
     } catch (Exception e) {
       e.printStackTrace();
