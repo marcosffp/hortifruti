@@ -37,7 +37,14 @@ const menu: MenuItem[] = [
       { label: "Fluxo de Caixa", icon: BarChart, href: "/financeiro/fluxo" },
     ],
   },
-  { label: "Módulo Comércio", icon: ShoppingCart, href: "/comercio" },
+  {
+    label: "Módulo Comércio",
+    icon: ShoppingCart,
+    href: "#",
+    submenu: [
+      { label: "Gestão de Clientes", icon: Users, href: "/comercio/clientes" },
+    ],
+  },
   { label: "Módulo Notificações", icon: Bell, href: "/notificacoes" },
   { label: "Módulo Backup", icon: Database, href: "/backup" },
   { label: "Módulo Relatórios", icon: BarChart, href: "/relatorios" },

@@ -1,0 +1,376 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { ArrowLeft, Save } from "lucide-react";
+import Header from "../../../../../components/layout/Header";
+import Sidebar from "../../../../../components/layout/Sidebar";
+import Button from "../../../../../components/ui/Button";
+import Link from "next/link";
+
+// Interface para os parâmetros da página
+interface EditarClientePageProps {
+  readonly params: {
+    readonly id: string;
+  };
+}
+
+export default function EditarClientePage({ params }: EditarClientePageProps) {
+  const { id } = params;
+
+  // Estado para o formulário
+  const [formData, setFormData] = useState({
+    nome: "",
+    email: "",
+    telefone: "",
+    cpfCnpj: "",
+    cep: "",
+    endereco: "",
+    numero: "",
+    complemento: "",
+    bairro: "",
+    cidade: "",
+    estado: "",
+    observacoes: "",
+    status: "ativo"
+  });
+
+  // Estado para indicar se os dados estão carregando
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Efeito para carregar os dados do cliente
+  useEffect(() => {
+    // Simulação de carregamento de dados
+    // Aqui você faria uma chamada à API para obter os dados do cliente com base no ID
+    setTimeout(() => {
+      // Dados simulados para demonstração
+      if (id === "1") {
+        setFormData({
+          nome: "João Silva Santos",
+          email: "joao@email.com",
+          telefone: "(31) 99999-0001",
+          cpfCnpj: "123.456.789-00",
+          cep: "30130-010",
+          endereco: "Rua das Flores",
+          numero: "123",
+          complemento: "Apto 101",
+          bairro: "Centro",
+          cidade: "Belo Horizonte",
+          estado: "MG",
+          observacoes: "Cliente preferencial",
+          status: "ativo"
+        });
+      } else if (id === "2") {
+        setFormData({
+          nome: "Maria Oliveira",
+          email: "maria@email.com",
+          telefone: "(31) 99999-0002",
+          cpfCnpj: "987.654.321-00",
+          cep: "30140-020",
+          endereco: "Av. Central",
+          numero: "456",
+          complemento: "",
+          bairro: "Savassi",
+          cidade: "Belo Horizonte",
+          estado: "MG",
+          observacoes: "",
+          status: "ativo"
+        });
+      }
+      setIsLoading(false);
+    }, 500);
+  }, [id]);
+
+  // Manipulador de mudança de campos
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Manipulador de envio do formulário
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Aqui você iria implementar a lógica para atualizar os dados
+    console.log("Dados atualizados:", formData);
+    // Redirecionar para a página de clientes após salvar
+    // router.push("/comercio/clientes");
+  };
+
+  return (
+    <div className="flex flex-col h-screen">
+      <Header />
+      <div className="flex flex-1">
+        <Sidebar />
+        <main className="flex-1 p-6 bg-gray-50 overflow-auto">
+          <div className="mb-6 flex items-center">
+            <Link href="/comercio/clientes" className="mr-4">
+              <Button 
+                variant="outline"
+                icon={<ArrowLeft size={18} />}
+                className="px-2 py-1"
+              />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold">Editar Cliente</h1>
+              <p className="text-gray-600">Atualize os dados do cliente selecionado.</p>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="bg-white rounded-lg shadow-sm border p-6 flex justify-center items-center h-80">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Dados Pessoais */}
+                <div className="border-b pb-6">
+                  <h2 className="text-lg font-medium mb-4 text-primary">Dados Pessoais</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-1">
+                        Nome Completo *
+                      </label>
+                      <input
+                        type="text"
+                        id="nome"
+                        name="nome"
+                        value={formData.nome}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="cpfCnpj" className="block text-sm font-medium text-gray-700 mb-1">
+                        CPF/CNPJ
+                      </label>
+                      <input
+                        type="text"
+                        id="cpfCnpj"
+                        name="cpfCnpj"
+                        value={formData.cpfCnpj}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                        E-mail *
+                      </label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="telefone" className="block text-sm font-medium text-gray-700 mb-1">
+                        Telefone *
+                      </label>
+                      <input
+                        type="tel"
+                        id="telefone"
+                        name="telefone"
+                        value={formData.telefone}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Endereço */}
+                <div className="border-b pb-6">
+                  <h2 className="text-lg font-medium mb-4 text-primary">Endereço</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <label htmlFor="cep" className="block text-sm font-medium text-gray-700 mb-1">
+                        CEP
+                      </label>
+                      <input
+                        type="text"
+                        id="cep"
+                        name="cep"
+                        value={formData.cep}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label htmlFor="endereco" className="block text-sm font-medium text-gray-700 mb-1">
+                        Endereço *
+                      </label>
+                      <input
+                        type="text"
+                        id="endereco"
+                        name="endereco"
+                        value={formData.endereco}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="numero" className="block text-sm font-medium text-gray-700 mb-1">
+                        Número *
+                      </label>
+                      <input
+                        type="text"
+                        id="numero"
+                        name="numero"
+                        value={formData.numero}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="complemento" className="block text-sm font-medium text-gray-700 mb-1">
+                        Complemento
+                      </label>
+                      <input
+                        type="text"
+                        id="complemento"
+                        name="complemento"
+                        value={formData.complemento}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="bairro" className="block text-sm font-medium text-gray-700 mb-1">
+                        Bairro *
+                      </label>
+                      <input
+                        type="text"
+                        id="bairro"
+                        name="bairro"
+                        value={formData.bairro}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="cidade" className="block text-sm font-medium text-gray-700 mb-1">
+                        Cidade *
+                      </label>
+                      <input
+                        type="text"
+                        id="cidade"
+                        name="cidade"
+                        value={formData.cidade}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-1">
+                        Estado *
+                      </label>
+                      <select
+                        id="estado"
+                        name="estado"
+                        value={formData.estado}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="">Selecione</option>
+                        <option value="AC">Acre</option>
+                        <option value="AL">Alagoas</option>
+                        <option value="AP">Amapá</option>
+                        <option value="AM">Amazonas</option>
+                        <option value="BA">Bahia</option>
+                        <option value="CE">Ceará</option>
+                        <option value="DF">Distrito Federal</option>
+                        <option value="ES">Espírito Santo</option>
+                        <option value="GO">Goiás</option>
+                        <option value="MA">Maranhão</option>
+                        <option value="MT">Mato Grosso</option>
+                        <option value="MS">Mato Grosso do Sul</option>
+                        <option value="MG">Minas Gerais</option>
+                        <option value="PA">Pará</option>
+                        <option value="PB">Paraíba</option>
+                        <option value="PR">Paraná</option>
+                        <option value="PE">Pernambuco</option>
+                        <option value="PI">Piauí</option>
+                        <option value="RJ">Rio de Janeiro</option>
+                        <option value="RN">Rio Grande do Norte</option>
+                        <option value="RS">Rio Grande do Sul</option>
+                        <option value="RO">Rondônia</option>
+                        <option value="RR">Roraima</option>
+                        <option value="SC">Santa Catarina</option>
+                        <option value="SP">São Paulo</option>
+                        <option value="SE">Sergipe</option>
+                        <option value="TO">Tocantins</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Informações Adicionais */}
+                <div>
+                  <h2 className="text-lg font-medium mb-4 text-primary">Informações Adicionais</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                        Status
+                      </label>
+                      <select
+                        id="status"
+                        name="status"
+                        value={formData.status}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="ativo">Ativo</option>
+                        <option value="inativo">Inativo</option>
+                      </select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label htmlFor="observacoes" className="block text-sm font-medium text-gray-700 mb-1">
+                        Observações
+                      </label>
+                      <textarea
+                        id="observacoes"
+                        name="observacoes"
+                        rows={4}
+                        value={formData.observacoes}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Botões do formulário */}
+                <div className="flex justify-end space-x-3 pt-6 border-t">
+                  <Link href="/comercio/clientes">
+                    <Button variant="outline">Cancelar</Button>
+                  </Link>
+                  <Button 
+                    variant="primary" 
+                    type="submit"
+                    icon={<Save size={18} />}
+                  >
+                    Atualizar Cliente
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
