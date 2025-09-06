@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,6 +20,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @AllArgsConstructor
 public class SecurityConfig {
   private final SecurityFilter securityFilter;
@@ -33,8 +35,10 @@ public class SecurityConfig {
             auth ->
                 auth.requestMatchers("/auth", "/swagger-ui/**", "/v3/api-docs/**")
                     .permitAll()
+                    .requestMatchers(org.springframework.http.HttpMethod.GET, "/clients/**")
+                    .permitAll()
                     .requestMatchers("/users")
-                    .hasRole("EMPLOYEE") // Prefixo ROLE_ é automático
+                    .hasRole("EMPLOYEE")
                     .anyRequest()
                     .authenticated())
         .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
