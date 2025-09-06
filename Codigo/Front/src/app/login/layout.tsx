@@ -16,7 +16,8 @@ export default function LoginLayout({
     <div
       className="flex flex-col h-screen"
       style={{
-        background: "linear-gradient(135deg, #ffffff 0%, #9cffbf 55%, #ffffff 100%)",
+        background:
+          "linear-gradient(135deg, #ffffff 0%, #9cffbf 55%, #ffffff 100%)",
       }}
     >
       {children}
