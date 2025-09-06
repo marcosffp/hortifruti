@@ -26,8 +26,9 @@ public class Transaction {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable = false)
-  private String statement;
+  @ManyToOne
+  @JoinColumn(name = "statement_id", nullable = false)
+  private Statement statement;
 
   @Column(nullable = false)
   private LocalDate transactionDate;

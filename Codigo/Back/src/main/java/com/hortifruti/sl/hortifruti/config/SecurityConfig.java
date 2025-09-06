@@ -31,7 +31,7 @@ public class SecurityConfig {
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/auth", "/api/directions/**", "/swagger-ui/**", "/v3/api-docs/**")
+                auth.requestMatchers("/auth", "/swagger-ui/**", "/v3/api-docs/**")
                     .permitAll()
                     .requestMatchers("/users")
                     .hasRole("EMPLOYEE") // Prefixo ROLE_ é automático

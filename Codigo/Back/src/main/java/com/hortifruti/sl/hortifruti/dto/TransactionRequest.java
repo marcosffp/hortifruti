@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record TransactionRequest(
-    @NotBlank String statement,
     @NotNull LocalDate transactionDate,
     @NotBlank String codHistory,
     @NotBlank String history,
