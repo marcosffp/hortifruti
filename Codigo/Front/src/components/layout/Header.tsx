@@ -9,7 +9,7 @@ export default function Header() {
         <div className="flex items-center gap-3">
           {/* Logo */}
           <Image
-            src="/logo.png"
+            src="/icon.png"
             alt="Logo Hortifruti"
             width={50}
             height={50}
