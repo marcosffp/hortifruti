@@ -12,7 +12,6 @@ public class PdfUtil {
 
   public static String extractPdfText(MultipartFile file) throws IOException {
     try (PDDocument document = PDDocument.load(file.getInputStream())) {
-      System.out.println(new PDFTextStripper().getText(document));
       return new PDFTextStripper().getText(document);
     }
   }

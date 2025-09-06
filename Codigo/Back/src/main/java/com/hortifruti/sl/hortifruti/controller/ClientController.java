@@ -6,16 +6,19 @@ import com.hortifruti.sl.hortifruti.service.ClientService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/clients")
+@AllArgsConstructor
 public class ClientController {
 
-  @Autowired private ClientService clientService;
+  private final ClientService clientService;
 
+  @PreAuthorize("hasRole('MANAGER')")
   @PostMapping("/register")
   public ResponseEntity<Map<String, ClientResponse>> registerClient(
       @Valid @RequestBody ClientRequest clientRequest) {
@@ -32,9 +35,9 @@ public class ClientController {
     return ResponseEntity.ok(clientService.getClientById(id));
   }
 
-  @GetMapping("/email/{email}")
-  public ResponseEntity<ClientResponse> getClientByEmail(@PathVariable String email) {
-    return ResponseEntity.ok(clientService.getClientByEmail(email));
+  @GetMapping("/name/{name}")
+  public ResponseEntity<ClientResponse> getClienteByName(@PathVariable String name) {
+    return ResponseEntity.ok(clientService.getClientByNameClient(name));
   }
 
   @PutMapping("/{id}")
@@ -43,6 +46,7 @@ public class ClientController {
     return ResponseEntity.ok(clientService.updateClient(id, clientRequest));
   }
 
+  @PreAuthorize("hasRole('MANAGER')")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
     clientService.deleteClient(id);

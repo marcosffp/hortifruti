@@ -18,5 +18,6 @@ public interface ClientMapper {
   @Mapping(source = "email", target = "email")
   @Mapping(source = "phoneNumber", target = "phoneNumber")
   @Mapping(source = "address", target = "address")
+  @Mapping(source = "variablePrice", target = "variablePrice")
   ClientResponse toClientResponse(Client client);
 }

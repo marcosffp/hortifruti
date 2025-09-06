@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,15 +28,20 @@ public class TransactionProcessingService {
   private final TransactionBBService transactionBBService;
   private final TransactionRepository transactionRepository;
   private final TransactionMapper transactionMapper;
+  private final NotificationService notificationService;
 
-  /** Importa extratos de arquivos fornecidos. */
-  public void importStatements(MultipartFile sicoobFile, MultipartFile bbFile) throws IOException {
-    Map<String, MultipartFile> fileMap = validateAndPrepareFiles(sicoobFile, bbFile);
-    processFiles(fileMap);
+  @Async
+  public void processFilesAsync(List<MultipartFile> files) {
+    try {
+      importStatements(files);
+      notificationService.sendNotification("Processamento concluído com sucesso.");
+    } catch (Exception e) {
+      notificationService.sendNotification("Erro no processamento: " + e.getMessage());
+    }
   }
 
   /** Importa extratos de uma lista de arquivos fornecidos. */
-  public void importStatements(List<MultipartFile> files) throws IOException {
+  private void importStatements(List<MultipartFile> files) throws IOException {
     if (files == null || files.isEmpty()) {
       throw new TransactionException("Nenhum arquivo foi fornecido para importação.");
     }
@@ -56,43 +62,13 @@ public class TransactionProcessingService {
 
   /** Determina o tipo de arquivo com base no nome ou conteúdo. */
   private String determineFileType(String fileName) {
-    if (fileName.toLowerCase().contains(SICOOB)) {
+    String normalized = fileName.toLowerCase().replaceAll("[^a-z]", "");
+    if (normalized.contains(SICOOB)) {
       return SICOOB;
-    } else if (fileName.toLowerCase().contains(BB)) {
+    } else if (normalized.contains(BB)) {
       return BB;
     } else {
       throw new TransactionException("Tipo de arquivo não reconhecido: " + fileName);
-    }
-  }
-
-  /** Valida e prepara os arquivos para processamento. */
-  private Map<String, MultipartFile> validateAndPrepareFiles(
-      MultipartFile sicoobFile, MultipartFile bbFile) {
-    if (sicoobFile == null || sicoobFile.isEmpty()) {
-      throw new TransactionException("O arquivo Sicoob é obrigatório e não pode estar vazio.");
-    }
-
-    Map<String, MultipartFile> fileMap = new HashMap<>();
-    fileMap.put(SICOOB, sicoobFile);
-
-    if (bbFile != null && !bbFile.isEmpty()) {
-      fileMap.put(BB, bbFile);
-    }
-
-    return fileMap;
-  }
-
-  /** Processa os arquivos fornecidos e salva as transações. */
-  private void processFiles(Map<String, MultipartFile> fileMap) throws IOException {
-    for (Map.Entry<String, MultipartFile> entry : fileMap.entrySet()) {
-      String tipo = entry.getKey().toLowerCase();
-      MultipartFile arquivo = entry.getValue();
-
-      if (arquivo == null || arquivo.isEmpty()) {
-        throw new TransactionException("O arquivo não pode estar vazio para o tipo: " + tipo);
-      }
-
-      processFileByType(tipo, arquivo);
     }
   }
 

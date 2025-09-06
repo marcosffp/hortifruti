@@ -10,7 +10,7 @@ import java.time.LocalDate;
 public record TransactionRequest(
     @NotBlank String statement,
     @NotNull LocalDate transactionDate,
-    @NotBlank String codHistory, // Corrigido o nome do campo
+    @NotBlank String codHistory,
     @NotBlank String history,
     @NotNull BigDecimal amount,
     @NotNull Category category,

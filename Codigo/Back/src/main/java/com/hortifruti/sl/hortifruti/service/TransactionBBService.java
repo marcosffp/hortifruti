@@ -33,29 +33,11 @@ public class TransactionBBService {
     String text = PdfUtil.extractPdfText(file);
     List<Transaction> transactions = parseBancoBrasil(text);
 
-    // Log para verificar a ordem das transações antes de salvar
-    transactions.forEach(
-        transaction ->
-            System.out.println(
-                "Antes de salvar: "
-                    + transaction.getTransactionDate()
-                    + " - "
-                    + transaction.getHistory()));
-
     List<Transaction> newTransactions =
         TransactionUtil.filterNewTransactions(transactions, transactionRepository);
 
     // Após salvar as transações
     List<Transaction> savedTransactions = transactionRepository.saveAll(newTransactions);
-
-    // Log para verificar a ordem após salvar
-    savedTransactions.forEach(
-        transaction ->
-            System.out.println(
-                "Após salvar: "
-                    + transaction.getTransactionDate()
-                    + " - "
-                    + transaction.getHistory()));
 
     return savedTransactions;
   }
@@ -83,22 +65,11 @@ public class TransactionBBService {
                 matcher, description + nextLineDescription, matcher.group(6), matcher.group(7));
         transactions.add(transaction);
 
-        // Log para verificar a transação criada
-        System.out.println(
-            "Criada: " + transaction.getTransactionDate() + " - " + transaction.getHistory());
-
         if (matcher.group(8) != null && matcher.group(9) != null) {
           Transaction secondTransaction =
               createTransaction(
                   matcher, description + nextLineDescription, matcher.group(8), matcher.group(9));
           transactions.add(secondTransaction);
-
-          // Log para a segunda transação
-          System.out.println(
-              "Criada (segunda): "
-                  + secondTransaction.getTransactionDate()
-                  + " - "
-                  + secondTransaction.getHistory());
         }
       }
     }

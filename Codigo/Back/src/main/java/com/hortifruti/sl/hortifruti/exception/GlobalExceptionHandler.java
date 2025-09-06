@@ -92,4 +92,20 @@ public class GlobalExceptionHandler {
     response.put("message", ex.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
+
+  @ExceptionHandler(ClientException.class)
+  public ResponseEntity<Map<String, String>> handleClientException(ClientException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro de Cliente");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
+
+  @ExceptionHandler(UserException.class)
+  public ResponseEntity<Map<String, String>> handleUserException(UserException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro de Usuário");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
 }

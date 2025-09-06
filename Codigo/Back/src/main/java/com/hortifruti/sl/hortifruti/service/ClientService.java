@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.service;
 
 import com.hortifruti.sl.hortifruti.dto.ClientRequest;
 import com.hortifruti.sl.hortifruti.dto.ClientResponse;
+import com.hortifruti.sl.hortifruti.exception.ClientException;
 import com.hortifruti.sl.hortifruti.mapper.ClientMapper;
 import com.hortifruti.sl.hortifruti.model.Client;
 import com.hortifruti.sl.hortifruti.repository.ClientRepository;
@@ -20,7 +21,6 @@ public class ClientService {
     Client client = clientMapper.toClient(clientRequest);
     Client savedClient = clientRepository.save(client);
     ClientResponse clientResponse = clientMapper.toClientResponse(savedClient);
-
     return Map.of("client", clientResponse);
   }
 
@@ -28,11 +28,11 @@ public class ClientService {
     return clientRepository.findAll().stream().map(clientMapper::toClientResponse).toList();
   }
 
-  public ClientResponse getClientByEmail(String email) {
+  public ClientResponse getClientByNameClient(String nameClient) {
     Client client =
         clientRepository
-            .findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+            .findByClientName(nameClient)
+            .orElseThrow(() -> new ClientException("Cliente não encontrado"));
     return clientMapper.toClientResponse(client);
   }
 
@@ -40,7 +40,7 @@ public class ClientService {
     Client existingClient =
         clientRepository
             .findById(id)
-            .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+            .orElseThrow(() -> new ClientException("Cliente não encontrado"));
 
     existingClient.setClientName(clientRequest.clientName());
     existingClient.setEmail(clientRequest.email());
@@ -55,13 +55,13 @@ public class ClientService {
     Client client =
         clientRepository
             .findById(id)
-            .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+            .orElseThrow(() -> new ClientException("Cliente não encontrado"));
     return clientMapper.toClientResponse(client);
   }
 
   public void deleteClient(Long id) {
     if (!clientRepository.existsById(id)) {
-      throw new RuntimeException("Cliente não encontrado");
+      throw new ClientException("Cliente não encontrado");
     }
     clientRepository.deleteById(id);
   }
