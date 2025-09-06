@@ -6,6 +6,9 @@ import Header from "../../../../../components/layout/Header";
 import Sidebar from "../../../../../components/layout/Sidebar";
 import Button from "../../../../../components/ui/Button";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { clientService } from "../../../../../services/clientService";
+import { showError, showSuccess } from "../../../../../services/notificationService";
 
 // Interface para os parâmetros da página
 interface EditarClientePageProps {
@@ -16,6 +19,8 @@ interface EditarClientePageProps {
 
 export default function EditarClientePage({ params }: EditarClientePageProps) {
   const { id } = params;
+  const router = useRouter();
+  const clientId = parseInt(id, 10);
 
   // Estado para o formulário
   const [formData, setFormData] = useState({
@@ -34,51 +39,103 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
     status: "ativo"
   });
 
-  // Estado para indicar se os dados estão carregando
+  // Estados de carregamento
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  // Efeito para carregar os dados do cliente
+  // Carregar os dados do cliente
   useEffect(() => {
-    // Simulação de carregamento de dados
-    // Aqui você faria uma chamada à API para obter os dados do cliente com base no ID
-    setTimeout(() => {
-      // Dados simulados para demonstração
-      if (id === "1") {
-        setFormData({
-          nome: "João Silva Santos",
-          email: "joao@email.com",
-          telefone: "(31) 99999-0001",
-          cpfCnpj: "123.456.789-00",
-          cep: "30130-010",
-          endereco: "Rua das Flores",
-          numero: "123",
-          complemento: "Apto 101",
-          bairro: "Centro",
-          cidade: "Belo Horizonte",
-          estado: "MG",
-          observacoes: "Cliente preferencial",
-          status: "ativo"
-        });
-      } else if (id === "2") {
-        setFormData({
-          nome: "Maria Oliveira",
-          email: "maria@email.com",
-          telefone: "(31) 99999-0002",
-          cpfCnpj: "987.654.321-00",
-          cep: "30140-020",
-          endereco: "Av. Central",
-          numero: "456",
+    const fetchClienteData = async () => {
+      try {
+        setIsLoading(true);
+        setError("");
+        
+        const clientData = await clientService.getClientById(clientId);
+        
+        // Extrair informações do endereço (vem como um campo único do backend)
+        let enderecoParts = {
+          endereco: "",
+          numero: "",
           complemento: "",
-          bairro: "Savassi",
-          cidade: "Belo Horizonte",
-          estado: "MG",
-          observacoes: "",
-          status: "ativo"
+          bairro: "",
+          cidade: "",
+          estado: "",
+          cep: ""
+        };
+        
+        // Tentar extrair partes do endereço - lógica simplificada
+        try {
+          if (clientData.address) {
+            const fullAddress = clientData.address;
+            
+            // Tentar extrair CEP
+            const cepMatch = fullAddress.match(/CEP: ([0-9\-]+)/);
+            if (cepMatch) enderecoParts.cep = cepMatch[1];
+            
+            // Tentar extrair cidade e estado
+            const cidadeEstadoMatch = fullAddress.match(/([^,]+) - ([A-Z]{2})/);
+            if (cidadeEstadoMatch) {
+              enderecoParts.cidade = cidadeEstadoMatch[1].trim();
+              enderecoParts.estado = cidadeEstadoMatch[2];
+            }
+            
+            // Assumir que o primeiro segmento é o endereço e número
+            const parts = fullAddress.split(',');
+            if (parts.length > 0) {
+              const endNumMatch = parts[0].match(/(.*) ([0-9]+)/);
+              if (endNumMatch) {
+                enderecoParts.endereco = endNumMatch[1].trim();
+                enderecoParts.numero = endNumMatch[2];
+              } else {
+                enderecoParts.endereco = parts[0].trim();
+              }
+            }
+            
+            // Se houver mais de 1 parte, pode ser complemento
+            if (parts.length > 1) {
+              enderecoParts.complemento = parts[1].trim();
+            }
+            
+            // Se houver mais de 2 partes, pode ser bairro
+            if (parts.length > 2) {
+              enderecoParts.bairro = parts[2].trim();
+            }
+          }
+        } catch (e) {
+          console.error("Erro ao processar endereço:", e);
+        }
+        
+        // Mapear os dados para o formato do formulário
+        setFormData({
+          nome: clientData.clientName,
+          email: clientData.email || "",
+          telefone: clientData.phoneNumber || "",
+          cpfCnpj: "", // Não disponível no backend ainda
+          cep: enderecoParts.cep,
+          endereco: enderecoParts.endereco,
+          numero: enderecoParts.numero,
+          complemento: enderecoParts.complemento,
+          bairro: enderecoParts.bairro,
+          cidade: enderecoParts.cidade,
+          estado: enderecoParts.estado,
+          observacoes: "", // Não disponível no backend ainda
+          status: "ativo" // Não disponível no backend ainda
         });
+        
+      } catch (error) {
+        console.error("Erro ao carregar dados do cliente:", error);
+        setError("Não foi possível carregar os dados do cliente");
+        showError("Erro ao carregar cliente");
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    }, 500);
-  }, [id]);
+    };
+
+    if (clientId) {
+      fetchClienteData();
+    }
+  }, [clientId]);
 
   // Manipulador de mudança de campos
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -90,12 +147,34 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
   };
 
   // Manipulador de envio do formulário
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aqui você iria implementar a lógica para atualizar os dados
-    console.log("Dados atualizados:", formData);
-    // Redirecionar para a página de clientes após salvar
-    // router.push("/comercio/clientes");
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Mapear os dados do formulário para o formato esperado pelo backend
+      const clientData = {
+        clientName: formData.nome,
+        email: formData.email,
+        phoneNumber: formData.telefone,
+        address: `${formData.endereco}, ${formData.numero}${formData.complemento ? ', ' + formData.complemento : ''}, ${formData.bairro}, ${formData.cidade} - ${formData.estado}, CEP: ${formData.cep}`,
+        variablePrice: false // Valor padrão
+      };
+      
+      // Enviar para o backend
+      await clientService.updateClient(clientId, clientData);
+      
+      showSuccess("Cliente atualizado com sucesso!");
+      
+      // Redirecionar para a página de clientes após salvar
+      router.push("/comercio/clientes");
+    } catch (error) {
+      showError("Erro ao atualizar cliente");
+      console.error("Erro ao atualizar cliente:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -104,31 +183,44 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
       <div className="flex flex-1">
         <Sidebar />
         <main className="flex-1 p-6 bg-gray-50 overflow-auto">
-          <div className="mb-6 flex items-center">
-            <Link href="/comercio/clientes" className="mr-4">
-              <Button 
-                variant="outline"
-                icon={<ArrowLeft size={18} />}
-                className="px-2 py-1"
-              />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold">Editar Cliente</h1>
-              <p className="text-gray-600">Atualize os dados do cliente selecionado.</p>
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-6 flex items-center">
+              <Link href="/comercio/clientes" className="mr-4">
+                <Button 
+                  variant="outline"
+                  icon={<ArrowLeft size={18} />}
+                  className="px-2 py-1"
+                />
+              </Link>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Editar Cliente</h1>
+                <p className="mt-1 text-sm text-gray-500">
+                  Edite os dados do cliente #{id}.
+                </p>
+              </div>
             </div>
-          </div>
 
-          {isLoading ? (
-            <div className="bg-white rounded-lg shadow-sm border p-6 flex justify-center items-center h-80">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Dados Pessoais */}
-                <div className="border-b pb-6">
-                  <h2 className="text-lg font-medium mb-4 text-primary">Dados Pessoais</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64 bg-white rounded-lg shadow-sm border">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+              </div>
+            ) : error ? (
+              <div className="bg-red-50 border border-red-200 p-4 rounded-md">
+                <p className="text-red-700">{error}</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-3"
+                  onClick={() => router.push("/comercio/clientes")}
+                >
+                  Voltar para Clientes
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border">
+                {/* Informações Pessoais */}
+                <div className="p-6 border-b">
+                  <h2 className="text-lg font-semibold mb-4">Informações Pessoais</h2>
+                  <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-1">
                         Nome Completo *
@@ -188,9 +280,9 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                 </div>
 
                 {/* Endereço */}
-                <div className="border-b pb-6">
-                  <h2 className="text-lg font-medium mb-4 text-primary">Endereço</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-6 border-b">
+                  <h2 className="text-lg font-semibold mb-4">Endereço</h2>
+                  <div className="grid md:grid-cols-3 gap-4">
                     <div>
                       <label htmlFor="cep" className="block text-sm font-medium text-gray-700 mb-1">
                         CEP
@@ -277,51 +369,24 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                       <label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-1">
                         Estado *
                       </label>
-                      <select
+                      <input
+                        type="text"
                         id="estado"
                         name="estado"
                         value={formData.estado}
                         onChange={handleChange}
                         required
+                        maxLength={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        <option value="">Selecione</option>
-                        <option value="AC">Acre</option>
-                        <option value="AL">Alagoas</option>
-                        <option value="AP">Amapá</option>
-                        <option value="AM">Amazonas</option>
-                        <option value="BA">Bahia</option>
-                        <option value="CE">Ceará</option>
-                        <option value="DF">Distrito Federal</option>
-                        <option value="ES">Espírito Santo</option>
-                        <option value="GO">Goiás</option>
-                        <option value="MA">Maranhão</option>
-                        <option value="MT">Mato Grosso</option>
-                        <option value="MS">Mato Grosso do Sul</option>
-                        <option value="MG">Minas Gerais</option>
-                        <option value="PA">Pará</option>
-                        <option value="PB">Paraíba</option>
-                        <option value="PR">Paraná</option>
-                        <option value="PE">Pernambuco</option>
-                        <option value="PI">Piauí</option>
-                        <option value="RJ">Rio de Janeiro</option>
-                        <option value="RN">Rio Grande do Norte</option>
-                        <option value="RS">Rio Grande do Sul</option>
-                        <option value="RO">Rondônia</option>
-                        <option value="RR">Roraima</option>
-                        <option value="SC">Santa Catarina</option>
-                        <option value="SP">São Paulo</option>
-                        <option value="SE">Sergipe</option>
-                        <option value="TO">Tocantins</option>
-                      </select>
+                      />
                     </div>
                   </div>
                 </div>
 
                 {/* Informações Adicionais */}
-                <div>
-                  <h2 className="text-lg font-medium mb-4 text-primary">Informações Adicionais</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-6 border-b">
+                  <h2 className="text-lg font-semibold mb-4">Informações Adicionais</h2>
+                  <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
                         Status
@@ -354,21 +419,22 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                 </div>
 
                 {/* Botões do formulário */}
-                <div className="flex justify-end space-x-3 pt-6 border-t">
+                <div className="flex justify-end space-x-3 p-6">
                   <Link href="/comercio/clientes">
-                    <Button variant="outline">Cancelar</Button>
+                    <Button variant="outline" disabled={isSubmitting}>Cancelar</Button>
                   </Link>
                   <Button 
                     variant="primary" 
                     type="submit"
                     icon={<Save size={18} />}
+                    disabled={isSubmitting}
                   >
-                    Atualizar Cliente
+                    {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
                   </Button>
                 </div>
               </form>
-            </div>
-          )}
+            )}
+          </div>
         </main>
       </div>
     </div>

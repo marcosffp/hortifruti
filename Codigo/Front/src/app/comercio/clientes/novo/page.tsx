@@ -6,8 +6,14 @@ import Header from "../../../../components/layout/Header";
 import Sidebar from "../../../../components/layout/Sidebar";
 import Button from "../../../../components/ui/Button";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { clientService } from "../../../../services/clientService";
+import { showError, showSuccess } from "../../../../services/notificationService";
 
 export default function NovoClientePage() {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   // Estado para o formulário
   const [formData, setFormData] = useState({
     nome: "",
@@ -35,12 +41,34 @@ export default function NovoClientePage() {
   };
 
   // Manipulador de envio do formulário
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aqui você iria implementar a lógica para salvar os dados
-    console.log("Dados do formulário:", formData);
-    // Redirecionar para a página de clientes após salvar
-    // router.push("/comercio/clientes");
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Mapear os dados do formulário para o formato esperado pelo backend
+      const clientData = {
+        clientName: formData.nome,
+        email: formData.email,
+        phoneNumber: formData.telefone,
+        address: `${formData.endereco}, ${formData.numero}${formData.complemento ? ', ' + formData.complemento : ''}, ${formData.bairro}, ${formData.cidade} - ${formData.estado}, CEP: ${formData.cep}`,
+        variablePrice: false // Valor padrão
+      };
+      
+      // Enviar para o backend
+      const response = await clientService.createClient(clientData);
+      
+      showSuccess("Cliente cadastrado com sucesso!");
+      
+      // Redirecionar para a página de clientes após salvar
+      router.push("/comercio/clientes");
+    } catch (error) {
+      showError("Erro ao cadastrar cliente");
+      console.error("Erro ao cadastrar cliente:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -296,14 +324,15 @@ export default function NovoClientePage() {
               {/* Botões do formulário */}
               <div className="flex justify-end space-x-3 pt-6 border-t">
                 <Link href="/comercio/clientes">
-                  <Button variant="outline">Cancelar</Button>
+                  <Button variant="outline" disabled={isSubmitting}>Cancelar</Button>
                 </Link>
                 <Button 
                   variant="primary" 
                   type="submit"
                   icon={<Save size={18} />}
+                  disabled={isSubmitting}
                 >
-                  Salvar Cliente
+                  {isSubmitting ? 'Salvando...' : 'Salvar Cliente'}
                 </Button>
               </div>
             </form>

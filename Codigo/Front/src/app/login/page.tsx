@@ -1,15 +1,32 @@
 "use client";
 
 import Image from "next/image";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { showError, showSuccess } from "@/services/notificationService";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const router = useRouter();
+  const { login, isLoading } = useAuth();
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    try {
+      const success = await login(username, password);
+      if (success) {
+        showSuccess('Login realizado com sucesso!');
+        router.push('/');
+      } else {
+        showError('Falha no login. Verifique suas credenciais.');
+      }
+    } catch (error) {
+      showError('Falha no login. Verifique suas credenciais.');
+      console.error('Erro no login:', error);
+    }
   };
 
   return (
@@ -19,9 +36,11 @@ export default function Login() {
           className="mx-auto h-20 w-auto cursor-pointer transition-discrete duration-200 hover:scale-105"
           src="/icon.png"
           onClick={() => {
-            redirect("/");
+            router.push("/");
           }}
           alt={"Logo Hortifruti"}
+          width={80}
+          height={80}
         />
         <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
           Acesse sua conta
@@ -29,21 +48,21 @@ export default function Login() {
         <form className="space-y-6 mt-4" onSubmit={handleSubmit}>
           <div>
             <label
-              htmlFor="email"
+              htmlFor="username"
               className="block text-sm font-medium text-gray-700"
             >
-              Email
+              Usuário
             </label>
             <div className="mt-1">
               <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                placeholder="Digite seu email"
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                placeholder="Digite seu nome de usuário"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="px-2 py-3 mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[var(--primary-button-dark)] focus:outline-none focus:ring-[var(--primary-button-dark)] sm:text-sm"
               />
             </div>
@@ -72,9 +91,10 @@ export default function Login() {
           <div>
             <button
               type="submit"
+              disabled={isLoading}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[var(--primary-button-dark)] hover:bg-[var(--primary-button-dark-hover)] cursor-pointer"
             >
-              Entrar
+              {isLoading ? 'Entrando...' : 'Entrar'}
             </button>
           </div>
         </form>
