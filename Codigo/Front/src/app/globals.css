@@ -14,6 +14,8 @@
   --primary: #26a555; /* Main green color */
   --primary-light: #3cb371;
   --primary-dark: #1e8449;
+  --primary-button-dark: #25573c; /* Darker green for buttons */
+  --primary-button-dark-hover: #1e522f;
   --primary-bg: #eefaf2; /* Light green background */
 
   /* Secondary colors (red shades) */
