@@ -2,13 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { LayoutGrid, LayoutList, Plus, Search, User } from "lucide-react";
-import Header from "../../../components/layout/Header";
-import Sidebar from "../../../components/layout/Sidebar";
-import Button from "../../../components/ui/Button";
+import Button from "@/components/ui/Button";
 import Link from "next/link";
-import { clientService } from "../../../services/clientService";
-import { showError, showSuccess } from "../../../services/notificationService";
-import ClientCard from "../../../components/modules/ClientCard";
+import { clientService } from "@/services/clientService";
+import { showError, showSuccess } from "@/services/notificationService";
+import ClientCard from "@/components/modules/ClientCard";
 
 // Tipo para os dados do cliente adaptado para exibição na UI
 interface ClienteUI {
@@ -102,10 +100,7 @@ export default function ClientesPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      <Header />
-      <div className="flex flex-1">
-        <Sidebar />
+    <>
         <main className="flex-1 p-8 bg-gray-50 overflow-auto">
           <div className="flex flex-col max-w-7xl mx-auto">
             {/* Cabeçalho da página */}
@@ -261,7 +256,6 @@ export default function ClientesPage() {
             </div>
           </div>
         </main>
-      </div>
       
       {/* Modal de confirmação de exclusão */}
       {clienteParaExcluir !== null && (
@@ -288,6 +282,6 @@ export default function ClientesPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
