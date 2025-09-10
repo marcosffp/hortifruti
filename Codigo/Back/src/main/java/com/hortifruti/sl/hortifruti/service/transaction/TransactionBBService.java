@@ -1,6 +1,7 @@
-package com.hortifruti.sl.hortifruti.service;
+package com.hortifruti.sl.hortifruti.service.transaction;
 
 import com.hortifruti.sl.hortifruti.mapper.TransactionMapper;
+import com.hortifruti.sl.hortifruti.model.Statement;
 import com.hortifruti.sl.hortifruti.model.Transaction;
 import com.hortifruti.sl.hortifruti.model.enumeration.Category;
 import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
@@ -29,9 +30,10 @@ public class TransactionBBService {
       Pattern.compile(
           "^(\\d{2}/\\d{2}/\\d{4})\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(.+?)\\s+([\\d.,]+)\\s+([CD])(?:\\s+([\\d.,]+)\\s+([CD]))?$");
 
-  public List<Transaction> importStatement(MultipartFile file) throws IOException {
+  public List<Transaction> importStatement(MultipartFile file, Statement statement)
+      throws IOException {
     String text = PdfUtil.extractPdfText(file);
-    List<Transaction> transactions = parseBancoBrasil(text);
+    List<Transaction> transactions = parseBancoBrasil(text, statement);
 
     List<Transaction> newTransactions =
         TransactionUtil.filterNewTransactions(transactions, transactionRepository);
@@ -42,7 +44,7 @@ public class TransactionBBService {
     return savedTransactions;
   }
 
-  private List<Transaction> parseBancoBrasil(String text) {
+  private List<Transaction> parseBancoBrasil(String text, Statement statement) {
     List<Transaction> transactions = new ArrayList<>();
     String[] lines = text.split("\n");
 
@@ -62,13 +64,21 @@ public class TransactionBBService {
 
         Transaction transaction =
             createTransaction(
-                matcher, description + nextLineDescription, matcher.group(6), matcher.group(7));
+                matcher,
+                description + nextLineDescription,
+                matcher.group(6),
+                matcher.group(7),
+                statement);
         transactions.add(transaction);
 
         if (matcher.group(8) != null && matcher.group(9) != null) {
           Transaction secondTransaction =
               createTransaction(
-                  matcher, description + nextLineDescription, matcher.group(8), matcher.group(9));
+                  matcher,
+                  description + nextLineDescription,
+                  matcher.group(8),
+                  matcher.group(9),
+                  statement);
           transactions.add(secondTransaction);
         }
       }
@@ -78,7 +88,7 @@ public class TransactionBBService {
   }
 
   private Transaction createTransaction(
-      Matcher matcher, String history, String value, String balanceType) {
+      Matcher matcher, String history, String value, String balanceType, Statement statement) {
     LocalDate transactionDate = TransactionUtil.parseDate(matcher.group(1));
     String codHistory = matcher.group(4); // Captura o codHistory corretamente
     BigDecimal amount = TransactionUtil.parseAmount(value, balanceType);
@@ -94,7 +104,7 @@ public class TransactionBBService {
 
     Transaction transaction =
         transactionMapper.toTransaction(
-            "BB",
+            statement,
             codHistory, // Está passando o valor corretamente, mas pode estar sendo ignorado pelo
             // mapper
             history,

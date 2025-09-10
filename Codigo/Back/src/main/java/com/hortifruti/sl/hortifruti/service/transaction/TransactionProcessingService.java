@@ -1,12 +1,15 @@
-package com.hortifruti.sl.hortifruti.service;
+package com.hortifruti.sl.hortifruti.service.transaction;
 
 import com.hortifruti.sl.hortifruti.dto.TransactionRequest;
 import com.hortifruti.sl.hortifruti.dto.TransactionResponse;
 import com.hortifruti.sl.hortifruti.exception.TransactionException;
 import com.hortifruti.sl.hortifruti.mapper.TransactionMapper;
+import com.hortifruti.sl.hortifruti.model.Statement;
 import com.hortifruti.sl.hortifruti.model.Transaction;
+import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
 import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
 import com.hortifruti.sl.hortifruti.repository.TransactionRepository;
+import com.hortifruti.sl.hortifruti.service.NotificationService;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,9 +24,6 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class TransactionProcessingService {
 
-  private static final String SICOOB = "sicoob";
-  private static final String BB = "bb";
-
   private final TransactionSicoobService transactionSicoobService;
   private final TransactionBBService transactionBBService;
   private final TransactionRepository transactionRepository;
@@ -31,58 +31,41 @@ public class TransactionProcessingService {
   private final NotificationService notificationService;
 
   @Async
-  public void processFilesAsync(List<MultipartFile> files) {
+  public void processFileAsync(MultipartFile file, Statement statement) {
     try {
-      importStatements(files);
+      importStatement(file, statement);
       notificationService.sendNotification("Processamento concluído com sucesso.");
     } catch (Exception e) {
       notificationService.sendNotification("Erro no processamento: " + e.getMessage());
     }
   }
 
-  /** Importa extratos de uma lista de arquivos fornecidos. */
-  private void importStatements(List<MultipartFile> files) throws IOException {
-    if (files == null || files.isEmpty()) {
+  /** Importa extrato de um arquivo fornecido. */
+  private void importStatement(MultipartFile file, Statement statement) throws IOException {
+    if (file == null || file.isEmpty()) {
       throw new TransactionException("Nenhum arquivo foi fornecido para importação.");
     }
 
-    for (MultipartFile file : files) {
-      if (file.isEmpty()) {
-        throw new TransactionException("Um dos arquivos fornecidos está vazio.");
-      }
-
-      String fileName = file.getOriginalFilename();
-      if (fileName == null) {
-        throw new TransactionException("Um dos arquivos não possui um nome válido.");
-      }
-
-      processFileByType(determineFileType(fileName), file);
+    String fileName = file.getOriginalFilename();
+    if (fileName == null) {
+      throw new TransactionException("O arquivo não possui um nome válido.");
     }
-  }
 
-  /** Determina o tipo de arquivo com base no nome ou conteúdo. */
-  private String determineFileType(String fileName) {
-    String normalized = fileName.toLowerCase().replaceAll("[^a-z]", "");
-    if (normalized.contains(SICOOB)) {
-      return SICOOB;
-    } else if (normalized.contains(BB)) {
-      return BB;
-    } else {
-      throw new TransactionException("Tipo de arquivo não reconhecido: " + fileName);
-    }
+    processFileByType(statement.getBank(), file, statement);
   }
 
   /** Processa um arquivo com base no tipo especificado. */
-  private void processFileByType(String tipo, MultipartFile arquivo) throws IOException {
-    switch (tipo) {
+  private void processFileByType(Bank bank, MultipartFile arquivo, Statement statement)
+      throws IOException {
+    switch (bank) {
       case SICOOB:
-        transactionSicoobService.importStatement(arquivo);
+        transactionSicoobService.importStatement(arquivo, statement);
         break;
-      case BB:
-        transactionBBService.importStatement(arquivo);
+      case BANCO_DO_BRASIL:
+        transactionBBService.importStatement(arquivo, statement);
         break;
       default:
-        throw new TransactionException("Tipo de arquivo não suportado: " + tipo);
+        throw new TransactionException("Tipo de arquivo não suportado: " + bank.toString());
     }
   }
 

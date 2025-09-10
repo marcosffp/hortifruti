@@ -18,7 +18,6 @@ public class ClientController {
 
   private final ClientService clientService;
 
-  @PreAuthorize("hasRole('MANAGER')")
   @PostMapping("/register")
   public ResponseEntity<Map<String, ClientResponse>> registerClient(
       @Valid @RequestBody ClientRequest clientRequest) {

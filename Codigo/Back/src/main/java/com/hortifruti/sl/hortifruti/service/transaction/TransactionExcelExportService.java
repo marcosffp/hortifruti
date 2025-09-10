@@ -1,20 +1,25 @@
-package com.hortifruti.sl.hortifruti.service;
+package com.hortifruti.sl.hortifruti.service.transaction;
 
 import com.hortifruti.sl.hortifruti.model.Transaction;
+import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
 import com.hortifruti.sl.hortifruti.repository.TransactionRepository;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.format.TextStyle;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import lombok.RequiredArgsConstructor;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
@@ -24,14 +29,14 @@ public class TransactionExcelExportService {
 
   private final TransactionRepository transactionRepository;
 
-  public Map<String, byte[]> exportTransactions() throws IOException {
-    List<Transaction> transactions = transactionRepository.findByStatement("BB");
+  public byte[] exportTransactionsAsExcel() throws IOException {
+    LocalDate now = LocalDate.now();
+    LocalDate firstDayLastMonth = now.minusMonths(1).withDayOfMonth(1);
+    LocalDate lastDayLastMonth = now.withDayOfMonth(1).minusDays(1);
 
-    String currentMonth =
-        LocalDate.now().getMonth().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pt-BR"));
-    String fileName = "Planilha-Hortifruti-Santa-Luzia-" + currentMonth;
-
-    byte[] excelFile;
+    List<Transaction> transactions =
+        transactionRepository.findByTransactionDateBetweenAndStatementBank(
+            firstDayLastMonth, lastDayLastMonth, Bank.BANCO_DO_BRASIL);
 
     try (Workbook workbook = new XSSFWorkbook();
         ByteArrayOutputStream excelOut = new ByteArrayOutputStream()) {
@@ -42,49 +47,7 @@ public class TransactionExcelExportService {
       adjustColumnWidths(sheet);
 
       workbook.write(excelOut);
-      excelFile = excelOut.toByteArray();
-    }
-
-    Map<String, byte[]> files = new HashMap<>();
-    files.put(fileName + ".xlsx", excelFile);
-
-    return files;
-  }
-
-  public byte[] exportTransactionsAsZip() throws IOException {
-    List<Transaction> transactions = transactionRepository.findByStatement("BB");
-
-    String currentMonth =
-        LocalDate.now().getMonth().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pt-BR"));
-    String baseFileName = "Planilha-Hortifruti-Santa-Luzia-" + currentMonth;
-
-    byte[] excelFile;
-
-    // Gerar o arquivo Excel
-    try (Workbook workbook = new XSSFWorkbook();
-        ByteArrayOutputStream excelOut = new ByteArrayOutputStream()) {
-      Sheet sheet = workbook.createSheet("Transactions");
-
-      createHeaderRow(sheet, workbook);
-      populateDataRows(sheet, workbook, transactions);
-      adjustColumnWidths(sheet);
-
-      workbook.write(excelOut);
-      excelFile = excelOut.toByteArray();
-    }
-
-    // Compactar o arquivo Excel em um ZIP
-    try (ByteArrayOutputStream zipOut = new ByteArrayOutputStream();
-        ZipOutputStream zipStream = new ZipOutputStream(zipOut)) {
-
-      // Adicionar o arquivo Excel ao ZIP
-      ZipEntry excelEntry = new ZipEntry(baseFileName + ".xlsx");
-      zipStream.putNextEntry(excelEntry);
-      zipStream.write(excelFile);
-      zipStream.closeEntry();
-
-      zipStream.finish();
-      return zipOut.toByteArray();
+      return excelOut.toByteArray();
     }
   }
 
