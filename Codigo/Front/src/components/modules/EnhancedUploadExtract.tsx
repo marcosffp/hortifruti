@@ -1,42 +1,22 @@
 "use client";
 
 import { useState, useRef } from "react";
-import Button from "../ui/Button";
+import { useStatement } from "@/hooks/useStatement";
+import Button from "@/components/ui/Button";
 import { ArrowUp, FileText, X, AlertCircle } from "lucide-react";
 
 export default function EnhancedUploadExtract() {
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { formatFileSize, validateFiles, processFiles, error } = useStatement();
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
-    validateAndAddFiles(selectedFiles);
-  };
-
-  const validateAndAddFiles = (selectedFiles: File[]) => {
-    setError(null);
-    const validFiles = selectedFiles.filter(file => {
-      // Verificar o tamanho do arquivo (10MB = 10 * 1024 * 1024 bytes)
-      if (file.size > 10 * 1024 * 1024) {
-        setError(`O arquivo ${file.name} excede o limite de 10MB.`);
-        return false;
-      }
-      
-      // Verificar se é um PDF
-      if (file.type !== "application/pdf") {
-        setError(`O arquivo ${file.name} não é um PDF.`);
-        return false;
-      }
-      
-      return true;
-    });
-
-    if (validFiles.length > 0) {
-      setFiles(prev => [...prev, ...validFiles]);
-    }
+    const validFiles = validateFiles(selectedFiles);
+    setFiles((prevFiles) => [...prevFiles, ...validFiles]);
   };
 
   const handleRemoveFile = (index: number) => {
@@ -68,8 +48,9 @@ export default function EnhancedUploadExtract() {
         }
       }
     }
-    
-    validateAndAddFiles(fileList);
+
+    const validFiles = validateFiles(fileList);
+    setFiles((prevFiles) => [...prevFiles, ...validFiles]);
   };
 
   const handleButtonClick = (e: React.MouseEvent) => {
@@ -77,10 +58,14 @@ export default function EnhancedUploadExtract() {
     fileInputRef.current?.click();
   };
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' B';
-    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-    else return (bytes / 1048576).toFixed(1) + ' MB';
+  const handleProcessFiles = async () => {
+    try {
+      await processFiles(files);
+      // Limpar arquivos após processamento bem-sucedido
+      setFiles([]);
+    } catch (err) {
+      // O erro já é tratado no hook useStatement
+    }
   };
 
   return (
@@ -161,6 +146,7 @@ export default function EnhancedUploadExtract() {
               variant="primary" 
               disabled={files.length === 0}
               className="py-3 px-8 text-lg"
+              onClick={handleProcessFiles}
             >
               Processar {files.length} {files.length === 1 ? 'arquivo' : 'arquivos'}
             </Button>

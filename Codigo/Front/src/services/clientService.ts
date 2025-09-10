@@ -1,5 +1,6 @@
 'use client';
 
+import { getAuthHeaders } from '@/app/utils/httpUtils';
 import { authService } from './authService';
 
 // Tipos de dados para os clientes baseados no backend
@@ -19,20 +20,6 @@ export interface ClientResponse {
   address: string;
   variablePrice: boolean;
 }
-
-// Função auxiliar para obter os headers com autorização
-const getAuthHeaders = () => {
-  const token = authService.getToken();
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
-  return headers;
-};
 
 // Definindo a URL base da API - pode ser ajustada conforme necessário
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
