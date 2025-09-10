@@ -1,6 +1,6 @@
 'use client';
 
-import { getAuthHeaders } from '@/app/utils/httpUtils';
+import { getAuthHeaders } from '@/utils/httpUtils';
 import { authService } from './authService';
 
 // Tipos de dados para os clientes baseados no backend

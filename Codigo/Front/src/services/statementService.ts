@@ -1,6 +1,6 @@
 "use client";
 
-import { getAuthHeadersForFormData } from "@/app/utils/httpUtils";
+import { getAuthHeadersForFormData } from "@/utils/httpUtils";
 
 export interface StatementResponse {
   id: number;
@@ -14,7 +14,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export const statementService = {
   // Upload de extratos
-  async uploadStatements(files: File[]): Promise<StatementResponse[]> {
+  async uploadStatements(files: File[]): Promise<{message: string}> {
     const formData = new FormData();
     files.forEach((file) => {
       formData.append("files", file);
@@ -32,8 +32,8 @@ export const statementService = {
         throw new Error(errorData || "Erro ao enviar arquivos");
       }
 
-      const data = await response.json();
-      return data;
+      const data = await response.text();
+      return { message: data };
     } catch (error) {
       console.error("Erro ao enviar arquivos:", error);
       throw error;
