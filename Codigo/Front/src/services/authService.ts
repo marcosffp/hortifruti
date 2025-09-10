@@ -75,10 +75,26 @@ export const authService = {
     window.location.href = '/';
   },
 
-  // Verificar se o usuário está autenticado
+  // Verificar se o token está expirado
+  isTokenExpired(token: string): boolean {
+    try {
+      const parts = token.split(".");
+      if (parts.length !== 3) return true;
+      const payload = JSON.parse(atob(parts[1]));
+      if (!payload.exp) return true;
+      const now = Math.floor(Date.now() / 1000);
+      return payload.exp < now;
+    } catch {
+      return true;
+    }
+  },
+
+  // Verificar se o usuário está autenticado e o token é válido
   isAuthenticated(): boolean {
-    if (typeof window === 'undefined') return false;
-    return !!localStorage.getItem('auth_token');
+    if (typeof window === "undefined") return false;
+    const token = localStorage.getItem("auth_token");
+    if (!token) return false;
+    return !this.isTokenExpired(token);
   },
 
   // Obter o token atual
