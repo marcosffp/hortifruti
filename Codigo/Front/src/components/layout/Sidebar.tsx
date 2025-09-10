@@ -58,7 +58,7 @@ const menu: MenuItem[] = [
   { label: "Administração", icon: Database, href: "/admin", roles: ["MANAGER"] },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [openSubMenu, setOpenSubMenu] = useState<number | null>(null);
   const pathname = usePathname();
 
@@ -71,7 +71,20 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 bg-white border-r border-[var(--neutral-300)] min-h-screen p-4">
+    <aside
+      className={`
+        w-64 
+        bg-white 
+        border-r 
+        border-[var(--neutral-300)] 
+        min-h-screen 
+        p-4 
+        transform transition-transform duration-300
+        max-md:fixed max-md:z-50 
+        ${open ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}
+        md:translate-x-0
+      `}
+    >
       <nav className="flex flex-col gap-1">
         {/* Home/Dashboard link */}
         <Link
@@ -89,8 +102,8 @@ export default function Sidebar() {
           const isActive = pathname === item.href || isSubActive;
 
           return (
-            <RoleGuard 
-              key={`menu-item-${item.label}`} 
+            <RoleGuard
+              key={`menu-item-${item.label}`}
               roles={item.roles || []}
               ignoreRedirect={true}
             >
@@ -100,9 +113,8 @@ export default function Sidebar() {
                     <button
                       type="button"
                       onClick={() => toggleSubMenu(i)}
-                      className={`flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-primary ${
-                        isSubActive ? "bg-primary text-white" : "text-gray-700"
-                      }`}
+                      className={`flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-primary ${isSubActive ? "bg-primary text-white" : "text-gray-700"
+                        }`}
                     >
                       <div className="flex items-center gap-2">
                         <item.icon size={18} />
@@ -120,16 +132,15 @@ export default function Sidebar() {
                     {openSubMenu === i && (
                       <div className="ml-7 mt-1 border-l-2 border-green-200 pl-2">
                         {item.submenu.map((subItem) => (
-                          <RoleGuard 
+                          <RoleGuard
                             key={`submenu-${item.label}-${subItem.label}`}
                             roles={subItem.roles || []}
                             ignoreRedirect={true}
                           >
                             <Link
                               href={subItem.href}
-                              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-gray-700 hover:bg-primary ${
-                                pathname === subItem.href ? "bg-primary text-white" : ""
-                              }`}
+                              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-gray-700 hover:bg-primary ${pathname === subItem.href ? "bg-primary text-white" : ""
+                                }`}
                             >
                               <subItem.icon size={16} />
                               <span>{subItem.label}</span>
@@ -142,9 +153,8 @@ export default function Sidebar() {
                 ) : (
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary ${
-                      isActive ? "bg-primary text-white" : "text-gray-700"
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary ${isActive ? "bg-primary text-white" : "text-gray-700"
+                      }`}
                   >
                     <item.icon size={18} />
                     <span>{item.label}</span>
