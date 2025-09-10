@@ -15,28 +15,28 @@ export default function AdminPage() {
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+            <div className="border border-[var(--neutral-300)] rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
               <h3 className="font-medium text-gray-800">Gerenciamento de Usuários</h3>
               <p className="text-gray-600 text-sm mt-1">
                 Adicionar, remover e gerenciar usuários do sistema
               </p>
             </div>
             
-            <div className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+            <div className="border border-[var(--neutral-300)] rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
               <h3 className="font-medium text-gray-800">Configurações do Sistema</h3>
               <p className="text-gray-600 text-sm mt-1">
                 Ajustar parâmetros e preferências globais
               </p>
             </div>
             
-            <div className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+            <div className="border border-[var(--neutral-300)] rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
               <h3 className="font-medium text-gray-800">Backup de Dados</h3>
               <p className="text-gray-600 text-sm mt-1">
                 Configurar e executar backups do sistema
               </p>
             </div>
             
-            <div className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+            <div className="border border-[var(--neutral-300)] rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
               <h3 className="font-medium text-gray-800">Logs do Sistema</h3>
               <p className="text-gray-600 text-sm mt-1">
                 Visualizar logs de atividade e erros
