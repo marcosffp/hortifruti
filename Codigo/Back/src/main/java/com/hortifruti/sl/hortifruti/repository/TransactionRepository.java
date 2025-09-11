@@ -27,4 +27,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
       @Param("startDate") LocalDate startDate,
       @Param("endDate") LocalDate endDate,
       @Param("bank") com.hortifruti.sl.hortifruti.model.enumeration.Bank bank);
+
+  @Query("SELECT DISTINCT t.category FROM Transaction t WHERE t.category IS NOT NULL")
+  List<String> findAllCategories();
 }

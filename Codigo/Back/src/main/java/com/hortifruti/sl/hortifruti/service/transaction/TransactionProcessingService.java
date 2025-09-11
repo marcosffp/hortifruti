@@ -16,6 +16,10 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -132,5 +136,53 @@ public class TransactionProcessingService {
       throw new TransactionException("Transação não encontrada com o ID: " + id);
     }
     transactionRepository.deleteById(id);
+  }
+
+  /** Retorna todas as transações filtradas por critérios de pesquisa, tipo e categoria. */
+  public Page<TransactionResponse> getAllTransactions(
+      String search, String type, String category, int page, int size) {
+    Pageable pageable = PageRequest.of(page, size, Sort.by("transactionDate").descending());
+
+    // Busque todas as transações do banco
+    List<Transaction> allTransactions = transactionRepository.findAll();
+
+    // Filtre antes de paginar
+    List<TransactionResponse> filtered =
+        allTransactions.stream()
+            .map(transactionMapper::toResponse)
+            .filter(
+                tx -> {
+                  boolean matches = true;
+                  if (search != null && !search.isEmpty()) {
+                    String searchLower = search.toLowerCase();
+                    matches =
+                        (tx.history() != null && tx.history().toLowerCase().contains(searchLower))
+                            || (tx.category() != null
+                                && tx.category().name().toLowerCase().contains(searchLower));
+                  }
+                  if (matches && type != null && !type.isEmpty()) {
+                    try {
+                      matches = tx.transactionType() == TransactionType.valueOf(type.toUpperCase());
+                    } catch (IllegalArgumentException e) {
+                      matches = false;
+                    }
+                  }
+                  if (matches && category != null && !category.isEmpty()) {
+                    matches = category.equalsIgnoreCase(tx.category().name());
+                  }
+                  return matches;
+                })
+            .collect(Collectors.toList());
+
+    // Paginação manual
+    int start = Math.min(page * size, filtered.size());
+    int end = Math.min(start + size, filtered.size());
+    List<TransactionResponse> paged = filtered.subList(start, end);
+
+    return new org.springframework.data.domain.PageImpl<>(paged, pageable, filtered.size());
+  }
+
+  public List<String> getAllCategories() {
+    return transactionRepository.findAllCategories();
   }
 }
