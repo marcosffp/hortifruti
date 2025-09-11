@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -138,17 +139,20 @@ public class TransactionProcessingService {
     transactionRepository.deleteById(id);
   }
 
-  /** Retorna todas as transações filtradas por critérios de pesquisa, tipo e categoria. */
+  /**
+   * Retorna todas as transações filtradas por critérios de pesquisa, tipo e categoria com
+   * paginação.
+   */
   public Page<TransactionResponse> getAllTransactions(
       String search, String type, String category, int page, int size) {
     Pageable pageable = PageRequest.of(page, size, Sort.by("transactionDate").descending());
 
-    // Busque todas as transações do banco
-    List<Transaction> allTransactions = transactionRepository.findAll();
+    // Busca as transações paginadas diretamente do repositório
+    Page<Transaction> transactionsPage = transactionRepository.findAll(pageable);
 
-    // Filtre antes de paginar
+    // Filtra os resultados
     List<TransactionResponse> filtered =
-        allTransactions.stream()
+        transactionsPage.getContent().stream()
             .map(transactionMapper::toResponse)
             .filter(
                 tx -> {
@@ -174,12 +178,8 @@ public class TransactionProcessingService {
                 })
             .collect(Collectors.toList());
 
-    // Paginação manual
-    int start = Math.min(page * size, filtered.size());
-    int end = Math.min(start + size, filtered.size());
-    List<TransactionResponse> paged = filtered.subList(start, end);
-
-    return new org.springframework.data.domain.PageImpl<>(paged, pageable, filtered.size());
+    // Retorna a página com os resultados filtrados
+    return new PageImpl<>(filtered, pageable, transactionsPage.getTotalElements());
   }
 
   public List<String> getAllCategories() {
