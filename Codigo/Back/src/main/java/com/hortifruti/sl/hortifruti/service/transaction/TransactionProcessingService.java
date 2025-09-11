@@ -12,7 +12,6 @@ import com.hortifruti.sl.hortifruti.repository.TransactionRepository;
 import com.hortifruti.sl.hortifruti.service.NotificationService;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -76,33 +75,28 @@ public class TransactionProcessingService {
 
   /** Calcula a receita total do mês atual. */
   public BigDecimal getTotalRevenueForCurrentMonth() {
-    return calculateTotalByTypeAndPeriod(TransactionType.CREDITO);
+    List<Transaction> transacoes = transactionRepository.findTransactionsForCurrentMonth();
+    return transacoes.stream()
+        .filter(transacao -> transacao.getTransactionType() == TransactionType.CREDITO)
+        .map(Transaction::getAmount)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
   /** Calcula as despesas totais do mês atual. */
   public BigDecimal getTotalExpensesForCurrentMonth() {
-    return calculateTotalByTypeAndPeriod(TransactionType.DEBITO);
+    List<Transaction> transacoes = transactionRepository.findTransactionsForCurrentMonth();
+    return transacoes.stream()
+        .filter(transacao -> transacao.getTransactionType() == TransactionType.DEBITO)
+        .map(Transaction::getAmount)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
   /** Calcula o saldo total do mês atual. */
   public BigDecimal getTotalBalanceForCurrentMonth() {
-    return getTotalRevenueForCurrentMonth().subtract(getTotalExpensesForCurrentMonth());
-  }
-
-  /** Calcula o total de transações por tipo e período. */
-  private BigDecimal calculateTotalByTypeAndPeriod(TransactionType tipo) {
-    LocalDate now = LocalDate.now();
-    LocalDate inicioDoMes = now.withDayOfMonth(1);
-    LocalDate fimDoMes = now.withDayOfMonth(now.lengthOfMonth());
-
-    return transactionRepository.findAll().stream()
-        .filter(
-            transacao ->
-                transacao.getTransactionDate().isAfter(inicioDoMes.minusDays(1))
-                    && transacao.getTransactionDate().isBefore(fimDoMes.plusDays(1))
-                    && transacao.getTransactionType() == tipo)
-        .map(Transaction::getAmount)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal receita = getTotalRevenueForCurrentMonth();
+    BigDecimal despesas = getTotalExpensesForCurrentMonth();
+    // quero somar
+    return receita.add(despesas);
   }
 
   /** Retorna todas as transações como DTOs. */
