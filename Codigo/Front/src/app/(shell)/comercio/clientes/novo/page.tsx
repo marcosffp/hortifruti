@@ -26,15 +26,19 @@ export default function NovoClientePage() {
     cidade: "",
     estado: "",
     observacoes: "",
-    status: "ativo"
+    status: "ativo",
   });
 
   // Manipulador de mudança de campos
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -50,8 +54,8 @@ export default function NovoClientePage() {
         clientName: formData.nome,
         email: formData.email,
         phoneNumber: formData.telefone,
-        address: `${formData.endereco}, ${formData.numero}${formData.complemento ? ', ' + formData.complemento : ''}, ${formData.bairro}, ${formData.cidade} - ${formData.estado}, CEP: ${formData.cep}`,
-        variablePrice: false // Valor padrão
+        address: `${formData.endereco}, ${formData.numero}${formData.complemento ? ", " + formData.complemento : ""}, ${formData.bairro}, ${formData.cidade} - ${formData.estado}, CEP: ${formData.cep}`,
+        variablePrice: false, // Valor padrão
       };
 
       // Enviar para o backend
@@ -81,7 +85,9 @@ export default function NovoClientePage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold">Novo Cliente</h1>
-          <p className="text-gray-600">Preencha o formulário abaixo para adicionar um novo cliente.</p>
+          <p className="text-gray-600">
+            Preencha o formulário abaixo para adicionar um novo cliente.
+          </p>
         </div>
       </div>
 
@@ -89,10 +95,15 @@ export default function NovoClientePage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Dados Pessoais */}
           <div className="border-b pb-6">
-            <h2 className="text-lg font-medium mb-4 text-primary">Dados Pessoais</h2>
+            <h2 className="text-lg font-medium mb-4 text-primary">
+              Dados Pessoais
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="nome"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Nome Completo *
                 </label>
                 <input
@@ -106,7 +117,10 @@ export default function NovoClientePage() {
                 />
               </div>
               <div>
-                <label htmlFor="cpfCnpj" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="cpfCnpj"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   CPF/CNPJ
                 </label>
                 <input
@@ -119,7 +133,10 @@ export default function NovoClientePage() {
                 />
               </div>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   E-mail *
                 </label>
                 <input
@@ -133,7 +150,10 @@ export default function NovoClientePage() {
                 />
               </div>
               <div>
-                <label htmlFor="telefone" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="telefone"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Telefone *
                 </label>
                 <input
@@ -154,7 +174,10 @@ export default function NovoClientePage() {
             <h2 className="text-lg font-medium mb-4 text-primary">Endereço</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label htmlFor="cep" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="cep"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   CEP
                 </label>
                 <input
@@ -167,7 +190,10 @@ export default function NovoClientePage() {
                 />
               </div>
               <div className="md:col-span-2">
-                <label htmlFor="endereco" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="endereco"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Endereço *
                 </label>
                 <input
@@ -181,7 +207,10 @@ export default function NovoClientePage() {
                 />
               </div>
               <div>
-                <label htmlFor="numero" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="numero"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Número *
                 </label>
                 <input
@@ -195,7 +224,10 @@ export default function NovoClientePage() {
                 />
               </div>
               <div>
-                <label htmlFor="complemento" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="complemento"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Complemento
                 </label>
                 <input
@@ -208,7 +240,10 @@ export default function NovoClientePage() {
                 />
               </div>
               <div>
-                <label htmlFor="bairro" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="bairro"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Bairro *
                 </label>
                 <input
@@ -222,7 +257,10 @@ export default function NovoClientePage() {
                 />
               </div>
               <div>
-                <label htmlFor="cidade" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="cidade"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Cidade *
                 </label>
                 <input
@@ -236,7 +274,10 @@ export default function NovoClientePage() {
                 />
               </div>
               <div>
-                <label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="estado"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Estado *
                 </label>
                 <select
@@ -282,10 +323,15 @@ export default function NovoClientePage() {
 
           {/* Informações Adicionais */}
           <div>
-            <h2 className="text-lg font-medium mb-4 text-primary">Informações Adicionais</h2>
+            <h2 className="text-lg font-medium mb-4 text-primary">
+              Informações Adicionais
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="status"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Status
                 </label>
                 <select
@@ -300,7 +346,10 @@ export default function NovoClientePage() {
                 </select>
               </div>
               <div className="md:col-span-2">
-                <label htmlFor="observacoes" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="observacoes"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Observações
                 </label>
                 <textarea
@@ -318,7 +367,9 @@ export default function NovoClientePage() {
           {/* Botões do formulário */}
           <div className="flex justify-end space-x-3 pt-6 border-t">
             <Link href="/comercio/clientes">
-              <Button variant="outline" disabled={isSubmitting}>Cancelar</Button>
+              <Button variant="outline" disabled={isSubmitting}>
+                Cancelar
+              </Button>
             </Link>
             <Button
               variant="primary"
@@ -326,7 +377,7 @@ export default function NovoClientePage() {
               icon={<Save size={18} />}
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Salvando...' : 'Salvar Cliente'}
+              {isSubmitting ? "Salvando..." : "Salvar Cliente"}
             </Button>
           </div>
         </form>

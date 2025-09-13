@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { transactionService, TransactionRequest, TransactionResponse, PageResult } from "@/services/transactionService";
+import {
+  transactionService,
+  TransactionRequest,
+  TransactionResponse,
+  PageResult,
+} from "@/services/transactionService";
 
 export function useTransaction() {
   const [isLoading, setIsLoading] = useState(false);
@@ -13,12 +18,18 @@ export function useTransaction() {
     type?: string,
     category?: string,
     page: number = 0,
-    size: number = 20
+    size: number = 20,
   ): Promise<PageResult<TransactionResponse> | undefined> => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await transactionService.getAllTransactions(search, type, category, page, size);
+      const data = await transactionService.getAllTransactions(
+        search,
+        type,
+        category,
+        page,
+        size,
+      );
       return data;
     } catch (err: any) {
       setError(err.message || "Erro ao buscar transações.");
@@ -85,7 +96,10 @@ export function useTransaction() {
     }
   };
 
-  const updateTransaction = async (id: number, transaction: TransactionRequest): Promise<TransactionResponse | undefined> => {
+  const updateTransaction = async (
+    id: number,
+    transaction: TransactionRequest,
+  ): Promise<TransactionResponse | undefined> => {
     setIsLoading(true);
     setError(null);
     try {

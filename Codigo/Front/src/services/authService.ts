@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 // Tipos para o serviço de autenticação
 export interface AuthRequest {
@@ -17,7 +17,7 @@ export interface AuthResponse {
 }
 
 // Definindo a URL base da API
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 // Serviço para lidar com autenticação
 export const authService = {
@@ -25,54 +25,56 @@ export const authService = {
   async login(credentials: AuthRequest): Promise<AuthResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/auth`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(credentials),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.erro || `Erro ao fazer login: ${response.status}`);
+        throw new Error(
+          errorData.erro || `Erro ao fazer login: ${response.status}`,
+        );
       }
 
       const token = await response.text();
-      
+
       // Decodificar o token para extrair as informações do usuário
       // JWT tokens são divididos em três partes separadas por ponto: header.payload.signature
-      const parts = token.split('.');
+      const parts = token.split(".");
       if (parts.length !== 3) {
-        throw new Error('Token inválido');
+        throw new Error("Token inválido");
       }
-      
+
       // Decodificar a parte do payload (segunda parte)
       const payload = JSON.parse(atob(parts[1]));
-      
+
       const user = {
         id: payload.id || 0,
-        username: payload.sub || '',
-        name: payload.sub || '',  // Usar o subject como nome caso não haja um nome específico
-        roles: [payload.role?.replace('ROLE_', '') || '']
+        username: payload.sub || "",
+        name: payload.sub || "", // Usar o subject como nome caso não haja um nome específico
+        roles: [payload.role?.replace("ROLE_", "") || ""],
       };
-      
+
       // Armazenar o token no localStorage
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('user_info', JSON.stringify(user));
-      
+      localStorage.setItem("auth_token", token);
+      localStorage.setItem("user_info", JSON.stringify(user));
+
       return { token, user };
     } catch (error) {
-      console.error('Falha ao fazer login:', error);
+      console.error("Falha ao fazer login:", error);
       throw error;
     }
   },
 
   // Logout de usuário
   logout() {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_info');
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user_info");
     // Redirecionar para a página de login ou home, conforme necessário
-    window.location.href = '/';
+    window.location.href = "/";
   },
 
   // Verificar se o token está expirado
@@ -99,14 +101,14 @@ export const authService = {
 
   // Obter o token atual
   getToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('auth_token');
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("auth_token");
   },
 
   // Obter informações do usuário
   getUserInfo() {
-    if (typeof window === 'undefined') return null;
-    const userInfo = localStorage.getItem('user_info');
+    if (typeof window === "undefined") return null;
+    const userInfo = localStorage.getItem("user_info");
     return userInfo ? JSON.parse(userInfo) : null;
   },
 
@@ -115,5 +117,5 @@ export const authService = {
     const userInfo = this.getUserInfo();
     if (!userInfo?.roles) return false;
     return userInfo.roles.includes(role);
-  }
+  },
 };

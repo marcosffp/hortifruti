@@ -14,7 +14,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export const statementService = {
   // Upload de extratos
-  async uploadStatements(files: File[]): Promise<{message: string}> {
+  async uploadStatements(files: File[]): Promise<{ message: string }> {
     const formData = new FormData();
     files.forEach((file) => {
       formData.append("files", file);

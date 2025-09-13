@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { Bell, User, LogOut, MenuIcon } from "lucide-react";
 import Image from "next/image";
@@ -50,7 +50,9 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
               <div className="w-8 h-8 bg-green-800 rounded-full flex items-center justify-center">
                 <User className="text-white" size={16} />
               </div>
-              <span className="text-gray-100 text-sm font-medium">{userName}</span>
+              <span className="text-gray-100 text-sm font-medium">
+                {userName}
+              </span>
             </Link>
           </div>
           <button

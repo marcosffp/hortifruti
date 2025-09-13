@@ -279,7 +279,7 @@ export default function FinancialLaunchesPage() {
                         const localDate = new Date(
                           Number(year),
                           Number(month) - 1,
-                          Number(day)
+                          Number(day),
                         );
                         return localDate.toLocaleDateString("pt-BR");
                       })()}

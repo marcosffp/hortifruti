@@ -14,18 +14,18 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const success = await login(username, password);
       if (success) {
-        showSuccess('Login realizado com sucesso!');
-        router.push('/');
+        showSuccess("Login realizado com sucesso!");
+        router.push("/");
       } else {
-        showError('Falha no login. Verifique suas credenciais.');
+        showError("Falha no login. Verifique suas credenciais.");
       }
     } catch (error) {
-      showError('Falha no login. Verifique suas credenciais.');
-      console.error('Erro no login:', error);
+      showError("Falha no login. Verifique suas credenciais.");
+      console.error("Erro no login:", error);
     }
   };
 
@@ -41,7 +41,7 @@ export default function Login() {
           alt="Logo Hortifruti"
           width={56}
           height={56}
-          onClick={() => router.push('/')}
+          onClick={() => router.push("/")}
         />
         <h2 className="text-center text-xl font-medium text-[color:var(--primary)] mb-2">
           Acesse sua conta
@@ -98,7 +98,7 @@ export default function Login() {
               disabled={isLoading}
               className="w-full py-3 rounded-full bg-[var(--primary)] text-white font-semibold shadow hover:bg-[var(--primary-dark)] transition-all"
             >
-              {isLoading ? 'Entrando...' : 'Entrar'}
+              {isLoading ? "Entrando..." : "Entrar"}
             </button>
           </div>
         </form>

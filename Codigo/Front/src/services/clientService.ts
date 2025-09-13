@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { getAuthHeaders } from '@/utils/httpUtils';
-import { authService } from './authService';
+import { getAuthHeaders } from "@/utils/httpUtils";
+import { authService } from "./authService";
 
 // Tipos de dados para os clientes baseados no backend
 export interface ClientRequest {
@@ -22,7 +22,7 @@ export interface ClientResponse {
 }
 
 // Definindo a URL base da API - pode ser ajustada conforme necessário
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 // Serviço para lidar com operações de cliente
 export const clientService = {
@@ -30,9 +30,9 @@ export const clientService = {
   async getAllClients(): Promise<ClientResponse[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/clients`, {
-        method: 'GET',
+        method: "GET",
         headers: getAuthHeaders(),
-        cache: 'no-store',
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -41,7 +41,7 @@ export const clientService = {
 
       return await response.json();
     } catch (error) {
-      console.error('Falha ao obter clientes:', error);
+      console.error("Falha ao obter clientes:", error);
       throw error;
     }
   },
@@ -50,9 +50,9 @@ export const clientService = {
   async getClientById(id: number): Promise<ClientResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
-        method: 'GET',
+        method: "GET",
         headers: getAuthHeaders(),
-        cache: 'no-store',
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -70,29 +70,34 @@ export const clientService = {
   async createClient(clientData: ClientRequest): Promise<ClientResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/clients/register`, {
-        method: 'POST',
+        method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(clientData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Erro ao criar cliente: ${response.status}`);
+        throw new Error(
+          errorData.message || `Erro ao criar cliente: ${response.status}`,
+        );
       }
 
       const data = await response.json();
       return data.client || data; // Tenta obter client da resposta, caso contrário retorna a resposta inteira
     } catch (error) {
-      console.error('Falha ao criar cliente:', error);
+      console.error("Falha ao criar cliente:", error);
       throw error;
     }
   },
 
   // Atualizar cliente existente
-  async updateClient(id: number, clientData: ClientRequest): Promise<ClientResponse> {
+  async updateClient(
+    id: number,
+    clientData: ClientRequest,
+  ): Promise<ClientResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: getAuthHeaders(),
         body: JSON.stringify(clientData),
       });
@@ -112,7 +117,7 @@ export const clientService = {
   async deleteClient(id: number): Promise<void> {
     try {
       const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: getAuthHeaders(),
       });
 
@@ -128,11 +133,14 @@ export const clientService = {
   // Pesquisar clientes pelo nome
   async getClientByName(name: string): Promise<ClientResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/clients/name/${encodeURIComponent(name)}`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        cache: 'no-store',
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/clients/name/${encodeURIComponent(name)}`,
+        {
+          method: "GET",
+          headers: getAuthHeaders(),
+          cache: "no-store",
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`Erro ao buscar cliente por nome: ${response.status}`);

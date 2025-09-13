@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 
 // Interface para tipos de erro
 export interface ApiError {
@@ -11,33 +11,33 @@ export interface ApiError {
 
 // Função para lidar com erros da API
 export const handleApiError = async (error: unknown): Promise<ApiError> => {
-  console.error('API Error:', error);
-  
+  console.error("API Error:", error);
+
   if (error instanceof Response) {
     try {
       const errorData = await error.json();
       return {
-        message: errorData.message || 'Erro desconhecido no servidor',
+        message: errorData.message || "Erro desconhecido no servidor",
         statusCode: error.status,
-        details: errorData.details || []
+        details: errorData.details || [],
       };
     } catch (_parseError) {
       // Erro ao parsear o JSON da resposta
       return {
         message: `Erro ${error.status}: ${error.statusText}`,
-        statusCode: error.status
+        statusCode: error.status,
       };
     }
   }
-  
+
   if (error instanceof Error) {
     return {
-      message: error.message || 'Ocorreu um erro inesperado',
+      message: error.message || "Ocorreu um erro inesperado",
     };
   }
-  
+
   return {
-    message: 'Erro desconhecido ao processar a requisição',
+    message: "Erro desconhecido ao processar a requisição",
   };
 };
 

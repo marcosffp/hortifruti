@@ -7,7 +7,7 @@ export interface TransactionResponse {
   document: string | null;
   history: string;
   category: string;
-  transactionType: 'CREDITO' | 'DEBITO';
+  transactionType: "CREDITO" | "DEBITO";
   transactionDate: string;
   amount: number;
   bank: string;
@@ -17,7 +17,7 @@ export interface TransactionRequest {
   document: string | null;
   history: string;
   category: string;
-  transactionType: 'CREDITO' | 'DEBITO';
+  transactionType: "CREDITO" | "DEBITO";
   transactionDate: string;
   amount: number;
   bank: string;
@@ -56,7 +56,9 @@ export const transactionService = {
         headers: getAuthHeaders(),
       });
       if (!response.ok) {
-        throw new Error(`Erro ao buscar despesas totais: ${response.statusText}`);
+        throw new Error(
+          `Erro ao buscar despesas totais: ${response.statusText}`,
+        );
       }
       const data = await response.json();
       return data;
@@ -83,29 +85,42 @@ export const transactionService = {
     }
   },
 
-  async getAllTransactions(search?: string, type?: string, category?: string, page = 0, size = 20): Promise<PageResult<TransactionResponse>> {
+  async getAllTransactions(
+    search?: string,
+    type?: string,
+    category?: string,
+    page = 0,
+    size = 20,
+  ): Promise<PageResult<TransactionResponse>> {
     const params = new URLSearchParams();
-    if (search) params.append('search', search);
-    if (type && type !== 'Todos os tipos') params.append('type', type === 'Entrada' ? 'CREDITO' : 'DEBITO');
-    if (category && category !== 'Todas as categorias') params.append('category', category);
-    params.append('page', page.toString());
-    params.append('size', size.toString());
+    if (search) params.append("search", search);
+    if (type && type !== "Todos os tipos")
+      params.append("type", type === "Entrada" ? "CREDITO" : "DEBITO");
+    if (category && category !== "Todas as categorias")
+      params.append("category", category);
+    params.append("page", page.toString());
+    params.append("size", size.toString());
 
     const queryString = params.toString();
-    const url = `${API_BASE_URL}/transactions${queryString ? `?${queryString}` : ''}`;
+    const url = `${API_BASE_URL}/transactions${queryString ? `?${queryString}` : ""}`;
 
     const response = await fetch(url, {
       method: "GET",
       headers: getAuthHeaders(),
     });
     if (!response.ok) {
-      throw new Error(`Erro ao buscar todas as transações: ${response.statusText}`);
+      throw new Error(
+        `Erro ao buscar todas as transações: ${response.statusText}`,
+      );
     }
     const data = await response.json();
     return data; // data.content, data.totalPages, data.totalElements, etc.
   },
 
-  async updateTransaction(id: number, transaction: TransactionRequest): Promise<TransactionResponse> {
+  async updateTransaction(
+    id: number,
+    transaction: TransactionRequest,
+  ): Promise<TransactionResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/transactions/${id}`, {
         method: "PUT",
@@ -161,5 +176,5 @@ export const transactionService = {
     });
     if (!response.ok) throw new Error("Erro ao buscar categorias");
     return await response.json();
-  }
+  },
 };
