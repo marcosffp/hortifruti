@@ -13,10 +13,8 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/distance")
 public class DistanceController {
 
-  @Autowired
-  private DistanceMatrixService distanceMatrixService;
-  @Autowired
-  private FreightService freightService;
+  @Autowired private DistanceMatrixService distanceMatrixService;
+  @Autowired private FreightService freightService;
 
   @PostMapping
   public DistanceFreightResponse getDistance(@RequestBody LocationRequest locationRequest) {
@@ -26,15 +24,18 @@ public class DistanceController {
     double destLng = locationRequest.destination().lng();
 
     // Obter distância e tempo
-    DistanceResponse distanceResponse = distanceMatrixService.getDistance(originLat, originLng, destLat, destLng);
+    DistanceResponse distanceResponse =
+        distanceMatrixService.getDistance(originLat, originLng, destLat, destLng);
 
     // Extrair valores numéricos para o cálculo do frete
     String distanceKm = distanceResponse.distance().replaceAll("[^\\d.,]", "").replace(",", ".");
     String durationMinutes = distanceResponse.duration().replaceAll("[^\\d]", "");
 
-    FreightCalculationRequest freightRequest = new FreightCalculationRequest(distanceKm, durationMinutes);
+    FreightCalculationRequest freightRequest =
+        new FreightCalculationRequest(distanceKm, durationMinutes);
     double freight = freightService.calculateFreight(freightRequest);
 
-    return new DistanceFreightResponse(distanceResponse.distance(), distanceResponse.duration(), freight);
+    return new DistanceFreightResponse(
+        distanceResponse.distance(), distanceResponse.duration(), freight);
   }
 }

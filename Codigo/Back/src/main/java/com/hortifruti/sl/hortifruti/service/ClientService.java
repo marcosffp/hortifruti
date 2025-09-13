@@ -46,6 +46,7 @@ public class ClientService {
     existingClient.setEmail(clientRequest.email());
     existingClient.setPhoneNumber(clientRequest.phoneNumber());
     existingClient.setAddress(clientRequest.address());
+    existingClient.setDocument(clientRequest.document());
 
     Client updatedClient = clientRepository.save(existingClient);
     return clientMapper.toClientResponse(updatedClient);
