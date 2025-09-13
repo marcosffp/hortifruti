@@ -52,9 +52,9 @@ const menu: MenuItem[] = [
     ],
   },
   { label: "Módulo Notificações", icon: Bell, href: "/notificacoes", roles: ["MANAGER", "EMPLOYEE"] },
-  { label: "Módulo Backup", icon: Database, href: "/backup", roles: ["MANAGER"] },
+  { label: "Módulo Acesso", icon: Users, href: "/backup", roles: ["MANAGER"] },
+  { label: "Módulo Backup", icon: Database, href: "/backup-dados", roles: ["MANAGER"] },
   { label: "Módulo Relatórios", icon: BarChart, href: "/relatorios", roles: ["MANAGER"] },
-  { label: "Módulo Acesso", icon: Users, href: "/acesso", roles: ["MANAGER"] },
   { label: "Administração", icon: Database, href: "/admin", roles: ["MANAGER"] },
 ];
 

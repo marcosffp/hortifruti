@@ -38,7 +38,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
-        <ToastContainer />
+        <ToastContainer aria-label={undefined} />
       </body>
     </html>
   );
