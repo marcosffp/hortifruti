@@ -5,7 +5,7 @@ import { LayoutGrid, LayoutList, Plus, Search, Database, User, Edit, Trash2, Use
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import { showError, showSuccess } from "@/services/notificationService";
-import { userService } from "@/services/userService";
+import { backupService } from "@/services/backupService";
 
 // Tipo para os dados do usuário adaptado para exibição na UI
 interface UsuarioUI {
@@ -29,50 +29,8 @@ export default function AcessoPage() {
     const fetchUsuarios = async () => {
       try {
         setIsLoading(true);
-        
-        // Tentar buscar do backend primeiro
-        try {
-          const usersResponse = await userService.getAllUsers();
-          
-          // Transformar os dados do backend para o formato da UI
-          const usuariosUI: UsuarioUI[] = usersResponse.map(user => ({
-            id: user.id,
-            nome: user.name,
-            email: user.email,
-            cargo: user.cargo,
-            perfil: user.perfil,
-            cadastrado: new Date(user.createdAt).toLocaleDateString('pt-BR'),
-            status: "ativo"
-          }));
-          
-          setUsuarios(usuariosUI);
-        } catch (backendError) {
-          console.warn('Backend não disponível, usando dados mockados:', backendError);
-          
-          // Fallback para dados mockados se o backend não estiver disponível
-          const usuariosUI: UsuarioUI[] = [
-            {
-              id: 1,
-              nome: "João Silva",
-              email: "joao.silva@hortifruti.com",
-              cargo: "Gerente Geral",
-              perfil: "Gestor",
-              cadastrado: "15/01/2024",
-              status: "ativo"
-            },
-            {
-              id: 2,
-              nome: "Maria Santos",
-              email: "maria.santos@hortifruti.com", 
-              cargo: "Vendedora",
-              perfil: "Funcionário",
-              cadastrado: "15/01/2024",
-              status: "ativo"
-            }
-          ];
-          
-          setUsuarios(usuariosUI);
-        }
+        const usuariosFormatados = await backupService.getFormattedUsers();
+        setUsuarios(usuariosFormatados);
       } catch (error) {
         showError('Não foi possível carregar a lista de usuários');
         console.error('Erro ao carregar usuários:', error);
@@ -108,17 +66,16 @@ export default function AcessoPage() {
     if (!usuarioParaExcluir) return;
     
     try {
-      // Tentar excluir no backend primeiro
-      try {
-        await userService.deleteUser(usuarioParaExcluir);
-      } catch (backendError) {
-        console.warn('Backend não disponível para exclusão:', backendError);
-        // Continua com a exclusão local mesmo se o backend falhar
+      const sucesso = await backupService.deleteUser(usuarioParaExcluir);
+      
+      if (sucesso) {
+        // Atualiza a lista de usuários após a exclusão
+        setUsuarios(usuarios.filter(usuario => usuario.id !== usuarioParaExcluir));
+        showSuccess("Usuário excluído com sucesso!");
+      } else {
+        showError("Erro ao excluir usuário");
       }
       
-      // Atualiza a lista de usuários após a exclusão
-      setUsuarios(usuarios.filter(usuario => usuario.id !== usuarioParaExcluir));
-      showSuccess("Usuário excluído com sucesso!");
       setUsuarioParaExcluir(null);
     } catch (error) {
       showError("Erro ao excluir usuário");
@@ -192,10 +149,10 @@ export default function AcessoPage() {
             />
             <Search className="absolute left-3 top-3 text-gray-400" size={18} />
           </div>
-          <Link href="/acesso/novo">
+          <Link href="/backup/novo">
             <Button 
               variant="primary" 
-              className="flex items-center gap-2 py-2.5 px-4 bg-green-600 hover:bg-green-700 transition-colors"
+              className="flex items-center gap-2 py-2.5 px-4 bg-green-600 hover:bg-green-700 transition-colors cursor-pointer"
               icon={<Plus size={18} />}
             >
               Novo Usuário
@@ -275,15 +232,15 @@ export default function AcessoPage() {
                   </div>
                   <div className="col-span-2 text-gray-600">{usuario.cadastrado}</div>
                   <div className="col-span-3 flex justify-end space-x-2">
-                    <Link href={`/acesso/editar/${usuario.id}`}>
-                      <button className="inline-flex items-center gap-1 text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-colors">
+                    <Link href={`/backup/editar/${usuario.id}`}>
+                      <button className="inline-flex items-center gap-1 text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-colors cursor-pointer">
                         <Edit size={16} />
                         Editar
                       </button>
                     </Link>
                     <button 
                       onClick={() => handleExcluirUsuario(usuario.id)}
-                      className="inline-flex items-center gap-1 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md transition-colors"
+                      className="inline-flex items-center gap-1 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md transition-colors cursor-pointer"
                     >
                       <Trash2 size={16} />
                       Excluir
