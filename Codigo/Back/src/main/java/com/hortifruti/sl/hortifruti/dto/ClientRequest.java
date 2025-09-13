@@ -9,4 +9,5 @@ public record ClientRequest(
     @NotNull(message = "Preço variável é obrigatório") boolean variablePrice,
     @Email(message = "Email deve ser válido") String email,
     @NotBlank(message = "Telefone é obrigatório") String phoneNumber,
+    @NotBlank(message = "Documento é obrigatório") String document,
     @NotBlank(message = "Endereço é obrigatório") String address) {}
