@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LayoutGrid, LayoutList, Plus, Search, Database, User, Edit, Trash2, UserCog, Shield } from "lucide-react";
+import { Plus, Search, User, Edit, Trash2, UserCog, Shield } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import { showError, showSuccess } from "@/services/notificationService";
@@ -11,7 +11,6 @@ import { backupService } from "@/services/backupService";
 interface UsuarioUI {
   id: number;
   nome: string;
-  email: string;
   cargo: string;
   perfil: "Gestor" | "Funcionário";
   cadastrado: string;
@@ -24,31 +23,69 @@ export default function AcessoPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [usuarioParaExcluir, setUsuarioParaExcluir] = useState<number | null>(null);
 
-  // Carregar usuários do backend
+  // Função para carregar usuários do backend
+  const fetchUsuarios = async () => {
+    try {
+      setIsLoading(true);
+      const usuariosFormatados = await backupService.getFormattedUsers();
+      setUsuarios(usuariosFormatados);
+    } catch (error) {
+      showError('Não foi possível carregar a lista de usuários');
+      console.error('Erro ao carregar usuários:', error);
+      setUsuarios([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Carregar usuários na primeira vez
   useEffect(() => {
-    const fetchUsuarios = async () => {
-      try {
-        setIsLoading(true);
-        const usuariosFormatados = await backupService.getFormattedUsers();
-        setUsuarios(usuariosFormatados);
-      } catch (error) {
-        showError('Não foi possível carregar a lista de usuários');
-        console.error('Erro ao carregar usuários:', error);
-        setUsuarios([]);
-      } finally {
-        setIsLoading(false);
+    fetchUsuarios();
+  }, []);
+
+  // Recarregar usuários quando a página voltar ao foco (útil quando volta da página de criação/edição)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchUsuarios();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchUsuarios();
       }
     };
 
-    fetchUsuarios();
+    // Verificar se há um flag indicando que precisa recarregar
+    const checkReloadFlag = () => {
+      const shouldReload = localStorage.getItem('shouldReloadUsers');
+      if (shouldReload) {
+        localStorage.removeItem('shouldReloadUsers');
+        fetchUsuarios();
+      }
+    };
+
+    // Verificar imediatamente ao montar o componente
+    checkReloadFlag();
+
+    // Adicionar listeners
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Verificar periodicamente por flags de reload
+    const interval = setInterval(checkReloadFlag, 500);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(interval);
+    };
   }, []);
 
   // Filtrar usuários com base no termo de busca
   const filteredUsuarios = usuarios.filter(usuario => 
-    usuario.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    usuario.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    usuario.cargo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    usuario.perfil.toLowerCase().includes(searchTerm.toLowerCase())
+    (usuario.nome ?? '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (usuario.cargo ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (usuario.perfil ?? '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Calcular estatísticas
@@ -69,8 +106,8 @@ export default function AcessoPage() {
       const sucesso = await backupService.deleteUser(usuarioParaExcluir);
       
       if (sucesso) {
-        // Atualiza a lista de usuários após a exclusão
-        setUsuarios(usuarios.filter(usuario => usuario.id !== usuarioParaExcluir));
+        // Recarregar a lista de usuários do servidor após a exclusão
+        await fetchUsuarios();
         showSuccess("Usuário excluído com sucesso!");
       } else {
         showError("Erro ao excluir usuário");
@@ -139,15 +176,17 @@ export default function AcessoPage() {
 
         {/* Barra de busca e controles */}
         <div className="flex justify-between items-center mb-6">
-          <div className="relative w-full max-w-md">
-            <input
-              type="text"
-              placeholder="Buscar por nome, cargo ou perfil..."
-              className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+          <div className="flex items-center gap-3">
+            <div className="relative w-full max-w-md">
+              <input
+                type="text"
+                placeholder="Buscar por nome, cargo ou perfil..."
+                className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+            </div>
           </div>
           <Link href="/backup/novo">
             <Button 
@@ -217,7 +256,6 @@ export default function AcessoPage() {
                     </span>
                     <div>
                       <div className="font-medium text-gray-800">{usuario.nome}</div>
-                      <div className="text-sm text-gray-500">{usuario.email}</div>
                     </div>
                   </div>
                   <div className="col-span-2 text-gray-700">{usuario.cargo}</div>
