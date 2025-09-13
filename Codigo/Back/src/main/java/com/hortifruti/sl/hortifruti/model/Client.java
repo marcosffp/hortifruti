@@ -42,6 +42,9 @@ public class Client {
   private String address;
 
   @Column(nullable = false)
+  private String document;
+
+  @Column(nullable = false)
   private boolean variablePrice;
 
   @Column(nullable = false)
