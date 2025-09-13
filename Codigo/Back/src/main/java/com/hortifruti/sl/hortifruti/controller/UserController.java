@@ -44,6 +44,12 @@ public class UserController {
   }
 
   @PreAuthorize("hasRole('MANAGER')")
+  @PutMapping("/update/{id}")
+  public ResponseEntity<UserResponse> updateUserById(@PathVariable Long id, @Valid @RequestBody UserRequest userRequest) {
+    return ResponseEntity.ok(userService.updateUserById(id, userRequest));
+  }
+
+  @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/count")
   public ResponseEntity<UsersCountResponse> getUsersCount() {
     return ResponseEntity.ok(userService.getUsersCountResponse());
