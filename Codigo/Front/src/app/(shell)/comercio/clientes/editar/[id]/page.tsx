@@ -34,7 +34,7 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
     cidade: "",
     estado: "",
     observacoes: "",
-    status: "ativo"
+    status: "ativo",
   });
 
   // Estados de carregamento
@@ -59,7 +59,7 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
           bairro: "",
           cidade: "",
           estado: "",
-          cep: ""
+          cep: "",
         };
 
         // Tentar extrair partes do endereço - lógica simplificada
@@ -79,7 +79,7 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
             }
 
             // Assumir que o primeiro segmento é o endereço e número
-            const parts = fullAddress.split(',');
+            const parts = fullAddress.split(",");
             if (parts.length > 0) {
               const endNumMatch = parts[0].match(/(.*) ([0-9]+)/);
               if (endNumMatch) {
@@ -118,9 +118,8 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
           cidade: enderecoParts.cidade,
           estado: enderecoParts.estado,
           observacoes: "", // Não disponível no backend ainda
-          status: "ativo" // Não disponível no backend ainda
+          status: "ativo", // Não disponível no backend ainda
         });
-
       } catch (error) {
         console.error("Erro ao carregar dados do cliente:", error);
         setError("Não foi possível carregar os dados do cliente");
@@ -136,11 +135,15 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
   }, [clientId]);
 
   // Manipulador de mudança de campos
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -156,8 +159,8 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
         clientName: formData.nome,
         email: formData.email,
         phoneNumber: formData.telefone,
-        address: `${formData.endereco}, ${formData.numero}${formData.complemento ? ', ' + formData.complemento : ''}, ${formData.bairro}, ${formData.cidade} - ${formData.estado}, CEP: ${formData.cep}`,
-        variablePrice: false // Valor padrão
+        address: `${formData.endereco}, ${formData.numero}${formData.complemento ? ", " + formData.complemento : ""}, ${formData.bairro}, ${formData.cidade} - ${formData.estado}, CEP: ${formData.cep}`,
+        variablePrice: false, // Valor padrão
       };
 
       // Enviar para o backend
@@ -210,13 +213,21 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
             </Button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border">
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-lg shadow-sm border"
+          >
             {/* Informações Pessoais */}
             <div className="p-6 border-b">
-              <h2 className="text-lg font-semibold mb-4">Informações Pessoais</h2>
+              <h2 className="text-lg font-semibold mb-4">
+                Informações Pessoais
+              </h2>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="nome"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Nome Completo *
                   </label>
                   <input
@@ -230,7 +241,10 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                   />
                 </div>
                 <div>
-                  <label htmlFor="cpfCnpj" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="cpfCnpj"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     CPF/CNPJ
                   </label>
                   <input
@@ -243,7 +257,10 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                   />
                 </div>
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     E-mail *
                   </label>
                   <input
@@ -257,7 +274,10 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                   />
                 </div>
                 <div>
-                  <label htmlFor="telefone" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="telefone"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Telefone *
                   </label>
                   <input
@@ -278,7 +298,10 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
               <h2 className="text-lg font-semibold mb-4">Endereço</h2>
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label htmlFor="cep" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="cep"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     CEP
                   </label>
                   <input
@@ -291,7 +314,10 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label htmlFor="endereco" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="endereco"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Endereço *
                   </label>
                   <input
@@ -305,7 +331,10 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                   />
                 </div>
                 <div>
-                  <label htmlFor="numero" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="numero"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Número *
                   </label>
                   <input
@@ -319,7 +348,10 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                   />
                 </div>
                 <div>
-                  <label htmlFor="complemento" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="complemento"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Complemento
                   </label>
                   <input
@@ -332,7 +364,10 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                   />
                 </div>
                 <div>
-                  <label htmlFor="bairro" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="bairro"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Bairro *
                   </label>
                   <input
@@ -346,7 +381,10 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                   />
                 </div>
                 <div>
-                  <label htmlFor="cidade" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="cidade"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Cidade *
                   </label>
                   <input
@@ -360,7 +398,10 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                   />
                 </div>
                 <div>
-                  <label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="estado"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Estado *
                   </label>
                   <input
@@ -379,10 +420,15 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
 
             {/* Informações Adicionais */}
             <div className="p-6 border-b">
-              <h2 className="text-lg font-semibold mb-4">Informações Adicionais</h2>
+              <h2 className="text-lg font-semibold mb-4">
+                Informações Adicionais
+              </h2>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="status"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Status
                   </label>
                   <select
@@ -397,7 +443,10 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                   </select>
                 </div>
                 <div className="md:col-span-2">
-                  <label htmlFor="observacoes" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="observacoes"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Observações
                   </label>
                   <textarea
@@ -415,7 +464,9 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
             {/* Botões do formulário */}
             <div className="flex justify-end space-x-3 p-6">
               <Link href="/comercio/clientes">
-                <Button variant="outline" disabled={isSubmitting}>Cancelar</Button>
+                <Button variant="outline" disabled={isSubmitting}>
+                  Cancelar
+                </Button>
               </Link>
               <Button
                 variant="primary"
@@ -423,7 +474,7 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                 icon={<Save size={18} />}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
+                {isSubmitting ? "Salvando..." : "Salvar Alterações"}
               </Button>
             </div>
           </form>

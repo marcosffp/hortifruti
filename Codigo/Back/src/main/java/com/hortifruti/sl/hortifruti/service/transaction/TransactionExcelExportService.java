@@ -7,7 +7,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
@@ -21,6 +25,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -29,7 +34,7 @@ public class TransactionExcelExportService {
 
   private final TransactionRepository transactionRepository;
 
-  public byte[] exportTransactionsAsExcel() throws IOException {
+  public Map<String, byte[]> exportTransactionsAsExcel() throws IOException {
     LocalDate now = LocalDate.now();
     LocalDate firstDayLastMonth = now.minusMonths(1).withDayOfMonth(1);
     LocalDate lastDayLastMonth = now.withDayOfMonth(1).minusDays(1);
@@ -38,6 +43,7 @@ public class TransactionExcelExportService {
         transactionRepository.findByTransactionDateBetweenAndStatementBank(
             firstDayLastMonth, lastDayLastMonth, Bank.BANCO_DO_BRASIL);
 
+    Map<String, byte[]> excelData = new HashMap<>();
     try (Workbook workbook = new XSSFWorkbook();
         ByteArrayOutputStream excelOut = new ByteArrayOutputStream()) {
       Sheet sheet = workbook.createSheet("Transactions");
@@ -47,8 +53,19 @@ public class TransactionExcelExportService {
       adjustColumnWidths(sheet);
 
       workbook.write(excelOut);
-      return excelOut.toByteArray();
+      byte[] excelBytes = excelOut.toByteArray();
+
+      // Nome do arquivo Excel
+      String currentMonth =
+          LocalDate.now().getMonth().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pt-BR"));
+      String excelFileName = "Planilha-Hortifruti-Santa-Luzia-" + currentMonth + ".xlsx";
+
+      // Configurar o cabeçalho da resposta
+      HttpHeaders headers = new HttpHeaders();
+      headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + excelFileName);
+      excelData.put(excelFileName, excelBytes);
     }
+    return excelData;
   }
 
   private void createHeaderRow(Sheet sheet, Workbook workbook) {

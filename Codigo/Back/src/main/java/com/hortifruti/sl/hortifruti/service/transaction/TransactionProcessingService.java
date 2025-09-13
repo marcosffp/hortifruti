@@ -12,10 +12,14 @@ import com.hortifruti.sl.hortifruti.repository.TransactionRepository;
 import com.hortifruti.sl.hortifruti.service.NotificationService;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -71,33 +75,28 @@ public class TransactionProcessingService {
 
   /** Calcula a receita total do mês atual. */
   public BigDecimal getTotalRevenueForCurrentMonth() {
-    return calculateTotalByTypeAndPeriod(TransactionType.CREDITO);
+    List<Transaction> transacoes = transactionRepository.findTransactionsForCurrentMonth();
+    return transacoes.stream()
+        .filter(transacao -> transacao.getTransactionType() == TransactionType.CREDITO)
+        .map(Transaction::getAmount)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
   /** Calcula as despesas totais do mês atual. */
   public BigDecimal getTotalExpensesForCurrentMonth() {
-    return calculateTotalByTypeAndPeriod(TransactionType.DEBITO);
+    List<Transaction> transacoes = transactionRepository.findTransactionsForCurrentMonth();
+    return transacoes.stream()
+        .filter(transacao -> transacao.getTransactionType() == TransactionType.DEBITO)
+        .map(Transaction::getAmount)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
   /** Calcula o saldo total do mês atual. */
   public BigDecimal getTotalBalanceForCurrentMonth() {
-    return getTotalRevenueForCurrentMonth().subtract(getTotalExpensesForCurrentMonth());
-  }
-
-  /** Calcula o total de transações por tipo e período. */
-  private BigDecimal calculateTotalByTypeAndPeriod(TransactionType tipo) {
-    LocalDate now = LocalDate.now();
-    LocalDate inicioDoMes = now.withDayOfMonth(1);
-    LocalDate fimDoMes = now.withDayOfMonth(now.lengthOfMonth());
-
-    return transactionRepository.findAll().stream()
-        .filter(
-            transacao ->
-                transacao.getTransactionDate().isAfter(inicioDoMes.minusDays(1))
-                    && transacao.getTransactionDate().isBefore(fimDoMes.plusDays(1))
-                    && transacao.getTransactionType() == tipo)
-        .map(Transaction::getAmount)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal receita = getTotalRevenueForCurrentMonth();
+    BigDecimal despesas = getTotalExpensesForCurrentMonth();
+    // quero somar
+    return receita.add(despesas);
   }
 
   /** Retorna todas as transações como DTOs. */
@@ -132,5 +131,52 @@ public class TransactionProcessingService {
       throw new TransactionException("Transação não encontrada com o ID: " + id);
     }
     transactionRepository.deleteById(id);
+  }
+
+  /**
+   * Retorna todas as transações filtradas por critérios de pesquisa, tipo e categoria com
+   * paginação.
+   */
+  public Page<TransactionResponse> getAllTransactions(
+      String search, String type, String category, int page, int size) {
+    Pageable pageable = PageRequest.of(page, size, Sort.by("transactionDate").descending());
+
+    // Busca as transações paginadas diretamente do repositório
+    Page<Transaction> transactionsPage = transactionRepository.findAll(pageable);
+
+    // Filtra os resultados
+    List<TransactionResponse> filtered =
+        transactionsPage.getContent().stream()
+            .map(transactionMapper::toResponse)
+            .filter(
+                tx -> {
+                  boolean matches = true;
+                  if (search != null && !search.isEmpty()) {
+                    String searchLower = search.toLowerCase();
+                    matches =
+                        (tx.history() != null && tx.history().toLowerCase().contains(searchLower))
+                            || (tx.category() != null
+                                && tx.category().name().toLowerCase().contains(searchLower));
+                  }
+                  if (matches && type != null && !type.isEmpty()) {
+                    try {
+                      matches = tx.transactionType() == TransactionType.valueOf(type.toUpperCase());
+                    } catch (IllegalArgumentException e) {
+                      matches = false;
+                    }
+                  }
+                  if (matches && category != null && !category.isEmpty()) {
+                    matches = category.equalsIgnoreCase(tx.category().name());
+                  }
+                  return matches;
+                })
+            .collect(Collectors.toList());
+
+    // Retorna a página com os resultados filtrados
+    return new PageImpl<>(filtered, pageable, transactionsPage.getTotalElements());
+  }
+
+  public List<String> getAllCategories() {
+    return transactionRepository.findAllCategories();
   }
 }
