@@ -13,7 +13,6 @@ export default function NovoUsuarioPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<UIUserRequest>({
     name: "",
-    email: "",
     cargo: "",
     perfil: "Funcionário",
     password: ""
@@ -30,7 +29,7 @@ export default function NovoUsuarioPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.cargo || !formData.password) {
+    if (!formData.name || !formData.cargo || !formData.password) {
       showError("Por favor, preencha todos os campos obrigatórios");
       return;
     }

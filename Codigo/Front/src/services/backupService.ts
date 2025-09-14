@@ -4,7 +4,6 @@ import { UserRequest, UserResponse, userService } from './userService';
 // Interfaces para compatibilidade com a UI
 interface UIUserRequest {
   name: string;
-  email: string;
   cargo: string;
   perfil: "Gestor" | "Funcionário";
   password: string;
@@ -13,7 +12,6 @@ interface UIUserRequest {
 interface UIUserResponse {
   id: number;
   nome: string;
-  email: string;
   cargo: string;
   perfil: "Gestor" | "Funcionário";
   cadastrado: string;
@@ -57,8 +55,7 @@ class BackupService {
     const users = await userService.getAllUsers();
     return users.map(user => ({
       id: user.id,
-      nome: user.username, // username é o nome do usuário
-      email: `${user.username}@hortifruti.com`, // Gerar email baseado no nome
+      nome: user.username, 
       cargo: user.role === 'MANAGER' ? 'Gestor' : 'Funcionário',
       perfil: user.role === 'MANAGER' ? 'Gestor' as const : 'Funcionário' as const,
       cadastrado: new Date().toLocaleDateString('pt-BR'), // Data atual como fallback
@@ -84,7 +81,6 @@ class BackupService {
       return {
         id: result.id,
         nome: userData.name,
-        email: userData.email,
         cargo: userData.cargo,
         perfil: userData.perfil,
         cadastrado: new Date().toLocaleDateString('pt-BR'),
@@ -97,7 +93,6 @@ class BackupService {
       return {
         id: Date.now(), // ID temporário
         nome: userData.name,
-        email: userData.email,
         cargo: userData.cargo,
         perfil: userData.perfil,
         cadastrado: new Date().toLocaleDateString('pt-BR'),
@@ -140,8 +135,7 @@ class BackupService {
       // Converter resposta para formato da UI
       const uiResponse: UIUserResponse = {
         id: result.id,
-        nome: userData.name || result.username, // Nome é o username
-        email: existingUser.email, // Manter email original (campo removido do backend)
+        nome: userData.name || result.username,
         cargo: userData.cargo || existingUser.cargo,
         perfil: result.role === 'MANAGER' ? 'Gestor' as const : 'Funcionário' as const,
         cadastrado: new Date().toLocaleDateString('pt-BR'),
@@ -176,7 +170,7 @@ class BackupService {
   async deleteUser(id: number): Promise<boolean> {
     try {
       const usuario = await this.getUserById(id);
-      await userService.deleteUser(usuario.nome); // Usar nome como username
+      await userService.deleteUser(usuario.nome); 
       return true;
     } catch (error) {
       console.warn('Erro ao excluir usuário no backend:', error);
