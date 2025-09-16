@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.repository;
 
 import com.hortifruti.sl.hortifruti.model.Transaction;
+import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -26,5 +27,17 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
   List<Transaction> findByTransactionDateBetweenAndStatementBank(
       @Param("startDate") LocalDate startDate,
       @Param("endDate") LocalDate endDate,
-      @Param("bank") com.hortifruti.sl.hortifruti.model.enumeration.Bank bank);
+      @Param("bank") Bank bank);
+
+  @Query("SELECT DISTINCT t.category FROM Transaction t WHERE t.category IS NOT NULL")
+  List<String> findAllCategories();
+
+  @Query(
+      """
+            SELECT t
+            FROM Transaction t
+            WHERE YEAR(t.transactionDate) = YEAR(CURRENT_DATE)
+              AND MONTH(t.transactionDate) = MONTH(CURRENT_DATE)
+      """)
+  List<Transaction> findTransactionsForCurrentMonth();
 }

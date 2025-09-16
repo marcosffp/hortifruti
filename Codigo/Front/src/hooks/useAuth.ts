@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { authService } from '@/services/authService';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { authService } from "@/services/authService";
 
 export function useAuth() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [userName, setUserName] = useState<string>('');
+  const [userName, setUserName] = useState<string>("");
   const [userRoles, setUserRoles] = useState<string[]>([]);
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export function useAuth() {
 
     if (authenticated) {
       const userInfo = authService.getUserInfo();
-      setUserName(userInfo?.name || '');
+      setUserName(userInfo?.name || "");
       setUserRoles(userInfo?.roles || []);
     }
 
@@ -36,7 +36,7 @@ export function useAuth() {
       checkAuth();
       return true;
     } catch (error) {
-      console.error('Erro ao fazer login:', error);
+      console.error("Erro ao fazer login:", error);
       return false;
     } finally {
       setIsLoading(false);
@@ -46,9 +46,9 @@ export function useAuth() {
   const logout = () => {
     authService.logout();
     setIsAuthenticated(false);
-    setUserName('');
+    setUserName("");
     setUserRoles([]);
-    router.push('/login');
+    router.push("/login");
   };
 
   const hasRole = (role: string): boolean => {
@@ -62,6 +62,6 @@ export function useAuth() {
     userRoles,
     login,
     logout,
-    hasRole
+    hasRole,
   };
 }

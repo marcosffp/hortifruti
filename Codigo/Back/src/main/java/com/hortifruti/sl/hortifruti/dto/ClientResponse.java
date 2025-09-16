@@ -6,4 +6,5 @@ public record ClientResponse(
     String email,
     String phoneNumber,
     String address,
+    String document,
     boolean variablePrice) {}
