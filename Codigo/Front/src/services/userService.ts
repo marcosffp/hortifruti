@@ -6,12 +6,14 @@ import { authService } from './authService';
 interface UserRequest {
   username: string;
   password: string;
+  position: string;
   role: "MANAGER" | "EMPLOYEE";
 }
 
 interface UserResponse {
   id: number;
   username: string;
+  position: string;
   role: "MANAGER" | "EMPLOYEE";
 }
 
