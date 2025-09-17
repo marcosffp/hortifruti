@@ -5,21 +5,17 @@ import { SetStateAction, useState } from 'react';
 import AddressAutocomplete from '@/components/modules/AddressAutocomplete';
 import MapComponent from '@/components/modules/Map';
 import FavoritesModal from '@/components/modules/FavoritesModal';
-
-type RouteData = {
-    distance: string;
-    duration: string;
-};
+import { AddressType, RouteData } from '@/types/addressType';
 
 export default function FreightCalculationPage() {
     const [origin, setOrigin] = useState('');
     const [destination, setDestination] = useState('');
-    const [originData, setOriginData] = useState<{ address: string; lat: number; lng: number } | null>(null);
-    const [destinationData, setDestinationData] = useState<{ address: string; lat: number; lng: number } | null>(null);
+    const [originData, setOriginData] = useState<AddressType | null>(null);
+    const [destinationData, setDestinationData] = useState<AddressType | null>(null);
     const [freightValue, setFreightValue] = useState<number | null>(null);
     const [isCalculating, setIsCalculating] = useState(false);
     const [showFavoritesModal, setShowFavoritesModal] = useState(false);
-    const [selectingFor, setSelectingFor] = useState<null | 'origin' | 'destination'>(null); // 'origin' or 'destination'
+    const [selectingFor, setSelectingFor] = useState<null | 'origin' | 'destination'>(null);
 
     const [routeData, setRouteData] = useState<RouteData | null>(null);
 
@@ -31,32 +27,31 @@ export default function FreightCalculationPage() {
 
         setIsCalculating(true);
 
+        // TODO: Integrar com backend para cálculo real do frete
         // Simular cálculo de frete baseado na distância
         // Na implementação real, enviaria originData.lat, originData.lng, destinationData.lat, destinationData.lng para o backend
         setTimeout(() => {
             // Simular cálculo baseado na distância (fórmula simples para demonstração)
             const distance = routeData ? parseFloat(routeData.distance.replace(' km', '')) : 15.2;
             const baseRate = 2.50; // R$ por km
-            const calculatedFreight = distance * baseRate;
+            const calculatedFreight = baseRate * Math.sqrt(distance);
 
             setFreightValue(calculatedFreight);
             setIsCalculating(false);
         }, 2000);
     };
 
-    const handleOriginSelect = (addressData: { address: string; lat: number; lng: number }) => {
+    const handleOriginSelect = (addressData: AddressType) => {
         setOrigin(addressData.address);
         setOriginData(addressData);
     };
 
-    const handleDestinationSelect = (addressData: { address: string; lat: number; lng: number }) => {
-        if (addressData && typeof addressData === 'object' && 'address' in addressData) {
-            setDestination(addressData.address);
-            setDestinationData(addressData);
-        }
+    const handleDestinationSelect = (addressData: AddressType) => {
+        setDestination(addressData.address);
+        setDestinationData(addressData);
     };
 
-    const handleFavoritesSelect = (addressData: { address: string; lat: number; lng: number }) => {
+    const handleFavoritesSelect = (addressData: AddressType) => {
         if (selectingFor === 'origin') {
             handleOriginSelect(addressData);
         } else if (selectingFor === 'destination') {

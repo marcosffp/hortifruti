@@ -1,19 +1,12 @@
 import { useState, useEffect } from 'react';
 import { MapPin, Route } from 'lucide-react';
+import { AddressType, RouteData } from '@/types/addressType';
 
 interface MapComponentProps {
-  origin: { address: string; lat: number; lng: number } | null;
-  destination: { address: string; lat: number; lng: number } | null;
-  onRouteCalculated?: (data: any) => void;
+  origin: AddressType | null;
+  destination: AddressType | null;
+  onRouteCalculated?: (data: RouteData | null) => void;
 }
-
-type RouteData = {
-  distance: string;
-  duration: string;
-  origin: { address: string; lat: number; lng: number };
-  destination: { address: string; lat: number; lng: number };
-  polyline: { lat: number; lng: number }[];
-};
 
 const MapComponent = ({ origin, destination, onRouteCalculated }: MapComponentProps) => {
   const [mapData, setMapData] = useState<RouteData | null>(null);

@@ -1,11 +1,12 @@
-import { SetStateAction, useState } from 'react';
+import { useState } from 'react';
 import { X, Plus, Edit, Trash2, MapPin, Store } from 'lucide-react';
 import AddressAutocomplete from '@/components/modules/AddressAutocomplete';
+import { AddressType, FavoriteLocation, Location } from '@/types/addressType';
 
 interface FavoritesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectAddress: (addressData: { address: string; lat: number; lng: number }) => void;
+  onSelectAddress: (addressData: AddressType) => void;
 }
 
 const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProps) => {
@@ -19,21 +20,12 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
     return saved ? JSON.parse(saved) : {
       name: 'Hortifruti Santa Luzia',
       address: 'R. Jaime Carlos Afonso Teixeira, 70 - Centro, Santa Luzia - MG',
-      lat: -19.7647402,
-      lng: -43.850199
+      lat: -19.7647797,
+      lng: -43.8500743
     };
   });
   const [newSacolaoName, setNewSacolaoName] = useState('');
   const [newSacolaoAddress, setNewSacolaoAddress] = useState('');
-
-  // Estados para Locais Favoritos
-  interface FavoriteLocation {
-    id: number;
-    name: string;
-    address: string;
-    lat: number;
-    lng: number;
-  }
   const [favoriteLocations, setFavoriteLocations] = useState<FavoriteLocation[]>(() => {
     const saved = localStorage.getItem('favoriteLocations');
     return saved ? JSON.parse(saved) : [];
@@ -48,8 +40,8 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
       const updated = {
         name: newSacolaoName,
         address: newSacolaoAddress,
-        lat: -19.7697, // Seria obtido do autocomplete
-        lng: -43.8516
+        lat: sacolaoData.lat,
+        lng: sacolaoData.lng
       };
       setSacolaoData(updated);
       localStorage.setItem('sacolaoData', JSON.stringify(updated));
@@ -65,8 +57,8 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
         id: Date.now(),
         name: newLocationName,
         address: newLocationAddress,
-        lat: -19.7697, // Seria obtido do autocomplete
-        lng: -43.8516
+        lat: 0, // Seria obtido do autocomplete
+        lng: 0
       };
     const updated = [...favoriteLocations, newLocation];
     setFavoriteLocations(updated);
@@ -108,7 +100,7 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
     }
   };
 
-  const handleSelectLocation = (location: { name?: string; address: any; lat: any; lng: any; id?: number; }) => {
+  const handleSelectLocation = (location: Location) => {
     if (onSelectAddress) {
       onSelectAddress({
         address: location.address,
@@ -258,6 +250,16 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
                 <AddressAutocomplete
                   value={newLocationAddress}
                   onChange={setNewLocationAddress}
+                  onAddressSelect={(addressData) => {
+                    setNewLocationAddress(addressData.address);
+                    const newFavorite: FavoriteLocation = {
+                      ...addressData,
+                      id: Date.now(),
+                      name: newLocationName
+                    };
+                    setFavoriteLocations((prev) => [...prev, newFavorite]);
+                    localStorage.setItem('favoriteLocations', JSON.stringify([...favoriteLocations, newFavorite]));
+                  }}
                   placeholder="Endereço completo..."
                 />
                 <div className="flex space-x-3">

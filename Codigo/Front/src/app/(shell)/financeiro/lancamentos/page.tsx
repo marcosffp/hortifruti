@@ -15,7 +15,7 @@ import {
 import { useEffect, useState } from "react";
 import { useTransaction } from "@/hooks/useTransaction";
 import { PageResult, TransactionResponse } from "@/services/transactionService";
-import { getErrorMessage } from "@/utils/errorType";
+import { getErrorMessage } from "@/types/errorType";
 
 export default function FinancialLaunchesPage() {
   const {

@@ -1,19 +1,15 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { MapPin, X } from "lucide-react";
+import { AddressSuggestion, AddressType } from "@/types/addressType";
+import { getPlacesAutocomplete, getPlaceDetails } from "@/hooks/useAutocomplete";
 
 interface AddressAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  onAddressSelect?: (addressData: { address: string; place_id: string }) => void;
+  onAddressSelect?: (addressData: AddressType) => void;
   className?: string;
 }
-
-type AddressSuggestion = {
-  id: number;
-  description: string;
-  place_id: string;
-};
 
 const AddressAutocomplete = ({
   value,
@@ -28,51 +24,39 @@ const AddressAutocomplete = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  // Função de busca chamando o endpoint interno
-  const searchAddresses = async (query: string) => {
-    if (!query || query.length < 3) {
-      setSuggestions([]);
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const res = await fetch("/api/google-autocomplete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: query }),
-      });
-
-      const data = await res.json();
-
-      if (data.status === "OK" && data.predictions) {
-        const results: AddressSuggestion[] = data.predictions.map(
-          (pred: any, idx: number) => ({
-            id: idx,
-            description: pred.description,
-            place_id: pred.place_id,
-          })
-        );
-        setSuggestions(results);
-        setShowSuggestions(true);
-      } else {
+  // Função de busca chamando o novo hook
+  const searchAddresses = useCallback(
+    async (query: string) => {
+      if (query.length < 3) {
         setSuggestions([]);
-        setShowSuggestions(false);
+        return;
       }
-    } catch (err) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-    }
 
-    setIsLoading(false);
-  };
+      setIsLoading(true);
+      try {
+        const results = await getPlacesAutocomplete(query);
+        setSuggestions(
+          results.map((prediction: any, idx: number) => ({
+            id: idx,
+            description: prediction.description,
+            place_id: prediction.place_id,
+          }))
+        );
+        setShowSuggestions(true);
+      } catch (error) {
+        console.error("Error fetching suggestions:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
 
   // Debounce de 300ms
   useEffect(() => {
     const timeoutId = setTimeout(() => searchAddresses(value), 300);
     return () => clearTimeout(timeoutId);
-  }, [value]);
+  }, [value, searchAddresses]);
 
   // Fecha o dropdown ao clicar fora
   useEffect(() => {
@@ -94,10 +78,49 @@ const AddressAutocomplete = ({
     onChange(e.target.value);
   };
 
-  const handleSuggestionClick = (address: AddressSuggestion) => {
-    onChange(address.description);
-    setShowSuggestions(false);
-    onAddressSelect?.({ address: address.description, place_id: address.place_id });
+  const handleSuggestionClick = async (address: AddressSuggestion) => {
+    try {
+      setIsLoading(true);
+      const details = await getPlaceDetails(address.place_id);
+
+      if (details) {
+        // Ajuste para refletir a estrutura real retornada por getPlaceDetails
+        const {
+          address,
+          place_id,
+          rua,
+          bairro,
+          cidade,
+          estado,
+          coordenadas,
+          googleMapsUrl,
+        } = details;
+
+        const lat = coordenadas?.lat || 0;
+        const lng = coordenadas?.lng || 0;
+
+        const detailedAddress = {
+          address,
+          place_id,
+          rua,
+          bairro,
+          cidade,
+          estado,
+          lat,
+          lng,
+          googleMapsUrl,
+        };
+
+        // Atualiza o valor do input e chama o callback com os detalhes
+        onChange(address);
+        onAddressSelect?.(detailedAddress);
+        setShowSuggestions(false);
+      }
+    } catch (error) {
+      console.error("Error fetching place details:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const clearInput = () => {
