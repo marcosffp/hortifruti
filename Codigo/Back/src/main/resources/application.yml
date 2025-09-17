@@ -1,0 +1,59 @@
+# Configuração das regras climáticas
+climate:
+  tags:
+    REFRESCANTE:
+      baseValue: 15
+      rules:
+        - type: temperature
+          condition: gte
+          value: 28.0
+    SOPA:
+      baseValue: 12
+      rules:
+        - type: temperature
+          condition: lte
+          value: 20.0
+        - type: rainfall
+          condition: gte
+          value: 15.0
+    RAIZ:
+      baseValue: 8
+      rules:
+        - type: temperature
+          condition: lte
+          value: 20.0
+        - type: rainfall
+          condition: gte
+          value: 15.0
+    VERDURA_FRESCA:
+      baseValue: 10
+      rules:
+        - type: temperature
+          condition: between
+          min: 15.0
+          max: 25.0
+    CITRICO:
+      baseValue: 12
+      rules:
+        - type: temperature
+          condition: between
+          min: 20.0
+          max: 30.0
+    HIDRATANTE:
+      baseValue: 25
+      rules:
+        - type: temperature
+          condition: gte
+          value: 32.0
+        - type: rainfall
+          condition: lte
+          value: 1.0
+
+app:
+  openweather:
+    apiKey: "bfdede8b78980a1be7e6382197b087f2"
+    city: "Santa Luzia,BR"
+    units: "metric"     # metric = °C
+    lang: "pt_br"
+    # 5-day/3h forecast endpoint (free)
+    forecastUrl: "https://api.openweathermap.org/data/2.5/forecast"
