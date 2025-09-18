@@ -6,6 +6,7 @@ import AddressAutocomplete from '@/components/modules/AddressAutocomplete';
 import MapComponent from '@/components/modules/Map';
 import FavoritesModal from '@/components/modules/FavoritesModal';
 import { AddressType, RouteData } from '@/types/addressType';
+import { freightService } from '@/services/freightService';
 
 export default function FreightCalculationPage() {
     const [origin, setOrigin] = useState('');
@@ -30,13 +31,15 @@ export default function FreightCalculationPage() {
         // TODO: Integrar com backend para cálculo real do frete
         // Simular cálculo de frete baseado na distância
         // Na implementação real, enviaria originData.lat, originData.lng, destinationData.lat, destinationData.lng para o backend
-        setTimeout(() => {
+        setTimeout(async () => {
             // Simular cálculo baseado na distância (fórmula simples para demonstração)
-            const distance = routeData ? parseFloat(routeData.distance.replace(' km', '')) : 15.2;
-            const baseRate = 2.50; // R$ por km
-            const calculatedFreight = baseRate * Math.sqrt(distance);
+            const freightData = await freightService.calculateFreight(
+                { lat: originData.lat, lng: originData.lng },
+                { lat: destinationData.lat, lng: destinationData.lng }
+            );
 
-            setFreightValue(calculatedFreight);
+            setFreightValue(freightData.freight);
+            setRouteData({ ...freightData, origin: originData, destination: destinationData, polyline: [] });
             setIsCalculating(false);
         }, 2000);
     };
@@ -140,7 +143,7 @@ export default function FreightCalculationPage() {
                     </div>
 
                     {/* Route Info */}
-                    {routeData && (
+                    {freightValue && routeData && (
                         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                             <h3 className="text-sm font-medium text-blue-800 mb-2">Informações da Rota</h3>
                             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -213,9 +216,7 @@ export default function FreightCalculationPage() {
                 <div className="bg-white rounded-lg shadow-sm p-6">
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">Rota no Mapa</h2>
                     <MapComponent
-                        origin={originData}
-                        destination={destinationData}
-                        onRouteCalculated={handleRouteCalculated}
+                        routeData={routeData}
                     />
                 </div>
             </div>

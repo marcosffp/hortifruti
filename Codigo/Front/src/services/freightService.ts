@@ -1,8 +1,7 @@
 "use client";
 
-import { Location } from "@/types/addressType";
+import { Geolocation } from "@/types/addressType";
 import { getAuthHeaders } from "@/utils/httpUtils";
-import { get } from "http";
 
 export interface FreightRequest {
   origin: Geolocation;
@@ -10,16 +9,17 @@ export interface FreightRequest {
 }
 
 export interface FreightResponse {
-  freightValue: number;
-  estimatedDeliveryTime: string;
+  distance: string;
+  duration: string;
+  freight: number;
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export const freightService = {
   async calculateFreight(
-    origin: Location,
-    destination: Location,
+    origin: Geolocation,
+    destination: Geolocation,
   ): Promise<FreightResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/distance`, {
