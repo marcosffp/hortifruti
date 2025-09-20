@@ -1,3 +1,3 @@
-package com.hortifruti.sl.hortifruti.dto;
+package com.hortifruti.sl.hortifruti.dto.freight;
 
 public record Location(double lat, double lng) {}

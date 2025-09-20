@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.mapper;
 
-import com.hortifruti.sl.hortifruti.dto.TransactionRequest;
-import com.hortifruti.sl.hortifruti.dto.TransactionResponse;
+import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequest;
+import com.hortifruti.sl.hortifruti.dto.transaction.TransactionResponse;
 import com.hortifruti.sl.hortifruti.model.Statement;
 import com.hortifruti.sl.hortifruti.model.Transaction;
 import com.hortifruti.sl.hortifruti.model.enumeration.Category;

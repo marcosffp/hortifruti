@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.dto;
+package com.hortifruti.sl.hortifruti.dto.transaction;
 
 import com.hortifruti.sl.hortifruti.model.enumeration.Category;
 import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;

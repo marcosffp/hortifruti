@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.controller;
 
-import com.hortifruti.sl.hortifruti.dto.ClientRequest;
-import com.hortifruti.sl.hortifruti.dto.ClientResponse;
+import com.hortifruti.sl.hortifruti.dto.client.ClientRequest;
+import com.hortifruti.sl.hortifruti.dto.client.ClientResponse;
 import com.hortifruti.sl.hortifruti.service.ClientService;
 import jakarta.validation.Valid;
 import java.util.List;

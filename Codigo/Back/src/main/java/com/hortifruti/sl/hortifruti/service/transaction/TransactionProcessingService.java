@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.transaction;
 
-import com.hortifruti.sl.hortifruti.dto.TransactionRequest;
-import com.hortifruti.sl.hortifruti.dto.TransactionResponse;
+import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequest;
+import com.hortifruti.sl.hortifruti.dto.transaction.TransactionResponse;
 import com.hortifruti.sl.hortifruti.exception.TransactionException;
 import com.hortifruti.sl.hortifruti.mapper.TransactionMapper;
 import com.hortifruti.sl.hortifruti.model.Statement;
@@ -9,7 +9,6 @@ import com.hortifruti.sl.hortifruti.model.Transaction;
 import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
 import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
 import com.hortifruti.sl.hortifruti.repository.TransactionRepository;
-import com.hortifruti.sl.hortifruti.service.NotificationService;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;
@@ -32,15 +31,13 @@ public class TransactionProcessingService {
   private final TransactionBBService transactionBBService;
   private final TransactionRepository transactionRepository;
   private final TransactionMapper transactionMapper;
-  private final NotificationService notificationService;
 
   @Async
   public void processFileAsync(MultipartFile file, Statement statement) {
     try {
       importStatement(file, statement);
-      notificationService.sendNotification("Processamento concluído com sucesso.");
     } catch (Exception e) {
-      notificationService.sendNotification("Erro no processamento: " + e.getMessage());
+      throw new TransactionException("Erro ao processar o arquivo: " + e.getMessage(), e);
     }
   }
 
