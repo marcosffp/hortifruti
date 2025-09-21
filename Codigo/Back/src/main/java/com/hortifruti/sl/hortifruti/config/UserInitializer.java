@@ -23,6 +23,7 @@ public class UserInitializer implements CommandLineRunner {
               .username("root")
               .password(passwordEncoder.encode("root"))
               .role(Role.MANAGER)
+              .position("Desenvolvedor")
               .build();
       userRepository.save(rootUser);
       System.out.println("Usuário root criado com sucesso!");
@@ -31,6 +32,7 @@ public class UserInitializer implements CommandLineRunner {
               .username("admin")
               .password(passwordEncoder.encode("admin"))
               .role(Role.EMPLOYEE)
+              .position("Administrador")
               .build();
       userRepository.save(adminUser);
       System.out.println("Usuário admin criado com sucesso!");

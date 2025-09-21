@@ -112,6 +112,11 @@ export const authService = {
     return userInfo ? JSON.parse(userInfo) : null;
   },
 
+  // Alias para getUserInfo para compatibilidade
+  getCurrentUser() {
+    return this.getUserInfo();
+  },
+
   // Verificar se o usuário tem uma role específica
   hasRole(role: string): boolean {
     const userInfo = this.getUserInfo();
