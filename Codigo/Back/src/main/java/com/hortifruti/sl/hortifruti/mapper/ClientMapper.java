@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.mapper;
 
-import com.hortifruti.sl.hortifruti.dto.ClientRequest;
-import com.hortifruti.sl.hortifruti.dto.ClientResponse;
+import com.hortifruti.sl.hortifruti.dto.client.ClientRequest;
+import com.hortifruti.sl.hortifruti.dto.client.ClientResponse;
 import com.hortifruti.sl.hortifruti.model.Client;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

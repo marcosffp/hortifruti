@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.controller;
 
-import com.hortifruti.sl.hortifruti.dto.TransactionRequest;
-import com.hortifruti.sl.hortifruti.dto.TransactionResponse;
+import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequest;
+import com.hortifruti.sl.hortifruti.dto.transaction.TransactionResponse;
 import com.hortifruti.sl.hortifruti.service.transaction.TransactionExcelExportService;
 import com.hortifruti.sl.hortifruti.service.transaction.TransactionProcessingService;
 import jakarta.validation.Valid;

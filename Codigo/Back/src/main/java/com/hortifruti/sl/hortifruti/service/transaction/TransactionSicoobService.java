@@ -53,7 +53,6 @@ public class TransactionSicoobService {
       if (line.isBlank() || line.contains("SALDO DO DIA") || line.contains("SALDO ANTERIOR")) {
         continue;
       }
-
       // Detecta data
       Matcher dateMatcher = DATE_PATTERN.matcher(line);
       if (dateMatcher.find()) {
