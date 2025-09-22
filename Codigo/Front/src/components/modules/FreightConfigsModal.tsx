@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { X, Save, Car, User, DollarSign } from 'lucide-react';
-import { FreightConfigDTO } from '@/types/freightTYpe';
+import { X, Save, Car, User, DollarSign, AlertCircle } from 'lucide-react';
+import { FreightConfigDTO } from '@/types/freightType';
+import { freightService } from '@/services/freightService';
 
 interface FreightConfigModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (updatedConfig?: FreightConfigDTO) => void;
   initialData?: FreightConfigDTO; 
 }
 
@@ -27,31 +28,63 @@ const FreightConfigModal = ({ isOpen, onClose, initialData }: FreightConfigModal
       fixedFee: 0,
     };
   });
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Efeito para carregar os dados da API quando o modal abrir
+  // Efeito para atualizar o estado com os dados iniciais quando o modal abrir
   useEffect(() => {
-    if (isOpen) {
-      // TODO: Implementar a chamada GET para /freight-config
-      // Ex: getFreightConfig().then(data => setConfig(data));
-      console.log("Modal aberto. Carregando configurações...");
+    if (isOpen && initialData) {
+      setConfig({...initialData});
+      setError(null);
     }
-  }, [isOpen]);
+  }, [isOpen, initialData]);
 
   if (!isOpen) return null;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setConfig(prev => ({
+    setConfig((prev: FreightConfigDTO) => ({
       ...prev,
-      // Converte para número, mas permite campo vazio para digitação
       [name]: value === '' ? '' : parseFloat(value), 
     }));
   };
 
-  const handleSave = () => {
-    // TODO: Implementar a chamada PATCH para /freight-config com o estado 'config'
-    console.log("Salvando configurações:", config);
-    onClose(); // Fecha o modal após salvar
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      setError(null);
+      
+      const changedFields: Partial<FreightConfigDTO> = {};
+      
+      Object.keys(config).forEach(key => {
+        const typedKey = key as keyof FreightConfigDTO;
+        const currentValue = config[typedKey];
+        const initialValue = initialData?.[typedKey];
+        
+        // Se o valor foi alterado, inclui no objeto de campos alterados
+        if (currentValue !== initialValue) {
+          // Converte para número se necessário
+          let numValue = typeof currentValue === 'string' ? parseFloat(currentValue) : Number(currentValue);
+          changedFields[typedKey] = isNaN(numValue) ? 0 : numValue;
+        }
+      });
+      
+      // Se não houver campos alterados, não faça a chamada
+      if (Object.keys(changedFields).length === 0) {
+        onClose();
+        return;
+      }
+      
+      // Chamar a API para salvar apenas os campos alterados
+      const updatedConfig = await freightService.updateFreightConfig(changedFields);
+      
+      onClose(updatedConfig);
+    } catch (error) {
+      console.error("Erro ao salvar configurações:", error);
+      setError("Não foi possível salvar as configurações. Tente novamente.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Componente auxiliar para os inputs, mantendo o estilo consistente
@@ -69,20 +102,33 @@ const FreightConfigModal = ({ isOpen, onClose, initialData }: FreightConfigModal
         placeholder={placeholder}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
         step="0.01" // Para campos de moeda
+        disabled={isSaving}
       />
     </div>
   );
 
   return (
-    <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10 max-lg:px-4">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 max-lg:px-4">
       <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] flex flex-col">
         {/* Cabeçalho do Modal */}
         <div className="flex justify-between items-center mb-6 flex-shrink-0">
           <h2 className="text-2xl font-semibold text-gray-800">Configurações de Frete</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 p-1">
+          <button 
+            onClick={() => onClose()} 
+            className="text-gray-500 hover:text-gray-700 p-1"
+            disabled={isSaving}
+          >
             <X size={24} />
           </button>
         </div>
+
+        {/* Mensagem de erro */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 flex items-center">
+            <AlertCircle size={18} className="mr-2 flex-shrink-0" />
+            <p>{error}</p>
+          </div>
+        )}
 
         {/* Abas de Navegação */}
         <div className="flex border-b border-gray-200 mb-6 flex-shrink-0">
@@ -93,6 +139,7 @@ const FreightConfigModal = ({ isOpen, onClose, initialData }: FreightConfigModal
                 ? 'border-green-500 text-green-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
+            disabled={isSaving}
           >
             <Car size={18} className="inline mr-2" />
             Veículo
@@ -104,6 +151,7 @@ const FreightConfigModal = ({ isOpen, onClose, initialData }: FreightConfigModal
                 ? 'border-green-500 text-green-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
+            disabled={isSaving}
           >
             <User size={18} className="inline mr-2" />
             Entregador
@@ -115,6 +163,7 @@ const FreightConfigModal = ({ isOpen, onClose, initialData }: FreightConfigModal
                 ? 'border-green-500 text-green-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
+            disabled={isSaving}
           >
             <DollarSign size={18} className="inline mr-2" />
             Margens e Taxas
@@ -154,17 +203,21 @@ const FreightConfigModal = ({ isOpen, onClose, initialData }: FreightConfigModal
         {/* Rodapé com Botões */}
         <div className="flex justify-end space-x-4 mt-8 pt-4 border-t border-gray-200 flex-shrink-0">
           <button
-            onClick={onClose}
+            onClick={() => onClose()}
             className="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            disabled={isSaving}
           >
             Cancelar
           </button>
           <button
             onClick={handleSave}
-            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
+            className={`bg-green-600 text-white px-6 py-2 rounded-lg transition-colors flex items-center ${
+              isSaving ? 'opacity-75 cursor-not-allowed' : 'hover:bg-green-700'
+            }`}
+            disabled={isSaving}
           >
             <Save size={18} className="mr-2" />
-            Salvar Alterações
+            {isSaving ? 'Salvando...' : 'Salvar Alterações'}
           </button>
         </div>
       </div>

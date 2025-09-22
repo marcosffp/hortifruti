@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Car, User, DollarSign, Edit } from 'lucide-react';
 import FreightConfigModal from './FreightConfigsModal';
-import { FreightConfigDTO } from '@/types/freightTYpe';
+import { FreightConfigDTO } from '@/types/freightType';
+import { freightService } from '@/services/freightService';
 
 // Componente auxiliar para os itens de informação
 const InfoItem = ({ label, value, unit }: { label: string; value: number; unit: string }) => (
@@ -18,21 +19,14 @@ export default function FreightConfigInfo() {
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    const { getFreightConfig } = freightService;
+
     useEffect(() => {
-        // Simula a chamada GET para /freight-config
         const fetchConfig = async () => {
             setIsLoading(true);
             try {
-                // TODO: Substituir pela chamada real à API
-                // const data = await freightPropertiesService.getFreightConfig();
-                const mockData: FreightConfigDTO = {
-                    kmPerLiterConsumption: 10, fuelPrice: 5.89, maintenanceCostPerKm: 0.15,
-                    tireCostPerKm: 0.08, depreciationCostPerKm: 0.20, insuranceCostPerKm: 0.05,
-                    baseSalary: 2500, chargesPercentage: 40, monthlyHoursWorked: 220,
-                    administrativeCostsPercentage: 15, marginPercentage: 20, fixedFee: 2.50
-                };
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Simula delay de rede
-                setConfig(mockData);
+                const data = await getFreightConfig();
+                setConfig(data ? {...data} : null);
             } catch (error) {
                 console.error("Falha ao buscar configurações de frete:", error);
             } finally {
@@ -43,9 +37,13 @@ export default function FreightConfigInfo() {
         fetchConfig();
     }, []);
 
-    const handleModalClose = () => {
+    const handleModalClose = (updatedConfig?: FreightConfigDTO) => {
         setIsModalOpen(false);
-        // TODO: Opcional - Recarregar os dados após fechar o modal para refletir as mudanças
+        
+        // Se o modal passar dados atualizados, atualize o estado local
+        if (updatedConfig) {
+            setConfig(updatedConfig);
+        }
     };
 
     if (isLoading) {
@@ -69,10 +67,11 @@ export default function FreightConfigInfo() {
 
     return (
         <>
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-800">Parâmetros para Cálculo de Frete</h2>
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="cursor-pointer text-sm bg-gray-100 text-gray-700 px-3 py-1.5 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center"
+                    className="text-sm bg-gray-100 text-gray-700 px-3 py-1.5 rounded-md hover:bg-gray-200 transition-colors inline-flex items-center justify-center"
                 >
                     <Edit size={14} className="mr-2" />
                     Editar Configurações
@@ -90,6 +89,9 @@ export default function FreightConfigInfo() {
                         <InfoItem label="Consumo" value={config.kmPerLiterConsumption} unit="Km/L" />
                         <InfoItem label="Combustível" value={config.fuelPrice} unit="R$/L" />
                         <InfoItem label="Manutenção" value={config.maintenanceCostPerKm} unit="R$/Km" />
+                        <InfoItem label="Pneus" value={config.tireCostPerKm} unit="R$/Km" />
+                        <InfoItem label="Depreciação" value={config.depreciationCostPerKm} unit="R$/Km" />
+                        <InfoItem label="Seguro" value={config.insuranceCostPerKm} unit="R$/Km" />
                     </div>
                 </div>
 
@@ -103,30 +105,45 @@ export default function FreightConfigInfo() {
                         <InfoItem label="Salário Base" value={config.baseSalary} unit="R$" />
                         <InfoItem label="Encargos" value={config.chargesPercentage} unit="%" />
                         <InfoItem label="Horas/Mês" value={config.monthlyHoursWorked} unit="h" />
+                        <InfoItem label="Custos Adm." value={config.administrativeCostsPercentage} unit="%" />
                     </div>
                 </div>
 
-                {/* Card Margens e Ações */}
-                <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200 flex flex-col justify-between">
-                    <div>
-                        <h3 className="font-semibold text-gray-800 flex items-center mb-2">
-                            <DollarSign size={18} className="mr-2 text-green-600" />
-                            Margens e Taxas
-                        </h3>
-                        <div className="space-y-1">
-                            <InfoItem label="Margem" value={config.marginPercentage} unit="%" />
-                            <InfoItem label="Taxa Fixa" value={config.fixedFee} unit="R$" />
+                {/* Card Margens e Taxas */}
+                <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+                    <h3 className="font-semibold text-gray-800 flex items-center mb-2">
+                        <DollarSign size={18} className="mr-2 text-green-600" />
+                        Margens e Taxas
+                    </h3>
+                    <div className="space-y-1">
+                        <InfoItem label="Margem de Lucro" value={config.marginPercentage} unit="%" />
+                        <InfoItem label="Taxa Fixa" value={config.fixedFee} unit="R$" />
+                    </div>
+                    
+                    {/* Resumo do custo */}
+                    <div className="mt-4 pt-3 border-t border-gray-100">
+                        <h4 className="text-xs uppercase text-gray-500 mb-1">Custo por Km</h4>
+                        <div className="text-lg font-semibold text-green-600">
+                            {(
+                                config.maintenanceCostPerKm +
+                                config.tireCostPerKm +
+                                config.depreciationCostPerKm +
+                                config.insuranceCostPerKm +
+                                (config.fuelPrice / config.kmPerLiterConsumption)
+                            ).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} R$/Km
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Modal de Configuração */}
-            <FreightConfigModal
-                isOpen={isModalOpen}
-                onClose={handleModalClose}
-                initialData={config}
-            />
+            {config && (
+                <FreightConfigModal
+                    isOpen={isModalOpen}
+                    onClose={handleModalClose}
+                    initialData={{...config}}
+                />
+            )}
         </>
     );
 }

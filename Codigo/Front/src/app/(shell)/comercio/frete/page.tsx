@@ -96,7 +96,7 @@ export default function FreightCalculationPage() {
                         <h2 className="text-xl font-semibold text-gray-800">Dados da Entrega</h2>
                         <button
                             onClick={() => setShowFavoritesModal(true)}
-                            className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+                            className="flex items-center text-green-600 hover:text-green-800 transition-colors"
                         >
                             <Star size={18} className="mr-1" />
                             Favoritos
@@ -111,7 +111,7 @@ export default function FreightCalculationPage() {
                             </label>
                             <button
                                 onClick={openFavoritesForOrigin}
-                                className="text-xs text-blue-600 hover:text-blue-800"
+                                className="text-xs text-green-600 hover:text-green-800"
                             >
                                 Escolher dos favoritos
                             </button>
@@ -132,7 +132,7 @@ export default function FreightCalculationPage() {
                             </label>
                             <button
                                 onClick={openFavoritesForDestination}
-                                className="text-xs text-blue-600 hover:text-blue-800"
+                                className="text-xs text-green-600 hover:text-green-800"
                             >
                                 Escolher dos favoritos
                             </button>
@@ -148,14 +148,14 @@ export default function FreightCalculationPage() {
                     {/* Route Info */}
                     {freightValue && routeData && (
                         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <h3 className="text-sm font-medium text-blue-800 mb-2">Informações da Rota</h3>
+                            <h3 className="text-sm font-medium text-green-800 mb-2">Informações da Rota</h3>
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div>
-                                    <span className="text-blue-600">Distância:</span>
+                                    <span className="text-green-600">Distância:</span>
                                     <span className="ml-2 font-medium">{routeData.distance}</span>
                                 </div>
                                 <div>
-                                    <span className="text-blue-600">Tempo:</span>
+                                    <span className="text-green-600">Tempo:</span>
                                     <span className="ml-2 font-medium">{routeData.duration}</span>
                                 </div>
                             </div>
