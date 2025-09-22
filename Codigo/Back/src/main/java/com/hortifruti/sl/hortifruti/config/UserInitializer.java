@@ -27,18 +27,19 @@ public class UserInitializer implements CommandLineRunner {
   // Inicializa os usuários padrão
   private void initializeUsers() {
     if (userRepository.count() == 0) {
-      createUser("root", "root", Role.MANAGER);
-      createUser("admin", "admin", Role.EMPLOYEE);
+      createUser("root", "root", Role.MANAGER, "Desenvolvedor");
+      createUser("admin", "admin", Role.EMPLOYEE, "Administrador");
     }
   }
 
   // Cria um usuário com os dados fornecidos
-  private void createUser(String username, String password, Role role) {
+  private void createUser(String username, String password, Role role, String position) {
     User user =
         User.builder()
             .username(username)
             .password(passwordEncoder.encode(password))
             .role(role)
+            .position(position)
             .build();
     userRepository.save(user);
     System.out.println("Usuário " + username + " criado com sucesso!");
