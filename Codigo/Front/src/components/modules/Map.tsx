@@ -1,102 +1,63 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { MapPin } from "lucide-react";
 import { RouteData } from "@/types/addressType";
-import maplibregl, { Map as MapLibreMap, LngLatBoundsLike } from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const MapComponent = ({ routeData }: { routeData: RouteData | null }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<MapLibreMap | null>(null);
-
-  // Referências para layers e source
-  const routeSourceId = "route-line";
-  const originMarkerRef = useRef<maplibregl.Marker | null>(null);
-  const destMarkerRef = useRef<maplibregl.Marker | null>(null);
-
-  // Inicializa o mapa apenas uma vez
+  const [routePoints, setRoutePoints] = useState<[number, number][]>([]);
+  
   useEffect(() => {
-    if (!mapContainerRef.current || mapInstance.current) return;
-
-    mapInstance.current = new maplibregl.Map({
-      container: mapContainerRef.current,
-      style: `https://maps.geoapify.com/v1/styles/osm-bright/style.json?apiKey=${process.env.NEXT_PUBLIC_GEOAPIFY_KEY}`,
-      zoom: 12,
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: '/leaflet/marker-icon-2x.png',
+      iconUrl: '/leaflet/marker-icon.png',
+      shadowUrl: '/leaflet/marker-shadow.png',
     });
-
-    mapInstance.current.addControl(new maplibregl.NavigationControl(), "top-right");
-
-    return () => {
-      mapInstance.current?.remove();
-      mapInstance.current = null;
-    };
   }, []);
 
-  // Atualiza quando os dados da rota chegam
+  // Buscar os pontos da rota quando routeData mudar
   useEffect(() => {
-    if (!mapInstance.current) return;
-
-    const map = mapInstance.current;
-
-    // Remove marcadores antigos
-    originMarkerRef.current?.remove();
-    destMarkerRef.current?.remove();
-
-    // Remove rota antiga
-    if (map.getLayer(routeSourceId)) {
-      map.removeLayer(routeSourceId);
-      map.removeSource(routeSourceId);
-    }
-
-    if (!routeData) return;
-
-    const { origin, destination, polyline } = routeData;
-
-    // Cria marcadores
-    originMarkerRef.current = new maplibregl.Marker({ color: "green" })
-      .setLngLat([origin.lng, origin.lat])
-      .addTo(map);
-
-    destMarkerRef.current = new maplibregl.Marker({ color: "red" })
-      .setLngLat([destination.lng, destination.lat])
-      .addTo(map);
-
-    // Ajusta o zoom para caber os pontos
-    const bounds: LngLatBoundsLike = [
-      [origin.lng, origin.lat],
-      [destination.lng, destination.lat],
-    ];
-    map.fitBounds(bounds, { padding: 50 });
-
-    // Adiciona a rota
-    if (polyline && polyline.length > 0) {
-      const coords = polyline.map((p) => [p.lng, p.lat]);
-
-      map.addSource(routeSourceId, {
-        type: "geojson",
-        data: {
-          type: "Feature",
-          geometry: {
-            type: "LineString",
-            coordinates: coords,
-          },
-          properties: {},
-        },
-      });
-
-      map.addLayer({
-        id: routeSourceId,
-        type: "line",
-        source: routeSourceId,
-        paint: {
-          "line-color": "#2563eb",
-          "line-width": 4,
-        },
-      });
+    if (routeData) {
+      fetchRoute(routeData.origin, routeData.destination);
     }
   }, [routeData]);
+
+  // Função para buscar a rota da API OSRM
+  const fetchRoute = async (origin: any, destination: any) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson`
+      );
+      const data = await response.json();
+      
+      if (data.routes && data.routes.length > 0) {
+        // Converter formato do GeoJSON para array de [lat, lng]
+        const points: [number, number][] = data.routes[0].geometry.coordinates.map(
+          (coord: [number, number]) => [coord[1], coord[0]] // OSRM retorna [lng, lat], precisamos inverter para [lat, lng]
+        );
+        setRoutePoints(points);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar rota:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Determinar o centro do mapa e o zoom
+  const center: [number, number] = routeData 
+    ? [
+        (routeData.origin.lat + routeData.destination.lat) / 2, 
+        (routeData.origin.lng + routeData.destination.lng) / 2
+      ]
+    : [0, 0];
+  
+  const zoom = routeData ? 12 : 2;
 
   return (
     <div className="w-full h-full">
@@ -109,7 +70,36 @@ const MapComponent = ({ routeData }: { routeData: RouteData | null }) => {
             </div>
           </div>
         ) : routeData ? (
-          <div ref={mapContainerRef} className="absolute inset-0" />
+          <MapContainer 
+            center={center} 
+            zoom={zoom} 
+            style={{ height: '100%', width: '100%' }}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            
+            {/* Origem */}
+            <Marker position={[routeData.origin.lat, routeData.origin.lng]}>
+              <Popup>Origem: {routeData.origin.address}</Popup>
+            </Marker>
+            
+            {/* Destino */}
+            <Marker position={[routeData.destination.lat, routeData.destination.lng]}>
+              <Popup>Destino: {routeData.destination.address}</Popup>
+            </Marker>
+            
+            {/* Linha da rota obtida da API */}
+            {routePoints.length > 0 && (
+              <Polyline 
+                positions={routePoints} 
+                color="#2563eb" 
+                weight={4} 
+                opacity={0.7}
+              />
+            )}
+          </MapContainer>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center text-gray-500">
