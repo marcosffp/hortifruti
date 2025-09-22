@@ -7,6 +7,7 @@ import MapComponent from '@/components/modules/Map';
 import FavoritesModal from '@/components/modules/FavoritesModal';
 import { AddressType, RouteData } from '@/types/addressType';
 import { freightService } from '@/services/freightService';
+import FreightConfigInfo from '@/components/modules/FreightConfigInfo';
 
 export default function FreightCalculationPage() {
     const [origin, setOrigin] = useState('');
@@ -84,6 +85,8 @@ export default function FreightCalculationPage() {
                 <h1 className="text-3xl font-bold text-gray-800">Cálculo de Frete</h1>
                 <p className="text-gray-600">Calcule o valor do frete entre dois endereços</p>
             </div>
+
+            <FreightConfigInfo />
 
             {/* Main Content */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-grow">
