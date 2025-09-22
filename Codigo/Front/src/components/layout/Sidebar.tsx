@@ -69,6 +69,12 @@ const menu: MenuItem[] = [
         href: "/comercio/clientes",
         roles: ["MANAGER", "EMPLOYEE"],
       },
+      {
+        label: "Cálculo de Frete",
+        icon: DollarSign,
+        href: "/comercio/frete",
+        roles: ["MANAGER", "EMPLOYEE"],
+      },
     ],
   },
   {
@@ -99,11 +105,9 @@ const menu: MenuItem[] = [
 ];
 
 export default function Sidebar({
-  open,
-  onClose,
+  open
 }: {
   open: boolean;
-  onClose: () => void;
 }) {
   const [openSubMenu, setOpenSubMenu] = useState<number | null>(null);
   const pathname = usePathname();

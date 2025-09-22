@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.dto;
+package com.hortifruti.sl.hortifruti.dto.user;
 
 import com.hortifruti.sl.hortifruti.model.enumeration.Role;
 

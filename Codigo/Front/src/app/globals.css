@@ -215,3 +215,10 @@ h6 {
   color: var(--secondary);
   font-weight: 500;
 }
+
+.leaflet-pane,
+.leaflet-control,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 2 !important;
+}

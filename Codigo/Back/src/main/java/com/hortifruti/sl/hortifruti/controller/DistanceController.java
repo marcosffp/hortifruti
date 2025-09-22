@@ -1,41 +1,37 @@
 package com.hortifruti.sl.hortifruti.controller;
 
-import com.hortifruti.sl.hortifruti.dto.DistanceFreightResponse;
-import com.hortifruti.sl.hortifruti.dto.DistanceResponse;
-import com.hortifruti.sl.hortifruti.dto.FreightCalculationRequest;
-import com.hortifruti.sl.hortifruti.dto.LocationRequest;
-import com.hortifruti.sl.hortifruti.service.DistanceMatrixService;
-import com.hortifruti.sl.hortifruti.service.FreightService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.hortifruti.sl.hortifruti.dto.freight.DistanceFreightResponse;
+import com.hortifruti.sl.hortifruti.dto.freight.FreightConfigDTO;
+import com.hortifruti.sl.hortifruti.dto.freight.LocationRequest;
+import com.hortifruti.sl.hortifruti.service.freight.DistanceMatrixService;
+import com.hortifruti.sl.hortifruti.service.freight.FreightPropertiesService;
+import lombok.AllArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/distance")
+@RequestMapping("/distance")
+@AllArgsConstructor
 public class DistanceController {
 
-  @Autowired private DistanceMatrixService distanceMatrixService;
-  @Autowired private FreightService freightService;
+  private final DistanceMatrixService distanceMatrixService;
+  private final FreightPropertiesService freightPropertiesService;
 
   @PostMapping
   public DistanceFreightResponse getDistance(@RequestBody LocationRequest locationRequest) {
-    double originLat = locationRequest.origin().lat();
-    double originLng = locationRequest.origin().lng();
-    double destLat = locationRequest.destination().lat();
-    double destLng = locationRequest.destination().lng();
+    return distanceMatrixService.calculateDistanceAndFreight(locationRequest);
+  }
 
-    // Obter distância e tempo
-    DistanceResponse distanceResponse =
-        distanceMatrixService.getDistance(originLat, originLng, destLat, destLng);
+  @GetMapping("/freight-config")
+  @PreAuthorize("hasRole('MANAGER')")
+  public ResponseEntity<FreightConfigDTO> getFreightConfig() {
+    return ResponseEntity.ok(freightPropertiesService.getFreightConfig());
+  }
 
-    // Extrair valores numéricos para o cálculo do frete
-    String distanceKm = distanceResponse.distance().replaceAll("[^\\d.,]", "").replace(",", ".");
-    String durationMinutes = distanceResponse.duration().replaceAll("[^\\d]", "");
-
-    FreightCalculationRequest freightRequest =
-        new FreightCalculationRequest(distanceKm, durationMinutes);
-    double freight = freightService.calculateFreight(freightRequest);
-
-    return new DistanceFreightResponse(
-        distanceResponse.distance(), distanceResponse.duration(), freight);
+  @PatchMapping("/freight-config")
+  @PreAuthorize("hasRole('MANAGER')")
+  public ResponseEntity<FreightConfigDTO> updateFreightConfig(@RequestBody FreightConfigDTO dto) {
+    return ResponseEntity.ok(freightPropertiesService.updateFreightConfig(dto));
   }
 }

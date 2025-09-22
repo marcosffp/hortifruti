@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.service;
 
-import com.hortifruti.sl.hortifruti.dto.ClientRequest;
-import com.hortifruti.sl.hortifruti.dto.ClientResponse;
+import com.hortifruti.sl.hortifruti.dto.client.ClientRequest;
+import com.hortifruti.sl.hortifruti.dto.client.ClientResponse;
 import com.hortifruti.sl.hortifruti.exception.ClientException;
 import com.hortifruti.sl.hortifruti.mapper.ClientMapper;
 import com.hortifruti.sl.hortifruti.model.Client;

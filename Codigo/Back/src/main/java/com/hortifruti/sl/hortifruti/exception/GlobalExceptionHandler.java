@@ -110,4 +110,31 @@ public class GlobalExceptionHandler {
         "Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.");
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
   }
+
+  @ExceptionHandler(org.springframework.dao.DataAccessResourceFailureException.class)
+  public ResponseEntity<Map<String, String>> handleDatabaseConnectionException(
+      org.springframework.dao.DataAccessResourceFailureException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro de Conexão com o Banco de Dados");
+    response.put(
+        "message",
+        "Não foi possível conectar ao banco de dados. Por favor, tente novamente mais tarde.");
+    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+  }
+
+  @ExceptionHandler(FreightException.class)
+  public ResponseEntity<Map<String, String>> handleFreightException(FreightException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro de Frete");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
+
+  @ExceptionHandler(DistanceException.class)
+  public ResponseEntity<Map<String, String>> handleDistanceException(DistanceException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro de Distância");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
 }

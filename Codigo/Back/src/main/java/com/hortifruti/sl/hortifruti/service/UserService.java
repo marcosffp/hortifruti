@@ -1,8 +1,8 @@
 package com.hortifruti.sl.hortifruti.service;
 
-import com.hortifruti.sl.hortifruti.dto.UserRequest;
-import com.hortifruti.sl.hortifruti.dto.UserResponse;
-import com.hortifruti.sl.hortifruti.dto.UsersCountResponse;
+import com.hortifruti.sl.hortifruti.dto.user.UserRequest;
+import com.hortifruti.sl.hortifruti.dto.user.UserResponse;
+import com.hortifruti.sl.hortifruti.dto.user.UsersCountResponse;
 import com.hortifruti.sl.hortifruti.exception.UserException;
 import com.hortifruti.sl.hortifruti.mapper.UserMapper;
 import com.hortifruti.sl.hortifruti.model.User;
