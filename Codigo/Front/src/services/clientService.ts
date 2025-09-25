@@ -10,6 +10,7 @@ export interface ClientRequest {
   phoneNumber: string;
   address: string;
   variablePrice: boolean;
+  document: string; // Adicionando campo obrigatório para CPF/CNPJ
 }
 
 export interface ClientResponse {
@@ -19,6 +20,7 @@ export interface ClientResponse {
   phoneNumber: string;
   address: string;
   variablePrice: boolean;
+  document?: string; // Opcional na resposta, já que clientes antigos podem não ter
 }
 
 // Definindo a URL base da API - pode ser ajustada conforme necessário

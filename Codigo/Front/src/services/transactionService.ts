@@ -11,6 +11,9 @@ export interface TransactionResponse {
   transactionDate: string;
   amount: number;
   bank: string;
+  codHistory?: string;
+  batch?: string;
+  sourceAgency?: string;
 }
 
 export interface TransactionRequest {
@@ -21,6 +24,9 @@ export interface TransactionRequest {
   transactionDate: string;
   amount: number;
   bank: string;
+  codHistory: string;
+  batch: string;
+  sourceAgency: string;
 }
 
 export interface PageResult<T> {
@@ -127,9 +133,13 @@ export const transactionService = {
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify(transaction),
       });
+      
       if (!response.ok) {
-        throw new Error(`Erro ao atualizar transação: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error("Resposta de erro do servidor:", errorText);
+        throw new Error(`Erro ao atualizar transação: ${response.status} ${response.statusText}`);
       }
+      
       const data = await response.json();
       return data;
     } catch (error) {
