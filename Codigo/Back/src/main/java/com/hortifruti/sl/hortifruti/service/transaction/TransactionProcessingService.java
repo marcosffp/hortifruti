@@ -22,6 +22,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.jpa.domain.Specification;
 
 @Service
 @RequiredArgsConstructor
@@ -106,11 +107,10 @@ public class TransactionProcessingService {
   /** Atualiza uma transação existente. */
   public TransactionResponse updateTransaction(Long id, TransactionRequest transactionRequest) {
     // Busca a transação existente no banco de dados
-    Transaction existingTransaction =
-        transactionRepository
-            .findById(id)
-            .orElseThrow(
-                () -> new TransactionException("Transação não encontrada com o ID: " + id));
+    Transaction existingTransaction = transactionRepository
+        .findById(id)
+        .orElseThrow(
+            () -> new TransactionException("Transação não encontrada com o ID: " + id));
 
     // Atualiza os campos da transação existente diretamente do request
     transactionMapper.updateTransactionFromRequest(existingTransaction, transactionRequest);
@@ -131,46 +131,47 @@ public class TransactionProcessingService {
   }
 
   /**
-   * Retorna todas as transações filtradas por critérios de pesquisa, tipo e categoria com
+   * Retorna todas as transações filtradas por critérios de pesquisa, tipo e
+   * categoria com
    * paginação.
    */
   public Page<TransactionResponse> getAllTransactions(
       String search, String type, String category, int page, int size) {
     Pageable pageable = PageRequest.of(page, size, Sort.by("transactionDate").descending());
 
-    // Busca as transações paginadas diretamente do repositório
-    Page<Transaction> transactionsPage = transactionRepository.findAll(pageable);
+    // Cria uma especificação para filtrar as transações no banco de dados
+    Specification<Transaction> spec = Specification.allOf();
 
-    // Filtra os resultados
-    List<TransactionResponse> filtered =
-        transactionsPage.getContent().stream()
-            .map(transactionMapper::toResponse)
-            .filter(
-                tx -> {
-                  boolean matches = true;
-                  if (search != null && !search.isEmpty()) {
-                    String searchLower = search.toLowerCase();
-                    matches =
-                        (tx.history() != null && tx.history().toLowerCase().contains(searchLower))
-                            || (tx.category() != null
-                                && tx.category().name().toLowerCase().contains(searchLower));
-                  }
-                  if (matches && type != null && !type.isEmpty()) {
-                    try {
-                      matches = tx.transactionType() == TransactionType.valueOf(type.toUpperCase());
-                    } catch (IllegalArgumentException e) {
-                      matches = false;
-                    }
-                  }
-                  if (matches && category != null && !category.isEmpty()) {
-                    matches = category.equalsIgnoreCase(tx.category().name());
-                  }
-                  return matches;
-                })
-            .collect(Collectors.toList());
+    // Adiciona filtro de busca por texto (no histórico ou categoria)
+    if (search != null && !search.isEmpty()) {
+      String searchPattern = "%" + search.toLowerCase() + "%";
+      spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.or(
+          criteriaBuilder.like(criteriaBuilder.lower(root.get("history")), searchPattern),
+          criteriaBuilder.like(criteriaBuilder.lower(root.get("category")), searchPattern)));
+    }
 
-    // Retorna a página com os resultados filtrados
-    return new PageImpl<>(filtered, pageable, transactionsPage.getTotalElements());
+    // Adiciona filtro por tipo de transação
+    if (type != null && !type.isEmpty()) {
+      try {
+        TransactionType transactionType = TransactionType.valueOf(type.toUpperCase());
+        spec = spec
+            .and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("transactionType"), transactionType));
+      } catch (IllegalArgumentException e) {
+        // Ignora se o tipo for inválido
+      }
+    }
+
+    // Adiciona filtro por categoria
+    if (category != null && !category.isEmpty()) {
+      spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder
+          .equal(criteriaBuilder.lower(root.get("category")), category.toLowerCase()));
+    }
+
+    // Busca as transações filtradas e paginadas diretamente do repositório
+    Page<Transaction> transactionsPage = transactionRepository.findAll(spec, pageable);
+
+    // Mapeia as entidades para DTOs
+    return transactionsPage.map(transactionMapper::toResponse);
   }
 
   public List<String> getAllCategories() {
