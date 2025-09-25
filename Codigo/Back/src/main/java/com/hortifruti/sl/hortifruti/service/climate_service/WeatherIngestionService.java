@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.climate_service;
 
-import com.hortifruti.sl.client.OpenWeatherClient;
+import com.hortifruti.sl.hortifruti.client.OpenWeatherClient;
 import com.hortifruti.sl.hortifruti.exception.WeatherApiException;
 import com.hortifruti.sl.hortifruti.model.climate_model.WeatherSnapshot;
 import com.hortifruti.sl.hortifruti.repository.climate_repository.WeatherSnapshotRepository;

@@ -1,4 +1,4 @@
-package com.hortifruti.sl.client;
+package com.hortifruti.sl.hortifruti.client;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
