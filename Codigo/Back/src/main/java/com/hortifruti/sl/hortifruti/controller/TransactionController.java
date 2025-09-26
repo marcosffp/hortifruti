@@ -64,23 +64,17 @@ public class TransactionController {
 
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping
-  public ResponseEntity<Map<String, Object>> getAllTransactions(
+  public ResponseEntity<Page<TransactionResponse>> getAllTransactions(
       @RequestParam(required = false) String search,
       @RequestParam(required = false) String type,
       @RequestParam(required = false) String category,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "10") int size) {
-    Page<TransactionResponse> transactions = transactionProcessingService.getAllTransactions(search, type, category,
-        page, size);
-
-    Map<String, Object> response = new HashMap<>();
-    response.put("content", transactions.getContent());
-    response.put("currentPage", transactions.getNumber());
-    response.put("totalItems", transactions.getTotalElements());
-    response.put("totalPages", transactions.getTotalPages());
-
-    return ResponseEntity.ok(response);
+    Page<TransactionResponse> transactions =
+        transactionProcessingService.getAllTransactions(search, type, category, page, size);
+    return ResponseEntity.ok(transactions);
   }
+   
 
   @PreAuthorize("hasRole('MANAGER')")
   @PutMapping("/{id}")
