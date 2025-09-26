@@ -8,6 +8,7 @@ import com.hortifruti.sl.hortifruti.service.transaction.TransactionProcessingSer
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -63,23 +64,29 @@ public class TransactionController {
 
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping
-  public ResponseEntity<Page<TransactionResponse>> getAllTransactions(
+  public ResponseEntity<Map<String, Object>> getAllTransactions(
       @RequestParam(required = false) String search,
       @RequestParam(required = false) String type,
       @RequestParam(required = false) String category,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "10") int size) {
-    Page<TransactionResponse> transactions =
-        transactionProcessingService.getAllTransactions(search, type, category, page, size);
-    return ResponseEntity.ok(transactions);
+    Page<TransactionResponse> transactions = transactionProcessingService.getAllTransactions(search, type, category,
+        page, size);
+
+    Map<String, Object> response = new HashMap<>();
+    response.put("content", transactions.getContent());
+    response.put("currentPage", transactions.getNumber());
+    response.put("totalItems", transactions.getTotalElements());
+    response.put("totalPages", transactions.getTotalPages());
+
+    return ResponseEntity.ok(response);
   }
 
   @PreAuthorize("hasRole('MANAGER')")
   @PutMapping("/{id}")
   public ResponseEntity<TransactionResponse> updateTransaction(
       @PathVariable Long id, @Valid @RequestBody TransactionRequest transactionRequest) {
-    TransactionResponse updatedResponse =
-        transactionProcessingService.updateTransaction(id, transactionRequest);
+    TransactionResponse updatedResponse = transactionProcessingService.updateTransaction(id, transactionRequest);
     return ResponseEntity.ok(updatedResponse);
   }
 
@@ -91,9 +98,7 @@ public class TransactionController {
   }
 
   @PreAuthorize("hasRole('MANAGER')")
-  @PostMapping(
-      value = "/export",
-      produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+  @PostMapping(value = "/export", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
   public ResponseEntity<byte[]> exportTransactionsAsExcel() throws IOException {
     // Gerar o arquivo Excel
     Map<String, byte[]> excelData = transactionExcelExportService.exportTransactionsAsExcel();
