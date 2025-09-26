@@ -12,7 +12,7 @@ public class FreightService {
 
   private final FreightPropertiesService freightPropertiesService;
 
-  public double calculateFreight(FreightCalculationRequest request) {
+  protected double calculateFreight(FreightCalculationRequest request) {
     FreightConfigDTO freightConfig = freightPropertiesService.getFreightConfig();
 
     double operationalCostPerKm = calculateOperationalCostPerKm(freightConfig);

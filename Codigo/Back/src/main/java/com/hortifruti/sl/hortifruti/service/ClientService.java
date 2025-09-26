@@ -2,12 +2,17 @@ package com.hortifruti.sl.hortifruti.service;
 
 import com.hortifruti.sl.hortifruti.dto.client.ClientRequest;
 import com.hortifruti.sl.hortifruti.dto.client.ClientResponse;
+import com.hortifruti.sl.hortifruti.dto.client.ClientWithLastPurchaseResponse;
 import com.hortifruti.sl.hortifruti.exception.ClientException;
+import com.hortifruti.sl.hortifruti.exception.PurchaseProcessingException;
 import com.hortifruti.sl.hortifruti.mapper.ClientMapper;
 import com.hortifruti.sl.hortifruti.model.Client;
+import com.hortifruti.sl.hortifruti.model.Purchase;
 import com.hortifruti.sl.hortifruti.repository.ClientRepository;
+import com.hortifruti.sl.hortifruti.repository.PurchaseRepository;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +21,7 @@ import org.springframework.stereotype.Service;
 public class ClientService {
   private final ClientRepository clientRepository;
   private final ClientMapper clientMapper;
+  private final PurchaseRepository purchaseRepository;
 
   public Map<String, ClientResponse> saveClient(ClientRequest clientRequest) {
     Client client = clientMapper.toClient(clientRequest);
@@ -65,5 +71,47 @@ public class ClientService {
       throw new ClientException("Cliente não encontrado");
     }
     clientRepository.deleteById(id);
+  }
+
+  public Client findMatchingClient(String clientName) {
+    String firstName = clientName.split("\\s+")[0].toUpperCase().trim();
+    List<Client> clients = clientRepository.findAll();
+
+    Optional<Client> clientOptional =
+        clients.stream()
+            .filter(
+                client -> {
+                  String clientFirstName =
+                      client.getClientName().split("\\s+")[0].toUpperCase().trim();
+                  return clientFirstName.equals(firstName)
+                      || clientFirstName.replace("L", "").equals(firstName.replace("L", ""))
+                      || clientFirstName.contains(firstName)
+                      || firstName.contains(clientFirstName);
+                })
+            .findFirst();
+
+    if (clientOptional.isEmpty()) {
+      throw new PurchaseProcessingException("Cliente não encontrado: " + clientName);
+    }
+
+    return clientOptional.get();
+  }
+
+  public List<ClientWithLastPurchaseResponse> getClientsWithLastPurchase() {
+    return clientRepository.findAll().stream()
+        .map(
+            client -> {
+              Optional<Purchase> lastPurchase =
+                  purchaseRepository.findTopByClientIdOrderByPurchaseDateDesc(client.getId());
+              return new ClientWithLastPurchaseResponse(
+                  client.getId(),
+                  client.getClientName(),
+                  lastPurchase.map(Purchase::getPurchaseDate).orElse(null),
+                  lastPurchase.map(Purchase::getTotal).orElse(null));
+            })
+        .filter(
+            response ->
+                response.lastPurchaseDate() != null) // Filtra clientes sem data de última compra
+        .toList();
   }
 }
