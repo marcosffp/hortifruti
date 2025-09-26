@@ -7,7 +7,8 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
 @EnableAsync
-@EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
+@EnableSpringDataWebSupport(
+    pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 public class HortifrutiSlApplication {
   public static void main(String[] args) {
     SpringApplication.run(HortifrutiSlApplication.class, args);

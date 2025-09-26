@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.controller;
 
 import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequest;
+import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequestDate;
 import com.hortifruti.sl.hortifruti.dto.transaction.TransactionResponse;
 import com.hortifruti.sl.hortifruti.service.transaction.TransactionExcelExportService;
 import com.hortifruti.sl.hortifruti.service.transaction.TransactionProcessingService;
@@ -35,22 +36,22 @@ public class TransactionController {
 
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/revenue")
-  public ResponseEntity<BigDecimal> getTotalRevenueForCurrentMonth() {
-    BigDecimal totalRevenue = transactionProcessingService.getTotalRevenueForCurrentMonth();
+  public ResponseEntity<BigDecimal> getTotalRevenue(@RequestBody TransactionRequestDate request) {
+    BigDecimal totalRevenue = transactionProcessingService.getTotalRevenue(request);
     return ResponseEntity.ok(totalRevenue);
   }
 
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/expenses")
-  public ResponseEntity<BigDecimal> getTotalExpensesForCurrentMonth() {
-    BigDecimal totalExpenses = transactionProcessingService.getTotalExpensesForCurrentMonth();
+  public ResponseEntity<BigDecimal> getTotalExpenses(@RequestBody TransactionRequestDate request) {
+    BigDecimal totalExpenses = transactionProcessingService.getTotalExpenses(request);
     return ResponseEntity.ok(totalExpenses);
   }
 
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/balance")
-  public ResponseEntity<BigDecimal> getTotalBalanceForCurrentMonth() {
-    BigDecimal totalBalance = transactionProcessingService.getTotalBalanceForCurrentMonth();
+  public ResponseEntity<BigDecimal> getTotalBalance(@RequestBody TransactionRequestDate request) {
+    BigDecimal totalBalance = transactionProcessingService.getTotalBalance(request);
     return ResponseEntity.ok(totalBalance);
   }
 
