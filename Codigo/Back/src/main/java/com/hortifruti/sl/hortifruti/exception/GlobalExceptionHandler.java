@@ -138,9 +138,8 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
-  @ExceptionHandler(PurchaseProcessingException.class)
-  public ResponseEntity<Map<String, String>> handlePurchaseProcessingException(
-      PurchaseProcessingException ex) {
+  @ExceptionHandler(PurchaseException.class)
+  public ResponseEntity<Map<String, String>> handlePurchaseException(PurchaseException ex) {
     Map<String, String> response = new HashMap<>();
     response.put("error", "Erro no Processamento da Compra");
     response.put("message", ex.getMessage());

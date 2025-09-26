@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.purchase;
 
-import com.hortifruti.sl.hortifruti.exception.PurchaseProcessingException;
+import com.hortifruti.sl.hortifruti.exception.PurchaseException;
 import com.hortifruti.sl.hortifruti.model.Client;
 import com.hortifruti.sl.hortifruti.model.InvoiceProduct;
 import com.hortifruti.sl.hortifruti.model.Purchase;
@@ -29,17 +29,43 @@ public class PurchaseProcessingService {
   @Transactional
   protected Purchase processPurchaseFile(MultipartFile file) throws IOException {
     try {
+      if (file.isEmpty()) {
+        throw new PurchaseException("O arquivo enviado está vazio.");
+      }
+
       String pdfText = PdfUtil.extractPdfText(file);
+      if (pdfText == null || pdfText.isBlank()) {
+        throw new PurchaseException("O conteúdo do arquivo PDF está vazio ou inválido.");
+      }
+
       String clientName = PdfUtil.findValueByKeyword(pdfText, "CLIENTE");
-      LocalDate purchaseDate = parsePurchaseDate(PdfUtil.findValueByKeyword(pdfText, "DATA"));
+      if (clientName == null || clientName.isBlank()) {
+        throw new PurchaseException("O nome do cliente não foi encontrado no arquivo.");
+      }
+
+      String purchaseDateString = PdfUtil.findValueByKeyword(pdfText, "DATA");
+      if (purchaseDateString == null || purchaseDateString.isBlank()) {
+        throw new PurchaseException("A data da compra não foi encontrada no arquivo.");
+      }
+
+      LocalDate purchaseDate = parsePurchaseDate(purchaseDateString);
       List<InvoiceProduct> invoiceProducts = extractProducts(pdfText);
+
       Client client = clientService.findMatchingClient(clientName);
+      if (client == null) {
+        throw new PurchaseException("Nenhum cliente correspondente foi encontrado.");
+      }
+
       BigDecimal total =
           invoiceProducts.stream()
               .filter(product -> product.getQuantity() > 0)
               .map(
                   product -> product.getPrice().multiply(BigDecimal.valueOf(product.getQuantity())))
               .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+      if (total.compareTo(BigDecimal.ZERO) <= 0) {
+        throw new PurchaseException("O total da compra não pode ser zero ou negativo.");
+      }
 
       Purchase purchase =
           Purchase.builder()
@@ -56,11 +82,7 @@ public class PurchaseProcessingService {
       List<InvoiceProduct> savedProducts = new ArrayList<>();
 
       for (InvoiceProduct product : productsToSave) {
-        // Mantém o código original da nota
-        // Associa o produto à compra
         product.setPurchase(purchase);
-
-        // Salva o produto sem alterar seu código
         InvoiceProduct savedProduct = invoiceProductRepository.save(product);
         savedProducts.add(savedProduct);
       }
@@ -69,12 +91,12 @@ public class PurchaseProcessingService {
       purchase = purchaseRepository.save(purchase);
 
       return purchase;
-    } catch (PurchaseProcessingException e) {
-      throw e;
+    } catch (PurchaseException e) {
+      throw e; // Exceções específicas já tratadas
     } catch (IOException e) {
-      throw new PurchaseProcessingException("Erro ao processar arquivo PDF: " + e.getMessage(), e);
+      throw new PurchaseException("Erro ao processar arquivo PDF: " + e.getMessage(), e);
     } catch (Exception e) {
-      throw new PurchaseProcessingException("Erro ao processar compra: " + e.getMessage(), e);
+      throw new PurchaseException("Erro inesperado ao processar a compra: " + e.getMessage(), e);
     }
   }
 
@@ -83,7 +105,7 @@ public class PurchaseProcessingService {
       DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yy");
       return LocalDate.parse(purchaseDate, formatter);
     } catch (Exception e) {
-      throw new PurchaseProcessingException("Formato de data inválido: " + purchaseDate);
+      throw new PurchaseException("Formato de data inválido: " + purchaseDate);
     }
   }
 
@@ -114,7 +136,7 @@ public class PurchaseProcessingService {
     }
 
     if (products.isEmpty()) {
-      throw new PurchaseProcessingException("Nenhum produto encontrado no documento");
+      throw new PurchaseException("Nenhum produto encontrado no documento.");
     }
 
     return products;
@@ -140,7 +162,7 @@ public class PurchaseProcessingService {
           .unitType("kg")
           .build();
     } catch (Exception e) {
-      return null;
+      throw new PurchaseException("Erro ao processar linha do produto: " + line, e);
     }
   }
 
@@ -160,13 +182,13 @@ public class PurchaseProcessingService {
     if (index < parts.length && parts[index].matches("\\d+")) {
       return Integer.parseInt(parts[index]);
     }
-    return 0;
+    throw new PurchaseException("Quantidade inválida encontrada na linha do produto.");
   }
 
   private BigDecimal parseUnitPrice(String[] parts, int index) {
     if (index < parts.length && parts[index].matches("\\d+([,.]\\d+)?")) {
       return new BigDecimal(parts[index].replace(",", "."));
     }
-    return BigDecimal.ZERO;
+    throw new PurchaseException("Preço unitário inválido encontrado na linha do produto.");
   }
 }

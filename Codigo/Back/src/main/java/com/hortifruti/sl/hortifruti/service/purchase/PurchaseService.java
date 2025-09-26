@@ -2,6 +2,8 @@ package com.hortifruti.sl.hortifruti.service.purchase;
 
 import com.hortifruti.sl.hortifruti.dto.GroupedProduct;
 import com.hortifruti.sl.hortifruti.dto.GroupedProductsResponse;
+import com.hortifruti.sl.hortifruti.exception.ClientException;
+import com.hortifruti.sl.hortifruti.exception.PurchaseException;
 import com.hortifruti.sl.hortifruti.model.Client;
 import com.hortifruti.sl.hortifruti.model.Purchase;
 import com.hortifruti.sl.hortifruti.repository.ClientRepository;
@@ -11,8 +13,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,38 +21,46 @@ import org.springframework.web.multipart.MultipartFile;
 @AllArgsConstructor
 public class PurchaseService {
 
-  private static final Logger logger = LoggerFactory.getLogger(PurchaseService.class);
-
   private final PurchaseProcessingService purchaseProcessingService;
   private final PurchaseRepository purchaseRepository;
   private final ClientRepository clientRepository;
   private final ProductGrouper productGrouper;
 
   public Purchase processPurchaseFile(MultipartFile file) throws IOException {
+    if (file == null) {
+      throw new PurchaseException("Arquivo não fornecido");
+    }
     return purchaseProcessingService.processPurchaseFile(file);
   }
 
   @Transactional(readOnly = true)
   public GroupedProductsResponse getGroupedProductsByClientAndPeriod(
       Long clientId, LocalDateTime startDate, LocalDateTime endDate) {
-    logger.info(
-        "Buscando compras para cliente ID {} no período de {} até {}",
-        clientId,
-        startDate,
-        endDate);
+
+    if (clientId == null) {
+      throw new ClientException("ID do cliente não fornecido");
+    }
+
+    if (startDate == null || endDate == null) {
+      throw new PurchaseException("Período de consulta inválido: datas não podem ser nulas");
+    }
+
+    if (endDate.isBefore(startDate)) {
+      throw new PurchaseException("Data final não pode ser anterior à data inicial");
+    }
 
     Client client =
         clientRepository
             .findById(clientId)
             .orElseThrow(
-                () -> {
-                  logger.error("Cliente com ID {} não encontrado", clientId);
-                  return new RuntimeException("Cliente não encontrado");
-                });
+                () -> new ClientException("Cliente com ID " + clientId + " não encontrado"));
 
     List<Purchase> purchases =
         purchaseRepository.findByClientIdAndPurchaseDateBetween(clientId, startDate, endDate);
-    logger.info("Encontradas {} compras no período", purchases.size());
+
+    if (purchases.isEmpty()) {
+      return new GroupedProductsResponse(client.getClientName(), 0, BigDecimal.ZERO, List.of());
+    }
 
     List<GroupedProduct> groupedProducts =
         client.isVariablePrice()

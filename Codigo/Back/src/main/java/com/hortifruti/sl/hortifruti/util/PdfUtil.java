@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.util;
 
-import com.hortifruti.sl.hortifruti.exception.PurchaseProcessingException;
+import com.hortifruti.sl.hortifruti.exception.PurchaseException;
 import java.io.IOException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -24,7 +24,6 @@ public class PdfUtil {
         return line.split(":", 2)[1].trim();
       }
     }
-    throw new PurchaseProcessingException(
-        "Não foi possível encontrar '" + keyword + "' no documento");
+    throw new PurchaseException("Não foi possível encontrar '" + keyword + "' no documento");
   }
 }

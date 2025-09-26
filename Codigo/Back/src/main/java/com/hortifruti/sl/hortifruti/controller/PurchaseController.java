@@ -1,10 +1,10 @@
 package com.hortifruti.sl.hortifruti.controller;
 
 import com.hortifruti.sl.hortifruti.dto.GroupedProductsResponse;
-import com.hortifruti.sl.hortifruti.model.Purchase;
 import com.hortifruti.sl.hortifruti.service.purchase.PurchaseService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,12 +28,13 @@ public class PurchaseController {
   private final PurchaseService purchaseService;
 
   @PostMapping(value = "/process", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity<Purchase> processPurchase(@RequestParam("file") MultipartFile file) {
+  public ResponseEntity<?> processPurchase(@RequestParam("file") MultipartFile file) {
     try {
-      Purchase purchase = purchaseService.processPurchaseFile(file);
-      return ResponseEntity.ok(purchase);
+      purchaseService.processPurchaseFile(file);
+      return ResponseEntity.ok(Map.of("message", "Compra processada com sucesso"));
     } catch (Exception e) {
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(Map.of("error", "Falha ao processar a compra"));
     }
   }
 

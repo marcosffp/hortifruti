@@ -4,7 +4,7 @@ import com.hortifruti.sl.hortifruti.dto.client.ClientRequest;
 import com.hortifruti.sl.hortifruti.dto.client.ClientResponse;
 import com.hortifruti.sl.hortifruti.dto.client.ClientWithLastPurchaseResponse;
 import com.hortifruti.sl.hortifruti.exception.ClientException;
-import com.hortifruti.sl.hortifruti.exception.PurchaseProcessingException;
+import com.hortifruti.sl.hortifruti.exception.PurchaseException;
 import com.hortifruti.sl.hortifruti.mapper.ClientMapper;
 import com.hortifruti.sl.hortifruti.model.Client;
 import com.hortifruti.sl.hortifruti.model.Purchase;
@@ -91,7 +91,7 @@ public class ClientService {
             .findFirst();
 
     if (clientOptional.isEmpty()) {
-      throw new PurchaseProcessingException("Cliente não encontrado: " + clientName);
+      throw new PurchaseException("Cliente não encontrado: " + clientName);
     }
 
     return clientOptional.get();
