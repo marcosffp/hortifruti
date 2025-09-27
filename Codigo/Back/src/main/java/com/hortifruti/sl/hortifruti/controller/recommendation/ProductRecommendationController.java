@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,7 +26,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/recommendations")
 @RequiredArgsConstructor
-@Tag(name = "Product Recommendations", description = "Endpoints para recomendação inteligente de produtos baseada em clima e sazonalidade")
+@Tag(name = "Product Recommendations", description = "Endpoints para recomendação inteligente de produtos baseada em clima e sazonalidade (acesso restrito a MANAGER)")
 public class ProductRecommendationController {
     
     private final ProductRecommendationService recommendationService;
@@ -33,10 +34,13 @@ public class ProductRecommendationController {
     /**
      * Obtém recomendações de produtos baseadas no clima atual
      * Usa automaticamente a cidade configurada no application.yml
+     * Acesso restrito apenas para usuários MANAGER
      */
     @GetMapping
+    @PreAuthorize("hasRole('MANAGER')")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Lista de recomendações obtida com sucesso"),
+        @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER"),
         @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<List<ProductRecommendationDTO>> getRecommendations() {
@@ -58,11 +62,14 @@ public class ProductRecommendationController {
     
     /**
      * Obtém produtos por categoria de temperatura
+     * Acesso restrito apenas para usuários MANAGER
      */
     @GetMapping("/by-temperature/{category}")
+    @PreAuthorize("hasRole('MANAGER')")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Produtos encontrados com sucesso"),
         @ApiResponse(responseCode = "400", description = "Categoria de temperatura inválida"),
+        @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER"),
         @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<List<ProductRecommendationDTO>> getProductsByTemperature(
@@ -87,13 +94,16 @@ public class ProductRecommendationController {
     /**
      * NOVO: Obtém recomendações baseadas em dados climáticos específicos de um dia
      * Este endpoint será chamado quando o usuário clicar em um card específico dos 5 dias
+     * Acesso restrito apenas para usuários MANAGER
      */
     @PostMapping("/by-day-climate")
+    @PreAuthorize("hasRole('MANAGER')")
     @Operation(summary = "Recomendações por dados climáticos de um dia", 
                description = "Retorna produtos recomendados baseados nos dados completos de clima de um dia específico")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Recomendações obtidas com sucesso"),
         @ApiResponse(responseCode = "400", description = "Dados climáticos inválidos"),
+        @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER"),
         @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<List<ProductRecommendationDTO>> getRecommendationsByDayClimate(
@@ -124,11 +134,13 @@ public class ProductRecommendationController {
      * O frontend envia apenas a data, e buscamos os dados climáticos via API
      */
     @GetMapping("/by-date")
+    @PreAuthorize("hasRole('MANAGER')")
     @Operation(summary = "Recomendações por data", 
-               description = "Retorna produtos recomendados baseados nos dados climáticos da data especificada")
+               description = "Retorna produtos recomendados baseados nos dados climáticos da data especificada. Acesso apenas para MANAGER.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Recomendações obtidas com sucesso"),
         @ApiResponse(responseCode = "400", description = "Data inválida"),
+        @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER"),
         @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<List<ProductRecommendationDTO>> getRecommendationsByDate(
@@ -155,8 +167,10 @@ public class ProductRecommendationController {
     
     /**
      * Endpoint de teste para verificar se o sistema está funcionando
+     * Acesso restrito apenas para usuários MANAGER
      */
     @GetMapping("/test")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<String> testRecommendations() {
         try {
             // Testar usando cidade configurada no sistema
