@@ -18,12 +18,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      */
     List<Product> findByTemperatureCategory(TemperatureCategory category);
     
-
-    
     /**
      * Busca produtos por nome (busca parcial)
      */
-    List<Product> findByNameContainingIgnoreCaseAndActiveTrue(String name);
+    List<Product> findByNameContainingIgnoreCase(String name);
     
 
 }

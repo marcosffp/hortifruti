@@ -23,10 +23,6 @@ public class Product {
     @Column(nullable = false, length = 100)
     private String name;
     
-    //! Adicionei por causa do metodo findByNameContainingIgnoreCaseAndActiveTrue() em ProductRepository
-    @Column(nullable = false, columnDefinition = "TINYINT(1) DEFAULT 1")
-    private Boolean active = true;
-    
     @Enumerated(EnumType.STRING)
     @Column(name = "temperature_category", nullable = false)
     private TemperatureCategory temperatureCategory;
@@ -53,7 +49,6 @@ public class Product {
                    List<Month> peakSalesMonths, 
                    List<Month> lowSalesMonths) {
         this.name = name;
-        this.active = true; // Por padrão, produtos são criados como ativos //!ProductRepository
         this.temperatureCategory = temperatureCategory;
         this.peakSalesMonths = peakSalesMonths;
         this.lowSalesMonths = lowSalesMonths;

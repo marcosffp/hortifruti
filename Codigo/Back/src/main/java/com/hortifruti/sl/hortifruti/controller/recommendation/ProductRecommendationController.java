@@ -120,6 +120,40 @@ public class ProductRecommendationController {
     }
     
     /**
+     * NOVO: Recomendações baseadas apenas na data
+     * O frontend envia apenas a data, e buscamos os dados climáticos via API
+     */
+    @GetMapping("/by-date")
+    @Operation(summary = "Recomendações por data", 
+               description = "Retorna produtos recomendados baseados nos dados climáticos da data especificada")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Recomendações obtidas com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Data inválida"),
+        @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
+    })
+    public ResponseEntity<List<ProductRecommendationDTO>> getRecommendationsByDate(
+            @Parameter(description = "Data para buscar recomendações (formato: YYYY-MM-DD)", example = "2025-09-27")
+            @RequestParam String date) {
+        
+        try {
+            log.info("Buscando recomendações para a data: {}", date);
+            
+            List<ProductRecommendationDTO> recommendations = recommendationService.getRecommendationsByDate(date);
+            
+            log.info("Encontradas {} recomendações para a data {}", recommendations.size(), date);
+            
+            return ResponseEntity.ok(recommendations);
+            
+        } catch (IllegalArgumentException e) {
+            log.warn("Data inválida: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Erro ao buscar recomendações por data: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    /**
      * Endpoint de teste para verificar se o sistema está funcionando
      */
     @GetMapping("/test")

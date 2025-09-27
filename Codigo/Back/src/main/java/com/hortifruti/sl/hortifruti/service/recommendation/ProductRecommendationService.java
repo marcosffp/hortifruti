@@ -239,6 +239,49 @@ public class ProductRecommendationService {
     }
     
     /**
+     * NOVO: Gera recomendações baseadas apenas na data
+     * Busca os dados climáticos da API para a data especificada
+     */
+    public List<ProductRecommendationDTO> getRecommendationsByDate(String dateString) {
+        try {
+            // Parse da data
+            LocalDate date = LocalDate.parse(dateString);
+            
+            log.info("Buscando dados climáticos para a data: {}", date);
+            
+            // Buscar dados climáticos da API para a data específica
+            WeatherForecastDTO weatherForecast = weatherForecastService.getFiveDayForecast();
+            
+            if (weatherForecast == null || weatherForecast.dailyForecasts().isEmpty()) {
+                log.warn("Não foi possível obter dados climáticos para a data: {}", date);
+                return List.of();
+            }
+            
+            // Procurar o dia específico na previsão ou usar o primeiro dia disponível
+            var targetDay = weatherForecast.dailyForecasts().stream()
+                    .filter(day -> day.date().equals(date))
+                    .findFirst()
+                    .orElse(weatherForecast.dailyForecasts().get(0)); // Fallback para o primeiro dia
+            
+            // Determinar categoria de temperatura
+            TemperatureCategory temperatureCategory = TemperatureCategory.fromTemperature(targetDay.avgTemp());
+            
+            // Obter o mês da data
+            Month month = getMonthFromLocalDate(date);
+            
+            log.info("Data: {}, Temp: {}°C, Categoria: {}, Mês: {}", 
+                    date, targetDay.avgTemp(), temperatureCategory, month);
+            
+            // Gerar recomendações
+            return generateRecommendations(temperatureCategory, month);
+            
+        } catch (Exception e) {
+            log.error("Erro ao buscar recomendações para a data {}: {}", dateString, e.getMessage(), e);
+            throw new IllegalArgumentException("Erro ao processar data: " + dateString, e);
+        }
+    }
+    
+    /**
      * NOVO: Gera recomendações baseadas em dados climáticos completos de um dia
      * Versão melhorada que recebe um DTO com todos os dados organizados
      */
@@ -299,5 +342,18 @@ public class ProductRecommendationService {
             log.error("Erro ao processar data {}: {}", dateStr, e.getMessage());
             throw new IllegalArgumentException("Data inválida: " + dateStr, e);
         }
+    }
+    
+    /**
+     * Método auxiliar para converter LocalDate para Month enum
+     */
+    private Month getMonthFromLocalDate(LocalDate date) {
+        int monthNumber = date.getMonthValue();
+        for (Month month : Month.values()) {
+            if (month.getNumber() == monthNumber) {
+                return month;
+            }
+        }
+        return Month.JANEIRO; // fallback
     }
 }
