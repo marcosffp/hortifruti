@@ -4,10 +4,12 @@ import { useState, useRef } from "react";
 import { useStatement } from "@/hooks/useStatement";
 import Button from "@/components/ui/Button";
 import { ArrowUp, FileText, X, AlertCircle } from "lucide-react";
+import router from "next/router";
 
 export default function EnhancedUploadExtract() {
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -59,10 +61,15 @@ export default function EnhancedUploadExtract() {
   };
 
   const handleProcessFiles = async () => {
+    if (files.length === 0) return;
+    setLoading(true);
     try {
       await processFiles(files);
+      setLoading(false);
       // Limpar arquivos após processamento bem-sucedido
       setFiles([]);
+      // Redirecionar para a página de lançamentos
+      router.push("/financeiro/lancamentos");
     } catch (err) {
       // O erro já é tratado no hook useStatement
     }
