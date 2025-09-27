@@ -64,9 +64,18 @@ public class WeatherForecastService {
                 })
                 .collect(Collectors.toList());
         
+        // Calcular sensação térmica média
+        List<Double> feelsLike = dayData.stream()
+                .map(data -> {
+                    Map<String, Object> main = (Map<String, Object>) data.get("main");
+                    return ((Number) main.get("feels_like")).doubleValue();
+                })
+                .collect(Collectors.toList());
+        
         double minTemp = temps.stream().mapToDouble(Double::doubleValue).min().orElse(0.0);
         double maxTemp = temps.stream().mapToDouble(Double::doubleValue).max().orElse(0.0);
         double avgTemp = temps.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+        double avgFeelsLike = feelsLike.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
         
         // Calcular umidade média
         double avgHumidity = dayData.stream()
@@ -123,6 +132,7 @@ public class WeatherForecastService {
                 Math.round(minTemp * 10.0) / 10.0, // Arredondar para 1 casa decimal
                 Math.round(maxTemp * 10.0) / 10.0,
                 Math.round(avgTemp * 10.0) / 10.0,
+                Math.round(avgFeelsLike * 10.0) / 10.0, // NOVO: Sensação térmica média
                 Math.round(avgHumidity * 10.0) / 10.0,
                 Math.round(totalRainfall * 100.0) / 100.0, // Arredondar para 2 casas decimais
                 Math.round(avgWindSpeed * 10.0) / 10.0,

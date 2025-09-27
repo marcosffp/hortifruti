@@ -51,12 +51,16 @@ public class ProductRecommendationService {
                 return getDefaultRecommendations();
             }
             
-            // Pegar temperatura média do primeiro dia (hoje)
-            double todayAvgTemp = weatherForecast.dailyForecasts().get(0).avgTemp();
-            TemperatureCategory todayCategory = TemperatureCategory.fromTemperature(todayAvgTemp);
+            // Pegar dados do primeiro dia (hoje)
+            var todayForecast = weatherForecast.dailyForecasts().get(0);
+            double todayAvgTemp = todayForecast.avgTemp();
+            double todayFeelsLike = todayForecast.avgFeelsLike();
             
-            log.info("Gerando recomendações para {} - Temperatura: {}°C ({})", 
-                    weatherForecast.city(), todayAvgTemp, todayCategory.getDisplayName());
+            // Usar SENSAÇÃO TÉRMICA para determinar categoria (mais realista)
+            TemperatureCategory todayCategory = TemperatureCategory.fromTemperature(todayFeelsLike);
+            
+            log.info("Gerando recomendações para {} - Temp: {}°C, Sensação: {}°C ({})", 
+                    weatherForecast.city(), todayAvgTemp, todayFeelsLike, todayCategory.getDisplayName());
             
             return generateRecommendations(todayCategory, getCurrentMonth());
             
@@ -263,14 +267,14 @@ public class ProductRecommendationService {
                     .findFirst()
                     .orElse(weatherForecast.dailyForecasts().get(0)); // Fallback para o primeiro dia
             
-            // Determinar categoria de temperatura
-            TemperatureCategory temperatureCategory = TemperatureCategory.fromTemperature(targetDay.avgTemp());
+            // Determinar categoria baseada na SENSAÇÃO TÉRMICA (mais realista)
+            TemperatureCategory temperatureCategory = TemperatureCategory.fromTemperature(targetDay.avgFeelsLike());
             
             // Obter o mês da data
             Month month = getMonthFromLocalDate(date);
             
-            log.info("Data: {}, Temp: {}°C, Categoria: {}, Mês: {}", 
-                    date, targetDay.avgTemp(), temperatureCategory, month);
+            log.info("Data: {}, Temp: {}°C, Sensação: {}°C, Categoria: {}, Mês: {}", 
+                    date, targetDay.avgTemp(), targetDay.avgFeelsLike(), temperatureCategory, month);
             
             // Gerar recomendações
             return generateRecommendations(temperatureCategory, month);
@@ -289,7 +293,7 @@ public class ProductRecommendationService {
             com.hortifruti.sl.hortifruti.dto.recommendation.DayClimateDataDTO dayClimateData) {
         
         try {
-            // Determinar categoria de temperatura baseada na temperatura média
+            // Determinar categoria de temperatura baseada na SENSAÇÃO TÉRMICA média
             TemperatureCategory temperatureCategory = TemperatureCategory.fromTemperature(dayClimateData.avgTemp());
             
             // Extrair mês da data fornecida
