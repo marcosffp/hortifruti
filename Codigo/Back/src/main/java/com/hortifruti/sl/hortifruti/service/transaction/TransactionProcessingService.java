@@ -208,6 +208,6 @@ public class TransactionProcessingService {
   public BigDecimal getTotalBalance(TransactionRequestDate request) {
     BigDecimal receita = getTotalRevenue(request);
     BigDecimal despesas = getTotalExpenses(request);
-    return receita.subtract(despesas);
+    return receita.subtract(despesas.abs());
   }
 }

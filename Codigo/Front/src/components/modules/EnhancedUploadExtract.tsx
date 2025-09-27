@@ -4,12 +4,14 @@ import { useState, useRef } from "react";
 import { useStatement } from "@/hooks/useStatement";
 import Button from "@/components/ui/Button";
 import { ArrowUp, FileText, X, AlertCircle } from "lucide-react";
-import router from "next/router";
+import { useRouter } from "next/router";
+import Loading from "@/components/ui/Loading";
 
 export default function EnhancedUploadExtract() {
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,12 +73,16 @@ export default function EnhancedUploadExtract() {
       // Redirecionar para a página de lançamentos
       router.push("/financeiro/lancamentos");
     } catch (err) {
+      setLoading(false);
       // O erro já é tratado no hook useStatement
     }
   };
 
   return (
-    <>
+    <div className="relative">
+      {/* Loading overlay */}
+      {loading && <Loading />}
+
       <div
         className={`block border-2 border-dashed rounded-lg p-16 text-center transition-colors w-full min-h-[260px] ${
           isDragging ? "border-primary bg-primary-bg" : "border-gray-300"
@@ -101,6 +107,7 @@ export default function EnhancedUploadExtract() {
             onClick={handleButtonClick}
             type="button"
             className="py-3 px-8 text-lg"
+            disabled={loading}
           >
             Selecionar Arquivos
           </Button>
@@ -148,6 +155,7 @@ export default function EnhancedUploadExtract() {
                   }}
                   className="text-gray-500 hover:text-secondary p-2"
                   aria-label={`Remover arquivo ${file.name}`}
+                  disabled={loading}
                 >
                   <X size={22} />
                 </button>
@@ -158,16 +166,15 @@ export default function EnhancedUploadExtract() {
           <div className="mt-6 flex justify-end">
             <Button
               variant="primary"
-              disabled={files.length === 0}
+              disabled={files.length === 0 || loading}
               className="py-3 px-8 text-lg"
               onClick={handleProcessFiles}
             >
-              Processar {files.length}{" "}
-              {files.length === 1 ? "arquivo" : "arquivos"}
+              {loading ? "Processando..." : `Processar ${files.length} ${files.length === 1 ? "arquivo" : "arquivos"}`}
             </Button>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

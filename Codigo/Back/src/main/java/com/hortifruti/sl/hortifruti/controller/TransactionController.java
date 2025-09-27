@@ -8,11 +8,12 @@ import com.hortifruti.sl.hortifruti.service.transaction.TransactionProcessingSer
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.HashMap;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -37,21 +38,30 @@ public class TransactionController {
 
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/revenue")
-  public ResponseEntity<BigDecimal> getTotalRevenue(@RequestBody TransactionRequestDate request) {
+  public ResponseEntity<BigDecimal> getTotalRevenue(
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+    TransactionRequestDate request = new TransactionRequestDate(startDate, endDate);
     BigDecimal totalRevenue = transactionProcessingService.getTotalRevenue(request);
     return ResponseEntity.ok(totalRevenue);
   }
 
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/expenses")
-  public ResponseEntity<BigDecimal> getTotalExpenses(@RequestBody TransactionRequestDate request) {
+  public ResponseEntity<BigDecimal> getTotalExpenses(
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+    TransactionRequestDate request = new TransactionRequestDate(startDate, endDate);
     BigDecimal totalExpenses = transactionProcessingService.getTotalExpenses(request);
     return ResponseEntity.ok(totalExpenses);
   }
 
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/balance")
-  public ResponseEntity<BigDecimal> getTotalBalance(@RequestBody TransactionRequestDate request) {
+  public ResponseEntity<BigDecimal> getTotalBalance(
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+    TransactionRequestDate request = new TransactionRequestDate(startDate, endDate);
     BigDecimal totalBalance = transactionProcessingService.getTotalBalance(request);
     return ResponseEntity.ok(totalBalance);
   }
@@ -74,13 +84,13 @@ public class TransactionController {
         transactionProcessingService.getAllTransactions(search, type, category, page, size);
     return ResponseEntity.ok(transactions);
   }
-   
 
   @PreAuthorize("hasRole('MANAGER')")
   @PutMapping("/{id}")
   public ResponseEntity<TransactionResponse> updateTransaction(
       @PathVariable Long id, @Valid @RequestBody TransactionRequest transactionRequest) {
-    TransactionResponse updatedResponse = transactionProcessingService.updateTransaction(id, transactionRequest);
+    TransactionResponse updatedResponse =
+        transactionProcessingService.updateTransaction(id, transactionRequest);
     return ResponseEntity.ok(updatedResponse);
   }
 
@@ -92,9 +102,10 @@ public class TransactionController {
   }
 
   @PreAuthorize("hasRole('MANAGER')")
-  @PostMapping(value = "/export", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+  @PostMapping(
+      value = "/export",
+      produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
   public ResponseEntity<byte[]> exportTransactionsAsExcel() throws IOException {
-    // Gerar o arquivo Excel
     Map<String, byte[]> excelData = transactionExcelExportService.exportTransactionsAsExcel();
     String excelFileName = excelData.keySet().iterator().next();
     byte[] excelFile = excelData.get(excelFileName);

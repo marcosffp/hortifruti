@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { authService } from "@/services/authService";
 import { useRouter } from "next/navigation";
+import Loading from "@/components/ui/Loading";
 
 export default function App() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function App() {
   // Loading while checking authentication
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+      <Loading />
     </div>
   );
 }
