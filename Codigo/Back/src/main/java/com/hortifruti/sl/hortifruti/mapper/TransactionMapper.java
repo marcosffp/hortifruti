@@ -15,7 +15,7 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface TransactionMapper {
 
-  @Mapping(target = "bank", source = "statement.bank")
+  @Mapping(target = "bank", source = "transaction.statement.bank")
   TransactionResponse toResponse(Transaction transaction);
 
   void updateTransaction(@MappingTarget Transaction target, Transaction source);

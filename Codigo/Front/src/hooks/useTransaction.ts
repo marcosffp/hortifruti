@@ -39,12 +39,18 @@ export function useTransaction() {
     }
   };
 
-  // Os demais métodos permanecem iguais
-  const getTotalRevenue = async (): Promise<number | undefined> => {
+  // Atualizar os métodos para aceitar parâmetros de data
+  const getTotalRevenue = async (
+    startDate?: string,
+    endDate?: string,
+  ): Promise<number | undefined> => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await transactionService.getTotalRevenueForCurrentMonth();
+      const data = await transactionService.getTotalRevenueForCurrentMonth(
+        startDate,
+        endDate,
+      );
       return data;
     } catch (err: any) {
       setError(err.message || "Erro ao buscar receita total.");
@@ -54,11 +60,17 @@ export function useTransaction() {
     }
   };
 
-  const getTotalExpenses = async (): Promise<number | undefined> => {
+  const getTotalExpenses = async (
+    startDate?: string,
+    endDate?: string,
+  ): Promise<number | undefined> => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await transactionService.getTotalExpensesForCurrentMonth();
+      const data = await transactionService.getTotalExpensesForCurrentMonth(
+        startDate,
+        endDate,
+      );
       return data;
     } catch (err: any) {
       setError(err.message || "Erro ao buscar despesas totais.");
@@ -68,11 +80,17 @@ export function useTransaction() {
     }
   };
 
-  const getTotalBalance = async (): Promise<number | undefined> => {
+  const getTotalBalance = async (
+    startDate?: string,
+    endDate?: string,
+  ): Promise<number | undefined> => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await transactionService.getTotalBalanceForCurrentMonth();
+      const data = await transactionService.getTotalBalanceForCurrentMonth(
+        startDate,
+        endDate,
+      );
       return data;
     } catch (err: any) {
       setError(err.message || "Erro ao buscar saldo total.");
