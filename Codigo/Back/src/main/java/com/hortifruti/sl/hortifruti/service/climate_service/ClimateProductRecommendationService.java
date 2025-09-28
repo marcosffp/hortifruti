@@ -1,12 +1,12 @@
-package com.hortifruti.sl.hortifruti.service.recommendation;
+package com.hortifruti.sl.hortifruti.service.climate_service;
 
+import com.hortifruti.sl.hortifruti.dto.climate_dto.ClimateProductRecommendationDTO;
 import com.hortifruti.sl.hortifruti.dto.climate_dto.WeatherForecastDTO;
-import com.hortifruti.sl.hortifruti.dto.recommendation.ProductRecommendationDTO;
 import com.hortifruti.sl.hortifruti.model.Product;
 import com.hortifruti.sl.hortifruti.model.climate_model.Month;
 import com.hortifruti.sl.hortifruti.model.climate_model.TemperatureCategory;
 import com.hortifruti.sl.hortifruti.repository.ProductRepository;
-import com.hortifruti.sl.hortifruti.service.climate_service.WeatherForecastService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class ProductRecommendationService {
+public class ClimateProductRecommendationService {
     
     private final ProductRepository productRepository;
     private final WeatherForecastService weatherForecastService;
@@ -41,7 +41,7 @@ public class ProductRecommendationService {
      * Gera recomendações de produtos usando a cidade configurada no sistema
      * @return lista de produtos recomendados ordenada por pontuação
      */
-    public List<ProductRecommendationDTO> getRecommendations() {
+    public List<ClimateProductRecommendationDTO> getRecommendations() {
         try {
             // Buscar previsão do tempo (usa automaticamente cidade do YML)
             WeatherForecastDTO weatherForecast = weatherForecastService.getFiveDayForecast();
@@ -74,7 +74,7 @@ public class ProductRecommendationService {
      * @deprecated Mantido para compatibilidade. Use {@link #getRecommendations()} que usa a cidade configurada no YML
      */
     @Deprecated
-    public List<ProductRecommendationDTO> getRecommendations(String city) {
+    public List<ClimateProductRecommendationDTO> getRecommendations(String city) {
         log.warn("Método getRecommendations(String city) está deprecated. Parâmetro '{}' será ignorado, usando cidade configurada no sistema.", city);
         return getRecommendations();
     }
@@ -84,19 +84,19 @@ public class ProductRecommendationService {
      * lembrando que (mês atual) não é o mês todo, até porque a api só pega
      * 5 dias, é o Mês atual tipo hoje é Março
      */
-    private List<ProductRecommendationDTO> generateRecommendations(TemperatureCategory temperatureCategory, Month currentMonth) {
+    private List<ClimateProductRecommendationDTO> generateRecommendations(TemperatureCategory temperatureCategory, Month currentMonth) {
         List<Product> allProducts = productRepository.findAll();
         
         return allProducts.stream()
                 .map(product -> calculateProductScore(product, temperatureCategory, currentMonth))
-                .sorted(Comparator.comparingDouble(ProductRecommendationDTO::score).reversed())
+                .sorted(Comparator.comparingDouble(ClimateProductRecommendationDTO::score).reversed())
                 .collect(Collectors.toList());
     }
     
     /**
      * Calcula a pontuação de um produto baseado no clima e sazonalidade
      */
-    private ProductRecommendationDTO calculateProductScore(Product product, TemperatureCategory climateCategory, Month currentMonth) {
+    private ClimateProductRecommendationDTO calculateProductScore(Product product, TemperatureCategory climateCategory, Month currentMonth) {
         // 1. Pontuação do clima (peso maior - 70%)
         double climateScore = calculateClimateScore(product, climateCategory);
         
@@ -109,7 +109,7 @@ public class ProductRecommendationService {
         // 4. Determinar razão da recomendação
         String recommendationReason = buildRecommendationReason(product, climateCategory, currentMonth, climateScore, seasonalityScore);
         
-        return new ProductRecommendationDTO(
+        return new ClimateProductRecommendationDTO(
                 product.getId(),
                 product.getName(),
                 product.getTemperatureCategory(),
@@ -205,7 +205,7 @@ public class ProductRecommendationService {
     /**
      * Retorna recomendações padrão quando não há dados climáticos
      */
-    private List<ProductRecommendationDTO> getDefaultRecommendations() {
+    private List<ClimateProductRecommendationDTO> getDefaultRecommendations() {
         log.info("Gerando recomendações padrão (sem dados climáticos)");
         
         Month currentMonth = getCurrentMonth();
@@ -217,7 +217,7 @@ public class ProductRecommendationService {
                     String reason = seasonalityScore >= PEAK_SEASON_SCORE ? 
                             "Alta temporada de vendas" : "Produto disponível";
                     
-                    return new ProductRecommendationDTO(
+                    return new ClimateProductRecommendationDTO(
                             product.getId(),
                             product.getName(),
                             product.getTemperatureCategory(),
@@ -225,20 +225,20 @@ public class ProductRecommendationService {
                             reason
                     );
                 })
-                .sorted(Comparator.comparingDouble(ProductRecommendationDTO::score).reversed())
+                .sorted(Comparator.comparingDouble(ClimateProductRecommendationDTO::score).reversed())
                 .collect(Collectors.toList());
     }
     
     /**
      * Busca produtos por categoria de temperatura específica
      */
-    public List<ProductRecommendationDTO> getProductsByTemperatureCategory(TemperatureCategory category) {
+    public List<ClimateProductRecommendationDTO> getProductsByTemperatureCategory(TemperatureCategory category) {
         List<Product> products = productRepository.findByTemperatureCategory(category);
         Month currentMonth = getCurrentMonth();
         
         return products.stream()
                 .map(product -> calculateProductScore(product, category, currentMonth))
-                .sorted(Comparator.comparingDouble(ProductRecommendationDTO::score).reversed())
+                .sorted(Comparator.comparingDouble(ClimateProductRecommendationDTO::score).reversed())
                 .collect(Collectors.toList());
     }
     
@@ -246,7 +246,7 @@ public class ProductRecommendationService {
      * NOVO: Gera recomendações baseadas apenas na data
      * Busca os dados climáticos da API para a data especificada
      */
-    public List<ProductRecommendationDTO> getRecommendationsByDate(String dateString) {
+    public List<ClimateProductRecommendationDTO> getRecommendationsByDate(String dateString) {
         try {
             // Parse da data
             LocalDate date = LocalDate.parse(dateString);
@@ -289,8 +289,8 @@ public class ProductRecommendationService {
      * NOVO: Gera recomendações baseadas em dados climáticos completos de um dia
      * Versão melhorada que recebe um DTO com todos os dados organizados
      */
-    public List<ProductRecommendationDTO> getRecommendationsByDayClimate(
-            com.hortifruti.sl.hortifruti.dto.recommendation.DayClimateDataDTO dayClimateData) {
+    public List<ClimateProductRecommendationDTO> getRecommendationsByDayClimate(
+            com.hortifruti.sl.hortifruti.dto.climate_dto.DayClimateDataDTO dayClimateData) {
         
         try {
             // Determinar categoria de temperatura baseada na SENSAÇÃO TÉRMICA média
@@ -318,16 +318,16 @@ public class ProductRecommendationService {
     
     /**
      * DEPRECATED: Método mantido para compatibilidade, mas recomenda-se usar o novo método com DTO
-     * @deprecated Use {@link #getRecommendationsByDayClimate(com.hortifruti.sl.hortifruti.dto.recommendation.DayClimateDataDTO)} instead
+     * @deprecated Use {@link #getRecommendationsByDayClimate(com.hortifruti.sl.hortifruti.dto.climate_dto.DayClimateDataDTO)} instead
      */
     @Deprecated
-    public List<ProductRecommendationDTO> getRecommendationsByDayClimate(
+    public List<ClimateProductRecommendationDTO> getRecommendationsByDayClimate(
             double avgTemp, String dateStr, Double minTemp, Double maxTemp, Double humidity) {
         
         try {
             // Converter para o novo formato de DTO
             LocalDate date = LocalDate.parse(dateStr);
-            var dayClimateData = new com.hortifruti.sl.hortifruti.dto.recommendation.DayClimateDataDTO(
+            var dayClimateData = new com.hortifruti.sl.hortifruti.dto.climate_dto.DayClimateDataDTO(
                 date, 
                 minTemp != null ? minTemp : avgTemp - 5,
                 maxTemp != null ? maxTemp : avgTemp + 5,

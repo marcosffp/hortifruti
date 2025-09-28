@@ -1,9 +1,0 @@
-# Configuração das regras climáticas
-app:
-  openweather:
-    apiKey: "bfdede8b78980a1be7e6382197b087f2"
-    city: "Santa Luzia,BR"
-    units: "metric"     # metric = °C
-    lang: "pt_br"
-    # 5-day/3h forecast endpoint (free)
-    forecastUrl: "https://api.openweathermap.org/data/2.5/forecast"

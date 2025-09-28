@@ -1,8 +1,9 @@
-package com.hortifruti.sl.hortifruti.controller.recommendation;
+package com.hortifruti.sl.hortifruti.controller.climate_controller;
 
-import com.hortifruti.sl.hortifruti.dto.recommendation.ProductRecommendationDTO;
+import com.hortifruti.sl.hortifruti.dto.climate_dto.ClimateProductRecommendationDTO;
 import com.hortifruti.sl.hortifruti.model.climate_model.TemperatureCategory;
-import com.hortifruti.sl.hortifruti.service.recommendation.ProductRecommendationService;
+import com.hortifruti.sl.hortifruti.service.climate_service.ClimateProductRecommendationService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -27,9 +28,9 @@ import java.util.List;
 @RequestMapping("/api/recommendations")
 @RequiredArgsConstructor
 @Tag(name = "Product Recommendations", description = "Endpoints para recomendação inteligente de produtos baseada em clima e sazonalidade (acesso restrito a MANAGER)")
-public class ProductRecommendationController {
+public class ClimateProductRecommendationController {
     
-    private final ProductRecommendationService recommendationService;
+    private final ClimateProductRecommendationService recommendationService;
     
     /**
      * Obtém recomendações de produtos baseadas no clima atual
@@ -43,12 +44,12 @@ public class ProductRecommendationController {
         @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER"),
         @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
-    public ResponseEntity<List<ProductRecommendationDTO>> getRecommendations() {
+    public ResponseEntity<List<ClimateProductRecommendationDTO>> getRecommendations() {
         
         try {
             log.info("Buscando recomendações usando cidade configurada no sistema");
             
-            List<ProductRecommendationDTO> recommendations = recommendationService.getRecommendations();
+            List<ClimateProductRecommendationDTO> recommendations = recommendationService.getRecommendations();
             
             log.info("Encontradas {} recomendações", recommendations.size());
             
@@ -72,14 +73,14 @@ public class ProductRecommendationController {
         @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER"),
         @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
-    public ResponseEntity<List<ProductRecommendationDTO>> getProductsByTemperature(
+    public ResponseEntity<List<ClimateProductRecommendationDTO>> getProductsByTemperature(
             @Parameter(description = "Categoria de temperatura", example = "QUENTE")
             @PathVariable TemperatureCategory category) {
         
         try {
             log.info("Buscando produtos para categoria de temperatura: {}", category);
             
-            List<ProductRecommendationDTO> products = recommendationService.getProductsByTemperatureCategory(category);
+            List<ClimateProductRecommendationDTO> products = recommendationService.getProductsByTemperatureCategory(category);
             
             log.info("Encontrados {} produtos para categoria {}", products.size(), category);
             
@@ -106,15 +107,15 @@ public class ProductRecommendationController {
         @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER"),
         @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
-    public ResponseEntity<List<ProductRecommendationDTO>> getRecommendationsByDayClimate(
+    public ResponseEntity<List<ClimateProductRecommendationDTO>> getRecommendationsByDayClimate(
             @Parameter(description = "Dados climáticos do dia selecionado")
-            @RequestBody com.hortifruti.sl.hortifruti.dto.recommendation.DayClimateDataDTO dayClimateData) {
+            @RequestBody com.hortifruti.sl.hortifruti.dto.climate_dto.DayClimateDataDTO dayClimateData) {
         
         try {
             log.info("Buscando recomendações para dia {} com temperatura média {}°C", 
                     dayClimateData.date(), dayClimateData.avgTemp());
             
-            List<ProductRecommendationDTO> recommendations = recommendationService.getRecommendationsByDayClimate(dayClimateData);
+            List<ClimateProductRecommendationDTO> recommendations = recommendationService.getRecommendationsByDayClimate(dayClimateData);
             
             log.info("Encontradas {} recomendações para o dia {}", recommendations.size(), dayClimateData.date());
             
@@ -143,14 +144,14 @@ public class ProductRecommendationController {
         @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER"),
         @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
-    public ResponseEntity<List<ProductRecommendationDTO>> getRecommendationsByDate(
+    public ResponseEntity<List<ClimateProductRecommendationDTO>> getRecommendationsByDate(
             @Parameter(description = "Data para buscar recomendações (formato: YYYY-MM-DD)", example = "2025-09-27")
             @RequestParam String date) {
         
         try {
             log.info("Buscando recomendações para a data: {}", date);
             
-            List<ProductRecommendationDTO> recommendations = recommendationService.getRecommendationsByDate(date);
+            List<ClimateProductRecommendationDTO> recommendations = recommendationService.getRecommendationsByDate(date);
             
             log.info("Encontradas {} recomendações para a data {}", recommendations.size(), date);
             
@@ -174,7 +175,7 @@ public class ProductRecommendationController {
     public ResponseEntity<String> testRecommendations() {
         try {
             // Testar usando cidade configurada no sistema
-            List<ProductRecommendationDTO> recommendations = recommendationService.getRecommendations();
+            List<ClimateProductRecommendationDTO> recommendations = recommendationService.getRecommendations();
             
             return ResponseEntity.ok(String.format(
                 "Sistema de recomendações funcionando! Encontradas %d recomendações.", 

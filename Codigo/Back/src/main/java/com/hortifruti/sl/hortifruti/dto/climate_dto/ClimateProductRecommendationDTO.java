@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.dto.recommendation;
+package com.hortifruti.sl.hortifruti.dto.climate_dto;
 
 import com.hortifruti.sl.hortifruti.model.climate_model.TemperatureCategory;
 
@@ -6,7 +6,7 @@ import com.hortifruti.sl.hortifruti.model.climate_model.TemperatureCategory;
 /**
  * DTO para retorno de recomendações de produtos
  */
-public record ProductRecommendationDTO(
+public record ClimateProductRecommendationDTO(
     Long productId,
     String name,
     TemperatureCategory temperatureCategory,

@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.dto.recommendation;
+package com.hortifruti.sl.hortifruti.dto.climate_dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
