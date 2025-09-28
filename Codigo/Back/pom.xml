@@ -65,6 +65,10 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
         <dependency>
@@ -152,6 +156,24 @@
             <artifactId>json</artifactId>
             <version>${json.version}</version>
         </dependency>
+        <!-- ADICIONE esta dependência do Spring Boot para HttpClient compatível -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        
+        <!-- ADICIONE explicitamente a versão compatível do HttpClient -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <version>5.3.1</version>
+        </dependency>
+    
+      <dependency>
+        <groupId>com.epam.reportportal</groupId>
+        <artifactId>plugin-saucelabs</artifactId>
+        <version>5.13.0</version>
+      </dependency>
     </dependencies>
 
     <build>

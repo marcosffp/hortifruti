@@ -33,7 +33,7 @@ public class SecurityConfig {
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/auth", "/swagger-ui/**", "/v3/api-docs/**")
+                auth.requestMatchers("/auth", "/swagger-ui/**", "/v3/api-docs/**","/api/sicoob-test/**")
                     .permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.GET, "/clients/**")
                     .permitAll()
