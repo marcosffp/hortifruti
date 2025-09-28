@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.mapper;
 
-import com.hortifruti.sl.hortifruti.dto.TransactionRequest;
-import com.hortifruti.sl.hortifruti.dto.TransactionResponse;
+import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequest;
+import com.hortifruti.sl.hortifruti.dto.transaction.TransactionResponse;
 import com.hortifruti.sl.hortifruti.model.Statement;
 import com.hortifruti.sl.hortifruti.model.Transaction;
 import com.hortifruti.sl.hortifruti.model.enumeration.Category;
@@ -15,7 +15,7 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface TransactionMapper {
 
-  @Mapping(target = "bank", source = "statement.bank")
+  @Mapping(target = "bank", source = "transaction.statement.bank")
   TransactionResponse toResponse(Transaction transaction);
 
   void updateTransaction(@MappingTarget Transaction target, Transaction source);

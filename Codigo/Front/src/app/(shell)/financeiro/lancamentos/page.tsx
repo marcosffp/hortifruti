@@ -2,22 +2,26 @@
 
 import {
   Search,
-  Plus,
   Download,
   ArrowUp,
   ArrowDown,
-  Calendar,
   Edit,
   Trash2,
   ArrowLeft,
   ArrowRight,
+  X,
+  Upload,
+  Wallet
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { useTransaction } from "@/hooks/useTransaction";
-import { PageResult, TransactionResponse } from "@/services/transactionService";
-import { getErrorMessage } from "@/utils/errorType";
+import { PageResult, TransactionResponse, TransactionRequest } from "@/services/transactionService";
+import { getErrorMessage } from "@/types/errorType";
+import Loading from "@/components/ui/Loading";
 
 export default function FinancialLaunchesPage() {
+  const router = useRouter();
   const {
     isLoading,
     error,
@@ -26,6 +30,7 @@ export default function FinancialLaunchesPage() {
     getTotalBalance,
     getAllTransactions,
     deleteTransaction,
+    updateTransaction,
     exportTransactionsAsExcel,
     getAllCategories,
   } = useTransaction();
@@ -42,18 +47,39 @@ export default function FinancialLaunchesPage() {
   const [category, setCategory] = useState("Todas as categorias");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentTransaction, setCurrentTransaction] = useState<TransactionResponse | null>(null);
 
-  const fetchData = async () => {
+  // Novos estados para o filtro de data
+  const [startDate, setStartDate] = useState(() => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    return firstDay.toISOString().split('T')[0];
+  });
+  
+  const [endDate, setEndDate] = useState(() => {
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return lastDay.toISOString().split('T')[0];
+  });
+
+  const fetchSummaryData = async () => {
     try {
-      const revenue = await getTotalRevenue();
+      const revenue = await getTotalRevenue(startDate, endDate);
       setTotalRevenue(revenue || 0);
 
-      const expenses = await getTotalExpenses();
+      const expenses = await getTotalExpenses(startDate, endDate);
       setTotalExpenses(expenses || 0);
 
-      const balance = await getTotalBalance();
+      const balance = await getTotalBalance(startDate, endDate);
       setTotalBalance(balance || 0);
+    } catch (err) {
+      console.error("Erro ao buscar dados do resumo: ", err);
+    }
+  };
 
+  const fetchTransactionsData = async () => {
+    try {
       const categories = await getAllCategories();
       setCategories(categories);
 
@@ -62,12 +88,18 @@ export default function FinancialLaunchesPage() {
       setTransactions(allTransactions?.content || []);
       setTotalPages(allTransactions?.totalPages || 1);
     } catch (err) {
-      console.error("Erro ao buscar dados: ", err);
+      console.error("Erro ao buscar transações: ", err);
     }
   };
 
+  // Effect para dados do resumo (reage às mudanças de data)
   useEffect(() => {
-    fetchData();
+    fetchSummaryData();
+  }, [startDate, endDate]);
+
+  // Effect para dados das transações (reage aos filtros de pesquisa)
+  useEffect(() => {
+    fetchTransactionsData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, type, category, page]);
 
@@ -76,10 +108,30 @@ export default function FinancialLaunchesPage() {
       try {
         await deleteTransaction(id);
         alert("Lançamento excluído com sucesso!");
-        fetchData(); // Refetch data after deletion
+        fetchSummaryData(); // Refetch data after deletion
       } catch (err) {
         alert("Erro ao excluir lançamento: " + getErrorMessage(err));
       }
+    }
+  };
+
+  const handleEdit = (transaction: TransactionResponse) => {
+    setCurrentTransaction(transaction);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateTransaction = async (formData: TransactionRequest) => {
+    if (!currentTransaction) return;
+    
+    try {
+      console.log("Enviando requisição de atualização:", formData);
+      await updateTransaction(currentTransaction.id, formData);
+      alert("Lançamento atualizado com sucesso!");
+      setIsEditModalOpen(false);
+      fetchSummaryData(); // Refetch data after update
+    } catch (err) {
+      console.error("Erro detalhado:", err);
+      alert("Erro ao atualizar lançamento: " + getErrorMessage(err));
     }
   };
 
@@ -90,6 +142,10 @@ export default function FinancialLaunchesPage() {
     } catch (err) {
       alert("Erro ao exportar lançamentos: " + getErrorMessage(err));
     }
+  };
+  
+  const navigateToUpload = () => {
+    router.push('/financeiro/upload');
   };
 
   return (
@@ -104,6 +160,51 @@ export default function FinancialLaunchesPage() {
         </p>
       </div>
 
+      {/* Date Range Filter */}
+      <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+        <h3 className="text-lg font-medium text-gray-800 mb-3">
+          Filtro de Período (Resumo Financeiro)
+        </h3>
+        <div className="flex space-x-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Data Inicial
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Data Final
+            </label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={() => {
+                const now = new Date();
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                setStartDate(firstDay.toISOString().split('T')[0]);
+                setEndDate(lastDay.toISOString().split('T')[0]);
+              }}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Mês Atual
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Summary Cards Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Total de Entradas Card */}
@@ -112,7 +213,7 @@ export default function FinancialLaunchesPage() {
             <p className="text-sm text-gray-500">Total de Entradas</p>
             {isLoading ? (
               <h2 className="text-2xl font-bold text-green-600">
-                Carregando...
+                <Loading />
               </h2>
             ) : error ? (
               <h2 className="text-2xl font-bold text-red-600">Erro</h2>
@@ -125,7 +226,25 @@ export default function FinancialLaunchesPage() {
                 })}
               </h2>
             )}
-            <p className="text-xs text-gray-400">Receitas acumuladas</p>
+            <p className="text-xs text-gray-400">
+              Período: {(() => {
+                const [year, month, day] = startDate.split("-");
+                const localStartDate = new Date(
+                  Number(year),
+                  Number(month) - 1,
+                  Number(day),
+                );
+                return localStartDate.toLocaleDateString("pt-BR");
+              })()} a {(() => {
+                const [year, month, day] = endDate.split("-");
+                const localEndDate = new Date(
+                  Number(year),
+                  Number(month) - 1,
+                  Number(day),
+                );
+                return localEndDate.toLocaleDateString("pt-BR");
+              })()}
+            </p>
           </div>
           <ArrowUp className="text-green-500" size={24} />
         </div>
@@ -135,7 +254,7 @@ export default function FinancialLaunchesPage() {
           <div>
             <p className="text-sm text-gray-500">Total de Saídas</p>
             {isLoading ? (
-              <h2 className="text-2xl font-bold text-red-600">Carregando...</h2>
+              <h2 className="text-2xl font-bold text-red-600"><Loading /></h2>
             ) : error ? (
               <h2 className="text-2xl font-bold text-red-600">Erro</h2>
             ) : (
@@ -147,7 +266,25 @@ export default function FinancialLaunchesPage() {
                 })}
               </h2>
             )}
-            <p className="text-xs text-gray-400">Despesas acumuladas</p>
+            <p className="text-xs text-gray-400">
+              Período: {(() => {
+                const [year, month, day] = startDate.split("-");
+                const localStartDate = new Date(
+                  Number(year),
+                  Number(month) - 1,
+                  Number(day),
+                );
+                return localStartDate.toLocaleDateString("pt-BR");
+              })()} a {(() => {
+                const [year, month, day] = endDate.split("-");
+                const localEndDate = new Date(
+                  Number(year),
+                  Number(month) - 1,
+                  Number(day),
+                );
+                return localEndDate.toLocaleDateString("pt-BR");
+              })()}
+            </p>
           </div>
           <ArrowDown className="text-red-500" size={24} />
         </div>
@@ -158,7 +295,7 @@ export default function FinancialLaunchesPage() {
             <p className="text-sm text-gray-500">Saldo Total</p>
             {isLoading ? (
               <h2 className="text-2xl font-bold text-gray-800">
-                Carregando...
+                <Loading />
               </h2>
             ) : error ? (
               <h2 className="text-2xl font-bold text-red-600">Erro</h2>
@@ -171,9 +308,27 @@ export default function FinancialLaunchesPage() {
                 })}
               </h2>
             )}
-            <p className="text-xs text-gray-400">Saldo atual</p>
+            <p className="text-xs text-gray-400">
+              Período: {(() => {
+                const [year, month, day] = startDate.split("-");
+                const localStartDate = new Date(
+                  Number(year),
+                  Number(month) - 1,
+                  Number(day),
+                );
+                return localStartDate.toLocaleDateString("pt-BR");
+              })()} a {(() => {
+                const [year, month, day] = endDate.split("-");
+                const localEndDate = new Date(
+                  Number(year),
+                  Number(month) - 1,
+                  Number(day),
+                );
+                return localEndDate.toLocaleDateString("pt-BR");
+              })()}
+            </p>
           </div>
-          <Calendar className="text-gray-500" size={24} />
+          <Wallet className="text-gray-500" size={24} />
         </div>
       </div>
 
@@ -189,9 +344,12 @@ export default function FinancialLaunchesPage() {
             </p>
           </div>
           <div className="flex space-x-4">
-            <button className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center">
-              <Plus size={18} className="mr-2" />
-              Novo Lançamento
+            <button 
+              className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-green-700"
+              onClick={navigateToUpload}
+            >
+              <Upload size={18} className="mr-2" />
+              Importar Extrato  
             </button>
             <button
               className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg flex items-center"
@@ -251,7 +409,7 @@ export default function FinancialLaunchesPage() {
         {/* Table of Launches */}
         <div className="overflow-x-auto">
           {isLoading ? (
-            <p>Carregando lançamentos...</p>
+            <Loading />
           ) : error ? (
             <p>Erro ao carregar lançamentos: {error}</p>
           ) : transactions && transactions.length > 0 ? (
@@ -320,7 +478,10 @@ export default function FinancialLaunchesPage() {
                     </td>
                     <td className="py-3 px-4">{transaction.bank}</td>
                     <td className="py-3 px-4 flex space-x-2">
-                      <button className="text-gray-700 hover:text-gray-900">
+                      <button 
+                        className="text-gray-700 hover:text-gray-900"
+                        onClick={() => handleEdit(transaction)}
+                      >
                         <Edit size={18} />
                       </button>
                       <button
@@ -388,6 +549,201 @@ export default function FinancialLaunchesPage() {
           </button>
         </div>
       </div>
+
+      {/* Modal de Edição */}
+      {isEditModalOpen && currentTransaction && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Editar Lançamento</h2>
+              <button 
+                className="text-gray-500 hover:text-gray-800"
+                onClick={() => setIsEditModalOpen(false)}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <form 
+              onSubmit={(e: FormEvent) => {
+                e.preventDefault();
+                const form = e.target as HTMLFormElement;
+                const formData = new FormData(form);
+                
+                const transaction: TransactionRequest = {
+                  document: formData.get('document') as string || null,
+                  history: formData.get('history') as string,
+                  category: formData.get('category') as string,
+                  transactionType: formData.get('transactionType') as "CREDITO" | "DEBITO",
+                  transactionDate: formData.get('transactionDate') as string,
+                  amount: parseFloat(formData.get('amount') as string),
+                  bank: formData.get('bank') as string,
+                  codHistory: formData.get('codHistory') as string,
+                  batch: formData.get('batch') as string,
+                  sourceAgency: formData.get('sourceAgency') as string,
+                };
+                
+                handleUpdateTransaction(transaction);
+              }}
+            >
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Histórico
+                  </label>
+                  <input
+                    type="text"
+                    name="history"
+                    defaultValue={currentTransaction.history}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Categoria
+                  </label>
+                  <select
+                    name="category"
+                    defaultValue={currentTransaction.category}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo
+                  </label>
+                  <select
+                    name="transactionType"
+                    defaultValue={currentTransaction.transactionType}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="CREDITO">Entrada</option>
+                    <option value="DEBITO">Saída</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Data
+                  </label>
+                  <input
+                    type="date"
+                    name="transactionDate"
+                    defaultValue={currentTransaction.transactionDate}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Valor
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="amount"
+                    defaultValue={currentTransaction.amount}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Banco
+                  </label>
+                  <input
+                    type="text"
+                    name="bank"
+                    defaultValue={currentTransaction.bank}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Documento (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    name="document"
+                    defaultValue={currentTransaction.document || ''}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Código de Histórico*
+                  </label>
+                  <input
+                    type="text"
+                    name="codHistory"
+                    defaultValue={currentTransaction.codHistory || '001'}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Lote*
+                  </label>
+                  <input
+                    type="text"
+                    name="batch"
+                    defaultValue={currentTransaction.batch || '001'}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Agência de Origem*
+                  </label>
+                  <input
+                    type="text"
+                    name="sourceAgency"
+                    defaultValue={currentTransaction.sourceAgency || '001'}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                >
+                  Salvar Alterações
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

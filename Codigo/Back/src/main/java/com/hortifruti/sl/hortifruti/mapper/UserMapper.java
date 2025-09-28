@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.mapper;
 
-import com.hortifruti.sl.hortifruti.dto.UserRequest;
-import com.hortifruti.sl.hortifruti.dto.UserResponse;
+import com.hortifruti.sl.hortifruti.dto.user.UserRequest;
+import com.hortifruti.sl.hortifruti.dto.user.UserResponse;
 import com.hortifruti.sl.hortifruti.model.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -15,6 +15,7 @@ public interface UserMapper {
 
   @Mapping(source = "id", target = "id")
   @Mapping(source = "username", target = "username")
+  @Mapping(source = "position", target = "position")
   @Mapping(source = "role", target = "role")
   UserResponse toUserResponse(User user);
 }

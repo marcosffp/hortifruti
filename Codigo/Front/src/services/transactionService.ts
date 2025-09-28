@@ -11,6 +11,9 @@ export interface TransactionResponse {
   transactionDate: string;
   amount: number;
   bank: string;
+  codHistory?: string;
+  batch?: string;
+  sourceAgency?: string;
 }
 
 export interface TransactionRequest {
@@ -21,6 +24,9 @@ export interface TransactionRequest {
   transactionDate: string;
   amount: number;
   bank: string;
+  codHistory: string;
+  batch: string;
+  sourceAgency: string;
 }
 
 export interface PageResult<T> {
@@ -32,9 +38,26 @@ export interface PageResult<T> {
 }
 
 export const transactionService = {
-  async getTotalRevenueForCurrentMonth(): Promise<number> {
+  getDateRange(startDate?: string, endDate?: string) {
+    if (startDate && endDate) {
+      return { startDate, endDate };
+    }
+
+    // Se não foram fornecidas datas, usar o mês atual
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    return {
+      startDate: firstDay.toISOString().split('T')[0], // formato YYYY-MM-DD
+      endDate: lastDay.toISOString().split('T')[0]
+    };
+  },
+
+  async getTotalRevenueForCurrentMonth(startDate?: string, endDate?: string): Promise<number> {
     try {
-      const response = await fetch(`${API_BASE_URL}/transactions/revenue`, {
+      const { startDate: defaultStartDate, endDate: defaultEndDate } = this.getDateRange(startDate, endDate);
+      const response = await fetch(`${API_BASE_URL}/transactions/revenue?startDate=${defaultStartDate}&endDate=${defaultEndDate}`, {
         method: "GET",
         headers: getAuthHeaders(),
       });
@@ -49,9 +72,10 @@ export const transactionService = {
     }
   },
 
-  async getTotalExpensesForCurrentMonth(): Promise<number> {
+  async getTotalExpensesForCurrentMonth(startDate?: string, endDate?: string): Promise<number> {
     try {
-      const response = await fetch(`${API_BASE_URL}/transactions/expenses`, {
+      const { startDate: defaultStartDate, endDate: defaultEndDate } = this.getDateRange(startDate, endDate);
+      const response = await fetch(`${API_BASE_URL}/transactions/expenses?startDate=${defaultStartDate}&endDate=${defaultEndDate}`, {
         method: "GET",
         headers: getAuthHeaders(),
       });
@@ -68,9 +92,10 @@ export const transactionService = {
     }
   },
 
-  async getTotalBalanceForCurrentMonth(): Promise<number> {
+  async getTotalBalanceForCurrentMonth(startDate?: string, endDate?: string): Promise<number> {
     try {
-      const response = await fetch(`${API_BASE_URL}/transactions/balance`, {
+      const { startDate: defaultStartDate, endDate: defaultEndDate } = this.getDateRange(startDate, endDate);
+      const response = await fetch(`${API_BASE_URL}/transactions/balance?startDate=${defaultStartDate}&endDate=${defaultEndDate}`, {
         method: "GET",
         headers: getAuthHeaders(),
       });
@@ -127,9 +152,13 @@ export const transactionService = {
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify(transaction),
       });
+
       if (!response.ok) {
-        throw new Error(`Erro ao atualizar transação: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error("Resposta de erro do servidor:", errorText);
+        throw new Error(`Erro ao atualizar transação: ${response.status} ${response.statusText}`);
       }
+
       const data = await response.json();
       return data;
     } catch (error) {

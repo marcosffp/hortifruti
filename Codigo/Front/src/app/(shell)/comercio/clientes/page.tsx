@@ -1,7 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LayoutGrid, LayoutList, Plus, Search, User } from "lucide-react";
+import { 
+  Calendar, 
+  CircleCheck, 
+  DollarSign, 
+  LayoutGrid, 
+  LayoutList, 
+  MapPin, 
+  Phone, 
+  Plus, 
+  Search, 
+  Settings, 
+  User 
+} from "lucide-react";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import { clientService } from "@/services/clientService";
@@ -25,6 +37,14 @@ export default function ClientesPage() {
   const [clientes, setClientes] = useState<ClienteUI[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  
+  // Carregar a preferência de visualização salva
+  useEffect(() => {
+    const savedViewMode = localStorage.getItem("clientesViewMode");
+    if (savedViewMode === "list" || savedViewMode === "grid") {
+      setViewMode(savedViewMode as "list" | "grid");
+    }
+  }, []);
 
   // Carregar clientes do backend
   useEffect(() => {
@@ -137,7 +157,10 @@ export default function ClientesPage() {
               </div>
               <div className="flex bg-gray-100 rounded-lg p-1">
                 <button
-                  onClick={() => setViewMode("list")}
+                  onClick={() => {
+                    setViewMode("list");
+                    localStorage.setItem("clientesViewMode", "list");
+                  }}
                   className={`p-2 rounded-md ${viewMode === "list" ? "bg-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
                   aria-label="Visualização em lista"
                   title="Visualização em lista"
@@ -145,7 +168,10 @@ export default function ClientesPage() {
                   <LayoutList size={20} />
                 </button>
                 <button
-                  onClick={() => setViewMode("grid")}
+                  onClick={() => {
+                    setViewMode("grid");
+                    localStorage.setItem("clientesViewMode", "grid");
+                  }}
                   className={`p-2 rounded-md ${viewMode === "grid" ? "bg-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
                   aria-label="Visualização em grade"
                   title="Visualização em grade"
@@ -167,27 +193,55 @@ export default function ClientesPage() {
 
           {/* Lista de Clientes */}
           <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-800">
-                Lista de Clientes ({filteredClientes.length})
-              </h2>
-              <span className="text-sm text-gray-500">
+            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
+              <div className="flex items-center">
+                <div className="bg-green-50 p-2 rounded-lg mr-3">
+                  <User size={20} className="text-green-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-800">
+                    Lista de Clientes
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    Gerencie seus clientes e visualize informações detalhadas
+                  </p>
+                </div>
+              </div>
+              <div className="bg-green-50 px-3 py-1.5 rounded-full font-medium text-green-700 text-sm">
                 {filteredClientes.length}{" "}
-                {filteredClientes.length === 1
-                  ? "cliente encontrado"
-                  : "clientes encontrados"}
-              </span>
+                {filteredClientes.length === 1 ? "cliente" : "clientes"}
+              </div>
             </div>
 
             {viewMode === "list" && (
-              <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b bg-gray-50 font-medium text-gray-700">
-                <div className="col-span-3">Cliente</div>
-                <div className="col-span-2">Contato</div>
-                <div className="col-span-3">Endereço</div>
-                <div className="col-span-1">Status</div>
-                <div className="col-span-1">Última Compra</div>
-                <div className="col-span-1">Total Compras</div>
-                <div className="col-span-1 text-right">Ações</div>
+              <div className="grid grid-cols-12 gap-4 px-6 py-4 border-b bg-gradient-to-r from-gray-50 to-gray-100 shadow-sm">
+                <div className="col-span-3 flex items-center gap-2">
+                  <User size={16} className="text-gray-500" />
+                  <span className="font-semibold text-gray-800">Cliente</span>
+                </div>
+                <div className="col-span-2 flex items-center gap-2">
+                  <Phone size={16} className="text-gray-500" />
+                  <span className="font-semibold text-gray-800">Contato</span>
+                </div>
+                <div className="col-span-3 flex items-center gap-2">
+                  <MapPin size={16} className="text-gray-500" />
+                  <span className="font-semibold text-gray-800">Endereço</span>
+                </div>
+                <div className="col-span-1 flex items-center gap-2">
+                  <CircleCheck size={16} className="text-gray-500" />
+                  <span className="font-semibold text-gray-800">Status</span>
+                </div>
+                <div className="col-span-1 flex items-center gap-2">
+                  <Calendar size={16} className="text-gray-500" />
+                  <span className="font-semibold text-gray-800">Compras</span>
+                </div>
+                <div className="col-span-1 flex items-center gap-2">
+                  <DollarSign size={16} className="text-gray-500" />
+                  <span className="font-semibold text-gray-800">Total</span>
+                </div>
+                <div className="col-span-1 flex justify-end">
+                  <Settings size={16} className="text-gray-500" />
+                </div>
               </div>
             )}
 
@@ -195,13 +249,20 @@ export default function ClientesPage() {
             {isLoading && (
               <div className="py-16 text-center">
                 <div className="flex justify-center mb-4">
-                  <div className="animate-spin rounded-full h-14 w-14 border-4 border-gray-200 border-t-green-600"></div>
+                  <div className="relative animate-pulse">
+                    <div className="h-20 w-20 rounded-full bg-green-50 flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-14 w-14 border-4 border-gray-100 border-t-green-600 border-r-green-600"></div>
+                    </div>
+                    <div className="absolute bottom-0 right-0 bg-green-100 rounded-full p-1.5">
+                      <User size={14} className="text-green-600" />
+                    </div>
+                  </div>
                 </div>
-                <p className="text-lg font-medium text-gray-600 mt-4">
+                <p className="text-lg font-medium text-gray-700 mt-4">
                   Carregando clientes...
                 </p>
-                <p className="text-sm mt-1 text-gray-500">
-                  Aguarde enquanto buscamos os dados
+                <p className="text-sm mt-1 text-gray-500 max-w-md mx-auto">
+                  Aguarde enquanto buscamos os dados dos clientes cadastrados
                 </p>
               </div>
             )}
@@ -209,32 +270,48 @@ export default function ClientesPage() {
             {!isLoading && filteredClientes.length === 0 && (
               <div className="py-16 text-center text-gray-500">
                 <div className="flex justify-center mb-6">
-                  <div className="bg-gray-50 rounded-full p-5 border border-gray-200 shadow-sm">
-                    <User size={48} className="text-gray-400" />
-                  </div>
+                  {searchTerm ? (
+                    <div className="bg-orange-50 rounded-full p-5 border border-orange-100 shadow-sm">
+                      <Search size={48} className="text-orange-400" />
+                    </div>
+                  ) : (
+                    <div className="bg-blue-50 rounded-full p-6 border border-blue-100 shadow-sm">
+                      <User size={48} className="text-blue-400" />
+                    </div>
+                  )}
                 </div>
-                <p className="text-xl font-medium text-gray-600">
-                  Nenhum cliente encontrado
+                
+                <p className="text-xl font-medium text-gray-700">
+                  {searchTerm ? "Busca sem resultados" : "Nenhum cliente cadastrado"}
                 </p>
-                <p className="text-sm mt-2 max-w-md mx-auto">
+                
+                <p className="text-sm mt-3 max-w-md mx-auto text-gray-600">
                   {searchTerm
-                    ? "Não encontramos clientes com os critérios de busca. Tente ajustar sua pesquisa."
-                    : "Sua lista de clientes está vazia. Adicione novos clientes para começar."}
+                    ? `Não encontramos clientes com o termo "${searchTerm}". Tente outras palavras-chave ou limpe o campo de busca.`
+                    : "Sua lista de clientes está vazia. Adicione novos clientes para começar a gerenciar sua base de clientes."}
                 </p>
 
-                {!searchTerm && (
-                  <div className="mt-6">
+                <div className="mt-8">
+                  {searchTerm ? (
+                    <button 
+                      onClick={() => setSearchTerm("")}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors inline-flex items-center gap-2"
+                    >
+                      <Search size={16} />
+                      <span>Limpar busca</span>
+                    </button>
+                  ) : (
                     <Link href="/comercio/clientes/novo">
                       <Button
                         variant="primary"
-                        className="flex items-center gap-2 py-2 px-4 bg-green-600 hover:bg-green-700 transition-colors mx-auto"
+                        className="flex items-center gap-2 py-2.5 px-5 bg-green-600 hover:bg-green-700 transition-colors mx-auto shadow-sm"
                         icon={<Plus size={18} />}
                       >
                         Adicionar Cliente
                       </Button>
                     </Link>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
 

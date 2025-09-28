@@ -1,8 +1,8 @@
 package com.hortifruti.sl.hortifruti.service;
 
-import com.hortifruti.sl.hortifruti.dto.UserRequest;
-import com.hortifruti.sl.hortifruti.dto.UserResponse;
-import com.hortifruti.sl.hortifruti.dto.UsersCountResponse;
+import com.hortifruti.sl.hortifruti.dto.user.UserRequest;
+import com.hortifruti.sl.hortifruti.dto.user.UserResponse;
+import com.hortifruti.sl.hortifruti.dto.user.UsersCountResponse;
 import com.hortifruti.sl.hortifruti.exception.UserException;
 import com.hortifruti.sl.hortifruti.mapper.UserMapper;
 import com.hortifruti.sl.hortifruti.model.User;
@@ -32,8 +32,53 @@ public class UserService {
     if (user == null) {
       throw new UserException("Usuário não encontrado");
     }
-    user.setPassword(passwordEncoder.encode(userRequest.password()));
+
+    // Só atualizar senha se uma nova senha foi fornecida (não vazia)
+    if (userRequest.password() != null && !userRequest.password().trim().isEmpty()) {
+      String password = userRequest.password().trim();
+      if (password.length() < 4 || password.length() > 20) {
+        throw new UserException("A senha deve ter entre 4 e 20 caracteres");
+      }
+      user.setPassword(passwordEncoder.encode(password));
+    }
+
     user.setRole(userRequest.role());
+    User updatedUser = userRepository.save(user);
+    return userMapper.toUserResponse(updatedUser);
+  }
+
+  public UserResponse updateUserById(Long id, UserRequest userRequest) {
+    User user = userRepository.findById(id).orElse(null);
+    if (user == null) {
+      throw new UserException("Usuário não encontrado");
+    }
+
+    // Atualizar username se fornecido e diferente do atual
+    if (userRequest.username() != null && !userRequest.username().trim().isEmpty()) {
+      // Verificar se o novo username já existe (mas não é do próprio usuário)
+      User existingUser = userRepository.findByUsername(userRequest.username());
+      if (existingUser != null && !existingUser.getId().equals(id)) {
+        throw new UserException("Este nome já está sendo usado por outro usuário");
+      }
+      user.setUsername(userRequest.username());
+    }
+
+    // Update password only if a new non-empty password is provided
+    if (userRequest.password() != null) {
+      String trimmedPassword = userRequest.password().trim();
+      if (!trimmedPassword.isEmpty()) {
+        if (trimmedPassword.length() < 4 || trimmedPassword.length() > 20) {
+          throw new UserException("A senha deve ter entre 4 e 20 caracteres");
+        }
+        user.setPassword(passwordEncoder.encode(trimmedPassword));
+      }
+    }
+
+    // Atualizar role
+    if (userRequest.role() != null) {
+      user.setRole(userRequest.role());
+    }
+
     User updatedUser = userRepository.save(user);
     return userMapper.toUserResponse(updatedUser);
   }

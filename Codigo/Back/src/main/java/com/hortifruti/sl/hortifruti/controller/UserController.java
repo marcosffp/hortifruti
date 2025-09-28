@@ -1,8 +1,8 @@
 package com.hortifruti.sl.hortifruti.controller;
 
-import com.hortifruti.sl.hortifruti.dto.UserRequest;
-import com.hortifruti.sl.hortifruti.dto.UserResponse;
-import com.hortifruti.sl.hortifruti.dto.UsersCountResponse;
+import com.hortifruti.sl.hortifruti.dto.user.UserRequest;
+import com.hortifruti.sl.hortifruti.dto.user.UserResponse;
+import com.hortifruti.sl.hortifruti.dto.user.UsersCountResponse;
 import com.hortifruti.sl.hortifruti.service.UserService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -41,6 +41,13 @@ public class UserController {
   @PutMapping("/update")
   public ResponseEntity<UserResponse> updateUser(@Valid @RequestBody UserRequest userRequest) {
     return ResponseEntity.ok(userService.updateUser(userRequest));
+  }
+
+  @PreAuthorize("hasRole('MANAGER')")
+  @PutMapping("/update/{id}")
+  public ResponseEntity<UserResponse> updateUserById(
+      @PathVariable Long id, @Valid @RequestBody UserRequest userRequest) {
+    return ResponseEntity.ok(userService.updateUserById(id, userRequest));
   }
 
   @PreAuthorize("hasRole('MANAGER')")
