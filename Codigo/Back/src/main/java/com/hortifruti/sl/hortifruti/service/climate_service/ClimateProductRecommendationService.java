@@ -71,13 +71,8 @@ public class ClimateProductRecommendationService {
     }
     
     /**
-     * @deprecated Mantido para compatibilidade. Use {@link #getRecommendations()} que usa a cidade configurada no YML
+
      */
-    @Deprecated
-    public List<ClimateProductRecommendationDTO> getRecommendations(String city) {
-        log.warn("Método getRecommendations(String city) está deprecated. Parâmetro '{}' será ignorado, usando cidade configurada no sistema.", city);
-        return getRecommendations();
-    }
     
     /**
      * Gera recomendações baseadas na temperatura e mês atual
