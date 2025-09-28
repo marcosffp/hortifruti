@@ -2,9 +2,9 @@ package com.hortifruti.sl.hortifruti.config;
 
 import com.hortifruti.sl.hortifruti.model.Product;
 import com.hortifruti.sl.hortifruti.model.User;
-import com.hortifruti.sl.hortifruti.model.climate_model.Month;
-import com.hortifruti.sl.hortifruti.model.climate_model.TemperatureCategory;
+import com.hortifruti.sl.hortifruti.model.enumeration.Month;
 import com.hortifruti.sl.hortifruti.model.enumeration.Role;
+import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
 import com.hortifruti.sl.hortifruti.repository.ProductRepository;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

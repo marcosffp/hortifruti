@@ -1,9 +1,9 @@
 package com.hortifruti.sl.hortifruti.dto;
 
-import com.hortifruti.sl.hortifruti.model.climate_model.Month;
-import com.hortifruti.sl.hortifruti.model.climate_model.TemperatureCategory;
-
 import java.util.List;
+
+import com.hortifruti.sl.hortifruti.model.enumeration.Month;
+import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
 
 /**
  * DTO para resposta de produtos

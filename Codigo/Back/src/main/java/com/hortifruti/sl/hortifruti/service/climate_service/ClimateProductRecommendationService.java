@@ -3,8 +3,8 @@ package com.hortifruti.sl.hortifruti.service.climate_service;
 import com.hortifruti.sl.hortifruti.dto.climate_dto.ClimateProductRecommendationDTO;
 import com.hortifruti.sl.hortifruti.dto.climate_dto.WeatherForecastDTO;
 import com.hortifruti.sl.hortifruti.model.Product;
-import com.hortifruti.sl.hortifruti.model.climate_model.Month;
-import com.hortifruti.sl.hortifruti.model.climate_model.TemperatureCategory;
+import com.hortifruti.sl.hortifruti.model.enumeration.Month;
+import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
 import com.hortifruti.sl.hortifruti.repository.ProductRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -69,10 +69,6 @@ public class ClimateProductRecommendationService {
             return getDefaultRecommendations();
         }
     }
-    
-    /**
-
-     */
     
     /**
      * Gera recomendações baseadas na temperatura e mês atual

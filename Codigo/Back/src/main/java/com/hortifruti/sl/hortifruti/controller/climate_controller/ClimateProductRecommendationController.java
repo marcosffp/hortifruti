@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.controller.climate_controller;
 
 import com.hortifruti.sl.hortifruti.dto.climate_dto.ClimateProductRecommendationDTO;
-import com.hortifruti.sl.hortifruti.model.climate_model.TemperatureCategory;
+import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
 import com.hortifruti.sl.hortifruti.service.climate_service.ClimateProductRecommendationService;
 
 import io.swagger.v3.oas.annotations.Operation;

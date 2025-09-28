@@ -1,13 +1,14 @@
 package com.hortifruti.sl.hortifruti.model;
 
-import com.hortifruti.sl.hortifruti.model.climate_model.Month;
-import com.hortifruti.sl.hortifruti.model.climate_model.TemperatureCategory;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+
+import com.hortifruti.sl.hortifruti.model.enumeration.Month;
+import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
 
 @Entity
 @Table(name = "products")
