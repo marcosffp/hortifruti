@@ -33,35 +33,6 @@ public class ClimateProductRecommendationController {
     private final ClimateProductRecommendationService recommendationService;
     
     /**
-     * Obtém recomendações de produtos baseadas no clima atual
-     * Usa automaticamente a cidade configurada no application.yml
-     * Acesso restrito apenas para usuários MANAGER
-     */
-    @GetMapping
-    @PreAuthorize("hasRole('MANAGER')")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista de recomendações obtida com sucesso"),
-        @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER"),
-        @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
-    })
-    public ResponseEntity<List<ClimateProductRecommendationDTO>> getRecommendations() {
-        
-        try {
-            log.info("Buscando recomendações usando cidade configurada no sistema");
-            
-            List<ClimateProductRecommendationDTO> recommendations = recommendationService.getRecommendations();
-            
-            log.info("Encontradas {} recomendações", recommendations.size());
-            
-            return ResponseEntity.ok(recommendations);
-            
-        } catch (Exception e) {
-            log.error("Erro ao buscar recomendações: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-    
-    /**
      * Obtém produtos por categoria de temperatura
      * Acesso restrito apenas para usuários MANAGER
      */
@@ -91,47 +62,9 @@ public class ClimateProductRecommendationController {
             return ResponseEntity.internalServerError().build();
         }
     }
-    
+
     /**
-     * NOVO: Obtém recomendações baseadas em dados climáticos específicos de um dia
-     * Este endpoint será chamado quando o usuário clicar em um card específico dos 5 dias
-     * Acesso restrito apenas para usuários MANAGER
-     */
-    @PostMapping("/by-day-climate")
-    @PreAuthorize("hasRole('MANAGER')")
-    @Operation(summary = "Recomendações por dados climáticos de um dia", 
-               description = "Retorna produtos recomendados baseados nos dados completos de clima de um dia específico")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Recomendações obtidas com sucesso"),
-        @ApiResponse(responseCode = "400", description = "Dados climáticos inválidos"),
-        @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER"),
-        @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
-    })
-    public ResponseEntity<List<ClimateProductRecommendationDTO>> getRecommendationsByDayClimate(
-            @Parameter(description = "Dados climáticos do dia selecionado")
-            @RequestBody com.hortifruti.sl.hortifruti.dto.climate_dto.DayClimateDataDTO dayClimateData) {
-        
-        try {
-            log.info("Buscando recomendações para dia {} com temperatura média {}°C", 
-                    dayClimateData.date(), dayClimateData.avgTemp());
-            
-            List<ClimateProductRecommendationDTO> recommendations = recommendationService.getRecommendationsByDayClimate(dayClimateData);
-            
-            log.info("Encontradas {} recomendações para o dia {}", recommendations.size(), dayClimateData.date());
-            
-            return ResponseEntity.ok(recommendations);
-            
-        } catch (IllegalArgumentException e) {
-            log.warn("Dados climáticos inválidos: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            log.error("Erro ao buscar recomendações por clima do dia: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-    
-    /**
-     * NOVO: Recomendações baseadas apenas na data
+     * Recomendações baseadas apenas na data
      * O frontend envia apenas a data, e buscamos os dados climáticos via API
      */
     @GetMapping("/by-date")
@@ -166,25 +99,4 @@ public class ClimateProductRecommendationController {
         }
     }
     
-    /**
-     * Endpoint de teste para verificar se o sistema está funcionando
-     * Acesso restrito apenas para usuários MANAGER
-     */
-    @GetMapping("/test")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<String> testRecommendations() {
-        try {
-            // Testar usando cidade configurada no sistema
-            List<ClimateProductRecommendationDTO> recommendations = recommendationService.getRecommendations();
-            
-            return ResponseEntity.ok(String.format(
-                "Sistema de recomendações funcionando! Encontradas %d recomendações.", 
-                recommendations.size()
-            ));
-            
-        } catch (Exception e) {
-            log.error("Erro no teste de recomendações: {}", e.getMessage(), e);
-            return ResponseEntity.ok("Erro no sistema de recomendações: " + e.getMessage());
-        }
-    }
 }

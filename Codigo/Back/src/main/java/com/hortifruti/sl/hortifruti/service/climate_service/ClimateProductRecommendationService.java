@@ -4,6 +4,7 @@ import com.hortifruti.sl.hortifruti.dto.climate_dto.ClimateProductRecommendation
 import com.hortifruti.sl.hortifruti.dto.climate_dto.WeatherForecastDTO;
 import com.hortifruti.sl.hortifruti.model.Product;
 import com.hortifruti.sl.hortifruti.model.enumeration.Month;
+import com.hortifruti.sl.hortifruti.model.enumeration.RecommendationTag;
 import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
 import com.hortifruti.sl.hortifruti.repository.ProductRepository;
 
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,38 +37,6 @@ public class ClimateProductRecommendationService {
     private static final double LOW_SEASON_SCORE = 0.0;
     private static final double PERFECT_CLIMATE_SCORE = 15.0;
     
-    /**
-     * Gera recomendações de produtos usando a cidade configurada no sistema
-     * @return lista de produtos recomendados ordenada por pontuação
-     */
-    public List<ClimateProductRecommendationDTO> getRecommendations() {
-        try {
-            // Buscar previsão do tempo (usa automaticamente cidade do YML)
-            WeatherForecastDTO weatherForecast = weatherForecastService.getFiveDayForecast();
-            
-            if (weatherForecast == null || weatherForecast.dailyForecasts().isEmpty()) {
-                log.warn("Não foi possível obter previsão do tempo");
-                return getDefaultRecommendations();
-            }
-            
-            // Pegar dados do primeiro dia (hoje)
-            var todayForecast = weatherForecast.dailyForecasts().get(0);
-            double todayAvgTemp = todayForecast.avgTemp();
-            double todayFeelsLike = todayForecast.avgFeelsLike();
-            
-            // Usar SENSAÇÃO TÉRMICA para determinar categoria (mais realista)
-            TemperatureCategory todayCategory = TemperatureCategory.fromTemperature(todayFeelsLike);
-            
-            log.info("Gerando recomendações para {} - Temp: {}°C, Sensação: {}°C ({})", 
-                    weatherForecast.city(), todayAvgTemp, todayFeelsLike, todayCategory.getDisplayName());
-            
-            return generateRecommendations(todayCategory, getCurrentMonth());
-            
-        } catch (Exception e) {
-            log.error("Erro ao gerar recomendações: {}", e.getMessage(), e);
-            return getDefaultRecommendations();
-        }
-    }
     
     /**
      * Gera recomendações baseadas na temperatura e mês atual
@@ -97,15 +65,15 @@ public class ClimateProductRecommendationService {
         // 3. Pontuação final ponderada
         double finalScore = (climateScore * CLIMATE_WEIGHT) + (seasonalityScore * SEASONALITY_WEIGHT);
         
-        // 4. Determinar razão da recomendação
-        String recommendationReason = buildRecommendationReason(product, climateCategory, currentMonth, climateScore, seasonalityScore);
+        // 4. Determinar tag baseada na pontuação
+        RecommendationTag tag = RecommendationTag.fromScore(finalScore);
         
         return new ClimateProductRecommendationDTO(
                 product.getId(),
                 product.getName(),
                 product.getTemperatureCategory(),
                 Math.round(finalScore * 100.0) / 100.0, // Arredondar para 2 casas decimais
-                recommendationReason
+                tag
         );
     }
     
@@ -157,33 +125,7 @@ public class ClimateProductRecommendationService {
         return MEDIUM_SEASON_SCORE;
     }
     
-    /**
-     * Constrói a explicação da recomendação
-     */
-    private String buildRecommendationReason(Product product, TemperatureCategory climateCategory, Month currentMonth, 
-                                           double climateScore, double seasonalityScore) {
-        List<String> reasons = new ArrayList<>();
-        
-        // Razão climática (mais importante)
-        if (climateScore >= PERFECT_CLIMATE_SCORE) {
-            reasons.add("Perfeito para o clima " + climateCategory.getDisplayName().toLowerCase());
-        } else if (climateScore > PERFECT_CLIMATE_SCORE * 0.5) {
-            reasons.add("Adequado para o clima " + climateCategory.getDisplayName().toLowerCase());
-        }
-        
-        // Razão sazonal
-        if (seasonalityScore >= PEAK_SEASON_SCORE) {
-            reasons.add("Alta temporada de vendas");
-        } else if (seasonalityScore >= MEDIUM_SEASON_SCORE) {
-            reasons.add("Temporada regular");
-        }
-        
-        if (reasons.isEmpty()) {
-            reasons.add("Produto disponível");
-        }
-        
-        return String.join(" • ", reasons);
-    }
+
     
     /**
      * Obtém o mês atual baseado no enum Month customizado
@@ -191,33 +133,6 @@ public class ClimateProductRecommendationService {
     private Month getCurrentMonth() {
         int currentMonthNumber = LocalDate.now().getMonthValue();
         return Month.values()[currentMonthNumber - 1]; // Month enum começa do índice 0
-    }
-    
-    /**
-     * Retorna recomendações padrão quando não há dados climáticos
-     */
-    private List<ClimateProductRecommendationDTO> getDefaultRecommendations() {
-        log.info("Gerando recomendações padrão (sem dados climáticos)");
-        
-        Month currentMonth = getCurrentMonth();
-        List<Product> products = productRepository.findAll();
-        
-        return products.stream()
-                .map(product -> {
-                    double seasonalityScore = calculateSeasonalityScore(product, currentMonth);
-                    String reason = seasonalityScore >= PEAK_SEASON_SCORE ? 
-                            "Alta temporada de vendas" : "Produto disponível";
-                    
-                    return new ClimateProductRecommendationDTO(
-                            product.getId(),
-                            product.getName(),
-                            product.getTemperatureCategory(),
-                            seasonalityScore,
-                            reason
-                    );
-                })
-                .sorted(Comparator.comparingDouble(ClimateProductRecommendationDTO::score).reversed())
-                .collect(Collectors.toList());
     }
     
     /**
@@ -276,68 +191,6 @@ public class ClimateProductRecommendationService {
         }
     }
     
-    /**
-     * NOVO: Gera recomendações baseadas em dados climáticos completos de um dia
-     * Versão melhorada que recebe um DTO com todos os dados organizados
-     */
-    public List<ClimateProductRecommendationDTO> getRecommendationsByDayClimate(
-            com.hortifruti.sl.hortifruti.dto.climate_dto.DayClimateDataDTO dayClimateData) {
-        
-        try {
-            // Determinar categoria de temperatura baseada na SENSAÇÃO TÉRMICA média
-            TemperatureCategory temperatureCategory = TemperatureCategory.fromTemperature(dayClimateData.avgTemp());
-            
-            // Extrair mês da data fornecida
-            Month month = Month.values()[dayClimateData.date().getMonthValue() - 1];
-            
-            log.info("Gerando recomendações para {} ({}°C - {}) no mês de {} com dados completos", 
-                    dayClimateData.date(), dayClimateData.avgTemp(), 
-                    temperatureCategory.getDisplayName(), month.name());
-            
-            // Usar dados extras para futuras melhorias no algoritmo
-            log.debug("Dados extras do clima - Umidade: {}%, Chuva: {}mm, Vento: {}km/h", 
-                    dayClimateData.humidity(), dayClimateData.rainfall(), dayClimateData.windSpeed());
-            
-            return generateRecommendations(temperatureCategory, month);
-            
-        } catch (Exception e) {
-            log.error("Erro ao processar dados climáticos do dia {}: {}", 
-                    dayClimateData.date(), e.getMessage());
-            throw new IllegalArgumentException("Dados climáticos inválidos", e);
-        }
-    }
-    
-    /**
-     * DEPRECATED: Método mantido para compatibilidade, mas recomenda-se usar o novo método com DTO
-     * @deprecated Use {@link #getRecommendationsByDayClimate(com.hortifruti.sl.hortifruti.dto.climate_dto.DayClimateDataDTO)} instead
-     */
-    @Deprecated
-    public List<ClimateProductRecommendationDTO> getRecommendationsByDayClimate(
-            double avgTemp, String dateStr, Double minTemp, Double maxTemp, Double humidity) {
-        
-        try {
-            // Converter para o novo formato de DTO
-            LocalDate date = LocalDate.parse(dateStr);
-            var dayClimateData = new com.hortifruti.sl.hortifruti.dto.climate_dto.DayClimateDataDTO(
-                date, 
-                minTemp != null ? minTemp : avgTemp - 5,
-                maxTemp != null ? maxTemp : avgTemp + 5,
-                avgTemp,
-                humidity != null ? humidity : 50.0,
-                0.0, // rainfall padrão
-                0.0, // windSpeed padrão
-                "N/A", // weatherDescription padrão
-                "01d" // weatherIcon padrão
-            );
-            
-            // Chamar o novo método
-            return getRecommendationsByDayClimate(dayClimateData);
-            
-        } catch (Exception e) {
-            log.error("Erro ao processar data {}: {}", dateStr, e.getMessage());
-            throw new IllegalArgumentException("Data inválida: " + dateStr, e);
-        }
-    }
     
     /**
      * Método auxiliar para converter LocalDate para Month enum
