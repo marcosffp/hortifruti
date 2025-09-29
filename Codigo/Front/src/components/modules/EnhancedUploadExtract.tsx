@@ -3,9 +3,10 @@
 import { useState, useRef } from "react";
 import { useStatement } from "@/hooks/useStatement";
 import Button from "@/components/ui/Button";
-import { ArrowUp, FileText, X, AlertCircle } from "lucide-react";
-import { useRouter } from "next/router";
+import { ArrowUp, FileText, X, AlertCircle, CheckCircle2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import Loading from "@/components/ui/Loading";
+import { showSuccess } from "@/services/notificationService";
 
 export default function EnhancedUploadExtract() {
   const [files, setFiles] = useState<File[]>([]);
@@ -62,19 +63,29 @@ export default function EnhancedUploadExtract() {
     fileInputRef.current?.click();
   };
 
+  const [processingSuccess, setProcessingSuccess] = useState(false);
+  
   const handleProcessFiles = async () => {
     if (files.length === 0) return;
     setLoading(true);
     try {
       await processFiles(files);
-      setLoading(false);
+      
       // Limpar arquivos após processamento bem-sucedido
       setFiles([]);
-      // Redirecionar para a página de lançamentos
-      router.push("/financeiro/lancamentos");
+      
+      // Mostrar confirmação de sucesso
+      setProcessingSuccess(true);
+      showSuccess(`${files.length} ${files.length === 1 ? 'arquivo foi' : 'arquivos foram'} processado${files.length === 1 ? '' : 's'} com sucesso!`);
+      
+      // Aguardar um momento antes de redirecionar (para que o usuário possa ver a confirmação)
+      setTimeout(() => {
+        router.push("/financeiro/lancamentos");
+      }, 2500);
     } catch (err) {
-      setLoading(false);
       // O erro já é tratado no hook useStatement
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -129,6 +140,19 @@ export default function EnhancedUploadExtract() {
             size={24}
           />
           <p className="text-red-700 text-base">{error}</p>
+        </div>
+      )}
+      
+      {processingSuccess && (
+        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center animate-pulse">
+          <CheckCircle2
+            className="text-green-600 flex-shrink-0 mr-3"
+            size={24}
+          />
+          <div>
+            <p className="text-green-700 text-base font-medium">Processamento concluído com sucesso!</p>
+            <p className="text-green-600 text-sm">Você será redirecionado para a página de lançamentos em instantes...</p>
+          </div>
         </div>
       )}
 

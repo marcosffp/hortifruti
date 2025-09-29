@@ -152,7 +152,8 @@ export function useTransaction() {
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", "lancamentos.xlsx");
+      const { month, year } = getPreviousMonth();
+      link.setAttribute("download", `Hortifruti_Santa_Luzia_${month}/${year}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -165,6 +166,18 @@ export function useTransaction() {
       setIsLoading(false);
     }
   };
+
+  const getPreviousMonth = () => {
+    const now = new Date();
+    let month = now.getMonth(); // 0-based, so January is 0
+    let year = now.getFullYear();
+    if (month === 0) {
+      month = 12;
+      year -= 1;
+    }
+    const monthStr = month.toString().padStart(2, "0");
+    return { month: monthStr, year };
+  }
 
   return {
     isLoading,

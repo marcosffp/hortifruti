@@ -6,6 +6,8 @@ import com.hortifruti.sl.hortifruti.dto.climate_dto.WeatherForecastDTO.DailyFore
 import com.hortifruti.sl.hortifruti.exception.WeatherApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -20,6 +22,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WeatherForecastService {
     
+    @Autowired
     private final OpenWeatherClient weatherClient;
     
     /**
