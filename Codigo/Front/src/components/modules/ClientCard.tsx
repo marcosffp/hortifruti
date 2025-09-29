@@ -21,7 +21,7 @@ interface ClientCardProps {
   email: string;
   telefone: string;
   endereco: string;
-  status: "ativo" | "inativo";
+  status: "preco-fixo" | "preco-variavel";
   ultimaCompra?: string;
   totalCompras?: number;
   onDelete: (id: number) => void;
@@ -57,13 +57,13 @@ export default function ClientCard({
                 <div className="mt-1 flex items-center">
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      status === "ativo"
+                      status === "preco-fixo"
                         ? "bg-green-100 text-green-800 border border-green-200"
-                        : "bg-gray-100 text-gray-800 border border-gray-200"
+                        : "bg-blue-100 text-blue-800 border border-blue-200"
                     }`}
                   >
-                    <CircleCheck size={12} className={status === "ativo" ? "mr-1 text-green-600" : "mr-1 text-gray-500"} />
-                    {status === "ativo" ? "ativo" : "inativo"}
+                    <DollarSign size={12} className={status === "preco-fixo" ? "mr-1 text-green-600" : "mr-1 text-blue-600"} />
+                    {status === "preco-fixo" ? "Preço Fixo" : "Preço Variável"}
                   </span>
                 </div>
               </div>
@@ -185,13 +185,13 @@ export default function ClientCard({
       <div className="col-span-1">
         <span
           className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-            status === "ativo"
+            status === "preco-fixo"
               ? "bg-green-100 text-green-800 border border-green-200"
-              : "bg-gray-100 text-gray-800 border border-gray-200"
+              : "bg-blue-100 text-blue-800 border border-blue-200"
           }`}
         >
-          <CircleCheck size={12} className={status === "ativo" ? "mr-1 text-green-600" : "mr-1 text-gray-500"} />
-          {status === "ativo" ? "ativo" : "inativo"}
+          <DollarSign size={12} className={status === "preco-fixo" ? "mr-1 text-green-600" : "mr-1 text-blue-600"} />
+          {status === "preco-fixo" ? "Preço Fixo" : "Preço Variável"}
         </span>
       </div>
       <div className="col-span-1 text-gray-700">
