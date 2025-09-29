@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { useTransaction } from "@/hooks/useTransaction";
 import { showError, showSuccess } from "@/services/notificationService";
 import { PageResult, TransactionResponse, TransactionRequest } from "@/services/transactionService";
+import Button from "@/components/ui/Button";
 import { getErrorMessage } from "@/types/errorType";
 import Loading from "@/components/ui/Loading";
 
@@ -345,27 +346,23 @@ export default function FinancialLaunchesPage() {
             </p>
           </div>
           <div className="flex space-x-4">
-            <button 
-              className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-green-700"
+            <Button 
+              variant="primary"
               onClick={navigateToUpload}
+              className="py-2 px-4 bg-green-600 hover:bg-green-700 transition-colors"
+              icon={<Upload size={18} />}
             >
-              <Upload size={18} className="mr-2" />
               Importar Extrato  
-            </button>
-            <button
-              className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg flex items-center"
+            </Button>
+            <Button
+              variant="outline"
               onClick={handleExport}
               disabled={isLoading}
+              className="border border-gray-300 text-gray-700 px-4 py-2"
+              icon={isLoading ? undefined : <Download size={18} />}
             >
-              {isLoading ? (
-                "Exportando..."
-              ) : (
-                <>
-                  <Download size={18} className="mr-2" />
-                  Exportar
-                </>
-              )}
-            </button>
+              {isLoading ? "Exportando..." : "Exportar"}
+            </Button>
           </div>
         </div>
 

@@ -153,7 +153,7 @@ export function useTransaction() {
       const link = document.createElement("a");
       link.href = url;
       const { month, year } = getPreviousMonth();
-      link.setAttribute("download", `lancamentos_${month}/${year}.xlsx`);
+      link.setAttribute("download", `Hortifruti_Santa_Luzia_${month}/${year}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
