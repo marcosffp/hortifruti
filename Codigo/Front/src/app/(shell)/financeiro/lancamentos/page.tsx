@@ -11,13 +11,18 @@ import {
   Trash2,
   ArrowLeft,
   ArrowRight,
+  X,
+  Upload,
+  Wallet
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { useTransaction } from "@/hooks/useTransaction";
-import { PageResult, TransactionResponse } from "@/services/transactionService";
+import { PageResult, TransactionResponse, TransactionRequest } from "@/services/transactionService";
 import { getErrorMessage } from "@/types/errorType";
 
 export default function FinancialLaunchesPage() {
+  const router = useRouter();
   const {
     isLoading,
     error,
@@ -26,6 +31,7 @@ export default function FinancialLaunchesPage() {
     getTotalBalance,
     getAllTransactions,
     deleteTransaction,
+    updateTransaction,
     exportTransactionsAsExcel,
     getAllCategories,
   } = useTransaction();
@@ -42,6 +48,8 @@ export default function FinancialLaunchesPage() {
   const [category, setCategory] = useState("Todas as categorias");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentTransaction, setCurrentTransaction] = useState<TransactionResponse | null>(null);
 
   const fetchData = async () => {
     try {
@@ -83,6 +91,26 @@ export default function FinancialLaunchesPage() {
     }
   };
 
+  const handleEdit = (transaction: TransactionResponse) => {
+    setCurrentTransaction(transaction);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateTransaction = async (formData: TransactionRequest) => {
+    if (!currentTransaction) return;
+    
+    try {
+      console.log("Enviando requisição de atualização:", formData);
+      await updateTransaction(currentTransaction.id, formData);
+      alert("Lançamento atualizado com sucesso!");
+      setIsEditModalOpen(false);
+      fetchData(); // Refetch data after update
+    } catch (err) {
+      console.error("Erro detalhado:", err);
+      alert("Erro ao atualizar lançamento: " + getErrorMessage(err));
+    }
+  };
+
   const handleExport = async () => {
     try {
       await exportTransactionsAsExcel();
@@ -90,6 +118,10 @@ export default function FinancialLaunchesPage() {
     } catch (err) {
       alert("Erro ao exportar lançamentos: " + getErrorMessage(err));
     }
+  };
+  
+  const navigateToUpload = () => {
+    router.push('/financeiro/upload');
   };
 
   return (
@@ -173,7 +205,7 @@ export default function FinancialLaunchesPage() {
             )}
             <p className="text-xs text-gray-400">Saldo atual</p>
           </div>
-          <Calendar className="text-gray-500" size={24} />
+          <Wallet className="text-gray-500" size={24} />
         </div>
       </div>
 
@@ -189,9 +221,12 @@ export default function FinancialLaunchesPage() {
             </p>
           </div>
           <div className="flex space-x-4">
-            <button className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center">
-              <Plus size={18} className="mr-2" />
-              Novo Lançamento
+            <button 
+              className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-green-700"
+              onClick={navigateToUpload}
+            >
+              <Upload size={18} className="mr-2" />
+              Importar Extrato  
             </button>
             <button
               className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg flex items-center"
@@ -320,7 +355,10 @@ export default function FinancialLaunchesPage() {
                     </td>
                     <td className="py-3 px-4">{transaction.bank}</td>
                     <td className="py-3 px-4 flex space-x-2">
-                      <button className="text-gray-700 hover:text-gray-900">
+                      <button 
+                        className="text-gray-700 hover:text-gray-900"
+                        onClick={() => handleEdit(transaction)}
+                      >
                         <Edit size={18} />
                       </button>
                       <button
@@ -388,6 +426,201 @@ export default function FinancialLaunchesPage() {
           </button>
         </div>
       </div>
+
+      {/* Modal de Edição */}
+      {isEditModalOpen && currentTransaction && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Editar Lançamento</h2>
+              <button 
+                className="text-gray-500 hover:text-gray-800"
+                onClick={() => setIsEditModalOpen(false)}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <form 
+              onSubmit={(e: FormEvent) => {
+                e.preventDefault();
+                const form = e.target as HTMLFormElement;
+                const formData = new FormData(form);
+                
+                const transaction: TransactionRequest = {
+                  document: formData.get('document') as string || null,
+                  history: formData.get('history') as string,
+                  category: formData.get('category') as string,
+                  transactionType: formData.get('transactionType') as "CREDITO" | "DEBITO",
+                  transactionDate: formData.get('transactionDate') as string,
+                  amount: parseFloat(formData.get('amount') as string),
+                  bank: formData.get('bank') as string,
+                  codHistory: formData.get('codHistory') as string,
+                  batch: formData.get('batch') as string,
+                  sourceAgency: formData.get('sourceAgency') as string,
+                };
+                
+                handleUpdateTransaction(transaction);
+              }}
+            >
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Histórico
+                  </label>
+                  <input
+                    type="text"
+                    name="history"
+                    defaultValue={currentTransaction.history}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Categoria
+                  </label>
+                  <select
+                    name="category"
+                    defaultValue={currentTransaction.category}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo
+                  </label>
+                  <select
+                    name="transactionType"
+                    defaultValue={currentTransaction.transactionType}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="CREDITO">Entrada</option>
+                    <option value="DEBITO">Saída</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Data
+                  </label>
+                  <input
+                    type="date"
+                    name="transactionDate"
+                    defaultValue={currentTransaction.transactionDate}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Valor
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="amount"
+                    defaultValue={currentTransaction.amount}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Banco
+                  </label>
+                  <input
+                    type="text"
+                    name="bank"
+                    defaultValue={currentTransaction.bank}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Documento (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    name="document"
+                    defaultValue={currentTransaction.document || ''}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Código de Histórico*
+                  </label>
+                  <input
+                    type="text"
+                    name="codHistory"
+                    defaultValue={currentTransaction.codHistory || '001'}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Lote*
+                  </label>
+                  <input
+                    type="text"
+                    name="batch"
+                    defaultValue={currentTransaction.batch || '001'}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Agência de Origem*
+                  </label>
+                  <input
+                    type="text"
+                    name="sourceAgency"
+                    defaultValue={currentTransaction.sourceAgency || '001'}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                >
+                  Salvar Alterações
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

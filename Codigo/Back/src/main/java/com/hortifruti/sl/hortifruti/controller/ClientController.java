@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.controller;
 
 import com.hortifruti.sl.hortifruti.dto.client.ClientRequest;
 import com.hortifruti.sl.hortifruti.dto.client.ClientResponse;
+import com.hortifruti.sl.hortifruti.dto.client.ClientWithLastPurchaseResponse;
 import com.hortifruti.sl.hortifruti.service.ClientService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -50,5 +51,11 @@ public class ClientController {
   public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
     clientService.deleteClient(id);
     return ResponseEntity.noContent().build();
+  }
+
+  @GetMapping("/with-last-purchase")
+  public ResponseEntity<List<ClientWithLastPurchaseResponse>> getClientsWithLastPurchase() {
+    List<ClientWithLastPurchaseResponse> clients = clientService.getClientsWithLastPurchase();
+    return ResponseEntity.ok(clients);
   }
 }

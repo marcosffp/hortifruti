@@ -7,6 +7,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clientService } from "@/services/clientService";
 import { showError, showSuccess } from "@/services/notificationService";
+import { cepService } from "@/services/cepService";
+import {
+  validarCPFouCNPJ,
+  validarEmail,
+  validarTelefone,
+  validarCEP,
+  formatarCPF,
+  formatarCNPJ,
+  formatarTelefone,
+  formatarCEP
+} from "@/utils/validationUtils";
 
 // Interface para os parâmetros da página
 interface EditarClientePageProps {
@@ -41,6 +52,20 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  
+  // Estado para erros de validação
+  const [formErrors, setFormErrors] = useState({
+    nome: "",
+    email: "",
+    telefone: "",
+    cpfCnpj: "",
+    cep: "",
+    endereco: "",
+    numero: "",
+    bairro: "",
+    cidade: "",
+    estado: "",
+  });
 
   // Carregar os dados do cliente
   useEffect(() => {
@@ -109,7 +134,7 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
           nome: clientData.clientName,
           email: clientData.email || "",
           telefone: clientData.phoneNumber || "",
-          cpfCnpj: "", // Não disponível no backend ainda
+          cpfCnpj: clientData.document || "", // Agora disponível do backend
           cep: enderecoParts.cep,
           endereco: enderecoParts.endereco,
           numero: enderecoParts.numero,
@@ -141,15 +166,141 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
     >,
   ) => {
     const { name, value } = e.target;
+    let formattedValue = value;
+
+    // Formatação automática de alguns campos
+    if (name === "cpfCnpj") {
+      const numericValue = value.replace(/[^\d]/g, '');
+      if (numericValue.length <= 11) {
+        formattedValue = formatarCPF(numericValue);
+      } else {
+        formattedValue = formatarCNPJ(numericValue);
+      }
+    } else if (name === "telefone") {
+      formattedValue = formatarTelefone(value);
+    } else if (name === "cep") {
+      formattedValue = formatarCEP(value);
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: formattedValue,
     }));
+
+    // Limpa o erro quando o usuário começa a digitar novamente
+    if (formErrors[name as keyof typeof formErrors]) {
+      setFormErrors({
+        ...formErrors,
+        [name]: ""
+      });
+    }
+  };
+  
+  // Função para buscar endereço pelo CEP
+  const buscarEnderecoPorCEP = async (cep: string) => {
+    if (!validarCEP(cep)) {
+      showError("CEP inválido. Formato correto: XXXXX-XXX");
+      return;
+    }
+
+    try {
+      const endereco = await cepService.consultarCep(cep);
+      
+      if (!endereco) {
+        showError("CEP não encontrado");
+        return;
+      }
+      
+      if (endereco.erro) {
+        showError("CEP não encontrado");
+        return;
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        endereco: endereco.logradouro || "",
+        bairro: endereco.bairro || "",
+        cidade: endereco.localidade || "",
+        estado: endereco.uf || ""
+      }));
+      
+      showSuccess("Endereço encontrado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao buscar CEP:", error);
+      showError("Erro ao buscar CEP. Tente novamente.");
+    }
+  };
+  
+  // Manipulador para quando o campo de CEP perde o foco
+  const handleCepBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const cep = e.target.value;
+    if (cep && cep.length >= 8) {
+      buscarEnderecoPorCEP(cep);
+    }
+    // Atualiza o estado de erro do campo
+    setFormErrors({...formErrors, cep: validateField("cep", cep)});
+  };
+  
+  // Validação de campos individuais
+  const validateField = (name: string, value: string): string => {
+    switch (name) {
+      case "nome":
+        return !value.trim() ? "Nome é obrigatório" : "";
+      case "email":
+        return !validarEmail(value) ? "Email inválido" : "";
+      case "telefone":
+        return !validarTelefone(value) ? "Telefone inválido. Formato: (XX) XXXXX-XXXX" : "";
+      case "cpfCnpj":
+        if (!value) return "CPF/CNPJ é obrigatório"; // Agora é obrigatório
+        return !validarCPFouCNPJ(value) ? "CPF/CNPJ inválido" : "";
+      case "cep":
+        if (!value) return ""; // Não é obrigatório
+        return !validarCEP(value) ? "CEP inválido. Formato: XXXXX-XXX" : "";
+      case "endereco":
+        return !value.trim() ? "Endereço é obrigatório" : "";
+      case "numero":
+        return !value.trim() ? "Número é obrigatório" : "";
+      case "bairro":
+        return !value.trim() ? "Bairro é obrigatório" : "";
+      case "cidade":
+        return !value.trim() ? "Cidade é obrigatória" : "";
+      case "estado":
+        return !value.trim() ? "Estado é obrigatório" : "";
+      default:
+        return "";
+    }
+  };
+
+  // Valida o formulário completo
+  const validateForm = (): boolean => {
+    const errors = {
+      nome: validateField("nome", formData.nome),
+      email: validateField("email", formData.email),
+      telefone: validateField("telefone", formData.telefone),
+      cpfCnpj: validateField("cpfCnpj", formData.cpfCnpj),
+      cep: validateField("cep", formData.cep),
+      endereco: validateField("endereco", formData.endereco),
+      numero: validateField("numero", formData.numero),
+      bairro: validateField("bairro", formData.bairro),
+      cidade: validateField("cidade", formData.cidade),
+      estado: validateField("estado", formData.estado),
+    };
+    
+    setFormErrors(errors);
+    
+    // Retorna true se não houver erros
+    return !Object.values(errors).some(error => error);
   };
 
   // Manipulador de envio do formulário
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Valida o formulário antes de enviar
+    if (!validateForm()) {
+      showError("Por favor, corrija os erros no formulário.");
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -159,8 +310,9 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
         clientName: formData.nome,
         email: formData.email,
         phoneNumber: formData.telefone,
-        address: `${formData.endereco}, ${formData.numero}${formData.complemento ? ", " + formData.complemento : ""}, ${formData.bairro}, ${formData.cidade} - ${formData.estado}, CEP: ${formData.cep}`,
+        address: `${formData.endereco}, ${formData.numero}${formData.complemento ? ", " + formData.complemento : ""}, ${formData.bairro}, ${formData.cidade} - ${formData.estado}${formData.cep ? ", CEP: " + formData.cep : ""}`,
         variablePrice: false, // Valor padrão
+        document: formData.cpfCnpj, // Nome do campo conforme esperado pelo backend
       };
 
       // Enviar para o backend
@@ -236,16 +388,21 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                     name="nome"
                     value={formData.nome}
                     onChange={handleChange}
+                    onBlur={(e) => setFormErrors({...formErrors, nome: validateField("nome", e.target.value)})}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
+                      formErrors.nome ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="Digite o nome completo"
                   />
+                  {formErrors.nome && <p className="text-red-500 text-xs mt-1">{formErrors.nome}</p>}
                 </div>
                 <div>
                   <label
                     htmlFor="cpfCnpj"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    CPF/CNPJ
+                    CPF/CNPJ *
                   </label>
                   <input
                     type="text"
@@ -253,8 +410,14 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                     name="cpfCnpj"
                     value={formData.cpfCnpj}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    onBlur={(e) => setFormErrors({...formErrors, cpfCnpj: validateField("cpfCnpj", e.target.value)})}
+                    required
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
+                      formErrors.cpfCnpj ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="000.000.000-00 ou 00.000.000/0000-00"
                   />
+                  {formErrors.cpfCnpj && <p className="text-red-500 text-xs mt-1">{formErrors.cpfCnpj}</p>}
                 </div>
                 <div>
                   <label
@@ -269,9 +432,14 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
+                    onBlur={(e) => setFormErrors({...formErrors, email: validateField("email", e.target.value)})}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
+                      formErrors.email ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="exemplo@email.com"
                   />
+                  {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
                 </div>
                 <div>
                   <label
@@ -286,9 +454,14 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                     name="telefone"
                     value={formData.telefone}
                     onChange={handleChange}
+                    onBlur={(e) => setFormErrors({...formErrors, telefone: validateField("telefone", e.target.value)})}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
+                      formErrors.telefone ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="(00) 00000-0000"
                   />
+                  {formErrors.telefone && <p className="text-red-500 text-xs mt-1">{formErrors.telefone}</p>}
                 </div>
               </div>
             </div>
@@ -304,14 +477,28 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                   >
                     CEP
                   </label>
-                  <input
-                    type="text"
-                    id="cep"
-                    name="cep"
-                    value={formData.cep}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
+                  <div className="flex">
+                    <input
+                      type="text"
+                      id="cep"
+                      name="cep"
+                      value={formData.cep}
+                      onChange={handleChange}
+                      onBlur={handleCepBlur}
+                      className={`w-full px-3 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary ${
+                        formErrors.cep ? "border-red-500" : "border-gray-300"
+                      }`}
+                      placeholder="00000-000"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => formData.cep && buscarEnderecoPorCEP(formData.cep)}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 transition-colors"
+                    >
+                      Buscar
+                    </button>
+                  </div>
+                  {formErrors.cep && <p className="text-red-500 text-xs mt-1">{formErrors.cep}</p>}
                 </div>
                 <div className="md:col-span-2">
                   <label
@@ -326,9 +513,14 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                     name="endereco"
                     value={formData.endereco}
                     onChange={handleChange}
+                    onBlur={(e) => setFormErrors({...formErrors, endereco: validateField("endereco", e.target.value)})}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
+                      formErrors.endereco ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="Rua, Avenida, etc."
                   />
+                  {formErrors.endereco && <p className="text-red-500 text-xs mt-1">{formErrors.endereco}</p>}
                 </div>
                 <div>
                   <label
@@ -343,9 +535,14 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                     name="numero"
                     value={formData.numero}
                     onChange={handleChange}
+                    onBlur={(e) => setFormErrors({...formErrors, numero: validateField("numero", e.target.value)})}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
+                      formErrors.numero ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="123"
                   />
+                  {formErrors.numero && <p className="text-red-500 text-xs mt-1">{formErrors.numero}</p>}
                 </div>
                 <div>
                   <label
@@ -376,9 +573,14 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                     name="bairro"
                     value={formData.bairro}
                     onChange={handleChange}
+                    onBlur={(e) => setFormErrors({...formErrors, bairro: validateField("bairro", e.target.value)})}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
+                      formErrors.bairro ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="Nome do bairro"
                   />
+                  {formErrors.bairro && <p className="text-red-500 text-xs mt-1">{formErrors.bairro}</p>}
                 </div>
                 <div>
                   <label
@@ -393,9 +595,14 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                     name="cidade"
                     value={formData.cidade}
                     onChange={handleChange}
+                    onBlur={(e) => setFormErrors({...formErrors, cidade: validateField("cidade", e.target.value)})}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
+                      formErrors.cidade ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="Nome da cidade"
                   />
+                  {formErrors.cidade && <p className="text-red-500 text-xs mt-1">{formErrors.cidade}</p>}
                 </div>
                 <div>
                   <label
@@ -410,10 +617,15 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
                     name="estado"
                     value={formData.estado}
                     onChange={handleChange}
+                    onBlur={(e) => setFormErrors({...formErrors, estado: validateField("estado", e.target.value)})}
                     required
                     maxLength={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
+                      formErrors.estado ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="UF"
                   />
+                  {formErrors.estado && <p className="text-red-500 text-xs mt-1">{formErrors.estado}</p>}
                 </div>
               </div>
             </div>

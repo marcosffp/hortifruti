@@ -29,7 +29,7 @@ public class TransactionSicoobService {
   private static final Pattern DATE_PATTERN = Pattern.compile("^(\\d{2}/\\d{2})");
   private static final Pattern VALUE_PATTERN = Pattern.compile("R\\$\\s*([\\d.,]+)([DC])");
 
-  public List<Transaction> importStatement(MultipartFile file, Statement statement)
+  protected List<Transaction> importStatement(MultipartFile file, Statement statement)
       throws IOException {
     String text = PdfUtil.extractPdfText(file);
     List<Transaction> transactions = parseSicoob(text, statement);

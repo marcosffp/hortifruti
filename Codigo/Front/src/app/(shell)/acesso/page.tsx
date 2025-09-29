@@ -32,6 +32,15 @@ export default function AcessoPage() {
   const [usuarioParaExcluir, setUsuarioParaExcluir] = useState<number | null>(
     null
   );
+  const [viewMode, setViewMode] = useState<"lista" | "cards">("lista");
+  
+  // Carregar preferência de visualização salva
+  useEffect(() => {
+    const savedViewMode = localStorage.getItem("accessViewMode");
+    if (savedViewMode === "cards" || savedViewMode === "lista") {
+      setViewMode(savedViewMode);
+    }
+  }, []);
 
   // Função para carregar usuários do backend
   const fetchUsuarios = async () => {
@@ -191,16 +200,65 @@ export default function AcessoPage() {
 
         {/* Barra de busca e controles */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <div className="relative w-full max-w-md">
-            <input
-              type="text"
-              placeholder="Buscar por nome, cargo ou perfil..."
-              className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+          <div className="flex w-full max-w-md gap-2">
+            <div className="relative flex-grow">
+              <input
+                type="text"
+                placeholder="Buscar por nome, cargo ou perfil..."
+                className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+            </div>
+            
+            {/* Alternador de visualização (lista/cards) */}
+            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+              <button
+                onClick={() => {
+                  setViewMode("lista");
+                  localStorage.setItem("accessViewMode", "lista");
+                }}
+                className={`px-3 py-2 flex items-center justify-center ${
+                  viewMode === "lista"
+                    ? "bg-green-600 text-white"
+                    : "bg-white text-gray-700 hover:bg-gray-100"
+                }`}
+                aria-label="Visualizar em lista"
+                title="Visualizar em lista"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+              </button>
+              <button
+                onClick={() => {
+                  setViewMode("cards");
+                  localStorage.setItem("accessViewMode", "cards");
+                }}
+                className={`px-3 py-2 flex items-center justify-center ${
+                  viewMode === "cards"
+                    ? "bg-green-600 text-white"
+                    : "bg-white text-gray-700 hover:bg-gray-100"
+                }`}
+                aria-label="Visualizar em cards"
+                title="Visualizar em cards"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+              </button>
+            </div>
           </div>
+          
           <Link href="/acesso/novo">
             <Button
               variant="primary"
@@ -222,102 +280,233 @@ export default function AcessoPage() {
               Gerencie os usuários e seus perfis de acesso
             </span>
           </div>
-          {/* Cabeçalho da tabela */}
-          <div className="flex justify-between gap-4 px-6 py-3 border-b bg-gray-50 font-medium text-gray-700">
-            <div className="col-span-3">Nome</div>
-            <div className="col-span-2">Cargo</div>
-            <div className="col-span-2">Perfil</div>
-            <div className="col-span-2">Cadastrado</div>
-            <div className="col-span-3 text-right">Ações</div>
-          </div>
+          
+          {/* Vista em Lista */}
+          {viewMode === "lista" && (
+            <>
+              {/* Cabeçalho da tabela */}
+              <div className="flex justify-between gap-4 px-6 py-3 border-b bg-gray-50 font-medium text-gray-700">
+                <div className="col-span-3">Nome</div>
+                <div className="col-span-2">Cargo</div>
+                <div className="col-span-2">Perfil</div>
+                <div className="col-span-2">Cadastrado</div>
+                <div className="col-span-3 text-right">Ações</div>
+              </div>
 
-          {/* Conteúdo da lista */}
-          <div className="overflow-x-auto">
-            {!isLoading && filteredUsuarios.length > 0 && (
-              <div className="min-w-[600px]">
-                {filteredUsuarios.map((usuario) => (
-                  <div
-                    key={usuario.id}
-                    className={`flex justify-between gap-4 px-6 py-4 border-b items-center hover:${
-                      usuario.perfil === "Gestor"
-                        ? "bg-green-50"
-                        : "bg-orange-50"
-                    } transition-colors`}
-                  >
-                    {/* Nome */}
-                    <div className="col-span-3 flex items-center gap-2">
-                      <span
-                        className={`${
+              {/* Conteúdo da lista */}
+              <div className="overflow-x-auto">
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+                  </div>
+                ) : filteredUsuarios.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    {searchTerm ? (
+                      <>
+                        <Search size={48} className="text-gray-300 mb-2" />
+                        <p className="text-gray-500">Nenhum usuário encontrado com o termo "{searchTerm}"</p>
+                      </>
+                    ) : (
+                      <>
+                        <User size={48} className="text-gray-300 mb-2" />
+                        <p className="text-gray-500">Nenhum usuário cadastrado</p>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="min-w-[600px]">
+                    {filteredUsuarios.map((usuario) => (
+                      <div
+                        key={usuario.id}
+                        className={`flex justify-between gap-4 px-6 py-4 border-b items-center hover:${
                           usuario.perfil === "Gestor"
-                            ? "bg-green-100"
-                            : "bg-orange-100"
-                        } p-2 rounded-full`}
+                            ? "bg-green-50"
+                            : "bg-orange-50"
+                        } transition-colors`}
                       >
-                        {usuario.perfil === "Gestor" ? (
-                          <UserCog
+                        {/* Nome */}
+                        <div className="col-span-3 flex items-center gap-2">
+                          <span
                             className={`${
                               usuario.perfil === "Gestor"
-                                ? "text-green-600"
-                                : "text-orange-600"
-                            }`}
-                            size={20}
-                          />
-                        ) : (
-                          <User className="text-orange-600" size={20} />
-                        )}
-                      </span>
-                      <div className="truncate">{usuario.nome}</div>
-                    </div>
+                                ? "bg-green-100"
+                                : "bg-orange-100"
+                            } p-2 rounded-full`}
+                          >
+                            {usuario.perfil === "Gestor" ? (
+                              <UserCog
+                                className={`${
+                                  usuario.perfil === "Gestor"
+                                    ? "text-green-600"
+                                    : "text-orange-600"
+                                }`}
+                                size={20}
+                              />
+                            ) : (
+                              <User className="text-orange-600" size={20} />
+                            )}
+                          </span>
+                          <div className="truncate">{usuario.nome}</div>
+                        </div>
 
-                    {/* Cargo */}
-                    <div className="col-span-2 text-gray-700 truncate min-w-[80px]">
-                      {usuario.cargo}
-                    </div>
+                        {/* Cargo */}
+                        <div className="col-span-2 text-gray-700 truncate min-w-[80px]">
+                          {usuario.cargo}
+                        </div>
 
-                    {/* Perfil */}
-                    <div className="col-span-2 flex items-center gap-2">
-                      <span
-                        className={`inline-flex items-center gap-1 ${
-                          usuario.perfil === "Gestor"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-orange-100 text-orange-800"
-                        } px-3 py-1 rounded-full font-medium text-sm`}
-                      >
-                        {usuario.perfil === "Gestor" ? (
-                          <Shield className="text-green-600" size={14} />
-                        ) : (
-                          <User className="text-orange-600" size={14} />
-                        )}
-                        <span className="truncate">{usuario.perfil}</span>
-                      </span>
-                    </div>
+                        {/* Perfil */}
+                        <div className="col-span-2 flex items-center gap-2">
+                          <span
+                            className={`inline-flex items-center gap-1 ${
+                              usuario.perfil === "Gestor"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-orange-100 text-orange-800"
+                            } px-3 py-1 rounded-full font-medium text-sm`}
+                          >
+                            {usuario.perfil === "Gestor" ? (
+                              <Shield className="text-green-600" size={14} />
+                            ) : (
+                              <User className="text-orange-600" size={14} />
+                            )}
+                            <span className="truncate">{usuario.perfil}</span>
+                          </span>
+                        </div>
 
-                    {/* Cadastrado */}
-                    <div className="col-span-2 text-gray-600 truncate">
-                      {usuario.cadastrado}
-                    </div>
+                        {/* Cadastrado */}
+                        <div className="col-span-2 text-gray-600 truncate">
+                          {usuario.cadastrado}
+                        </div>
 
-                    {/* Ações */}
-                    <div className="col-span-3 flex justify-end space-x-2">
-                      <Link href={`/acesso/editar/${usuario.id}`}>
-                        <button className="inline-flex items-center gap-1 text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-colors cursor-pointer">
-                          <Edit size={16} />
-                          <span className="max-lg:hidden">Editar</span>
-                        </button>
-                      </Link>
-                      <button
-                        onClick={() => handleExcluirUsuario(usuario.id)}
-                        className="inline-flex items-center gap-1 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md transition-colors cursor-pointer"
-                      >
-                        <Trash2 size={16} />
-                        <span className="max-lg:hidden">Excluir</span>
-                      </button>
-                    </div>
+                        {/* Ações */}
+                        <div className="col-span-3 flex justify-end space-x-2">
+                          <Link href={`/acesso/editar/${usuario.id}`}>
+                            <button className="inline-flex items-center gap-1 text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-colors cursor-pointer">
+                              <Edit size={16} />
+                              <span className="max-lg:hidden">Editar</span>
+                            </button>
+                          </Link>
+                          <button
+                            onClick={() => handleExcluirUsuario(usuario.id)}
+                            className="inline-flex items-center gap-1 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+                          >
+                            <Trash2 size={16} />
+                            <span className="max-lg:hidden">Excluir</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
+
+          {/* Vista em Cards */}
+          {viewMode === "cards" && (
+            <div className="p-4">
+              {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+                </div>
+              ) : filteredUsuarios.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  {searchTerm ? (
+                    <>
+                      <Search size={48} className="text-gray-300 mb-2" />
+                      <p className="text-gray-500">Nenhum usuário encontrado com o termo "{searchTerm}"</p>
+                    </>
+                  ) : (
+                    <>
+                      <User size={48} className="text-gray-300 mb-2" />
+                      <p className="text-gray-500">Nenhum usuário cadastrado</p>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredUsuarios.map((usuario) => (
+                    <div 
+                      key={usuario.id} 
+                      className={`border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow ${
+                        usuario.perfil === "Gestor" ? "border-green-200" : "border-orange-200"
+                      }`}
+                    >
+                      <div className={`${
+                        usuario.perfil === "Gestor" ? "bg-green-50" : "bg-orange-50"
+                      } p-4 border-b ${
+                        usuario.perfil === "Gestor" ? "border-green-100" : "border-orange-100"
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          <span className={`${
+                            usuario.perfil === "Gestor" ? "bg-green-100" : "bg-orange-100"
+                          } p-2.5 rounded-full`}>
+                            {usuario.perfil === "Gestor" ? (
+                              <UserCog className="text-green-600" size={24} />
+                            ) : (
+                              <User className="text-orange-600" size={24} />
+                            )}
+                          </span>
+                          <div>
+                            <h3 className="font-semibold text-gray-900 truncate">{usuario.nome}</h3>
+                            <p className="text-sm text-gray-600 truncate">{usuario.cargo}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <div className="flex flex-col space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Perfil:</span>
+                            <span className={`inline-flex items-center gap-1 ${
+                              usuario.perfil === "Gestor"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-orange-100 text-orange-800"
+                            } px-2.5 py-0.5 rounded-full font-medium text-sm`}>
+                              {usuario.perfil === "Gestor" ? (
+                                <Shield className="text-green-600" size={12} />
+                              ) : (
+                                <User className="text-orange-600" size={12} />
+                              )}
+                              {usuario.perfil}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Cadastrado:</span>
+                            <span className="text-sm text-gray-800">{usuario.cadastrado}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Status:</span>
+                            <span className={`inline-block px-2 py-1 text-xs rounded-full ${
+                              usuario.status === "ativo" 
+                                ? "bg-green-100 text-green-800" 
+                                : "bg-red-100 text-red-800"
+                            }`}>
+                              {usuario.status === "ativo" ? "Ativo" : "Inativo"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex border-t">
+                        <Link href={`/acesso/editar/${usuario.id}`} className="flex-1">
+                          <button className="w-full py-2 flex items-center justify-center gap-1 text-blue-600 hover:bg-blue-50 transition-colors">
+                            <Edit size={16} />
+                            <span>Editar</span>
+                          </button>
+                        </Link>
+                        <div className="w-px bg-gray-200"></div>
+                        <button 
+                          onClick={() => handleExcluirUsuario(usuario.id)}
+                          className="flex-1 py-2 flex items-center justify-center gap-1 text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                          <span>Excluir</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

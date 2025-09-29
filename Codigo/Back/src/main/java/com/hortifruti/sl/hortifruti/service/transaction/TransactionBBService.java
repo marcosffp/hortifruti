@@ -30,7 +30,7 @@ public class TransactionBBService {
       Pattern.compile(
           "^(\\d{2}/\\d{2}/\\d{4})\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(.+?)\\s+([\\d.,]+)\\s+([CD])(?:\\s+([\\d.,]+)\\s+([CD]))?$");
 
-  public List<Transaction> importStatement(MultipartFile file, Statement statement)
+  protected List<Transaction> importStatement(MultipartFile file, Statement statement)
       throws IOException {
     String text = PdfUtil.extractPdfText(file);
     List<Transaction> transactions = parseBancoBrasil(text, statement);
