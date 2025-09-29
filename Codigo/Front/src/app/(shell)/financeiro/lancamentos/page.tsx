@@ -16,6 +16,7 @@ import {
 import { useEffect, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useTransaction } from "@/hooks/useTransaction";
+import { showError, showSuccess } from "@/services/notificationService";
 import { PageResult, TransactionResponse, TransactionRequest } from "@/services/transactionService";
 import { getErrorMessage } from "@/types/errorType";
 import Loading from "@/components/ui/Loading";
@@ -138,9 +139,9 @@ export default function FinancialLaunchesPage() {
   const handleExport = async () => {
     try {
       await exportTransactionsAsExcel();
-      alert("Exportação iniciada. Verifique seus downloads.");
+      showSuccess("Exportação realizada com sucesso!");
     } catch (err) {
-      alert("Erro ao exportar lançamentos: " + getErrorMessage(err));
+      showError("Erro ao exportar lançamentos: " + getErrorMessage(err));
     }
   };
   
