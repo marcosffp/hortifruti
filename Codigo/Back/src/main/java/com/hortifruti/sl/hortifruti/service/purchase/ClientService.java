@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.service;
+package com.hortifruti.sl.hortifruti.service.purchase;
 
 import com.hortifruti.sl.hortifruti.dto.client.ClientRequest;
 import com.hortifruti.sl.hortifruti.dto.client.ClientResponse;

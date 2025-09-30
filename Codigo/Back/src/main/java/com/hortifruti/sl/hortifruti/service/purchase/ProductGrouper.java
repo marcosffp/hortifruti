@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.purchase;
 
-import com.hortifruti.sl.hortifruti.dto.GroupedProduct;
+import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProduct;
 import com.hortifruti.sl.hortifruti.exception.PurchaseException;
 import com.hortifruti.sl.hortifruti.model.InvoiceProduct;
 import com.hortifruti.sl.hortifruti.model.Purchase;

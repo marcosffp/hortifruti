@@ -6,7 +6,6 @@ import com.hortifruti.sl.hortifruti.model.InvoiceProduct;
 import com.hortifruti.sl.hortifruti.model.Purchase;
 import com.hortifruti.sl.hortifruti.repository.InvoiceProductRepository;
 import com.hortifruti.sl.hortifruti.repository.PurchaseRepository;
-import com.hortifruti.sl.hortifruti.service.ClientService;
 import com.hortifruti.sl.hortifruti.util.PdfUtil;
 import java.io.IOException;
 import java.math.BigDecimal;

@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.controller;
 
-import com.hortifruti.sl.hortifruti.dto.GroupedProductsResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductsResponse;
 import com.hortifruti.sl.hortifruti.service.purchase.PurchaseService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -11,7 +11,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -55,6 +57,18 @@ public class PurchaseController {
     } catch (Exception e) {
       logger.error("Erro ao buscar produtos agrupados: ", e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<?> deletePurchase(@PathVariable Long id) {
+    try {
+      purchaseService.deletePurchaseById(id);
+      return ResponseEntity.ok(Map.of("message", "Compra deletada com sucesso"));
+    } catch (Exception e) {
+      logger.error("Erro ao deletar compra: ", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(Map.of("error", "Falha ao deletar a compra"));
     }
   }
 }

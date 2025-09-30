@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.dto;
+package com.hortifruti.sl.hortifruti.dto.purchase;
 
 import java.math.BigDecimal;
 import java.util.List;

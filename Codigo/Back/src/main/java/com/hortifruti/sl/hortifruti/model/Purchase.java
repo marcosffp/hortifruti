@@ -31,8 +31,8 @@ public class Purchase {
   @Column(name = "purchase_date", nullable = false)
   private LocalDateTime purchaseDate;
 
-  @OneToMany(mappedBy = "purchase")
-  @JsonIgnore // Ignora a relação inversa ao serializar
+  @OneToMany(mappedBy = "purchase", cascade = CascadeType.ALL, orphanRemoval = true)
+  @JsonIgnore
   private List<InvoiceProduct> invoiceProducts;
 
   @Column(name = "total", nullable = false)

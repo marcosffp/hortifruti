@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.purchase;
 
-import com.hortifruti.sl.hortifruti.dto.GroupedProduct;
-import com.hortifruti.sl.hortifruti.dto.GroupedProductsResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProduct;
+import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductsResponse;
 import com.hortifruti.sl.hortifruti.exception.ClientException;
 import com.hortifruti.sl.hortifruti.exception.PurchaseException;
 import com.hortifruti.sl.hortifruti.model.Client;
@@ -74,5 +74,15 @@ public class PurchaseService {
 
     return new GroupedProductsResponse(
         client.getClientName(), groupedProducts.size(), totalValue, groupedProducts);
+  }
+
+  public void deletePurchaseById(Long id) {
+    Purchase purchase =
+        purchaseRepository
+            .findById(id)
+            .orElseThrow(
+                () -> new IllegalArgumentException("Compra não encontrada com o ID: " + id));
+
+    purchaseRepository.delete(purchase);
   }
 }
