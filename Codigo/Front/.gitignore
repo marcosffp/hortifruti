@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+### OS generated files ###
+*.pfx
+
+# Ignorar arquivos na pasta cert
+src/main/resources/cert/*.pfx

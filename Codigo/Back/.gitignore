@@ -35,3 +35,9 @@ build/
 ## environment variables ##
 .env
 .env.local
+
+### OS generated files ###
+*.pfx
+
+# Ignorar arquivos na pasta cert
+src/main/resources/cert/*.pfx
