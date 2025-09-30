@@ -40,9 +40,9 @@ public enum RecommendationTag {
      * @return tag correspondente
      */
     public static RecommendationTag fromScore(double score) {
-        if (score >= 18.0) {
+        if (score >= 10.0) {
             return BOM;
-        } else if (score >= 8.0) {
+        } else if (score >= 6.0) {
             return MEDIO;
         } else {
             return RUIM;
