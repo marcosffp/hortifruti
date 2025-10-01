@@ -137,4 +137,12 @@ public class GlobalExceptionHandler {
     response.put("message", ex.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
+
+  @ExceptionHandler(BilletException.class)
+  public ResponseEntity<Map<String, String>> handleBilletException(BilletException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro na Integração com Sicoob");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
 }
