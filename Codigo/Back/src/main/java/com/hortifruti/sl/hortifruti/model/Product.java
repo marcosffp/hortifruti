@@ -28,18 +28,12 @@ public class Product {
     @Column(name = "temperature_category", nullable = false)
     private TemperatureCategory temperatureCategory;
     
-
     @Enumerated(EnumType.STRING)
-    @ElementCollection(targetClass = Month.class, fetch = FetchType.EAGER)
-    @CollectionTable(name = "product_peak_months", joinColumns = @JoinColumn(name = "product_id"))
-    @Column(name = "peak_month")
+    @Column(name = "peak_sales_months", length = 500)
     private List<Month> peakSalesMonths;
     
-
     @Enumerated(EnumType.STRING)
-    @ElementCollection(targetClass = Month.class, fetch = FetchType.EAGER)
-    @CollectionTable(name = "product_low_months", joinColumns = @JoinColumn(name = "product_id"))
-    @Column(name = "low_month")
+    @Column(name = "low_sales_months", length = 500)
     private List<Month> lowSalesMonths;
     
     /**

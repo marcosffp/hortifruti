@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.service.climate_service;
 
 import com.hortifruti.sl.hortifruti.dto.climate_dto.ClimateProductRecommendationDTO;
 import com.hortifruti.sl.hortifruti.dto.climate_dto.WeatherForecastDTO;
+import com.hortifruti.sl.hortifruti.exception.RecommendationException;
 import com.hortifruti.sl.hortifruti.model.Product;
 import com.hortifruti.sl.hortifruti.model.enumeration.Month;
 import com.hortifruti.sl.hortifruti.model.enumeration.RecommendationTag;
@@ -139,7 +140,16 @@ public class ClimateProductRecommendationService {
      * Busca produtos por categoria de temperatura específica
      */
     public List<ClimateProductRecommendationDTO> getProductsByTemperatureCategory(TemperatureCategory category) {
+        if (category == null) {
+            throw new RecommendationException("Categoria de temperatura não pode ser nula.");
+        }
+        
         List<Product> products = productRepository.findByTemperatureCategory(category);
+        if (products.isEmpty()) {
+            log.warn("Nenhum produto encontrado para a categoria de temperatura: {}", category);
+            return List.of(); // Retorna lista vazia em vez de lançar exception
+        }
+        
         Month currentMonth = getCurrentMonth();
         
         return products.stream()
@@ -153,6 +163,10 @@ public class ClimateProductRecommendationService {
      * Busca os dados climáticos da API para a data especificada
      */
     public List<ClimateProductRecommendationDTO> getRecommendationsByDate(String dateString) {
+        if (dateString == null || dateString.trim().isEmpty()) {
+            throw new RecommendationException("Data não pode ser vazia.");
+        }
+        
         try {
             // Parse da data
             LocalDate date = LocalDate.parse(dateString);
@@ -164,7 +178,7 @@ public class ClimateProductRecommendationService {
             
             if (weatherForecast == null || weatherForecast.dailyForecasts().isEmpty()) {
                 log.warn("Não foi possível obter dados climáticos para a data: {}", date);
-                return List.of();
+                throw new RecommendationException("Dados climáticos não disponíveis para a data: " + date);
             }
             
             // Procurar o dia específico na previsão ou usar o primeiro dia disponível
@@ -187,7 +201,7 @@ public class ClimateProductRecommendationService {
             
         } catch (Exception e) {
             log.error("Erro ao buscar recomendações para a data {}: {}", dateString, e.getMessage(), e);
-            throw new IllegalArgumentException("Erro ao processar data: " + dateString, e);
+            throw new RecommendationException("Erro ao processar data: " + dateString + ". " + e.getMessage());
         }
     }
     
