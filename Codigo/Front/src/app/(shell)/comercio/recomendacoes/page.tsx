@@ -8,6 +8,7 @@ import { RiSunLine, RiCloudyLine, RiDrizzleLine, RiThunderstormsLine, RiSnowyLin
 import { WiHumidity } from "react-icons/wi";
 import { FaThermometerHalf, FaWind, FaArrowUp, FaArrowDown } from "react-icons/fa";
 import { TbTruckDelivery, TbChartBar } from "react-icons/tb";
+import { Edit, Trash2 } from "lucide-react";
 
 export default function RecommendationPage() {
   const [recommendations, setRecommendations] = useState<ProductRecommendation[]>([]);
@@ -15,6 +16,7 @@ export default function RecommendationPage() {
   const [loading, setLoading] = useState(true);
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [newProduct, setNewProduct] = useState<ProductRequest>({
     name: "",
@@ -22,6 +24,8 @@ export default function RecommendationPage() {
     peakSalesMonths: [],
     lowSalesMonths: [],
   });
+  const [editingProduct, setEditingProduct] = useState<{id: number, data: ProductRequest} | null>(null);
+  const [productToDelete, setProductToDelete] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   const temperatureCategorias = [
@@ -125,17 +129,107 @@ export default function RecommendationPage() {
   };
   
   // Função para converter string de meses em números
-  const handleMonthsChange = (value: string, field: 'peakSalesMonths' | 'lowSalesMonths') => {
+  const handleMonthsChange = (value: string, field: 'peakSalesMonths' | 'lowSalesMonths', isEditing: boolean = false) => {
     const months = value.split(',')
       .map(m => m.trim())
       .filter(Boolean)
       .map(m => parseInt(m))
       .filter(m => !isNaN(m) && m >= 1 && m <= 12);
     
-    setNewProduct(prev => ({
-      ...prev,
-      [field]: months
-    }));
+    if (isEditing && editingProduct) {
+      setEditingProduct({
+        ...editingProduct,
+        data: {
+          ...editingProduct.data,
+          [field]: months
+        }
+      });
+    } else {
+      setNewProduct(prev => ({
+        ...prev,
+        [field]: months
+      }));
+    }
+  };
+  
+  // Preparar produto para edição
+  const handleEditProduct = (productId: number, productName: string, temperatureCategory: string) => {
+    setEditingProduct({
+      id: productId,
+      data: {
+        name: productName,
+        temperatureCategory: temperatureCategory as any,
+        peakSalesMonths: [],
+        lowSalesMonths: []
+      }
+    });
+    setShowEdit(true);
+  };
+
+  // Salvar as edições do produto
+  const handleSaveEdit = async () => {
+    if (!editingProduct) return;
+    
+    if (!editingProduct.data.name || !editingProduct.data.temperatureCategory) {
+      setError("Nome e categoria de temperatura são obrigatórios");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await productService.updateProduct(editingProduct.id, editingProduct.data);
+      showSuccess("Produto atualizado com sucesso!");
+      setShowEdit(false);
+      setEditingProduct(null);
+      
+      // Atualiza recomendações após editar
+      if (selectedDate) {
+        const data = await productService.getRecommendationsByDate(selectedDate);
+        setRecommendations(data);
+      } else {
+        const today = new Date().toISOString().slice(0, 10);
+        const data = await productService.getRecommendationsByDate(today);
+        setRecommendations(data);
+      }
+      setError("");
+    } catch (err) {
+      console.error("Erro ao atualizar produto:", err);
+      setError("Não foi possível atualizar o produto.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Preparar exclusão do produto
+  const handleDeleteProduct = (productId: number) => {
+    setProductToDelete(productId);
+  };
+
+  // Confirmar exclusão do produto
+  const handleConfirmDelete = async () => {
+    if (productToDelete === null) return;
+    
+    try {
+      setLoading(true);
+      await productService.deleteProduct(productToDelete);
+      showSuccess("Produto excluído com sucesso!");
+      setProductToDelete(null);
+      
+      // Atualiza recomendações após excluir
+      if (selectedDate) {
+        const data = await productService.getRecommendationsByDate(selectedDate);
+        setRecommendations(data);
+      } else {
+        const today = new Date().toISOString().slice(0, 10);
+        const data = await productService.getRecommendationsByDate(today);
+        setRecommendations(data);
+      }
+    } catch (err) {
+      console.error("Erro ao excluir produto:", err);
+      showError("Não foi possível excluir o produto.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Obter cor baseada na tag
@@ -444,10 +538,136 @@ export default function RecommendationPage() {
                     </div>
                   </div>
                 </div>
+                {/* Botões de ação */}
+                <div className="flex justify-end p-3 border-t border-gray-100">
+                  <button
+                    onClick={() => handleEditProduct(rec.productId, rec.name, rec.temperatureCategory)}
+                    className="h-9 w-9 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-all mr-2"
+                    aria-label="Editar produto"
+                    title="Editar produto"
+                  >
+                    <Edit size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteProduct(rec.productId)}
+                    className="h-9 w-9 flex items-center justify-center text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-all"
+                    aria-label="Excluir produto"
+                    title="Excluir produto"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
                 <div className={`h-1.5 ${isPositive ? 'bg-green-500' : isNeutral ? 'bg-amber-500' : 'bg-red-500'}`}></div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Modal de edição de produto */}
+      {showEdit && editingProduct && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+              <Edit className="mr-2 text-blue-600" size={20} />
+              Editar Produto
+            </h3>
+            
+            <div className="flex flex-col gap-3 mb-6">
+              <label className="text-sm text-[var(--neutral-700)]">Nome do Produto*</label>
+              <input
+                className="border border-[var(--neutral-300)] rounded px-3 py-2"
+                placeholder="Ex: Tomate"
+                value={editingProduct.data.name}
+                onChange={(e) => setEditingProduct({
+                  ...editingProduct,
+                  data: { ...editingProduct.data, name: e.target.value }
+                })}
+              />
+              
+              <label className="text-sm text-[var(--neutral-700)]">Categoria de Temperatura*</label>
+              <select
+                className="border border-[var(--neutral-300)] rounded px-3 py-2"
+                value={editingProduct.data.temperatureCategory}
+                onChange={(e) => setEditingProduct({
+                  ...editingProduct,
+                  data: { ...editingProduct.data, temperatureCategory: e.target.value as any }
+                })}
+              >
+                {temperatureCategorias.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+              
+              <label className="text-sm text-[var(--neutral-700)]">Meses de Pico de Vendas</label>
+              <input
+                className="border border-[var(--neutral-300)] rounded px-3 py-2"
+                placeholder="Ex: 1,2,3 (separados por vírgula)"
+                value={editingProduct.data.peakSalesMonths.join(',')}
+                onChange={(e) => handleMonthsChange(e.target.value, 'peakSalesMonths', true)}
+              />
+              
+              <label className="text-sm text-[var(--neutral-700)]">Meses de Baixa nas Vendas</label>
+              <input
+                className="border border-[var(--neutral-300)] rounded px-3 py-2"
+                placeholder="Ex: 7,8,9 (separados por vírgula)"
+                value={editingProduct.data.lowSalesMonths.join(',')}
+                onChange={(e) => handleMonthsChange(e.target.value, 'lowSalesMonths', true)}
+              />
+              
+              {error && <span className="text-[var(--secondary)]">{error}</span>}
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowEdit(false);
+                    setEditingProduct(null);
+                    setError("");
+                  }}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  className="px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-dark)] text-white rounded-md"
+                >
+                  Salvar Alterações
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de confirmação de exclusão */}
+      {productToDelete !== null && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+              <Trash2 className="mr-2 text-red-600" size={20} />
+              Confirmar exclusão
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setProductToDelete(null)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

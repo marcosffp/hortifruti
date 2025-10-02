@@ -146,4 +146,32 @@ export const productService = {
 
     return response.json();
   },
+
+  // Atualizar produto existente
+  async updateProduct(id: number, product: ProductRequest): Promise<ProductResponse> {
+    const response = await fetchWithAuth(`${API_URL}/products/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(product),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro ao atualizar produto: ${response.statusText}`);
+    }
+
+    return response.json();
+  },
+
+  // Excluir produto
+  async deleteProduct(id: number): Promise<void> {
+    const response = await fetchWithAuth(`${API_URL}/products/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro ao excluir produto: ${response.statusText}`);
+    }
+  },
 };
