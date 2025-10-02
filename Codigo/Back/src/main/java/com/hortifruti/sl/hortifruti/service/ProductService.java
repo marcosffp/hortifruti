@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.service;
 
 import com.hortifruti.sl.hortifruti.dto.ProductRequest;
 import com.hortifruti.sl.hortifruti.dto.ProductResponse;
+import com.hortifruti.sl.hortifruti.exception.ProductException;
 import com.hortifruti.sl.hortifruti.mapper.ProductMapper;
 import com.hortifruti.sl.hortifruti.model.Product;
 import com.hortifruti.sl.hortifruti.repository.ProductRepository;
@@ -46,7 +47,7 @@ public class ProductService {
         log.info("Buscando produto por ID: {}", id);
         
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado com ID: " + id));
+                .orElseThrow(() -> new ProductException("Produto não encontrado com ID: " + id));
         
         return productMapper.toProductResponse(product);
     }
@@ -55,9 +56,13 @@ public class ProductService {
     public List<ProductResponse> searchProductsByName(String name) {
         log.info("Buscando produtos por nome: {}", name);
         
-        return productRepository.findByNameContainingIgnoreCase(name).stream()
+        List<ProductResponse> products = productRepository.findByNameContainingIgnoreCase(name).stream()
                 .map(productMapper::toProductResponse)
                 .collect(Collectors.toList());
+        
+        log.info("Encontrados {} produtos para o nome '{}'", products.size(), name);
+        
+        return products;
     }
     
 
@@ -68,7 +73,7 @@ public class ProductService {
         
         if (productRepository.findByNameContainingIgnoreCase(productRequest.name()).stream()
                 .anyMatch(p -> p.getName().equalsIgnoreCase(productRequest.name()))) {
-            throw new RuntimeException("Já existe um produto com este nome: " + productRequest.name());
+            throw new ProductException("Já existe um produto com este nome: " + productRequest.name());
         }
         
         Product product = productMapper.toProduct(productRequest);
@@ -84,7 +89,7 @@ public class ProductService {
         log.info("Atualizando produto ID {}: {}", id, productRequest.name());
         
         Product existingProduct = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado com ID: " + id));
+                .orElseThrow(() -> new ProductException("Produto não encontrado com ID: " + id));
         
 
         productRepository.findByNameContainingIgnoreCase(productRequest.name()).stream()
@@ -92,7 +97,7 @@ public class ProductService {
                 .filter(p -> p.getName().equalsIgnoreCase(productRequest.name()))
                 .findAny()
                 .ifPresent(p -> {
-                    throw new RuntimeException("Já existe outro produto com este nome: " + productRequest.name());
+                    throw new ProductException("Já existe outro produto com este nome: " + productRequest.name());
                 });
         
         productMapper.updateProduct(existingProduct, productRequest);
@@ -109,7 +114,7 @@ public class ProductService {
         log.info("Removendo produto ID: {}", id);
         
         if (!productRepository.existsById(id)) {
-            throw new RuntimeException("Produto não encontrado com ID: " + id);
+            throw new ProductException("Produto não encontrado com ID: " + id);
         }
         
         productRepository.deleteById(id);

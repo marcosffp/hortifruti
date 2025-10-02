@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.controller.climate_controller;
 
 import com.hortifruti.sl.hortifruti.dto.climate_dto.ClimateProductRecommendationDTO;
+import com.hortifruti.sl.hortifruti.exception.RecommendationException;
 import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
 import com.hortifruti.sl.hortifruti.service.climate_service.ClimateProductRecommendationService;
 
@@ -38,27 +39,24 @@ public class ClimateProductRecommendationController {
     @PreAuthorize("hasRole('MANAGER')")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Produtos encontrados com sucesso"),
-        @ApiResponse(responseCode = "400", description = "Categoria de temperatura inválida"),
-        @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER"),
-        @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
+        @ApiResponse(responseCode = "400", description = "Categoria de temperatura inválida ou erro de recomendação"),
+        @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER")
     })
     public ResponseEntity<List<ClimateProductRecommendationDTO>> getProductsByTemperature(
             @Parameter(description = "Categoria de temperatura", example = "QUENTE")
             @PathVariable TemperatureCategory category) {
         
-        try {
-            log.info("Buscando produtos para categoria de temperatura: {}", category);
-            
-            List<ClimateProductRecommendationDTO> products = recommendationService.getProductsByTemperatureCategory(category);
-            
-            log.info("Encontrados {} produtos para categoria {}", products.size(), category);
-            
-            return ResponseEntity.ok(products);
-            
-        } catch (Exception e) {
-            log.error("Erro ao buscar produtos por categoria {}: {}", category, e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+        if (category == null) {
+            throw new RecommendationException("Categoria de temperatura não pode ser nula.");
         }
+        
+        log.info("Buscando produtos para categoria de temperatura: {}", category);
+        
+        List<ClimateProductRecommendationDTO> products = recommendationService.getProductsByTemperatureCategory(category);
+        
+        log.info("Encontrados {} produtos para categoria {}", products.size(), category);
+        
+        return ResponseEntity.ok(products);
     }
 
     /**
@@ -71,30 +69,29 @@ public class ClimateProductRecommendationController {
                description = "Retorna produtos recomendados baseados nos dados climáticos da data especificada. Acesso apenas para MANAGER.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Recomendações obtidas com sucesso"),
-        @ApiResponse(responseCode = "400", description = "Data inválida"),
-        @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER"),
-        @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
+        @ApiResponse(responseCode = "400", description = "Data inválida ou erro de recomendação"),
+        @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER")
     })
     public ResponseEntity<List<ClimateProductRecommendationDTO>> getRecommendationsByDate(
             @Parameter(description = "Data para buscar recomendações (formato: YYYY-MM-DD)", example = "2025-09-27")
             @RequestParam String date) {
         
-        try {
-            log.info("Buscando recomendações para a data: {}", date);
-            
-            List<ClimateProductRecommendationDTO> recommendations = recommendationService.getRecommendationsByDate(date);
-            
-            log.info("Encontradas {} recomendações para a data {}", recommendations.size(), date);
-            
-            return ResponseEntity.ok(recommendations);
-            
-        } catch (IllegalArgumentException e) {
-            log.warn("Data inválida: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            log.error("Erro ao buscar recomendações por data: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+        if (date == null || date.trim().isEmpty()) {
+            throw new RecommendationException("Data não pode ser vazia.");
         }
+        
+        // Validação básica do formato da data
+        if (!date.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            throw new RecommendationException("Formato de data inválido. Use o formato YYYY-MM-DD.");
+        }
+        
+        log.info("Buscando recomendações para a data: {}", date);
+        
+        List<ClimateProductRecommendationDTO> recommendations = recommendationService.getRecommendationsByDate(date);
+        
+        log.info("Encontradas {} recomendações para a data {}", recommendations.size(), date);
+        
+        return ResponseEntity.ok(recommendations);
     }
     
 }
