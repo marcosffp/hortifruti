@@ -78,7 +78,7 @@ const menu: MenuItem[] = [
       {
         label: "Recomendações de Produtos",
         icon: BarChart,
-        href: "/recommendation",
+        href: "/comercio/recomendacoes",
         roles: ["MANAGER"],
       },
     ],

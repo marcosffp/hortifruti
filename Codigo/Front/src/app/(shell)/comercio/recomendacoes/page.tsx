@@ -206,7 +206,7 @@ export default function RecommendationPage() {
                   onClick={() => loadRecommendationsByDate(forecast.date)}
                 >
                   <div className={`${isSelected ? 'bg-[var(--primary)]' : 'bg-[var(--primary-light)]'} text-center py-2`}>
-                    <p className={`font-medium ${isSelected ? 'text-white' : 'text-[var(--primary-dark)]'}`}>{formattedDate}</p>
+                    <p className={`font-medium text-white`}>{formattedDate}</p>
                   </div>
                   <div className="p-3 text-center">
                     <div className="flex justify-center">
