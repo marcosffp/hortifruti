@@ -2,6 +2,8 @@ package com.hortifruti.sl.hortifruti.repository;
 
 import com.hortifruti.sl.hortifruti.model.Transaction;
 import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
+import com.hortifruti.sl.hortifruti.model.enumeration.Category;
+import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -45,4 +47,22 @@ public interface TransactionRepository
       @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
   boolean existsByHash(String hash);
+
+
+  List<Transaction> findByTransactionDateBetweenAndTransactionType(
+      LocalDate startDate, LocalDate endDate, TransactionType type);
+
+  @Query(
+      """
+      SELECT t
+      FROM Transaction t
+      WHERE t.transactionDate >= :startDate
+        AND t.transactionDate <= :endDate
+        AND t.category = :category
+      """
+  )
+  List<Transaction> findByTransactionDateBetweenAndCategory(
+      @Param("startDate") LocalDate startDate,
+      @Param("endDate") LocalDate endDate,
+      @Param("category") Category category);
 }
