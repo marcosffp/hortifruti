@@ -8,6 +8,7 @@ import FavoritesModal from '@/components/modules/FavoritesModal';
 import { AddressType, RouteData } from '@/types/addressType';
 import { freightService } from '@/services/freightService';
 import FreightConfigInfo from '@/components/modules/FreightConfigInfo';
+import RoleGuard from '@/components/auth/RoleGuard';
 
 export default function FreightCalculationPage() {
     const [origin, setOrigin] = useState('');
@@ -74,22 +75,20 @@ export default function FreightCalculationPage() {
         setShowFavoritesModal(true);
     };
 
-    const handleRouteCalculated = (data: SetStateAction<RouteData | null>) => {
-        setRouteData(data);
-    };
-
     return (
-        <main className="flex-1 p-6 bg-gray-50 overflow-auto flex flex-col">
+        <main className="flex-1 p-6 bg-gray-50 overflow-auto flex flex-col h-full">
             {/* Header Section */}
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-800">Cálculo de Frete</h1>
                 <p className="text-gray-600">Calcule o valor do frete entre dois endereços</p>
             </div>
 
-            <FreightConfigInfo />
+            <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
+                <FreightConfigInfo />
+            </RoleGuard>
 
             {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-grow">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Left Panel - Form */}
                 <div className="bg-white rounded-lg shadow-sm p-6">
                     <div className="flex justify-between items-center mb-6">
@@ -166,7 +165,7 @@ export default function FreightCalculationPage() {
                     <button
                         onClick={handleCalculateFreight}
                         disabled={!originData || !destinationData || isCalculating}
-                        className="w-full bg-green-600 text-white py-3 px-4 rounded-lg flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-green-700 transition-colors"
+                        className="w-50 bg-green-600 text-white py-3 px-4 rounded-lg flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-green-700 transition-colors"
                     >
                         {isCalculating ? (
                             <>
