@@ -9,6 +9,7 @@ import {
   type LucideIcon,
   ShoppingCart,
   Upload,
+  UserLock,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -95,16 +96,10 @@ const menu: MenuItem[] = [
     href: "/backup",
     roles: ["MANAGER"],
   },
-  {
-    label: "Módulo Relatórios",
-    icon: BarChart,
-    href: "/relatorios",
-    roles: ["MANAGER"],
-  },
   { label: "Módulo Acesso", icon: Users, href: "/acesso", roles: ["MANAGER"] },
   {
     label: "Administração",
-    icon: Database,
+    icon: UserLock,
     href: "/admin",
     roles: ["MANAGER"],
   },
