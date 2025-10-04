@@ -2,30 +2,50 @@
 
 import { useState, useRef } from "react";
 import { useStatement } from "@/hooks/useStatement";
-import Button from "@/components/ui/Button";
-import { ArrowUp, FileText, X, AlertCircle, CheckCircle2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { ArrowUp } from "lucide-react";
 import Loading from "@/components/ui/Loading";
-import { showSuccess } from "@/services/notificationService";
+import { showError, showSuccess } from "@/services/notificationService";
 
 export default function EnhancedUploadExtract() {
-  const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { formatFileSize, validateFiles, processFiles, error } = useStatement();
+  const { validateFiles, processFiles } = useStatement();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    const validFiles = validateFiles(selectedFiles);
-    setFiles((prevFiles) => [...prevFiles, ...validFiles]);
+  const handleFileUpload = async (file: File) => {
+    setLoading(true);
+
+    try {
+      const validFiles = validateFiles([file]);
+      if (validFiles.length === 0) return;
+
+      await processFiles(validFiles);
+
+      showSuccess(`O arquivo "${file.name}" foi processado com sucesso!`);
+    } catch (err) {
+      showError(`Erro ao processar o arquivo "${file.name}".`);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRemoveFile = (index: number) => {
-    setFiles(files.filter((_, i) => i !== index));
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      handleFileUpload(selectedFile);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      handleFileUpload(file);
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -38,167 +58,49 @@ export default function EnhancedUploadExtract() {
     setIsDragging(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-
-    const items = e.dataTransfer.items;
-    const fileList: File[] = [];
-
-    if (items) {
-      for (const item of Array.from(items)) {
-        if (item.kind === "file") {
-          const file = item.getAsFile();
-          if (file) fileList.push(file);
-        }
-      }
-    }
-
-    const validFiles = validateFiles(fileList);
-    setFiles((prevFiles) => [...prevFiles, ...validFiles]);
-  };
-
   const handleButtonClick = (e: React.MouseEvent) => {
-    e.preventDefault(); // Impede que o evento se propague para a label
+    e.preventDefault();
     fileInputRef.current?.click();
   };
 
-  const [processingSuccess, setProcessingSuccess] = useState(false);
-  
-  const handleProcessFiles = async () => {
-    if (files.length === 0) return;
-    setLoading(true);
-    try {
-      await processFiles(files);
-      
-      // Limpar arquivos após processamento bem-sucedido
-      setFiles([]);
-      
-      // Mostrar confirmação de sucesso
-      setProcessingSuccess(true);
-      showSuccess(`${files.length} ${files.length === 1 ? 'arquivo foi' : 'arquivos foram'} processado${files.length === 1 ? '' : 's'} com sucesso!`);
-      
-      // Aguardar um momento antes de redirecionar (para que o usuário possa ver a confirmação)
-      setTimeout(() => {
-        router.push("/financeiro/lancamentos");
-      }, 2500);
-    } catch (err) {
-      // O erro já é tratado no hook useStatement
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="relative">
+    <div className="min-h-full flex-1 flex items-center justify-center bg-white relative rounded-lg shadow-sm p-4">
       {/* Loading overlay */}
       {loading && <Loading />}
 
       <div
-        className={`block border-2 border-dashed rounded-lg p-16 text-center transition-colors w-full min-h-[260px] ${
-          isDragging ? "border-primary bg-primary-bg" : "border-gray-300"
-        }`}
+        className={`w-full h-full max-h-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center p-2 transition-colors ${isDragging ? "border-primary bg-primary-bg" : "border-gray-300"
+          }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         aria-label="Área para soltar arquivos"
       >
-        <div className="flex flex-col items-center justify-center h-full">
-          <div className="h-20 w-20 rounded-full bg-primary-bg flex items-center justify-center mb-6">
-            <ArrowUp className="text-primary h-10 w-10" />
+        <div className="flex flex-col items-center">
+          <div className="h-16 w-16 rounded-full bg-primary-bg flex items-center justify-center mb-4">
+            <ArrowUp className="text-primary h-8 w-8" />
           </div>
-          <p className="text-xl font-medium mb-3">
-            Clique para selecionar arquivos
+          <p className="text-base font-medium mb-2">
+            Clique ou arraste um arquivo
           </p>
-          <p className="text-gray-500 mb-6 text-lg">
-            ou arraste e solte os PDFs aqui
-          </p>
-          <Button
-            variant="primary"
+          <p className="text-gray-500 text-sm mb-4">Apenas arquivos PDF com no máximo 10MB</p>
+          <button
             onClick={handleButtonClick}
             type="button"
-            className="py-3 px-8 text-lg"
+            className="py-2 px-4 text-sm bg-primary text-white rounded disabled:opacity-50 cursor-pointer hover:bg-[var(--primary-dark)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             disabled={loading}
           >
-            Selecionar Arquivos
-          </Button>
+            Selecionar Arquivo
+          </button>
           <input
             type="file"
             ref={fileInputRef}
             className="hidden"
             accept=".pdf"
-            multiple
             onChange={handleFileChange}
           />
         </div>
       </div>
-
-      {error && (
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
-          <AlertCircle
-            className="text-secondary flex-shrink-0 mr-3"
-            size={24}
-          />
-          <p className="text-red-700 text-base">{error}</p>
-        </div>
-      )}
-      
-      {processingSuccess && (
-        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center animate-pulse">
-          <CheckCircle2
-            className="text-green-600 flex-shrink-0 mr-3"
-            size={24}
-          />
-          <div>
-            <p className="text-green-700 text-base font-medium">Processamento concluído com sucesso!</p>
-            <p className="text-green-600 text-sm">Você será redirecionado para a página de lançamentos em instantes...</p>
-          </div>
-        </div>
-      )}
-
-      {files.length > 0 && (
-        <div className="mt-8">
-          <h3 className="text-xl font-medium mb-4">Arquivos carregados</h3>
-          <div className="space-y-3">
-            {files.map((file, index) => (
-              <div
-                key={`${file.name}-${file.size}-${file.lastModified}`}
-                className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg"
-              >
-                <div className="flex items-center">
-                  <FileText className="text-gray-500 mr-4" size={22} />
-                  <div>
-                    <p className="font-medium text-lg">{file.name}</p>
-                    <p className="text-gray-500">{formatFileSize(file.size)}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveFile(index);
-                  }}
-                  className="text-gray-500 hover:text-secondary p-2"
-                  aria-label={`Remover arquivo ${file.name}`}
-                  disabled={loading}
-                >
-                  <X size={22} />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-6 flex justify-end">
-            <Button
-              variant="primary"
-              disabled={files.length === 0 || loading}
-              className="py-3 px-8 text-lg"
-              onClick={handleProcessFiles}
-            >
-              {loading ? "Processando..." : `Processar ${files.length} ${files.length === 1 ? "arquivo" : "arquivos"}`}
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

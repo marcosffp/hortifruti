@@ -198,20 +198,7 @@ export default function FreightCalculationPage() {
                         </div>
                     )}
 
-                    {/* Coordinates Info (for backend integration) */}
-                    {originData && destinationData && (
-                        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Coordenadas (para integração)</h4>
-                            <div className="text-xs text-gray-600 space-y-1">
-                                <div>
-                                    <strong>Origem:</strong> {originData.lat}, {originData.lng}
-                                </div>
-                                <div>
-                                    <strong>Destino:</strong> {destinationData.lat}, {destinationData.lng}
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                  
                 </div>
 
                 {/* Right Panel - Map */}
