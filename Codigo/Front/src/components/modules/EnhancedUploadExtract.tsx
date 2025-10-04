@@ -83,7 +83,7 @@ export default function EnhancedUploadExtract() {
           <p className="text-base font-medium mb-2">
             Clique ou arraste um arquivo
           </p>
-          <p className="text-gray-500 text-sm mb-4">Apenas arquivos PDF</p>
+          <p className="text-gray-500 text-sm mb-4">Apenas arquivos PDF com no máximo 10MB</p>
           <button
             onClick={handleButtonClick}
             type="button"

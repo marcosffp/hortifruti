@@ -38,12 +38,6 @@ const menu: MenuItem[] = [
     roles: ["MANAGER", "EMPLOYEE"],
     submenu: [
       {
-        label: "Upload de Extratos",
-        icon: Upload,
-        href: "/financeiro/upload",
-        roles: ["MANAGER"],
-      },
-      {
         label: "Lançamentos",
         icon: DollarSign,
         href: "/financeiro/lancamentos",
