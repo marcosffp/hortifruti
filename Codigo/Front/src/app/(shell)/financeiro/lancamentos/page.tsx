@@ -346,7 +346,7 @@ export default function FinancialLaunchesPage() {
 
       {/* Launches List Section */}
       <div className="bg-white rounded-lg shadow-sm p-6 flex-grow flex flex-col">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between flex-wrap space-y-3 items-center mb-6">
           <div>
             <h2 className="text-xl font-semibold text-gray-800">
               Lista de Lançamentos
@@ -355,7 +355,7 @@ export default function FinancialLaunchesPage() {
               {transactions?.length || 0} lançamento(s) encontrado(s)
             </p>
           </div>
-          <div className="flex space-x-4">
+          <div className="flex gap-4 flex-wrap-reverse">
             <Button
               variant="primary"
               onClick={navigateToUpload}

@@ -62,15 +62,12 @@ export default function FeaturesCarousel({ features }: FeaturesCarouselProps) {
 
           </div>
 
-          <div className="relative h-48 lg:h-auto">
+          <div className="relative h-48 lg:h-auto m-4 ml-0 rounded-lg overflow-hidden">
             <img 
               src={features[currentFeature].image} 
               alt={features[currentFeature].title}
               className="w-full h-full object-cover"
             />
-            
-            {/* Gradient overlay for better text readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent lg:hidden"></div>
           </div>
         </div>
       </div>

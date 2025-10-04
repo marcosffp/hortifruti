@@ -64,14 +64,13 @@ export default function EnhancedUploadExtract() {
   };
 
   return (
-    <div className="h-full flex-1 flex items-center justify-center bg-white relative rounded-lg shadow-sm p-4">
+    <div className="min-h-full flex-1 flex items-center justify-center bg-white relative rounded-lg shadow-sm p-4">
       {/* Loading overlay */}
       {loading && <Loading />}
 
       <div
-        className={`w-full h-full max-h-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center p-2 transition-colors ${
-          isDragging ? "border-primary bg-primary-bg" : "border-gray-300"
-        }`}
+        className={`w-full h-full max-h-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center p-2 transition-colors ${isDragging ? "border-primary bg-primary-bg" : "border-gray-300"
+          }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
