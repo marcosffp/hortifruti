@@ -13,4 +13,6 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
 
   List<Purchase> findByClientIdAndPurchaseDateBetween(
       Long clientId, LocalDateTime startDate, LocalDateTime endDate);
+
+  List<Purchase> findByClientId(Long clientId);
 }

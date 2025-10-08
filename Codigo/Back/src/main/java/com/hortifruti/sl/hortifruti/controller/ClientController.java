@@ -2,6 +2,8 @@ package com.hortifruti.sl.hortifruti.controller;
 
 import com.hortifruti.sl.hortifruti.dto.client.ClientRequest;
 import com.hortifruti.sl.hortifruti.dto.client.ClientResponse;
+import com.hortifruti.sl.hortifruti.dto.client.ClientSelectionInfo;
+import com.hortifruti.sl.hortifruti.dto.client.ClientSummary;
 import com.hortifruti.sl.hortifruti.dto.client.ClientWithLastPurchaseResponse;
 import com.hortifruti.sl.hortifruti.service.purchase.ClientService;
 import jakarta.validation.Valid;
@@ -11,6 +13,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+
 
 @RestController
 @RequestMapping("/clients")
@@ -56,6 +60,17 @@ public class ClientController {
   @GetMapping("/with-last-purchase")
   public ResponseEntity<List<ClientWithLastPurchaseResponse>> getClientsWithLastPurchase() {
     List<ClientWithLastPurchaseResponse> clients = clientService.getClientsWithLastPurchase();
+    return ResponseEntity.ok(clients);
+  }
+
+  @GetMapping("/{id}/summary")
+  public ClientSummary getClientSummary(@PathVariable Long id) {
+      return clientService.getClientSummary(id);
+  }
+  
+  @GetMapping("/for-selection")
+  public ResponseEntity<List<ClientSelectionInfo>> getAllClientsForSelection() {
+    List<ClientSelectionInfo> clients = clientService.getAllClientsForSelection();
     return ResponseEntity.ok(clients);
   }
 }

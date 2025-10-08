@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useStatement } from "@/hooks/useStatement";
+import { useUpload } from "@/hooks/useUpload";
 import Button from "@/components/ui/Button";
 import { ArrowUp, FileText, X, AlertCircle } from "lucide-react";
 
@@ -11,7 +11,7 @@ export default function EnhancedUploadExtract() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { formatFileSize, validateFiles, processFiles, error } = useStatement();
+  const { formatFileSize, validateFiles, processFiles, error } = useUpload();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -60,7 +60,7 @@ export default function EnhancedUploadExtract() {
 
   const handleProcessFiles = async () => {
     try {
-      await processFiles(files);
+      await processFiles(files, "statement");
       // Limpar arquivos após processamento bem-sucedido
       setFiles([]);
     } catch (err) {

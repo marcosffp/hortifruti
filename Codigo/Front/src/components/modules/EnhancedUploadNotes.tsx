@@ -1,109 +1,60 @@
 "use client";
 
 import { useState, useRef } from "react";
-import Button from "@/components/ui/Button";
-import { ArrowUp, FileSpreadsheet, X, AlertCircle, CheckCircle } from "lucide-react";
+import { ArrowUp } from "lucide-react";
+import Loading from "@/components/ui/Loading";
+import { showError, showSuccess } from "@/services/notificationService";
+import { useUpload } from "@/hooks/useUpload";
 
-interface UploadedFile {
-  file: File;
-  status: 'pending' | 'processing' | 'success' | 'error';
-  cliente?: string;
-  valorTotal?: string;
-  dataUpload?: string;
-  error?: string;
-}
+type EnhancedUploadNotesProps = {
+  clientId: number | undefined;
+};
 
-export default function EnhancedUploadNotes() {
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+export default function EnhancedUploadNotes({ clientId }: EnhancedUploadNotesProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  const { validateFiles, processFiles } = useUpload();
 
-  const validateFiles = (files: File[]): File[] => {
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    const allowedTypes = [
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    ];
+  const handleFileUpload = async (file: File) => {
+    setLoading(true);
 
-    return files.filter(file => {
-      if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.xls') && !file.name.toLowerCase().endsWith('.xlsx')) {
-        setError('Apenas arquivos Excel (.xls, .xlsx) são permitidos');
-        return false;
-      }
-      if (file.size > maxSize) {
-        setError('Arquivo muito grande. Máximo 10MB por arquivo');
-        return false;
-      }
-      return true;
-    });
-  };
+    try {
+      const validFiles = validateFiles([file]);
+      if (validFiles.length === 0) return;
 
-  const processFiles = async (files: File[]) => {
-    setError("");
-    
-    // Simular processamento dos arquivos
-    for (const file of files) {
-      const uploadedFile: UploadedFile = {
-        file,
-        status: 'processing'
-      };
-      
-      setUploadedFiles(prev => [...prev, uploadedFile]);
+      await processFiles(validFiles, "purchase");
 
-      try {
-        // Simular processamento
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Simular dados extraídos do Excel
-        const mockData = {
-          cliente: file.name.includes('joao') ? 'João Silva Santos' : 'Maria Oliveira',
-          valorTotal: file.name.includes('joao') ? 'R$ 1.250,00' : 'R$ 890,00',
-          dataUpload: new Date().toLocaleDateString('pt-BR') + ', ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-        };
-
-        setUploadedFiles(prev => 
-          prev.map(f => 
-            f.file === file 
-              ? { ...f, status: 'success', ...mockData }
-              : f
-          )
-        );
-      } catch (err) {
-        setUploadedFiles(prev => 
-          prev.map(f => 
-            f.file === file 
-              ? { ...f, status: 'error', error: 'Erro ao processar arquivo' }
-              : f
-          )
-        );
-      }
+      showSuccess(`O arquivo "${file.name}" foi processado com sucesso!`);
+    } catch (err) {
+      showError(`Erro ao processar o arquivo "${file.name}".`);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    const validFiles = validateFiles(selectedFiles);
-    if (validFiles.length > 0) {
-      processFiles(validFiles);
-    }
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      handleFileUpload(selectedFile);
     }
   };
 
-  const handleRemoveFile = (index: number) => {
-    setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    if(!clientId) {
+      showError("Selecione um cliente antes de enviar arquivos.");
+      return;
+    }
+
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      handleFileUpload(file);
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -116,157 +67,50 @@ export default function EnhancedUploadNotes() {
     setIsDragging(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-
-    const items = e.dataTransfer.items;
-    const fileList: File[] = [];
-
-    if (items) {
-      for (const item of Array.from(items)) {
-        if (item.kind === "file") {
-          const file = item.getAsFile();
-          if (file) fileList.push(file);
-        }
-      }
-    }
-
-    const validFiles = validateFiles(fileList);
-    if (validFiles.length > 0) {
-      processFiles(validFiles);
-    }
-  };
-
   const handleButtonClick = (e: React.MouseEvent) => {
     e.preventDefault();
     fileInputRef.current?.click();
   };
 
   return (
-    <>
+    <div className="flex-1 flex items-center justify-center bg-white relative rounded-lg shadow-sm p-4">
+      {/* Loading overlay */}
+      {loading && <Loading />}
+
       <div
-        className={`block border-2 border-dashed rounded-lg p-16 text-center transition-colors w-full min-h-[260px] ${
-          isDragging ? "border-primary bg-primary-bg" : "border-gray-300"
-        }`}
+        className={`w-full h-full max-h-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center p-2 transition-colors ${isDragging ? "border-primary bg-primary-bg" : "border-gray-300"
+          }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        aria-disabled={!clientId || loading}
         aria-label="Área para soltar arquivos"
       >
-        <div className="flex flex-col items-center justify-center h-full">
-          <div className="h-20 w-20 rounded-full bg-primary-bg flex items-center justify-center mb-6">
-            <ArrowUp className="text-primary h-10 w-10" />
+        <div className="flex flex-col items-center">
+          <div className="h-16 w-16 rounded-full bg-primary-bg flex items-center justify-center mb-4">
+            <ArrowUp className="text-primary h-8 w-8" />
           </div>
-          <p className="text-xl font-medium mb-3">
-            Clique para selecionar arquivos
+          <p className="text-base font-medium mb-2">
+            Clique ou arraste um arquivo
           </p>
-          <p className="text-gray-500 mb-6 text-lg">
-            ou arraste e solte os arquivos Excel aqui
-          </p>
-          <p className="text-sm text-gray-400 mb-6">
-            Selecione os extratos bancários em formato Excel. Máximo 10MB por arquivo.
-          </p>
-          <Button
-            variant="primary"
+          <p className="text-gray-500 text-sm mb-4">Apenas arquivos PDF com no máximo 10MB</p>
+          <button
             onClick={handleButtonClick}
             type="button"
-            className="py-3 px-8 text-lg cursor-pointer"
+            className="py-2 px-4 text-sm bg-primary text-white rounded disabled:opacity-50 cursor-pointer hover:bg-[var(--primary-dark)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            disabled={loading || !clientId}
           >
-            Selecionar Arquivos
-          </Button>
+            Selecionar Arquivo
+          </button>
           <input
             type="file"
             ref={fileInputRef}
             className="hidden"
-            accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            multiple
+            accept=".pdf"
             onChange={handleFileChange}
           />
         </div>
       </div>
-
-      {error && (
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
-          <AlertCircle className="text-red-600 flex-shrink-0 mr-3" size={24} />
-          <p className="text-red-700 text-base">{error}</p>
-        </div>
-      )}
-
-      {uploadedFiles.length > 0 && (
-        <div className="mt-8">
-          <h3 className="text-xl font-medium mb-4">Arquivos Carregados</h3>
-          
-          <div className="bg-white rounded-lg border border-gray-200">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Arquivo</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Cliente</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Valor Total</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Data Upload</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {uploadedFiles.map((uploadedFile, index) => (
-                    <tr key={`${uploadedFile.file.name}-${index}`} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center">
-                          <FileSpreadsheet className="text-green-600 mr-3" size={20} />
-                          <div>
-                            <p className="font-medium text-sm">{uploadedFile.file.name}</p>
-                            <p className="text-gray-500 text-xs">{formatFileSize(uploadedFile.file.size)}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-sm">
-                        {uploadedFile.cliente || '-'}
-                      </td>
-                      <td className="py-3 px-4 text-sm font-medium text-green-600">
-                        {uploadedFile.valorTotal || '-'}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">
-                        {uploadedFile.dataUpload || '-'}
-                      </td>
-                      <td className="py-3 px-4">
-                        {uploadedFile.status === 'processing' && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                            Processando...
-                          </span>
-                        )}
-                        {uploadedFile.status === 'success' && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Sucesso
-                          </span>
-                        )}
-                        {uploadedFile.status === 'error' && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            <AlertCircle className="w-3 h-3 mr-1" />
-                            Erro
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <button
-                          onClick={() => handleRemoveFile(index)}
-                          className="text-gray-400 hover:text-red-600 p-1"
-                          aria-label={`Remover arquivo ${uploadedFile.file.name}`}
-                        >
-                          <X size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 }

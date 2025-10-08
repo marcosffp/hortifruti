@@ -35,3 +35,10 @@ build/
 ## environment variables ##
 .env
 .env.local
+
+### Certificates ###
+*.pem
+*.crt
+*.key
+*.pfx
+*/resources/cert/*

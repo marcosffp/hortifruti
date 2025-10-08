@@ -2,30 +2,21 @@
 
 import { useState } from "react";
 import { statementService } from "@/services/statementService";
+import { purchaseService } from "@/services/purchaseService";
+import { validarArquivos } from "@/utils/validationUtils";
 
-export function useStatement() {
+export function useUpload() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const validateFiles = (selectedFiles: File[]): File[] => {
     setError(null);
-    const validFiles = selectedFiles.filter((file) => {
-      // Verificar o tamanho do arquivo (10MB = 10 * 1024 * 1024 bytes)
-      if (file.size > 10 * 1024 * 1024) {
-        setError(`O arquivo ${file.name} excede o limite de 10MB.`);
-        return false;
-      }
-
-      // Verificar se é um PDF
-      if (file.type !== "application/pdf") {
-        setError(`O arquivo ${file.name} não é um PDF.`);
-        return false;
-      }
-
-      return true;
-    });
-
-    return validFiles;
+    const result = validarArquivos(selectedFiles);
+    if (typeof result === "string") {
+      setError(result);
+      return [];
+    }
+    return result;
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -34,7 +25,7 @@ export function useStatement() {
     else return (bytes / 1048576).toFixed(1) + " MB";
   };
 
-  const processFiles = async (files: File[]) => {
+  const processFiles = async (files: File[], entity: string) => {
     setIsLoading(true);
     setError(null);
 
@@ -44,8 +35,11 @@ export function useStatement() {
         throw new Error("Um ou mais arquivos excedem o limite de 10MB.");
       }
 
-      // Chamada ao serviço para upload
-      const response = await statementService.uploadStatements(files);
+      const response = {
+        purchase: await purchaseService.uploadPurchases(files),
+        statement: await statementService.uploadStatements(files),
+      }[entity];
+      
       return response;
     } catch (err: any) {
       setError(err.message || "Erro ao processar os arquivos.");

@@ -2,6 +2,8 @@ package com.hortifruti.sl.hortifruti.service.purchase;
 
 import com.hortifruti.sl.hortifruti.dto.client.ClientRequest;
 import com.hortifruti.sl.hortifruti.dto.client.ClientResponse;
+import com.hortifruti.sl.hortifruti.dto.client.ClientSelectionInfo;
+import com.hortifruti.sl.hortifruti.dto.client.ClientSummary;
 import com.hortifruti.sl.hortifruti.dto.client.ClientWithLastPurchaseResponse;
 import com.hortifruti.sl.hortifruti.exception.ClientException;
 import com.hortifruti.sl.hortifruti.exception.PurchaseException;
@@ -112,6 +114,29 @@ public class ClientService {
         .filter(
             response ->
                 response.lastPurchaseDate() != null) // Filtra clientes sem data de última compra
+        .toList();
+  }
+
+  public ClientSummary getClientSummary(Long id) {
+      Client client = clientRepository.findById(id)
+              .orElseThrow(() -> new ClientException("Cliente não encontrado"));
+
+      List<Purchase> purchases = purchaseRepository.findByClientId(id);
+
+      int totalProducts = purchases.stream()
+              .mapToInt(purchase -> purchase.getInvoiceProducts().size())
+              .sum();
+
+      double totalValue = purchases.stream()
+              .mapToDouble(purchase -> purchase.getTotal().doubleValue())
+              .sum();
+
+      return new ClientSummary(client.getClientName(), client.getAddress(), totalProducts, totalValue);
+  }
+
+  public List<ClientSelectionInfo> getAllClientsForSelection() {
+    return clientRepository.findAll().stream()
+        .map(client -> new ClientSelectionInfo(client.getId(), client.getClientName()))
         .toList();
   }
 }
