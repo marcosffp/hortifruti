@@ -1,4 +1,4 @@
-<diagram program="umletino" version="15.1"><zoom_level>7</zoom_level><element><id>UMLClass</id><coordinates><x>581</x><y>259</y><w>301</w><h>168</h></coordinates><panel_attributes>ClimateProduct
+<diagram program="umletino" version="15.1"><zoom_level>6</zoom_level><element><id>UMLClass</id><coordinates><x>768</x><y>222</y><w>258</w><h>144</h></coordinates><panel_attributes>ClimateProduct
 --
 - id: Long
 - name: String
@@ -13,7 +13,7 @@
 + getName(): String
 + getTemperatureCategory(): TemperatureCategory
 + getPeakSalesMonths(): List&lt;Month&gt;
-+ getLowSalesMonths(): List&lt;Month&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>252</x><y>539</y><w>245</w><h>245</h></coordinates><panel_attributes>Client
++ getLowSalesMonths(): List&lt;Month&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>486</x><y>462</y><w>234</w><h>210</h></coordinates><panel_attributes>Client
 --
 - id: long
 - clientName: String
@@ -36,7 +36,7 @@
 + getCreatedAt(): LocalDateTime
 + getUpdatedAt(): LocalDateTime
 + onCreate(): void
-+ onUpdate(): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>581</x><y>546</y><w>245</w><h>224</h></coordinates><panel_attributes>User
++ onUpdate(): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>0</x><y>480</y><w>210</w><h>192</h></coordinates><panel_attributes>User
 --
 - id: Long
 - username: String
@@ -56,7 +56,7 @@
 + getUpdatedAt(): LocalDateTime
 + onCreate(): void
 + onUpdate(): void
-+ getAuthorities(): Collection&lt;? extends GrantedAuthority&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>231</x><y>826</y><w>266</w><h>336</h></coordinates><panel_attributes>Transaction
++ getAuthorities(): Collection&lt;? extends GrantedAuthority&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>462</x><y>720</y><w>228</w><h>288</h></coordinates><panel_attributes>Transaction
 --
 - id: Long
 - statement: Statement
@@ -87,7 +87,7 @@
 + getBatch(): String
 + getHash(): String
 + equals(obj: Object): boolean
-+ hashCode(): int</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1358</x><y>798</y><w>245</w><h>203</h></coordinates><panel_attributes>Statement
++ hashCode(): int</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>468</x><y>1062</y><w>210</w><h>174</h></coordinates><panel_attributes>Statement
 --
 - id: long
 - filePath: byte[]
@@ -106,7 +106,7 @@
 + getCreatedAt(): LocalDateTime
 + getTransactions(): List&lt;Transaction&gt;
 + onCreate(): void
-+ onUpdate(): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1057</x><y>567</y><w>245</w><h>315</h></coordinates><panel_attributes>FreightConfig
++ onUpdate(): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>162</x><y>972</y><w>210</w><h>270</h></coordinates><panel_attributes>FreightConfig
 --
 - id: Long
 - kmPerLiterConsumption: double
@@ -135,7 +135,7 @@
 + getMonthlyHoursWorked(): double
 + getAdministrativeCostsPercentage(): double
 + getMarginPercentage(): double
-+ getFixedFee(): double</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>0</x><y>595</y><w>175</w><h>119</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
++ getFixedFee(): double</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>276</x><y>498</y><w>150</w><h>150</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
 **Role**
 --
 MANAGER("MANAGER")
@@ -146,7 +146,7 @@ EMPLOYEE("EMPLOYEE")
 + Role(role: String)
 + getRole(): String
 + fromString(role: String): Role
-+ toString(): String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>119</x><y>252</y><w>336</w><h>175</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
++ toString(): String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>372</x><y>216</y><w>288</w><h>150</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
 **TemperatureCategory**
 --
 CONGELANDO("Congelando", 0, 5)
@@ -163,7 +163,7 @@ QUENTE("Quente", 25, 50)
 + getMinTemp(): double
 + getMaxTemp(): double
 + fromTemperature(avgTemp: double): TemperatureCategory
-+ contains(temperature: double): boolean</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1008</x><y>189</y><w>210</w><h>245</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
++ contains(temperature: double): boolean</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1134</x><y>162</y><w>180</w><h>210</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
 **Month**
 --
 JANEIRO(1, "Janeiro")
@@ -186,7 +186,7 @@ DEZEMBRO(12, "Dezembro")
 + getNumber(): int
 + getDisplayName(): String
 + getCurrentMonth(): Month
-+ isInSeason(seasons: List&lt;Month&gt;): boolean</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>581</x><y>0</y><w>280</w><h>140</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
++ isInSeason(seasons: List&lt;Month&gt;): boolean</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>768</x><y>0</y><w>240</w><h>120</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
 **RecommendationTag**
 --
 BOM("Bom", "Produto ideal para as condições atuais")
@@ -199,7 +199,7 @@ RUIM("Ruim", "Produto não ideal para as condições atuais")
 + RecommendationTag(displayName: String, description: String)
 + getDisplayName(): String
 + getDescription(): String
-+ fromScore(score: double): RecommendationTag</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>714</x><y>931</y><w>189</w><h>182</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
++ fromScore(score: double): RecommendationTag</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>750</x><y>780</y><w>162</w><h>162</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
 **Category**
 --
 VENDAS_CARTAO("Vendas Cartão")
@@ -217,7 +217,7 @@ IMPOSTOS("Impostos")
 - displayName: String
 --
 + Category(displayName: String)
-+ getDisplayName(): String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>896</x><y>1260</y><w>161</w><h>98</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
++ getDisplayName(): String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>240</x><y>798</y><w>138</w><h>84</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
 **TransactionType**
 --
 DEBITO("Débito")
@@ -226,7 +226,7 @@ CREDITO("Crédito")
 - displayName: String
 --
 + TransactionType(displayName: String)
-+ getDisplayName(): String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1078</x><y>1064</y><w>175</w><h>119</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
++ getDisplayName(): String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>750</x><y>1098</y><w>150</w><h>102</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
 **Bank**
 --
 BANCO_DO_BRASIL("Banco do Brasil")
@@ -237,7 +237,16 @@ UNKNOWN("Desconhecido")
 --
 + Bank(displayName: String)
 + getDisplayName(): String
-+ parseBank(bankName: String): Bank</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>875</x><y>287</y><w>147</w><h>28</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
++ parseBank(bankName: String): Bank</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1020</x><y>246</y><w>126</w><h>24</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
 m1=1
-m2=*</panel_attributes><additional_attributes>10;10;190;10</additional_attributes></element><element><id>Relation</id><coordinates><x>448</x><y>329</y><w>147</w><h>21</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;10;190;10</additional_attributes></element><element><id>Relation</id><coordinates><x>714</x><y>133</y><w>91</w><h>140</h></coordinates><panel_attributes>lt=&lt;-
-utiliza(recomenda)</panel_attributes><additional_attributes>10;180;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>168</x><y>651</y><w>98</w><h>21</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;10;120;10</additional_attributes></element></diagram>
+m2=*</panel_attributes><additional_attributes>10;10;190;10</additional_attributes></element><element><id>Relation</id><coordinates><x>654</x><y>282</y><w>126</w><h>18</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;10;190;10</additional_attributes></element><element><id>Relation</id><coordinates><x>882</x><y>114</y><w>78</w><h>120</h></coordinates><panel_attributes>lt=&lt;-
+use(recommends)
+m1=*
+m2=1</panel_attributes><additional_attributes>10;180;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>420</x><y>546</y><w>78</w><h>24</h></coordinates><panel_attributes>lt=&lt;-
+</panel_attributes><additional_attributes>10;20;110;20</additional_attributes></element><element><id>Relation</id><coordinates><x>588</x><y>360</y><w>222</w><h>114</h></coordinates><panel_attributes>lt=&lt;-
+manage</panel_attributes><additional_attributes>350;10;10;170</additional_attributes></element><element><id>Relation</id><coordinates><x>372</x><y>834</y><w>102</w><h>18</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;10;150;10</additional_attributes></element><element><id>Relation</id><coordinates><x>204</x><y>546</y><w>84</w><h>24</h></coordinates><panel_attributes>lt=&lt;-
+</panel_attributes><additional_attributes>120;20;10;20</additional_attributes></element><element><id>Relation</id><coordinates><x>684</x><y>822</y><w>78</w><h>18</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>110;10;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>564</x><y>1002</y><w>24</w><h>72</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+m1=1
+m2=*</panel_attributes><additional_attributes>10;100;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>672</x><y>1140</y><w>90</w><h>24</h></coordinates><panel_attributes>lt=&lt;-
+m1=*
+m2=1</panel_attributes><additional_attributes>130;10;10;10</additional_attributes></element></diagram>
