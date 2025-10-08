@@ -1,0 +1,243 @@
+<diagram program="umletino" version="15.1"><zoom_level>7</zoom_level><element><id>UMLClass</id><coordinates><x>581</x><y>259</y><w>301</w><h>168</h></coordinates><panel_attributes>ClimateProduct
+--
+- id: Long
+- name: String
+- temperatureCategory: TemperatureCategory
+- peakSalesMonths: List&lt;Month&gt;
+- lowSalesMonths: List&lt;Month&gt;
+--
++ Product()
++ Product(name: String, temperatureCategory: TemperatureCategory, 
+          peakSalesMonths: List&lt;Month&gt;, lowSalesMonths: List&lt;Month&gt;)
++ getId(): Long
++ getName(): String
++ getTemperatureCategory(): TemperatureCategory
++ getPeakSalesMonths(): List&lt;Month&gt;
++ getLowSalesMonths(): List&lt;Month&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>252</x><y>539</y><w>245</w><h>245</h></coordinates><panel_attributes>Client
+--
+- id: long
+- clientName: String
+- email: String
+- phoneNumber: String
+- address: String
+- document: String
+- variablePrice: boolean
+- createdAt: LocalDateTime
+- updatedAt: LocalDateTime
+--
++ Client()
++ getId(): long
++ getClientName(): String
++ getEmail(): String
++ getPhoneNumber(): String
++ getAddress(): String
++ getDocument(): String
++ isVariablePrice(): boolean
++ getCreatedAt(): LocalDateTime
++ getUpdatedAt(): LocalDateTime
++ onCreate(): void
++ onUpdate(): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>581</x><y>546</y><w>245</w><h>224</h></coordinates><panel_attributes>User
+--
+- id: Long
+- username: String
+- password: String
+- position: String
+- role: Role
+- createdAt: LocalDateTime
+- updatedAt: LocalDateTime
+--
++ User()
++ getId(): Long
++ getUsername(): String
++ getPassword(): String
++ getPosition(): String
++ getRole(): Role
++ getCreatedAt(): LocalDateTime
++ getUpdatedAt(): LocalDateTime
++ onCreate(): void
++ onUpdate(): void
++ getAuthorities(): Collection&lt;? extends GrantedAuthority&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>231</x><y>826</y><w>266</w><h>336</h></coordinates><panel_attributes>Transaction
+--
+- id: Long
+- statement: Statement
+- transactionDate: LocalDate
+- codHistory: String
+- history: String
+- amount: BigDecimal
+- category: Category
+- transactionType: TransactionType
+- document: String
+- sourceAgency: String
+- batch: String
+- hash: String
+- createdAt: LocalDateTime
+- updatedAt: LocalDateTime
+--
++ Transaction()
++ getId(): Long
++ getStatement(): Statement
++ getTransactionDate(): LocalDate
++ getCodHistory(): String
++ getHistory(): String
++ getAmount(): BigDecimal
++ getCategory(): Category
++ getTransactionType(): TransactionType
++ getDocument(): String
++ getSourceAgency(): String
++ getBatch(): String
++ getHash(): String
++ equals(obj: Object): boolean
++ hashCode(): int</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1358</x><y>798</y><w>245</w><h>203</h></coordinates><panel_attributes>Statement
+--
+- id: long
+- filePath: byte[]
+- name: String
+- bank: Bank
+- updatedAt: LocalDateTime
+- createdAt: LocalDateTime
+- transactions: List&lt;Transaction&gt;
+--
++ Statement()
++ getId(): long
++ getFilePath(): byte[]
++ getName(): String
++ getBank(): Bank
++ getUpdatedAt(): LocalDateTime
++ getCreatedAt(): LocalDateTime
++ getTransactions(): List&lt;Transaction&gt;
++ onCreate(): void
++ onUpdate(): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1057</x><y>567</y><w>245</w><h>315</h></coordinates><panel_attributes>FreightConfig
+--
+- id: Long
+- kmPerLiterConsumption: double
+- fuelPrice: double
+- maintenanceCostPerKm: double
+- tireCostPerKm: double
+- depreciationCostPerKm: double
+- insuranceCostPerKm: double
+- baseSalary: double
+- chargesPercentage: double
+- monthlyHoursWorked: double
+- administrativeCostsPercentage: double
+- marginPercentage: double
+- fixedFee: double
+--
++ FreightConfig()
++ getId(): Long
++ getKmPerLiterConsumption(): double
++ getFuelPrice(): double
++ getMaintenanceCostPerKm(): double
++ getTireCostPerKm(): double
++ getDepreciationCostPerKm(): double
++ getInsuranceCostPerKm(): double
++ getBaseSalary(): double
++ getChargesPercentage(): double
++ getMonthlyHoursWorked(): double
++ getAdministrativeCostsPercentage(): double
++ getMarginPercentage(): double
++ getFixedFee(): double</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>0</x><y>595</y><w>175</w><h>119</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
+**Role**
+--
+MANAGER("MANAGER")
+EMPLOYEE("EMPLOYEE")
+--
+- role: String
+--
++ Role(role: String)
++ getRole(): String
++ fromString(role: String): Role
++ toString(): String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>119</x><y>252</y><w>336</w><h>175</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
+**TemperatureCategory**
+--
+CONGELANDO("Congelando", 0, 5)
+FRIO("Frio", 6, 14)
+AMENO("Ameno", 15, 24)
+QUENTE("Quente", 25, 50)
+--
+- displayName: String
+- minTemp: double
+- maxTemp: double
+--
++ TemperatureCategory(displayName: String, minTemp: double, maxTemp: double)
++ getDisplayName(): String
++ getMinTemp(): double
++ getMaxTemp(): double
++ fromTemperature(avgTemp: double): TemperatureCategory
++ contains(temperature: double): boolean</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1008</x><y>189</y><w>210</w><h>245</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
+**Month**
+--
+JANEIRO(1, "Janeiro")
+FEVEREIRO(2, "Fevereiro")
+MARCO(3, "Março")
+ABRIL(4, "Abril")
+MAIO(5, "Maio")
+JUNHO(6, "Junho")
+JULHO(7, "Julho")
+AGOSTO(8, "Agosto")
+SETEMBRO(9, "Setembro")
+OUTUBRO(10, "Outubro")
+NOVEMBRO(11, "Novembro")
+DEZEMBRO(12, "Dezembro")
+--
+- number: int
+- displayName: String
+--
++ Month(number: int, displayName: String)
++ getNumber(): int
++ getDisplayName(): String
++ getCurrentMonth(): Month
++ isInSeason(seasons: List&lt;Month&gt;): boolean</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>581</x><y>0</y><w>280</w><h>140</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
+**RecommendationTag**
+--
+BOM("Bom", "Produto ideal para as condições atuais")
+MEDIO("Médio", "Produto adequado para as condições atuais")
+RUIM("Ruim", "Produto não ideal para as condições atuais")
+--
+- displayName: String
+- description: String
+--
++ RecommendationTag(displayName: String, description: String)
++ getDisplayName(): String
++ getDescription(): String
++ fromScore(score: double): RecommendationTag</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>714</x><y>931</y><w>189</w><h>182</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
+**Category**
+--
+VENDAS_CARTAO("Vendas Cartão")
+VENDAS_PIX("Vendas PIX")
+SERVICOS_BANCARIOS("Serviços Bancários")
+FORNECEDOR("Fornecedor")
+FAMÍLIA("Família")
+FUNCIONARIO("Funcionário")
+SERVICOS_TELEFONICOS("Serviços Telefônicos")
+CEMIG("CEMIG")
+COPASA("COPASA")
+FISCAL("Fiscal")
+IMPOSTOS("Impostos")
+--
+- displayName: String
+--
++ Category(displayName: String)
++ getDisplayName(): String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>896</x><y>1260</y><w>161</w><h>98</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
+**TransactionType**
+--
+DEBITO("Débito")
+CREDITO("Crédito")
+--
+- displayName: String
+--
++ TransactionType(displayName: String)
++ getDisplayName(): String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1078</x><y>1064</y><w>175</w><h>119</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
+**Bank**
+--
+BANCO_DO_BRASIL("Banco do Brasil")
+SICOOB("Sicoob")
+UNKNOWN("Desconhecido")
+--
+- displayName: String
+--
++ Bank(displayName: String)
++ getDisplayName(): String
++ parseBank(bankName: String): Bank</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>875</x><y>287</y><w>147</w><h>28</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+m1=1
+m2=*</panel_attributes><additional_attributes>10;10;190;10</additional_attributes></element><element><id>Relation</id><coordinates><x>448</x><y>329</y><w>147</w><h>21</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;10;190;10</additional_attributes></element><element><id>Relation</id><coordinates><x>714</x><y>133</y><w>91</w><h>140</h></coordinates><panel_attributes>lt=&lt;-
+utiliza(recomenda)</panel_attributes><additional_attributes>10;180;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>168</x><y>651</y><w>98</w><h>21</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;10;120;10</additional_attributes></element></diagram>

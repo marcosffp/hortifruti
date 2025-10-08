@@ -4,7 +4,7 @@ import com.hortifruti.sl.hortifruti.dto.ProductRequest;
 import com.hortifruti.sl.hortifruti.dto.ProductResponse;
 import com.hortifruti.sl.hortifruti.exception.ProductException;
 import com.hortifruti.sl.hortifruti.mapper.ProductMapper;
-import com.hortifruti.sl.hortifruti.model.Product;
+import com.hortifruti.sl.hortifruti.model.ClimateProduct;
 import com.hortifruti.sl.hortifruti.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +46,7 @@ public class ProductService {
     public ProductResponse getProductById(Long id) {
         log.info("Buscando produto por ID: {}", id);
         
-        Product product = productRepository.findById(id)
+        ClimateProduct product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductException("Produto não encontrado com ID: " + id));
         
         return productMapper.toProductResponse(product);
@@ -76,8 +76,8 @@ public class ProductService {
             throw new ProductException("Já existe um produto com este nome: " + productRequest.name());
         }
         
-        Product product = productMapper.toProduct(productRequest);
-        Product savedProduct = productRepository.save(product);
+        ClimateProduct product = productMapper.toProduct(productRequest);
+        ClimateProduct savedProduct = productRepository.save(product);
         
         log.info("Produto criado com sucesso: ID {}", savedProduct.getId());
         
@@ -88,7 +88,7 @@ public class ProductService {
     public ProductResponse updateProduct(Long id, ProductRequest productRequest) {
         log.info("Atualizando produto ID {}: {}", id, productRequest.name());
         
-        Product existingProduct = productRepository.findById(id)
+        ClimateProduct existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new ProductException("Produto não encontrado com ID: " + id));
         
 
@@ -101,7 +101,7 @@ public class ProductService {
                 });
         
         productMapper.updateProduct(existingProduct, productRequest);
-        Product updatedProduct = productRepository.save(existingProduct);
+        ClimateProduct updatedProduct = productRepository.save(existingProduct);
         
         log.info("Produto atualizado com sucesso: ID {}", updatedProduct.getId());
         
