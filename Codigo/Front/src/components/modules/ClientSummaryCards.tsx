@@ -1,6 +1,7 @@
 import { ClientInfo } from "@/types/clientType";
 import { useEffect, useState } from "react";
 import { UserRound, Package, CircleDollarSign } from "lucide-react";
+import { getAuthHeaders } from "@/utils/httpUtils";
 
 interface ClientSummaryCardsProps {
   clientId: number | undefined;
@@ -17,7 +18,9 @@ export default function ClientSummaryCards({ clientId }: ClientSummaryCardsProps
       setError(null);
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/clients/${clientId}/summary`
+          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/clients/${clientId}/summary`, {
+            headers: getAuthHeaders()
+          }
         );
         if (!response.ok) throw new Error("Erro ao buscar dados do cliente");
         const data: ClientInfo = await response.json();
