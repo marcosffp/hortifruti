@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
@@ -117,6 +118,7 @@ public class ClientService {
         .toList();
   }
 
+  @Transactional(readOnly = true)
   public ClientSummary getClientSummary(Long id) {
       Client client = clientRepository.findById(id)
               .orElseThrow(() -> new ClientException("Cliente não encontrado"));

@@ -102,6 +102,8 @@ export default function PurchasesPage() {
             {/* Tabela de produtos do cliente */}
             <ClientProductsTable
                 clientId={selectedClient?.clientId}
+                startDate={startDate ? `${startDate}T00:00:00` : undefined}
+                endDate={endDate ? `${endDate}T23:59:59` : undefined}
             />
 
         </main>

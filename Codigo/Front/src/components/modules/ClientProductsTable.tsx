@@ -124,11 +124,13 @@ export default function ClientProductsTable({ clientId, startDate, endDate }: Cl
                 key={col}
                 className="px-4 py-2 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-700"
               >
-                {col === "productId"
-                  ? "ID"
-                  : col === "productName"
+                {col === "code"
+                  ? "Código"
+                  : col === "name"
                   ? "Produto"
-                  : col === "totalQuantity"
+                  : col === "price"
+                  ? "Preço"
+                  : col === "quantity"
                   ? "Quantidade"
                   : col === "totalValue"
                   ? "Valor Total"
@@ -145,7 +147,7 @@ export default function ClientProductsTable({ clientId, startDate, endDate }: Cl
                   key={col}
                   className="px-4 py-2 border-b border-gray-100 text-sm text-gray-800 whitespace-nowrap"
                 >
-                  {col === "totalValue"
+                  {(col === "totalValue" || col === "price")
                     ? `R$ ${Number(prod[col]).toLocaleString("pt-BR", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
