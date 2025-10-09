@@ -21,6 +21,12 @@ export default function PurchasesPage() {
         return lastDay.toISOString().split('T')[0];
     });
 
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    const handleUploadSuccess = () => {
+        setRefreshKey((prev) => prev + 1);
+    }
+
     return (
         <main className="flex-1 p-6 bg-gray-50 overflow-auto flex flex-col min-h-full">
             <div className="mb-8">
@@ -37,12 +43,13 @@ export default function PurchasesPage() {
                 {/* Upload de notas */}
                 <EnhancedUploadNotes
                     clientId={selectedClient?.clientId}
+                    onUploadSuccess={handleUploadSuccess}
                 />
             </div>
 
 
             {/* Cards de resumo do cliente */}
-            <ClientSummaryCards clientId={selectedClient?.clientId} />
+            <ClientSummaryCards clientId={selectedClient?.clientId} refreshKey={refreshKey} />
 
             {/* Filtros */}
             <div className="mt-6 mb-4 rounded-lg p-4 bg-white shadow-sm">
@@ -104,6 +111,7 @@ export default function PurchasesPage() {
                 clientId={selectedClient?.clientId}
                 startDate={startDate ? `${startDate}T00:00:00` : undefined}
                 endDate={endDate ? `${endDate}T23:59:59` : undefined}
+                refreshKey={refreshKey}
             />
 
         </main>

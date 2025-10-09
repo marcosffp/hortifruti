@@ -6,9 +6,10 @@ interface ClientProductsTableProps {
   clientId: number | undefined;
   startDate?: string;
   endDate?: string;
+  refreshKey?: number;
 }
 
-export default function ClientProductsTable({ clientId, startDate, endDate }: ClientProductsTableProps) {
+export default function ClientProductsTable({ clientId, startDate, endDate, refreshKey }: ClientProductsTableProps) {
   const [products, setProducts] = useState<ProductInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +52,7 @@ export default function ClientProductsTable({ clientId, startDate, endDate }: Cl
     };
 
     if (clientId) fetchProducts();
-  }, [clientId, startDate, endDate]);
+  }, [clientId, startDate, endDate, refreshKey]);
 
   // Skeleton loading
   if (isLoading || !clientId) {

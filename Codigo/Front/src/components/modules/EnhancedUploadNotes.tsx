@@ -8,9 +8,10 @@ import { useUpload } from "@/hooks/useUpload";
 
 type EnhancedUploadNotesProps = {
   clientId: number | undefined;
+  onUploadSuccess?: () => void;
 };
 
-export default function EnhancedUploadNotes({ clientId }: EnhancedUploadNotesProps) {
+export default function EnhancedUploadNotes({ clientId, onUploadSuccess }: EnhancedUploadNotesProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -28,6 +29,7 @@ export default function EnhancedUploadNotes({ clientId }: EnhancedUploadNotesPro
       await processFiles(validFiles, "purchase");
 
       showSuccess(`O arquivo "${file.name}" foi processado com sucesso!`);
+      if (onUploadSuccess) onUploadSuccess();
     } catch (err) {
       showError(`Erro ao processar o arquivo "${file.name}".`);
     } finally {
@@ -106,7 +108,7 @@ export default function EnhancedUploadNotes({ clientId }: EnhancedUploadNotesPro
             type="file"
             ref={fileInputRef}
             className="hidden"
-            accept=".pdf"
+            accept="application/pdf"
             onChange={handleFileChange}
           />
         </div>

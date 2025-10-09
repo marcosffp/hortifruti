@@ -5,9 +5,10 @@ import { getAuthHeaders } from "@/utils/httpUtils";
 
 interface ClientSummaryCardsProps {
   clientId: number | undefined;
+  refreshKey?: number;
 }
 
-export default function ClientSummaryCards({ clientId }: ClientSummaryCardsProps) {
+export default function ClientSummaryCards({ clientId, refreshKey }: ClientSummaryCardsProps) {
   const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +34,7 @@ export default function ClientSummaryCards({ clientId }: ClientSummaryCardsProps
     };
 
     if (clientId) fetchClientSummary();
-  }, [clientId]);
+  }, [clientId, refreshKey]);
 
   if (isLoading) {
     return (
