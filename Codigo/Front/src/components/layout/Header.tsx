@@ -58,7 +58,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           <button
             type="button"
             onClick={logout}
-            className="flex items-center gap-1 text-white font-semibold hover:text-red-700 transition-colors"
+            className="flex items-center gap-1 text-white font-semibold hover:text-red-700 transition-colors cursor-pointer"
           >
             <LogOut size={16} />
             Sair

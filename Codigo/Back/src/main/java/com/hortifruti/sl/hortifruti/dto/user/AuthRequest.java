@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.dto;
+package com.hortifruti.sl.hortifruti.dto.user;
 
 import jakarta.validation.constraints.NotBlank;
 

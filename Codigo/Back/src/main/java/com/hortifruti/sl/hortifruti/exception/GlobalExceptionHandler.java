@@ -138,10 +138,27 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
+  @ExceptionHandler(PurchaseException.class)
+  public ResponseEntity<Map<String, String>> handlePurchaseException(PurchaseException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro no Processamento da Compra");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
+
   @ExceptionHandler(ProductException.class)
   public ResponseEntity<Map<String, String>> handleProductException(ProductException ex) {
     Map<String, String> response = new HashMap<>();
     response.put("error", "Erro de Produto");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
+
+  @ExceptionHandler(CombinedScoreException.class)
+  public ResponseEntity<Map<String, String>> handleCombinedScoreException(
+      CombinedScoreException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro no Agrupamento de Pontuação Combinada");
     response.put("message", ex.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }

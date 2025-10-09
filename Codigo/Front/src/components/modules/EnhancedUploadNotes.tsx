@@ -1,38 +1,41 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useUpload } from "@/hooks/useUpload";
-import { useStatement } from "@/hooks/useStatement";
-import Button from "@/components/ui/Button";
+import { ArrowUp } from "lucide-react";
 import Loading from "@/components/ui/Loading";
-import { ArrowUp, FileText, X, AlertCircle } from "lucide-react";
 import { showError, showSuccess } from "@/services/notificationService";
+import { useUpload } from "@/hooks/useUpload";
 
-export default function EnhancedUploadExtract() {
+type EnhancedUploadNotesProps = {
+  clientId: number | undefined;
+  onUploadSuccess?: () => void;
+};
+
+export default function EnhancedUploadNotes({ clientId, onUploadSuccess }: EnhancedUploadNotesProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-const { formatFileSize, validateFiles, processFiles, error } = useUpload();
-const { validateFiles: validateStatementFiles, processFiles: processStatementFiles } = useStatement();
+  const { validateFiles, processFiles } = useUpload();
 
-const handleFileUpload = async (file: File) => {
-  setLoading(true);
+  const handleFileUpload = async (file: File) => {
+    setLoading(true);
 
-  try {
-    const validFiles = validateFiles([file]);
-    if (validFiles.length === 0) return;
+    try {
+      const validFiles = validateFiles([file]);
+      if (validFiles.length === 0) return;
 
-    await processFiles(validFiles);
+      await processFiles(validFiles, "purchase");
 
-    showSuccess(`O arquivo "${file.name}" foi processado com sucesso!`);
-  } catch (err) {
-    showError(`Erro ao processar o arquivo "${file.name}".`);
-  } finally {
-    setLoading(false);
-  }
-};
+      showSuccess(`O arquivo "${file.name}" foi processado com sucesso!`);
+      if (onUploadSuccess) onUploadSuccess();
+    } catch (err) {
+      showError(`Erro ao processar o arquivo "${file.name}".`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -44,6 +47,11 @@ const handleFileUpload = async (file: File) => {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
+
+    if(!clientId) {
+      showError("Selecione um cliente antes de enviar arquivos.");
+      return;
+    }
 
     const file = e.dataTransfer.files[0];
     if (file) {
@@ -66,17 +74,8 @@ const handleFileUpload = async (file: File) => {
     fileInputRef.current?.click();
   };
 
-const handleProcessFiles = async () => {
-  try {
-    await processFiles(files, "statement");
-    // Limpar arquivos após processamento bem-sucedido
-    setFiles([]);
-  } catch (err) {
-    // O erro já é tratado no hook useStatement
-  }
-};
   return (
-    <div className="min-h-full flex-1 flex items-center justify-center bg-white relative rounded-lg shadow-sm p-4">
+    <div className="flex-1 flex items-center justify-center bg-white relative rounded-lg shadow-sm p-4">
       {/* Loading overlay */}
       {loading && <Loading />}
 
@@ -86,6 +85,7 @@ const handleProcessFiles = async () => {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        aria-disabled={!clientId || loading}
         aria-label="Área para soltar arquivos"
       >
         <div className="flex flex-col items-center">
@@ -100,7 +100,7 @@ const handleProcessFiles = async () => {
             onClick={handleButtonClick}
             type="button"
             className="py-2 px-4 text-sm bg-primary text-white rounded disabled:opacity-50 cursor-pointer hover:bg-[var(--primary-dark)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-            disabled={loading}
+            disabled={loading || !clientId}
           >
             Selecionar Arquivo
           </button>
@@ -108,7 +108,7 @@ const handleProcessFiles = async () => {
             type="file"
             ref={fileInputRef}
             className="hidden"
-            accept=".pdf"
+            accept="application/pdf"
             onChange={handleFileChange}
           />
         </div>

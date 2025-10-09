@@ -1,15 +1,19 @@
 package com.hortifruti.sl.hortifruti.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -52,6 +56,10 @@ public class Client {
 
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
+
+  @OneToMany(mappedBy = "client", cascade = CascadeType.ALL)
+  @JsonIgnore // Adiciona essa anotação para evitar a serialização dessa coleção
+  private List<Purchase> purchases;
 
   @PrePersist
   protected void onCreate() {

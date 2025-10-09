@@ -1,11 +1,10 @@
-package com.hortifruti.sl.hortifruti.service;
+package com.hortifruti.sl.hortifruti.service.transaction;
 
-import com.hortifruti.sl.hortifruti.dto.StatementResponse;
+import com.hortifruti.sl.hortifruti.dto.transaction.StatementResponse;
 import com.hortifruti.sl.hortifruti.exception.StatementException;
 import com.hortifruti.sl.hortifruti.model.Statement;
 import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
 import com.hortifruti.sl.hortifruti.repository.StatementRepository;
-import com.hortifruti.sl.hortifruti.service.transaction.TransactionProcessingService;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;

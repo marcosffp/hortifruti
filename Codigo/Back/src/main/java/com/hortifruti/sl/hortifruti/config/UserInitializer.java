@@ -1,10 +1,13 @@
 package com.hortifruti.sl.hortifruti.config;
 
+
+import com.hortifruti.sl.hortifruti.model.Client;
 import com.hortifruti.sl.hortifruti.model.ClimateProduct;
 import com.hortifruti.sl.hortifruti.model.FreightConfig;
 import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.model.enumeration.Month;
 import com.hortifruti.sl.hortifruti.model.enumeration.Role;
+import com.hortifruti.sl.hortifruti.repository.ClientRepository;
 import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
 import com.hortifruti.sl.hortifruti.repository.ProductRepository;
 import com.hortifruti.sl.hortifruti.repository.FreightConfigRepository;
@@ -27,11 +30,13 @@ public class UserInitializer implements CommandLineRunner {
   private final PasswordEncoder passwordEncoder;
   private final ProductRepository productRepository;
   private final FreightConfigRepository freightConfigRepository;
+  private final ClientRepository clientRepository; // Adicionado para salvar o cliente
 
   @Override
   public void run(String... args) throws Exception {
     initializeUsers();
     initializeFreightConfig();
+    initializeClients(); // Inicializa os clientes
   }
 
   // Inicializa os usuários padrão
@@ -152,5 +157,39 @@ public class UserInitializer implements CommandLineRunner {
         .marginPercentage(20.0)
         .fixedFee(3.00)
         .build();
+  }
+
+  // Inicializa os clientes padrão
+  private void initializeClients() {
+    if (clientRepository.count() == 0) {
+      createClient(
+          "Llinea Irani",
+          "llinea.irani@example.com",
+          "123456789",
+          "Rua Exemplo, 123",
+          "12345678900",
+          false);
+    }
+  }
+
+  // Cria um cliente com os dados fornecidos
+  private void createClient(
+      String clientName,
+      String email,
+      String phoneNumber,
+      String address,
+      String document,
+      boolean variablePrice) {
+    Client client =
+        Client.builder()
+            .clientName(clientName)
+            .email(email)
+            .phoneNumber(phoneNumber)
+            .address(address)
+            .document(document)
+            .variablePrice(variablePrice)
+            .build();
+    clientRepository.save(client);
+    System.out.println("Cliente " + clientName + " criado com sucesso!");
   }
 }

@@ -7,6 +7,7 @@ import {
   DollarSign,
   Home,
   type LucideIcon,
+  ShoppingBasket,
   ShoppingCart,
   Upload,
   UserLock,
@@ -71,6 +72,10 @@ const menu: MenuItem[] = [
         roles: ["MANAGER", "EMPLOYEE"],
       },
       {
+        label: "Gerenciamento de Compras",
+        icon: ShoppingBasket,
+        href: "/comercio/compras",
+        roles: ["MANAGER", "EMPLOYEE"],
         label: "Recomendações de Produtos",
         icon: BarChart,
         href: "/comercio/recomendacoes",
@@ -175,7 +180,7 @@ export default function Sidebar({
                     <button
                       type="button"
                       onClick={() => toggleSubMenu(i)}
-                      className={`flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-primary ${
+                      className={`flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-primary cursor-pointer ${
                         isSubActive ? "bg-primary text-white" : "text-gray-700"
                       }`}
                     >
@@ -202,7 +207,7 @@ export default function Sidebar({
                           >
                             <Link
                               href={subItem.href}
-                              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-gray-700 hover:bg-primary ${
+                              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-gray-700 hover:bg-primary cursor-pointer ${
                                 pathname === subItem.href
                                   ? "bg-primary text-white"
                                   : ""
@@ -220,7 +225,7 @@ export default function Sidebar({
                 ) : (
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary ${
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary cursor-pointer ${
                       isActive ? "bg-primary text-white" : "text-gray-700"
                     }`}
                     onClick={() => onClose?.()}

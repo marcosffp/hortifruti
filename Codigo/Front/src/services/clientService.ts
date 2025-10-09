@@ -1,27 +1,7 @@
 "use client";
 
 import { getAuthHeaders } from "@/utils/httpUtils";
-import { authService } from "./authService";
-
-// Tipos de dados para os clientes baseados no backend
-export interface ClientRequest {
-  clientName: string;
-  email: string;
-  phoneNumber: string;
-  address: string;
-  variablePrice: boolean;
-  document: string; // Adicionando campo obrigatório para CPF/CNPJ
-}
-
-export interface ClientResponse {
-  id: number;
-  clientName: string;
-  email: string;
-  phoneNumber: string;
-  address: string;
-  variablePrice: boolean;
-  document?: string; // Opcional na resposta, já que clientes antigos podem não ter
-}
+import { ClientResponse, ClientRequest, ClientSelectionInfo } from "@/types/clientType";
 
 // Definindo a URL base da API - pode ser ajustada conforme necessário
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -151,6 +131,25 @@ export const clientService = {
       return await response.json();
     } catch (error) {
       console.error(`Falha ao buscar cliente pelo nome ${name}:`, error);
+      throw error;
+    }
+  },
+
+  async getAllClientsForSelection(): Promise<ClientSelectionInfo[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/clients/for-selection`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar clientes para seleção: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Falha ao obter clientes para seleção:", error);
       throw error;
     }
   },
