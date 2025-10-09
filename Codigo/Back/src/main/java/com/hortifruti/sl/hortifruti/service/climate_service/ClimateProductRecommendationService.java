@@ -3,7 +3,7 @@ package com.hortifruti.sl.hortifruti.service.climate_service;
 import com.hortifruti.sl.hortifruti.dto.climate_dto.ClimateProductRecommendationDTO;
 import com.hortifruti.sl.hortifruti.dto.climate_dto.WeatherForecastDTO;
 import com.hortifruti.sl.hortifruti.exception.RecommendationException;
-import com.hortifruti.sl.hortifruti.model.Product;
+import com.hortifruti.sl.hortifruti.model.ClimateProduct;
 import com.hortifruti.sl.hortifruti.model.enumeration.Month;
 import com.hortifruti.sl.hortifruti.model.enumeration.RecommendationTag;
 import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
@@ -45,7 +45,7 @@ public class ClimateProductRecommendationService {
      * 5 dias, é o Mês atual tipo hoje é Março
      */
     private List<ClimateProductRecommendationDTO> generateRecommendations(TemperatureCategory temperatureCategory, Month currentMonth) {
-        List<Product> allProducts = productRepository.findAll();
+        List<ClimateProduct> allProducts = productRepository.findAll();
         
         return allProducts.stream()
                 .map(product -> calculateProductScore(product, temperatureCategory, currentMonth))
@@ -56,7 +56,7 @@ public class ClimateProductRecommendationService {
     /**
      * Calcula a pontuação de um produto baseado no clima e sazonalidade
      */
-    private ClimateProductRecommendationDTO calculateProductScore(Product product, TemperatureCategory climateCategory, Month currentMonth) {
+    private ClimateProductRecommendationDTO calculateProductScore(ClimateProduct product, TemperatureCategory climateCategory, Month currentMonth) {
         // 1. Pontuação do clima (peso maior - 70%)
         double climateScore = calculateClimateScore(product, climateCategory);
         
@@ -81,7 +81,7 @@ public class ClimateProductRecommendationService {
     /**
      * Calcula pontuação baseada no clima atual
      */
-    private double calculateClimateScore(Product product, TemperatureCategory currentClimate) {
+    private double calculateClimateScore(ClimateProduct product, TemperatureCategory currentClimate) {
         if (product.getTemperatureCategory() == currentClimate) {
             return PERFECT_CLIMATE_SCORE; // Categoria perfeita para o clima
         }
@@ -111,7 +111,7 @@ public class ClimateProductRecommendationService {
     /**
      * Calcula pontuação baseada na sazonalidade (mês atual)
      */
-    private double calculateSeasonalityScore(Product product, Month currentMonth) {
+    private double calculateSeasonalityScore(ClimateProduct product, Month currentMonth) {
         // Mês de alta venda
         if (product.getPeakSalesMonths() != null && product.getPeakSalesMonths().contains(currentMonth)) {
             return PEAK_SEASON_SCORE;
@@ -144,7 +144,7 @@ public class ClimateProductRecommendationService {
             throw new RecommendationException("Categoria de temperatura não pode ser nula.");
         }
         
-        List<Product> products = productRepository.findByTemperatureCategory(category);
+        List<ClimateProduct> products = productRepository.findByTemperatureCategory(category);
         if (products.isEmpty()) {
             log.warn("Nenhum produto encontrado para a categoria de temperatura: {}", category);
             return List.of(); // Retorna lista vazia em vez de lançar exception

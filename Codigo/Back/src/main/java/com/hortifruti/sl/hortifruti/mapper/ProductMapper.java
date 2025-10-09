@@ -2,7 +2,7 @@ package com.hortifruti.sl.hortifruti.mapper;
 
 import com.hortifruti.sl.hortifruti.dto.ProductRequest;
 import com.hortifruti.sl.hortifruti.dto.ProductResponse;
-import com.hortifruti.sl.hortifruti.model.Product;
+import com.hortifruti.sl.hortifruti.model.ClimateProduct;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -13,10 +13,10 @@ public interface ProductMapper {
     
 
     @Mapping(target = "id", ignore = true)
-    Product toProduct(ProductRequest productRequest);
+    ClimateProduct toProduct(ProductRequest productRequest);
     
 
-    default ProductResponse toProductResponse(Product product) {
+    default ProductResponse toProductResponse(ClimateProduct product) {
         return new ProductResponse(
             product.getId(),
             product.getName(),
@@ -27,5 +27,5 @@ public interface ProductMapper {
     }
 
     @Mapping(target = "id", ignore = true)
-    void updateProduct(@MappingTarget Product target, ProductRequest source);
+    void updateProduct(@MappingTarget ClimateProduct target, ProductRequest source);
 }

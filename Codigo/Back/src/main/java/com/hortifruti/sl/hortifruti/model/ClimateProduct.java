@@ -15,7 +15,7 @@ import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Product {
+public class ClimateProduct {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,7 +39,7 @@ public class Product {
     /**
      * Construtor para facilitar a criação de produtos
      */
-    public Product(String name,
+    public ClimateProduct(String name,
                    TemperatureCategory temperatureCategory, 
                    List<Month> peakSalesMonths, 
                    List<Month> lowSalesMonths) {

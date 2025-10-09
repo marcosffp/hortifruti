@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.config;
 
-import com.hortifruti.sl.hortifruti.model.Product;
+import com.hortifruti.sl.hortifruti.model.ClimateProduct;
 import com.hortifruti.sl.hortifruti.model.FreightConfig;
 import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.model.enumeration.Month;
@@ -52,21 +52,21 @@ public class UserInitializer implements CommandLineRunner {
     
     private void createSampleProducts() {
         // Produtos QUENTES (>=25°C)
-        productRepository.save(new Product(
+        productRepository.save(new ClimateProduct(
             "Melancia",
             TemperatureCategory.QUENTE,
             List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO, Month.MARCO), // Verão
             List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO) // Inverno
         ));
         
-        productRepository.save(new Product(
+        productRepository.save(new ClimateProduct(
             "Abacaxi",
             TemperatureCategory.QUENTE,
             List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO),
             List.of(Month.MAIO, Month.JUNHO, Month.JULHO)
         ));
         
-        productRepository.save(new Product(
+        productRepository.save(new ClimateProduct(
             "Água de Coco",
             TemperatureCategory.QUENTE,
             List.of(Month.NOVEMBRO, Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO, Month.MARCO),
@@ -74,14 +74,14 @@ public class UserInitializer implements CommandLineRunner {
         ));
         
         // Produtos AMENOS (15-24°C)
-        productRepository.save(new Product(
+        productRepository.save(new ClimateProduct(
             "Maçã",
             TemperatureCategory.AMENO,
             List.of(Month.MARCO, Month.ABRIL, Month.MAIO, Month.SETEMBRO, Month.OUTUBRO),
             List.of(Month.DEZEMBRO, Month.JANEIRO)
         ));
         
-        productRepository.save(new Product(
+        productRepository.save(new ClimateProduct(
             "Banana",
             TemperatureCategory.AMENO,
             List.of(Month.MARCO, Month.ABRIL, Month.MAIO, Month.SETEMBRO, Month.OUTUBRO, Month.NOVEMBRO),
@@ -89,14 +89,14 @@ public class UserInitializer implements CommandLineRunner {
         ));
         
         // Produtos FRIOS (6-14°C)
-        productRepository.save(new Product(
+        productRepository.save(new ClimateProduct(
             "Batata Doce",
             TemperatureCategory.FRIO,
             List.of(Month.MAIO, Month.JUNHO, Month.JULHO, Month.AGOSTO, Month.SETEMBRO),
             List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO)
         ));
         
-        productRepository.save(new Product(
+        productRepository.save(new ClimateProduct(
             "Mandioca",
             TemperatureCategory.FRIO,
             List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO, Month.SETEMBRO),
@@ -104,7 +104,7 @@ public class UserInitializer implements CommandLineRunner {
         ));
         
         // Produtos CONGELANDO (<=5°C)
-        productRepository.save(new Product(
+        productRepository.save(new ClimateProduct(
             "Gengibre",
             TemperatureCategory.CONGELANDO,
             List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO),
