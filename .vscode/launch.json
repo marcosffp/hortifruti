@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-HortifrutiSlApplication<hortifruti>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.hortifruti.sl.hortifruti.HortifrutiSlApplication",
+            "projectName": "hortifruti",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

@@ -20,7 +20,6 @@ import {
   Phone
 } from 'lucide-react';
 import Link from 'next/link';
-import Button from '@/components/ui/Button';
 import FeaturesCarousel from '@/components/landing/FeaturesCarousel';
 import StatsSection from '@/components/landing/StatsSection';
 import SmoothScroll from '@/components/landing/SmoothScroll';

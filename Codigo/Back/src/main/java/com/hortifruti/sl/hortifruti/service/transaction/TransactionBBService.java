@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.AllArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,11 +36,46 @@ public class TransactionBBService {
     String text = PdfUtil.extractPdfText(file);
     List<Transaction> transactions = parseBancoBrasil(text, statement);
 
+    // Primeiro filtrar as transações novas
     List<Transaction> newTransactions =
         TransactionUtil.filterNewTransactions(transactions, transactionRepository);
 
-    // Após salvar as transações
-    List<Transaction> savedTransactions = transactionRepository.saveAll(newTransactions);
+    // Verificar se há transações para salvar
+    if (newTransactions.isEmpty()) {
+      return new ArrayList<>();
+    }
+
+    // Tentar salvar em lote primeiro, se falhar, salvar individualmente
+    try {
+      List<Transaction> savedTransactions = transactionRepository.saveAll(newTransactions);
+      return savedTransactions;
+    } catch (DataIntegrityViolationException e) {
+      // Se houver erro de duplicata, salvar uma por uma e ignorar duplicatas
+      return saveTransactionsIndividually(newTransactions);
+    }
+  }
+
+  private List<Transaction> saveTransactionsIndividually(List<Transaction> transactions) {
+    List<Transaction> savedTransactions = new ArrayList<>();
+
+    for (Transaction transaction : transactions) {
+      try {
+        // Verificar se já existe uma transação com o mesmo hash
+        if (transactionRepository.existsByHash(transaction.getHash())) {
+          System.out.println("Transação duplicada ignorada (hash): " + transaction.getHash());
+          continue;
+        }
+
+        Transaction saved = transactionRepository.save(transaction);
+        savedTransactions.add(saved);
+      } catch (DataIntegrityViolationException duplicateException) {
+        // Ignora transações duplicadas e continua com a próxima
+        System.out.println("Transação duplicada ignorada durante save: " + transaction.getHash());
+      } catch (Exception e) {
+        // Log outros erros mas continua processando
+        System.err.println("Erro ao salvar transação: " + e.getMessage());
+      }
+    }
 
     return savedTransactions;
   }
@@ -69,7 +105,11 @@ public class TransactionBBService {
                 matcher.group(6),
                 matcher.group(7),
                 statement);
-        transactions.add(transaction);
+
+        // Só adiciona se o hash foi gerado corretamente
+        if (transaction.getHash() != null && !transaction.getHash().isEmpty()) {
+          transactions.add(transaction);
+        }
 
         if (matcher.group(8) != null && matcher.group(9) != null) {
           Transaction secondTransaction =
@@ -79,7 +119,11 @@ public class TransactionBBService {
                   matcher.group(8),
                   matcher.group(9),
                   statement);
-          transactions.add(secondTransaction);
+
+          // Só adiciona se o hash foi gerado corretamente
+          if (secondTransaction.getHash() != null && !secondTransaction.getHash().isEmpty()) {
+            transactions.add(secondTransaction);
+          }
         }
       }
     }
@@ -90,14 +134,13 @@ public class TransactionBBService {
   private Transaction createTransaction(
       Matcher matcher, String history, String value, String balanceType, Statement statement) {
     LocalDate transactionDate = TransactionUtil.parseDate(matcher.group(1));
-    String codHistory = matcher.group(4); // Captura o codHistory corretamente
+    String codHistory = matcher.group(4);
     BigDecimal amount = TransactionUtil.parseAmount(value, balanceType);
     TransactionType transactionType = TransactionUtil.determineTransactionType(balanceType);
 
-    // Extrai o número do documento, agência de origem e lote
     String document = extractDocument(history);
-    String sourceAgency = extractSourceAgency(matcher.group(2)); // Captura da linha do extrato
-    String batch = extractBatch(matcher.group(3)); // Captura da linha do extrato
+    String sourceAgency = extractSourceAgency(matcher.group(2));
+    String batch = extractBatch(matcher.group(3));
     history = cleanDescription(history);
 
     Category category = TransactionUtil.determineCategory(history.toLowerCase(), balanceType);
@@ -105,8 +148,7 @@ public class TransactionBBService {
     Transaction transaction =
         transactionMapper.toTransaction(
             statement,
-            codHistory, // Está passando o valor corretamente, mas pode estar sendo ignorado pelo
-            // mapper
+            codHistory,
             history,
             amount,
             category,
@@ -115,6 +157,13 @@ public class TransactionBBService {
             sourceAgency,
             batch,
             transactionDate.toString());
+
+    // Garantir que o hash seja gerado corretamente
+    String hash =
+        TransactionUtil.generateTransactionHash(
+            transactionDate, document != null ? document : "", amount, history);
+    transaction.setHash(hash);
+
     return transaction;
   }
 

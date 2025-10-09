@@ -2,7 +2,6 @@ package com.hortifruti.sl.hortifruti.model;
 
 import com.hortifruti.sl.hortifruti.model.enumeration.Category;
 import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
-import com.hortifruti.sl.hortifruti.util.TransactionUtil;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -34,7 +33,7 @@ public class Transaction {
   private LocalDate transactionDate;
 
   @Column(nullable = true)
-  private String codHistory; // Corrigido o nome do campo
+  private String codHistory;
 
   @Column(nullable = false, length = 500)
   private String history;
@@ -72,7 +71,6 @@ public class Transaction {
   protected void onCreate() {
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.hash = TransactionUtil.generateTransactionHash(transactionDate, document, amount, history);
   }
 
   @PreUpdate
