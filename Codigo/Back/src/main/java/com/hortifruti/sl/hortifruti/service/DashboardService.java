@@ -53,14 +53,20 @@ public class DashboardService {
     }
 
     // Métodos privados auxiliares
-
-    private BigDecimal calculateTotalByFilter(LocalDate startDate, LocalDate endDate, TransactionType type, Category category) {
-        return transactionRepository.findTransactionsByDateRange(startDate, endDate).stream()
-                .filter(transaction -> (type == null || transaction.getTransactionType() == type) &&
-                                       (category == null || transaction.getCategory() == category))
-                .map(Transaction::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
+private BigDecimal calculateTotalByFilter(LocalDate startDate, LocalDate endDate, TransactionType type, Category category) {
+    return transactionRepository.findTransactionsByDateRange(startDate, endDate).stream()
+            .filter(transaction -> (type == null || transaction.getTransactionType() == type) &&
+                                   (category == null || transaction.getCategory() == category))
+            .map(transaction -> {
+                BigDecimal amount = transaction.getAmount();
+                // garante que custos (DEBITO) não fiquem negativos
+                if (transaction.getTransactionType() == TransactionType.DEBITO) {
+                    amount = amount.abs();
+                }
+                return amount;
+            })
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+}
 
     private BigDecimal calculateTotalRevenue(LocalDate startDate, LocalDate endDate) {
         return calculateTotalByFilter(startDate, endDate, TransactionType.CREDITO, null);
