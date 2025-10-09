@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.transaction;
 
 import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequest;
+import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequestDate;
 import com.hortifruti.sl.hortifruti.dto.transaction.TransactionResponse;
 import com.hortifruti.sl.hortifruti.exception.TransactionException;
 import com.hortifruti.sl.hortifruti.mapper.TransactionMapper;
@@ -11,14 +12,15 @@ import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
 import com.hortifruti.sl.hortifruti.repository.TransactionRepository;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -70,32 +72,6 @@ public class TransactionProcessingService {
     }
   }
 
-  /** Calcula a receita total do mês atual. */
-  public BigDecimal getTotalRevenueForCurrentMonth() {
-    List<Transaction> transacoes = transactionRepository.findTransactionsForCurrentMonth();
-    return transacoes.stream()
-        .filter(transacao -> transacao.getTransactionType() == TransactionType.CREDITO)
-        .map(Transaction::getAmount)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-  }
-
-  /** Calcula as despesas totais do mês atual. */
-  public BigDecimal getTotalExpensesForCurrentMonth() {
-    List<Transaction> transacoes = transactionRepository.findTransactionsForCurrentMonth();
-    return transacoes.stream()
-        .filter(transacao -> transacao.getTransactionType() == TransactionType.DEBITO)
-        .map(Transaction::getAmount)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-  }
-
-  /** Calcula o saldo total do mês atual. */
-  public BigDecimal getTotalBalanceForCurrentMonth() {
-    BigDecimal receita = getTotalRevenueForCurrentMonth();
-    BigDecimal despesas = getTotalExpensesForCurrentMonth();
-    // quero somar
-    return receita.add(despesas);
-  }
-
   /** Retorna todas as transações como DTOs. */
   public List<TransactionResponse> getAllTransactions() {
     return transactionRepository.findAll().stream()
@@ -138,42 +114,100 @@ public class TransactionProcessingService {
       String search, String type, String category, int page, int size) {
     Pageable pageable = PageRequest.of(page, size, Sort.by("transactionDate").descending());
 
-    // Busca as transações paginadas diretamente do repositório
-    Page<Transaction> transactionsPage = transactionRepository.findAll(pageable);
+    // Cria uma especificação para filtrar as transações no banco de dados
+    Specification<Transaction> spec = Specification.allOf();
 
-    // Filtra os resultados
-    List<TransactionResponse> filtered =
-        transactionsPage.getContent().stream()
-            .map(transactionMapper::toResponse)
-            .filter(
-                tx -> {
-                  boolean matches = true;
-                  if (search != null && !search.isEmpty()) {
-                    String searchLower = search.toLowerCase();
-                    matches =
-                        (tx.history() != null && tx.history().toLowerCase().contains(searchLower))
-                            || (tx.category() != null
-                                && tx.category().name().toLowerCase().contains(searchLower));
-                  }
-                  if (matches && type != null && !type.isEmpty()) {
-                    try {
-                      matches = tx.transactionType() == TransactionType.valueOf(type.toUpperCase());
-                    } catch (IllegalArgumentException e) {
-                      matches = false;
-                    }
-                  }
-                  if (matches && category != null && !category.isEmpty()) {
-                    matches = category.equalsIgnoreCase(tx.category().name());
-                  }
-                  return matches;
-                })
-            .collect(Collectors.toList());
+    // Adiciona filtro de busca por texto (no histórico ou categoria)
+    if (search != null && !search.isEmpty()) {
+      String searchPattern = "%" + search.toLowerCase() + "%";
+      spec =
+          spec.and(
+              (root, query, criteriaBuilder) ->
+                  criteriaBuilder.or(
+                      criteriaBuilder.like(
+                          criteriaBuilder.lower(root.get("history")), searchPattern),
+                      criteriaBuilder.like(
+                          criteriaBuilder.lower(root.get("category")), searchPattern)));
+    }
 
-    // Retorna a página com os resultados filtrados
-    return new PageImpl<>(filtered, pageable, transactionsPage.getTotalElements());
+    // Adiciona filtro por tipo de transação
+    if (type != null && !type.isEmpty()) {
+      try {
+        TransactionType transactionType = TransactionType.valueOf(type.toUpperCase());
+        spec =
+            spec.and(
+                (root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("transactionType"), transactionType));
+      } catch (IllegalArgumentException e) {
+        // Ignora se o tipo for inválido
+      }
+    }
+
+    // Adiciona filtro por categoria
+    if (category != null && !category.isEmpty()) {
+      spec =
+          spec.and(
+              (root, query, criteriaBuilder) ->
+                  criteriaBuilder.equal(
+                      criteriaBuilder.lower(root.get("category")), category.toLowerCase()));
+    }
+
+    // Busca as transações filtradas e paginadas diretamente do repositório
+    Page<Transaction> transactionsPage = transactionRepository.findAll(spec, pageable);
+
+    // Mapeia as entidades para DTOs
+    return transactionsPage.map(transactionMapper::toResponse);
   }
 
   public List<String> getAllCategories() {
     return transactionRepository.findAllCategories();
+  }
+
+  /**
+   * Calcula a receita total para um período especificado ou para o mês atual se não for informado.
+   */
+  public BigDecimal getTotalRevenue(TransactionRequestDate request) {
+    LocalDate startDate = request.startDate();
+    LocalDate endDate = request.endDate();
+
+    if (startDate == null || endDate == null) {
+      startDate = LocalDate.now().withDayOfMonth(1);
+      endDate = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+    }
+    List<Transaction> transacoes =
+        transactionRepository.findTransactionsByDateRange(startDate, endDate);
+    return transacoes.stream()
+        .filter(transacao -> transacao.getTransactionType() == TransactionType.CREDITO)
+        .map(Transaction::getAmount)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  /**
+   * Calcula as despesas totais para um período especificado ou para o mês atual se não for
+   * informado.
+   */
+  public BigDecimal getTotalExpenses(TransactionRequestDate request) {
+    LocalDate startDate = request.startDate();
+    LocalDate endDate = request.endDate();
+
+    if (startDate == null || endDate == null) {
+      startDate = LocalDate.now().withDayOfMonth(1);
+      endDate = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+    }
+    List<Transaction> transacoes =
+        transactionRepository.findTransactionsByDateRange(startDate, endDate);
+    return transacoes.stream()
+        .filter(transacao -> transacao.getTransactionType() == TransactionType.DEBITO)
+        .map(Transaction::getAmount)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  /**
+   * Calcula o saldo total para um período especificado ou para o mês atual se não for informado.
+   */
+  public BigDecimal getTotalBalance(TransactionRequestDate request) {
+    BigDecimal receita = getTotalRevenue(request);
+    BigDecimal despesas = getTotalExpenses(request);
+    return receita.subtract(despesas.abs());
   }
 }

@@ -41,3 +41,10 @@ build/
 
 # Ignorar arquivos na pasta cert
 src/main/resources/cert/*.pfx
+
+### Certificates ###
+*.pem
+*.crt
+*.key
+*.pfx
+*/resources/cert/*

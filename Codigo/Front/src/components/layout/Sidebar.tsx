@@ -7,8 +7,10 @@ import {
   DollarSign,
   Home,
   type LucideIcon,
+  ShoppingBasket,
   ShoppingCart,
   Upload,
+  UserLock,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -37,12 +39,6 @@ const menu: MenuItem[] = [
     href: "#",
     roles: ["MANAGER", "EMPLOYEE"],
     submenu: [
-      {
-        label: "Upload de Extratos",
-        icon: Upload,
-        href: "/financeiro/upload",
-        roles: ["MANAGER"],
-      },
       {
         label: "Lançamentos",
         icon: DollarSign,
@@ -75,6 +71,16 @@ const menu: MenuItem[] = [
         href: "/comercio/frete",
         roles: ["MANAGER", "EMPLOYEE"],
       },
+      {
+        label: "Gerenciamento de Compras",
+        icon: ShoppingBasket,
+        href: "/comercio/compras",
+        roles: ["MANAGER", "EMPLOYEE"],
+        label: "Recomendações de Produtos",
+        icon: BarChart,
+        href: "/comercio/recomendacoes",
+        roles: ["MANAGER"],
+      },
     ],
   },
   {
@@ -89,25 +95,21 @@ const menu: MenuItem[] = [
     href: "/backup",
     roles: ["MANAGER"],
   },
-  {
-    label: "Módulo Relatórios",
-    icon: BarChart,
-    href: "/relatorios",
-    roles: ["MANAGER"],
-  },
   { label: "Módulo Acesso", icon: Users, href: "/acesso", roles: ["MANAGER"] },
   {
     label: "Administração",
-    icon: Database,
+    icon: UserLock,
     href: "/admin",
     roles: ["MANAGER"],
   },
 ];
 
 export default function Sidebar({
-  open
+  open,
+  onClose
 }: {
   open: boolean;
+  onClose?: () => void;
 }) {
   const [openSubMenu, setOpenSubMenu] = useState<number | null>(null);
   const pathname = usePathname();
@@ -135,11 +137,24 @@ export default function Sidebar({
         md:translate-x-0
       `}
     >
-      <nav className="flex flex-col gap-1">
+      {/* Botão fechar para mobile */}
+      <button 
+        onClick={() => onClose?.()}
+        className="md:hidden absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+        aria-label="Fechar menu lateral"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x">
+          <path d="M18 6 6 18"></path>
+          <path d="m6 6 12 12"></path>
+        </svg>
+      </button>
+      
+      <nav className="flex flex-col gap-1 mt-8 md:mt-0">
         {/* Home/Dashboard link */}
         <Link
           href="/dashboard"
           className={`flex items-center gap-2 px-3 py-2 rounded-lg ${pathname === "/dashboard" ? "bg-primary text-white" : "text-gray-700"} hover:bg-primary mb-2`}
+          onClick={() => onClose?.()}
         >
           <Home size={18} />
           <span>Dashboard</span>
@@ -165,7 +180,7 @@ export default function Sidebar({
                     <button
                       type="button"
                       onClick={() => toggleSubMenu(i)}
-                      className={`flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-primary ${
+                      className={`flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-primary cursor-pointer ${
                         isSubActive ? "bg-primary text-white" : "text-gray-700"
                       }`}
                     >
@@ -192,11 +207,12 @@ export default function Sidebar({
                           >
                             <Link
                               href={subItem.href}
-                              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-gray-700 hover:bg-primary ${
+                              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-gray-700 hover:bg-primary cursor-pointer ${
                                 pathname === subItem.href
                                   ? "bg-primary text-white"
                                   : ""
                               }`}
+                              onClick={() => onClose?.()}
                             >
                               <subItem.icon size={16} />
                               <span>{subItem.label}</span>
@@ -209,9 +225,10 @@ export default function Sidebar({
                 ) : (
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary ${
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary cursor-pointer ${
                       isActive ? "bg-primary text-white" : "text-gray-700"
                     }`}
+                    onClick={() => onClose?.()}
                   >
                     <item.icon size={18} />
                     <span>{item.label}</span>

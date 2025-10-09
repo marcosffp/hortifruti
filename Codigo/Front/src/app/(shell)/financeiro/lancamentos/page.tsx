@@ -2,11 +2,9 @@
 
 import {
   Search,
-  Plus,
   Download,
   ArrowUp,
   ArrowDown,
-  Calendar,
   Edit,
   Trash2,
   ArrowLeft,
@@ -18,8 +16,12 @@ import {
 import { useEffect, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useTransaction } from "@/hooks/useTransaction";
+import { showError, showSuccess } from "@/services/notificationService";
 import { PageResult, TransactionResponse, TransactionRequest } from "@/services/transactionService";
+import Button from "@/components/ui/Button";
 import { getErrorMessage } from "@/types/errorType";
+import Loading from "@/components/ui/Loading";
+import EnhancedUploadExtract from "@/components/modules/EnhancedUploadExtract";
 
 export default function FinancialLaunchesPage() {
   const router = useRouter();
@@ -51,17 +53,36 @@ export default function FinancialLaunchesPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<TransactionResponse | null>(null);
 
-  const fetchData = async () => {
+  // Novos estados para o filtro de data
+  const [startDate, setStartDate] = useState(() => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    return firstDay.toISOString().split('T')[0];
+  });
+
+  const [endDate, setEndDate] = useState(() => {
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return lastDay.toISOString().split('T')[0];
+  });
+
+  const fetchSummaryData = async () => {
     try {
-      const revenue = await getTotalRevenue();
+      const revenue = await getTotalRevenue(startDate, endDate);
       setTotalRevenue(revenue || 0);
 
-      const expenses = await getTotalExpenses();
+      const expenses = await getTotalExpenses(startDate, endDate);
       setTotalExpenses(expenses || 0);
 
-      const balance = await getTotalBalance();
+      const balance = await getTotalBalance(startDate, endDate);
       setTotalBalance(balance || 0);
+    } catch (err) {
+      console.error("Erro ao buscar dados do resumo: ", err);
+    }
+  };
 
+  const fetchTransactionsData = async () => {
+    try {
       const categories = await getAllCategories();
       setCategories(categories);
 
@@ -70,12 +91,22 @@ export default function FinancialLaunchesPage() {
       setTransactions(allTransactions?.content || []);
       setTotalPages(allTransactions?.totalPages || 1);
     } catch (err) {
-      console.error("Erro ao buscar dados: ", err);
+      console.error("Erro ao buscar transações: ", err);
     }
   };
 
+  // Effect para dados do resumo (reage às mudanças de data)
   useEffect(() => {
-    fetchData();
+    fetchSummaryData();
+  }, [startDate, endDate]);
+
+  // Effect para dados das transações (reage aos filtros de pesquisa)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchTransactionsData();
+    }, 300); // Debounce de 300ms
+
+    return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, type, category, page]);
 
@@ -84,7 +115,7 @@ export default function FinancialLaunchesPage() {
       try {
         await deleteTransaction(id);
         alert("Lançamento excluído com sucesso!");
-        fetchData(); // Refetch data after deletion
+        fetchSummaryData(); // Refetch data after deletion
       } catch (err) {
         alert("Erro ao excluir lançamento: " + getErrorMessage(err));
       }
@@ -98,13 +129,13 @@ export default function FinancialLaunchesPage() {
 
   const handleUpdateTransaction = async (formData: TransactionRequest) => {
     if (!currentTransaction) return;
-    
+
     try {
       console.log("Enviando requisição de atualização:", formData);
       await updateTransaction(currentTransaction.id, formData);
       alert("Lançamento atualizado com sucesso!");
       setIsEditModalOpen(false);
-      fetchData(); // Refetch data after update
+      fetchSummaryData(); // Refetch data after update
     } catch (err) {
       console.error("Erro detalhado:", err);
       alert("Erro ao atualizar lançamento: " + getErrorMessage(err));
@@ -114,12 +145,12 @@ export default function FinancialLaunchesPage() {
   const handleExport = async () => {
     try {
       await exportTransactionsAsExcel();
-      alert("Exportação iniciada. Verifique seus downloads.");
+      showSuccess("Exportação realizada com sucesso!");
     } catch (err) {
-      alert("Erro ao exportar lançamentos: " + getErrorMessage(err));
+      showError("Erro ao exportar lançamentos: " + getErrorMessage(err));
     }
   };
-  
+
   const navigateToUpload = () => {
     router.push('/financeiro/upload');
   };
@@ -136,6 +167,56 @@ export default function FinancialLaunchesPage() {
         </p>
       </div>
 
+      <div className="flex flex-wrap gap-6 mb-8 h-fit">
+        {/* Date Range Filter */}
+        <div className="bg-white rounded-lg shadow-sm p-4 min-h-full flex-1">
+          <h3 className="text-lg font-medium text-gray-800 mb-3">
+            Filtro de Período do Resumo Financeiro
+          </h3>
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Data Inicial
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Data Final
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <button
+                onClick={() => {
+                  const now = new Date();
+                  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                  setStartDate(firstDay.toISOString().split('T')[0]);
+                  setEndDate(lastDay.toISOString().split('T')[0]);
+                }}
+                className="px-4 py-2 bg-[var(--primary-light)] text-white rounded-lg hover:bg-[var(--primary-dark)] cursor-pointer transition-colors"
+              >
+                Mês Atual
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Upload Section */}
+        <EnhancedUploadExtract />
+      </div>
+
       {/* Summary Cards Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Total de Entradas Card */}
@@ -144,7 +225,7 @@ export default function FinancialLaunchesPage() {
             <p className="text-sm text-gray-500">Total de Entradas</p>
             {isLoading ? (
               <h2 className="text-2xl font-bold text-green-600">
-                Carregando...
+                <Loading />
               </h2>
             ) : error ? (
               <h2 className="text-2xl font-bold text-red-600">Erro</h2>
@@ -157,7 +238,25 @@ export default function FinancialLaunchesPage() {
                 })}
               </h2>
             )}
-            <p className="text-xs text-gray-400">Receitas acumuladas</p>
+            <p className="text-xs text-gray-400">
+              Período: {(() => {
+                const [year, month, day] = startDate.split("-");
+                const localStartDate = new Date(
+                  Number(year),
+                  Number(month) - 1,
+                  Number(day),
+                );
+                return localStartDate.toLocaleDateString("pt-BR");
+              })()} a {(() => {
+                const [year, month, day] = endDate.split("-");
+                const localEndDate = new Date(
+                  Number(year),
+                  Number(month) - 1,
+                  Number(day),
+                );
+                return localEndDate.toLocaleDateString("pt-BR");
+              })()}
+            </p>
           </div>
           <ArrowUp className="text-green-500" size={24} />
         </div>
@@ -167,7 +266,7 @@ export default function FinancialLaunchesPage() {
           <div>
             <p className="text-sm text-gray-500">Total de Saídas</p>
             {isLoading ? (
-              <h2 className="text-2xl font-bold text-red-600">Carregando...</h2>
+              <h2 className="text-2xl font-bold text-red-600"><Loading /></h2>
             ) : error ? (
               <h2 className="text-2xl font-bold text-red-600">Erro</h2>
             ) : (
@@ -179,7 +278,25 @@ export default function FinancialLaunchesPage() {
                 })}
               </h2>
             )}
-            <p className="text-xs text-gray-400">Despesas acumuladas</p>
+            <p className="text-xs text-gray-400">
+              Período: {(() => {
+                const [year, month, day] = startDate.split("-");
+                const localStartDate = new Date(
+                  Number(year),
+                  Number(month) - 1,
+                  Number(day),
+                );
+                return localStartDate.toLocaleDateString("pt-BR");
+              })()} a {(() => {
+                const [year, month, day] = endDate.split("-");
+                const localEndDate = new Date(
+                  Number(year),
+                  Number(month) - 1,
+                  Number(day),
+                );
+                return localEndDate.toLocaleDateString("pt-BR");
+              })()}
+            </p>
           </div>
           <ArrowDown className="text-red-500" size={24} />
         </div>
@@ -190,7 +307,7 @@ export default function FinancialLaunchesPage() {
             <p className="text-sm text-gray-500">Saldo Total</p>
             {isLoading ? (
               <h2 className="text-2xl font-bold text-gray-800">
-                Carregando...
+                <Loading />
               </h2>
             ) : error ? (
               <h2 className="text-2xl font-bold text-red-600">Erro</h2>
@@ -203,7 +320,25 @@ export default function FinancialLaunchesPage() {
                 })}
               </h2>
             )}
-            <p className="text-xs text-gray-400">Saldo atual</p>
+            <p className="text-xs text-gray-400">
+              Período: {(() => {
+                const [year, month, day] = startDate.split("-");
+                const localStartDate = new Date(
+                  Number(year),
+                  Number(month) - 1,
+                  Number(day),
+                );
+                return localStartDate.toLocaleDateString("pt-BR");
+              })()} a {(() => {
+                const [year, month, day] = endDate.split("-");
+                const localEndDate = new Date(
+                  Number(year),
+                  Number(month) - 1,
+                  Number(day),
+                );
+                return localEndDate.toLocaleDateString("pt-BR");
+              })()}
+            </p>
           </div>
           <Wallet className="text-gray-500" size={24} />
         </div>
@@ -211,7 +346,7 @@ export default function FinancialLaunchesPage() {
 
       {/* Launches List Section */}
       <div className="bg-white rounded-lg shadow-sm p-6 flex-grow flex flex-col">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between flex-wrap space-y-3 items-center mb-6">
           <div>
             <h2 className="text-xl font-semibold text-gray-800">
               Lista de Lançamentos
@@ -220,33 +355,29 @@ export default function FinancialLaunchesPage() {
               {transactions?.length || 0} lançamento(s) encontrado(s)
             </p>
           </div>
-          <div className="flex space-x-4">
-            <button 
-              className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-green-700"
+          <div className="flex gap-4 flex-wrap-reverse">
+            <Button
+              variant="primary"
               onClick={navigateToUpload}
+              className="py-2 px-4 bg-green-600 hover:bg-green-700 transition-colors"
+              icon={<Upload size={18} />}
             >
-              <Upload size={18} className="mr-2" />
-              Importar Extrato  
-            </button>
-            <button
-              className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg flex items-center"
+              Importar Extrato
+            </Button>
+            <Button
+              variant="outline"
               onClick={handleExport}
               disabled={isLoading}
+              className="border border-gray-300 text-gray-700 px-4 py-2"
+              icon={isLoading ? undefined : <Download size={18} />}
             >
-              {isLoading ? (
-                "Exportando..."
-              ) : (
-                <>
-                  <Download size={18} className="mr-2" />
-                  Exportar
-                </>
-              )}
-            </button>
+              {isLoading ? "Exportando..." : "Exportar"}
+            </Button>
           </div>
         </div>
 
         {/* Search and Filters */}
-        <div className="flex items-center space-x-4 mb-6">
+        <div className="flex items-center gap-4 flex-wrap mb-6">
           <div className="relative flex-grow">
             <Search
               size={18}
@@ -286,7 +417,7 @@ export default function FinancialLaunchesPage() {
         {/* Table of Launches */}
         <div className="overflow-x-auto">
           {isLoading ? (
-            <p>Carregando lançamentos...</p>
+            <Loading />
           ) : error ? (
             <p>Erro ao carregar lançamentos: {error}</p>
           ) : transactions && transactions.length > 0 ? (
@@ -329,11 +460,10 @@ export default function FinancialLaunchesPage() {
                     </td>
                     <td className="py-3 px-4">
                       <span
-                        className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-                          transaction.transactionType === "CREDITO"
+                        className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${transaction.transactionType === "CREDITO"
                             ? "bg-green-100 text-green-800"
                             : "bg-red-100 text-red-800"
-                        }`}
+                          }`}
                       >
                         {transaction.transactionType === "CREDITO"
                           ? "Entrada"
@@ -341,21 +471,19 @@ export default function FinancialLaunchesPage() {
                       </span>
                     </td>
                     <td
-                      className={`py-3 px-4 ${
-                        transaction.transactionType === "CREDITO"
+                      className={`py-3 px-4 ${transaction.transactionType === "CREDITO"
                           ? "text-green-600"
                           : "text-red-600"
-                      }`}
+                        }`}
                     >
-                      {`${
-                        transaction.transactionType === "CREDITO" ? "+" : "-"
-                      }R$ ${(transaction.amount || 0)
-                        .toFixed(2)
-                        .replace(".", ",")}`}
+                      {`${transaction.transactionType === "CREDITO" ? "+" : "-"
+                        }R$ ${(transaction.amount || 0)
+                          .toFixed(2)
+                          .replace(".", ",")}`}
                     </td>
                     <td className="py-3 px-4">{transaction.bank}</td>
                     <td className="py-3 px-4 flex space-x-2">
-                      <button 
+                      <button
                         className="text-gray-700 hover:text-gray-900"
                         onClick={() => handleEdit(transaction)}
                       >
@@ -377,20 +505,18 @@ export default function FinancialLaunchesPage() {
             <p>Nenhum lançamento encontrado.</p>
           )}
         </div>
-        <div className="mt-4 flex justify-start gap-5">
+        <div className="mt-4 flex justify-start max-sm:justify-center gap-5">
           <button
             disabled={page === 0}
             onClick={() => setPage(page - 1)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
-              page === 0
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${page === 0
                 ? "bg-gray-200 border-gray-300 cursor-not-allowed"
                 : "bg-white border-gray-300 hover:bg-gray-100"
-            } transition`}
+              } transition`}
           >
             <span
-              className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                page === 0 ? "bg-gray-300" : "bg-gray-100 hover:bg-gray-200"
-              }`}
+              className={`flex items-center justify-center w-8 h-8 rounded-full ${page === 0 ? "bg-gray-300" : "bg-gray-100 hover:bg-gray-200"
+                }`}
             >
               <ArrowLeft
                 size={20}
@@ -402,19 +528,17 @@ export default function FinancialLaunchesPage() {
           <button
             disabled={page === totalPages - 1}
             onClick={() => setPage(page + 1)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
-              page === totalPages - 1
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${page === totalPages - 1
                 ? "bg-gray-200 border-gray-300 cursor-not-allowed"
                 : "bg-white border-gray-300 hover:bg-gray-100"
-            } transition`}
+              } transition`}
           >
             Próxima
             <span
-              className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                page === totalPages - 1
+              className={`flex items-center justify-center w-8 h-8 rounded-full ${page === totalPages - 1
                   ? "bg-gray-300"
                   : "bg-gray-100 hover:bg-gray-200"
-              }`}
+                }`}
             >
               <ArrowRight
                 size={20}
@@ -433,7 +557,7 @@ export default function FinancialLaunchesPage() {
           <div className="bg-white rounded-lg p-6 w-full max-w-xl">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold">Editar Lançamento</h2>
-              <button 
+              <button
                 className="text-gray-500 hover:text-gray-800"
                 onClick={() => setIsEditModalOpen(false)}
               >
@@ -441,12 +565,12 @@ export default function FinancialLaunchesPage() {
               </button>
             </div>
 
-            <form 
+            <form
               onSubmit={(e: FormEvent) => {
                 e.preventDefault();
                 const form = e.target as HTMLFormElement;
                 const formData = new FormData(form);
-                
+
                 const transaction: TransactionRequest = {
                   document: formData.get('document') as string || null,
                   history: formData.get('history') as string,
@@ -459,7 +583,7 @@ export default function FinancialLaunchesPage() {
                   batch: formData.get('batch') as string,
                   sourceAgency: formData.get('sourceAgency') as string,
                 };
-                
+
                 handleUpdateTransaction(transaction);
               }}
             >
@@ -476,7 +600,7 @@ export default function FinancialLaunchesPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Categoria
@@ -494,7 +618,7 @@ export default function FinancialLaunchesPage() {
                     ))}
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Tipo
@@ -509,7 +633,7 @@ export default function FinancialLaunchesPage() {
                     <option value="DEBITO">Saída</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Data
@@ -522,7 +646,7 @@ export default function FinancialLaunchesPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Valor
@@ -536,7 +660,7 @@ export default function FinancialLaunchesPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Banco
@@ -549,7 +673,7 @@ export default function FinancialLaunchesPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Documento (opcional)
@@ -601,7 +725,7 @@ export default function FinancialLaunchesPage() {
                   />
                 </div>
               </div>
-              
+
               <div className="flex justify-end space-x-4">
                 <button
                   type="button"

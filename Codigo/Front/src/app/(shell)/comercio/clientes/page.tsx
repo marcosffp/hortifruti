@@ -27,7 +27,7 @@ interface ClienteUI {
   email: string;
   telefone: string;
   endereco: string;
-  status: "ativo" | "inativo";
+  status: "preco-fixo" | "preco-variavel";
   ultimaCompra?: string;
   totalCompras?: number;
 }
@@ -60,7 +60,7 @@ export default function ClientesPage() {
           email: client.email || "",
           telefone: client.phoneNumber || "",
           endereco: client.address || "",
-          status: "ativo", // Definir o padrão para ativo por enquanto
+          status: client.variablePrice ? "preco-variavel" : "preco-fixo", // Usar variablePrice para determinar o tipo de preço
           ultimaCompra: "-", // Estes dados ainda não estão disponíveis no backend
           totalCompras: 0, // Estes dados ainda não estão disponíveis no backend
         }));
@@ -229,7 +229,7 @@ export default function ClientesPage() {
                 </div>
                 <div className="col-span-1 flex items-center gap-2">
                   <CircleCheck size={16} className="text-gray-500" />
-                  <span className="font-semibold text-gray-800">Status</span>
+                  <span className="font-semibold text-gray-800">Preço</span>
                 </div>
                 <div className="col-span-1 flex items-center gap-2">
                   <Calendar size={16} className="text-gray-500" />

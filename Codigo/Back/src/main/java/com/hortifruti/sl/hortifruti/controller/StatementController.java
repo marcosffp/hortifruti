@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.controller;
 
-import com.hortifruti.sl.hortifruti.dto.StatementResponse;
-import com.hortifruti.sl.hortifruti.service.StatementService;
+import com.hortifruti.sl.hortifruti.dto.transaction.StatementResponse;
+import com.hortifruti.sl.hortifruti.service.transaction.StatementService;
 import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
