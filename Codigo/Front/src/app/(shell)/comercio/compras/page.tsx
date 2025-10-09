@@ -5,7 +5,7 @@ import ClientSelector from "@/components/modules/ClientSelector";
 import ClientSummaryCards from "@/components/modules/ClientSummaryCards";
 import EnhancedUploadNotes from "@/components/modules/EnhancedUploadNotes";
 import { ClientSelectionInfo } from "@/types/clientType";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function PurchasesPage() {
     const [selectedClient, setSelectedClient] = useState<ClientSelectionInfo | null>(null);
@@ -21,11 +21,58 @@ export default function PurchasesPage() {
         return lastDay.toISOString().split('T')[0];
     });
 
+    const [groupBy, setGroupBy] = useState<'week' | 'month' | 'custom'>('custom');
     const [refreshKey, setRefreshKey] = useState(0);
 
     const handleUploadSuccess = () => {
         setRefreshKey((prev) => prev + 1);
     }
+
+    function getWeekInterval() {
+        const today = new Date();
+        // Encontra a última segunda-feira antes de hoje
+        let lastMonday = new Date(today);
+        lastMonday.setDate(today.getDate() - ((today.getDay() + 6) % 7) - 7); // segunda passada
+        lastMonday.setHours(0, 0, 0, 0);
+
+        // Encontra o último sábado após a última segunda-feira
+        let lastSaturday = new Date(lastMonday);
+        lastSaturday.setDate(lastMonday.getDate() + 6);
+        lastSaturday.setHours(23, 59, 59, 999);
+
+        return {
+            start: lastMonday.toISOString().split('T')[0],
+            end: lastSaturday.toISOString().split('T')[0],
+        };
+    }
+
+    function getLastMonthInterval() {
+        const today = new Date();
+        // Mês anterior
+        const year = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+        const month = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
+
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+
+        return {
+            start: firstDay.toISOString().split('T')[0],
+            end: lastDay.toISOString().split('T')[0],
+        };
+    }
+
+    useEffect(() => {
+        if (groupBy === 'week') {
+            const { start, end } = getWeekInterval();
+            setStartDate(start);
+            setEndDate(end);
+        } else if (groupBy === 'month') {
+            const { start, end } = getLastMonthInterval();
+            setStartDate(start);
+            setEndDate(end);
+        }
+        // Se for custom, não altera nada
+    }, [groupBy]);
 
     return (
         <main className="flex-1 p-6 bg-gray-50 overflow-auto flex flex-col min-h-full">
@@ -52,7 +99,7 @@ export default function PurchasesPage() {
             <ClientSummaryCards clientId={selectedClient?.clientId} refreshKey={refreshKey} />
 
             {/* Filtros */}
-            <div className="mt-6 mb-4 rounded-lg p-4 bg-white shadow-sm">
+            <div className="mt-6 rounded-lg p-4 bg-white shadow-sm">
                 <div className="flex flex-wrap *:flex-grow items-end gap-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -60,11 +107,12 @@ export default function PurchasesPage() {
                         </label>
                         <select
                             className="px-3 w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                            disabled
+                            value={groupBy}
+                            onChange={(e) => setGroupBy(e.target.value as 'week' | 'month' | 'custom')}
                         >
-                            <option>Intervalo Personalizado</option>
-                            <option>Semanal (em breve)</option>
-                            <option>Mensal (em breve)</option>
+                            <option value="custom">Intervalo Personalizado</option>
+                            <option value="week">Semanal</option>
+                            <option value="month">Mensal</option>
                         </select>
                     </div>
                     <div>
@@ -74,8 +122,9 @@ export default function PurchasesPage() {
                         <input
                             type="date"
                             value={startDate}
+                            disabled={groupBy !== 'custom'}
                             onChange={(e) => setStartDate(e.target.value)}
-                            className="px-3 w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className={`px-3 w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${groupBy !== 'custom' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                         />
                     </div>
                     <div>
@@ -85,8 +134,9 @@ export default function PurchasesPage() {
                         <input
                             type="date"
                             value={endDate}
+                            disabled={groupBy !== 'custom'}
                             onChange={(e) => setEndDate(e.target.value)}
-                            className="px-3 w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className={`px-3 w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${groupBy !== 'custom' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                         />
                     </div>
                     <div>
@@ -98,7 +148,8 @@ export default function PurchasesPage() {
                                 setStartDate(firstDay.toISOString().split('T')[0]);
                                 setEndDate(lastDay.toISOString().split('T')[0]);
                             }}
-                            className="px-4 w-full py-2 bg-[var(--primary-light)] text-white rounded-lg hover:bg-[var(--primary-dark)] cursor-pointer transition-colors"
+                            disabled={groupBy !== 'custom'}
+                            className={`px-4 w-full py-2 bg-[var(--primary-light)] text-white rounded-lg hover:bg-[var(--primary-dark)] cursor-pointer transition-colors ${groupBy !== 'custom' ? 'opacity-50 cursor-not-allowed hover:bg-[var(--primary-light)]' : ''}`}
                         >
                             Mês Atual
                         </button>
