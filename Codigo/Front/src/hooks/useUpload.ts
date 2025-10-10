@@ -35,11 +35,13 @@ export function useUpload() {
         throw new Error("Um ou mais arquivos excedem o limite de 10MB.");
       }
 
-      const response = {
-        purchase: await purchaseService.uploadPurchases(files),
-        statement: await statementService.uploadStatements(files),
-      }[entity];
-      
+      let response;
+      if (entity === "purchase")
+        response = await purchaseService.uploadPurchases(files);
+      else if (entity === "statement")
+        response = await statementService.uploadStatements(files);
+      else throw new Error("Entidade desconhecida.");
+
       return response;
     } catch (err: any) {
       setError(err.message || "Erro ao processar os arquivos.");
