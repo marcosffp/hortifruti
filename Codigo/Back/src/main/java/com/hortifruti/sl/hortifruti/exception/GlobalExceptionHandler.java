@@ -5,6 +5,7 @@ import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -99,6 +100,16 @@ public class GlobalExceptionHandler {
     response.put("error", "Erro de Usuário");
     response.put("message", ex.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
+
+  @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+  public ResponseEntity<Map<String, String>> handleHttpMediaTypeNotSupportedException(
+      HttpMediaTypeNotSupportedException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Tipo de conteúdo não suportado");
+    response.put("message", "O tipo de conteúdo '" + ex.getContentType() + 
+        "' não é suportado para este endpoint. Use 'multipart/form-data' para upload de arquivos.");
+    return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(response);
   }
 
   @ExceptionHandler(Exception.class)

@@ -4,6 +4,7 @@ import com.hortifruti.sl.hortifruti.model.Statement;
 import com.hortifruti.sl.hortifruti.model.Transaction;
 import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.ZipParameters;
 import org.apache.poi.ss.usermodel.*;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FileGenerationService {
 
   private final StatementSelectionService statementSelectionService;
@@ -81,6 +83,18 @@ public class FileGenerationService {
         zipParameters.setFileNameInZip("extrato_sicoob_" + month + "_" + year + ".xlsx");
         zipFile.addFile(sicoobExcelPath, zipParameters);
         new File(sicoobExcelPath).delete();
+      }
+
+      // Gerar e adicionar ZIP com Notas Fiscais do mês anterior
+      byte[] invoicesZip = generateMonthlyInvoicesZip(month, year);
+      if (invoicesZip.length > 0) {
+        String invoicesZipPath = System.getProperty("java.io.tmpdir") + "/notas_fiscais_" + month + "_" + year + ".zip";
+        try (FileOutputStream fos = new FileOutputStream(invoicesZipPath)) {
+          fos.write(invoicesZip);
+        }
+        zipParameters.setFileNameInZip("notas_fiscais_" + month + "_" + year + ".zip");
+        zipFile.addFile(invoicesZipPath, zipParameters);
+        new File(invoicesZipPath).delete();
       }
     }
 
@@ -213,6 +227,173 @@ public class FileGenerationService {
       return new BigDecimal(cleanValue);
     } catch (Exception e) {
       return BigDecimal.ZERO;
+    }
+  }
+
+  /**
+   * Gera boleto para cliente específico
+   */
+  public byte[] generateClientBoleto(Long clientId) throws IOException {
+    try (Workbook workbook = new XSSFWorkbook()) {
+      Sheet sheet = workbook.createSheet("Boleto - Cliente " + clientId);
+
+      // Cabeçalho
+      Row headerRow = sheet.createRow(0);
+      headerRow.createCell(0).setCellValue("BOLETO BANCÁRIO");
+      
+      // Informações do cliente
+      Row clientRow = sheet.createRow(1);
+      clientRow.createCell(0).setCellValue("Cliente ID:");
+      clientRow.createCell(1).setCellValue(clientId);
+      
+      // Dados do boleto
+      Row dateRow = sheet.createRow(2);
+      dateRow.createCell(0).setCellValue("Data de Emissão:");
+      dateRow.createCell(1).setCellValue(java.time.LocalDate.now().toString());
+      
+      Row dueRow = sheet.createRow(3);
+      dueRow.createCell(0).setCellValue("Data de Vencimento:");
+      dueRow.createCell(1).setCellValue(java.time.LocalDate.now().plusDays(30).toString());
+      
+      Row valueRow = sheet.createRow(4);
+      valueRow.createCell(0).setCellValue("Valor:");
+      valueRow.createCell(1).setCellValue("R$ 0,00"); // Seria calculado baseado nas pendências
+      
+      // Auto-ajustar colunas
+      for (int i = 0; i < 2; i++) {
+        sheet.autoSizeColumn(i);
+      }
+
+      try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+        workbook.write(outputStream);
+        return outputStream.toByteArray();
+      }
+    }
+  }
+
+  /**
+   * Gera nota fiscal para cliente específico
+   */
+  public byte[] generateClientNotaFiscal(Long clientId) throws IOException {
+    try (Workbook workbook = new XSSFWorkbook()) {
+      Sheet sheet = workbook.createSheet("Nota Fiscal - Cliente " + clientId);
+
+      // Cabeçalho
+      Row headerRow = sheet.createRow(0);
+      headerRow.createCell(0).setCellValue("NOTA FISCAL");
+      
+      // Informações do cliente
+      Row clientRow = sheet.createRow(1);
+      clientRow.createCell(0).setCellValue("Cliente ID:");
+      clientRow.createCell(1).setCellValue(clientId);
+      
+      // Dados da nota
+      Row dateRow = sheet.createRow(2);
+      dateRow.createCell(0).setCellValue("Data de Emissão:");
+      dateRow.createCell(1).setCellValue(java.time.LocalDate.now().toString());
+      
+      Row numberRow = sheet.createRow(3);
+      numberRow.createCell(0).setCellValue("Número:");
+      numberRow.createCell(1).setCellValue("NF-" + System.currentTimeMillis());
+      
+      Row valueRow = sheet.createRow(4);
+      valueRow.createCell(0).setCellValue("Valor Total:");
+      valueRow.createCell(1).setCellValue("R$ 0,00"); // Seria calculado baseado nas transações
+      
+      // Auto-ajustar colunas
+      for (int i = 0; i < 2; i++) {
+        sheet.autoSizeColumn(i);
+      }
+
+      try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+        workbook.write(outputStream);
+        return outputStream.toByteArray();
+      }
+    }
+  }
+
+  /**
+   * Gera ZIP com todas as notas fiscais do mês anterior
+   */
+  public byte[] generateMonthlyInvoicesZip(int month, int year) throws IOException {
+    try {
+      // Para demonstração, criar algumas notas fiscais de exemplo
+      // Em um sistema real, buscaria do banco de dados
+      String tempZipPath = System.getProperty("java.io.tmpdir") + "/invoices_" + month + "_" + year + ".zip";
+      
+      try (ZipFile zipFile = new ZipFile(tempZipPath)) {
+        ZipParameters zipParameters = new ZipParameters();
+
+        // Gerar notas fiscais de exemplo (em um sistema real seria do banco)
+        for (int i = 1; i <= 5; i++) {
+          byte[] invoice = generateSampleInvoice(i, month, year);
+          String invoicePath = System.getProperty("java.io.tmpdir") + "/nota_fiscal_" + i + "_" + month + "_" + year + ".xlsx";
+          
+          try (FileOutputStream fos = new FileOutputStream(invoicePath)) {
+            fos.write(invoice);
+          }
+          
+          zipParameters.setFileNameInZip("nota_fiscal_" + i + "_" + month + "_" + year + ".xlsx");
+          zipFile.addFile(invoicePath, zipParameters);
+          
+          new File(invoicePath).delete();
+        }
+      }
+
+      // Ler o arquivo ZIP criado
+      byte[] zipBytes = java.nio.file.Files.readAllBytes(new File(tempZipPath).toPath());
+      
+      // Limpar arquivo ZIP temporário
+      new File(tempZipPath).delete();
+      
+      return zipBytes;
+      
+    } catch (Exception e) {
+      log.error("Erro ao gerar ZIP de notas fiscais", e);
+      return new byte[0]; // Retorna array vazio se houver erro
+    }
+  }
+
+  /**
+   * Gera uma nota fiscal de exemplo para demonstração
+   */
+  private byte[] generateSampleInvoice(int invoiceNumber, int month, int year) throws IOException {
+    try (Workbook workbook = new XSSFWorkbook()) {
+      Sheet sheet = workbook.createSheet("Nota Fiscal " + invoiceNumber);
+
+      // Cabeçalho
+      Row headerRow = sheet.createRow(0);
+      headerRow.createCell(0).setCellValue("NOTA FISCAL ELETRÔNICA");
+      
+      // Número da nota
+      Row numberRow = sheet.createRow(1);
+      numberRow.createCell(0).setCellValue("Número:");
+      numberRow.createCell(1).setCellValue("NF-" + year + month + String.format("%03d", invoiceNumber));
+      
+      // Data
+      Row dateRow = sheet.createRow(2);
+      dateRow.createCell(0).setCellValue("Data de Emissão:");
+      dateRow.createCell(1).setCellValue(String.format("%02d/%02d/%d", 15, month, year));
+      
+      // Cliente
+      Row clientRow = sheet.createRow(3);
+      clientRow.createCell(0).setCellValue("Cliente:");
+      clientRow.createCell(1).setCellValue("Cliente " + invoiceNumber);
+      
+      // Valor
+      Row valueRow = sheet.createRow(4);
+      valueRow.createCell(0).setCellValue("Valor Total:");
+      valueRow.createCell(1).setCellValue("R$ " + (invoiceNumber * 150.50));
+      
+      // Auto-ajustar colunas
+      for (int i = 0; i < 2; i++) {
+        sheet.autoSizeColumn(i);
+      }
+
+      try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+        workbook.write(outputStream);
+        return outputStream.toByteArray();
+      }
     }
   }
 }

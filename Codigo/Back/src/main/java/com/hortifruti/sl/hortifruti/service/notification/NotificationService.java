@@ -2,16 +2,22 @@ package com.hortifruti.sl.hortifruti.service.notification;
 
 import com.hortifruti.sl.hortifruti.dto.notification.*;
 import com.hortifruti.sl.hortifruti.model.Client;
-import com.hortifruti.sl.hortifruti.model.enumeration.NotificationType;
+import com.hortifruti.sl.hortifruti.model.enumeration.NotificationChannel;
 import com.hortifruti.sl.hortifruti.repository.ClientRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
@@ -34,364 +40,251 @@ public class NotificationService {
   @Value("${manager.whatsapp}")
   private String managerWhatsapp;
 
-  @Value("${OVERDUE_NOTIFICATION_EMAILS}")
-  private String overdueNotificationEmails;
-
-  public NotificationResponse sendAccountingNotification(AccountingNotificationRequest request) {
+  /**
+   * Envio mensal para contabilidade: Extratos BB/Sicoob + Notas fiscais
+   */
+  public NotificationResponse sendMonthlyStatements(MonthlyStatementsRequest request) {
     try {
-      // Gerar ZIP com statements do mês anterior
+      log.info("Enviando extratos mensais {}/{}", request.month(), request.year());
+      
+      // Gerar ZIP com statements (pega os com maior data do mês)
       byte[] zipFile = fileGenerationService.createZipWithStatements(request.month(), request.year());
       
-      // Processar arquivos genéricos se fornecidos
-      byte[] processedFile = null;
-      if (request.additionalFiles() != null && !request.additionalFiles().isEmpty()) {
-        List<byte[]> files = request.additionalFiles().stream()
-            .map(GenericFileRequest::fileContent)
-            .toList();
-        List<String> fileNames = request.additionalFiles().stream()
-            .map(GenericFileRequest::fileName)
-            .toList();
-        
-        processedFile = fileGenerationService.processGenericFiles(
-            files, fileNames, 
-            request.debitValue(), 
-            request.creditValue(), 
-            request.cashValue()
-        );
-      }
+      List<byte[]> attachments = List.of(zipFile);
+      List<String> fileNames = List.of("extratos_" + request.month() + "_" + request.year() + ".zip");
 
-      // Preparar arquivos para envio
-      List<byte[]> attachments = new ArrayList<>();
-      List<String> fileNames = new ArrayList<>();
-      
-      attachments.add(zipFile);
-      fileNames.add("extratos_" + request.month() + "_" + request.year() + ".zip");
-      
-      if (processedFile != null) {
-        attachments.add(processedFile);
-        fileNames.add("resumo_financeiro_" + request.month() + "_" + request.year() + ".xlsx");
-      }
-
-      // Preparar mensagem
       String subject = "Documentos Contábeis - " + request.month() + "/" + request.year();
-      String message = buildAccountingMessage(request);
+      String message = buildMonthlyMessage(request);
 
-      boolean emailSent = false;
-      boolean whatsappSent = false;
-
-      // Enviar por email se solicitado
-      if (request.notificationType() == NotificationType.EMAIL_ONLY || 
-          request.notificationType() == NotificationType.BOTH) {
-        emailSent = emailService.sendEmailWithAttachments(
-            accountingEmail, subject, message, attachments, fileNames
-        );
-      }
-
-      // Enviar por WhatsApp se solicitado
-      if (request.notificationType() == NotificationType.WHATSAPP_ONLY || 
-          request.notificationType() == NotificationType.BOTH) {
-        whatsappSent = whatsAppService.sendMultipleDocuments(
-            accountingWhatsapp, message, attachments, fileNames
-        );
-      }
-
-      boolean success = (request.notificationType() == NotificationType.EMAIL_ONLY && emailSent) ||
-                       (request.notificationType() == NotificationType.WHATSAPP_ONLY && whatsappSent) ||
-                       (request.notificationType() == NotificationType.BOTH && emailSent && whatsappSent);
-
-      return new NotificationResponse(
-          success,
-          success ? "Notificação enviada com sucesso" : "Falha no envio da notificação",
-          emailSent ? "Enviado" : "Não enviado",
-          whatsappSent ? "Enviado" : "Não enviado"
-      );
-
-    } catch (Exception e) {
-      e.printStackTrace();
-      return new NotificationResponse(
-          false,
-          "Erro interno: " + e.getMessage(),
-          "Erro",
-          "Erro"
-      );
-    }
-  }
-
-  public NotificationResponse sendClientNotification(ClientNotificationRequest request) {
-    try {
-      Optional<Client> clientOpt = clientRepository.findById(request.clientId());
-      if (clientOpt.isEmpty()) {
-        return new NotificationResponse(
-            false,
-            "Cliente não encontrado",
-            "Não enviado",
-            "Não enviado"
-        );
-      }
-
-      Client client = clientOpt.get();
+      return sendToAccounting(request.channel(), subject, message, attachments, fileNames);
       
-      List<byte[]> attachments = new ArrayList<>();
-      List<String> fileNames = new ArrayList<>();
-
-      // Adicionar arquivos genéricos
-      if (request.files() != null) {
-        for (GenericFileRequest file : request.files()) {
-          attachments.add(file.fileContent());
-          fileNames.add(file.fileName());
-        }
-      }
-
-      // Adicionar boleto se solicitado
-      if (request.includeBoleto()) {
-        try {
-          // Buscar último boleto do cliente (implementar lógica específica)
-          // Por enquanto, vamos pular esta parte pois precisaria de mais informações
-          // sobre como identificar qual boleto enviar
-        } catch (Exception e) {
-          // Log do erro mas continua o processo
-          e.printStackTrace();
-        }
-      }
-
-      // Preparar mensagem
-      String subject = "Documentos - " + client.getClientName();
-      String message = buildClientMessage(request, client);
-
-      boolean emailSent = false;
-      boolean whatsappSent = false;
-
-      // Enviar por email se solicitado
-      if (request.notificationType() == NotificationType.EMAIL_ONLY || 
-          request.notificationType() == NotificationType.BOTH) {
-        if (attachments.isEmpty()) {
-          emailSent = emailService.sendSimpleEmail(client.getEmail(), subject, message);
-        } else {
-          emailSent = emailService.sendEmailWithAttachments(
-              client.getEmail(), subject, message, attachments, fileNames
-          );
-        }
-      }
-
-      // Enviar por WhatsApp se solicitado
-      if (request.notificationType() == NotificationType.WHATSAPP_ONLY || 
-          request.notificationType() == NotificationType.BOTH) {
-        if (attachments.isEmpty()) {
-          whatsappSent = whatsAppService.sendTextMessage(client.getPhoneNumber(), message);
-        } else {
-          whatsappSent = whatsAppService.sendMultipleDocuments(
-              client.getPhoneNumber(), message, attachments, fileNames
-          );
-        }
-      }
-
-      boolean success = (request.notificationType() == NotificationType.EMAIL_ONLY && emailSent) ||
-                       (request.notificationType() == NotificationType.WHATSAPP_ONLY && whatsappSent) ||
-                       (request.notificationType() == NotificationType.BOTH && emailSent && whatsappSent);
-
-      return new NotificationResponse(
-          success,
-          success ? "Notificação enviada com sucesso para " + client.getClientName() : 
-                   "Falha no envio da notificação para " + client.getClientName(),
-          emailSent ? "Enviado" : "Não enviado",
-          whatsappSent ? "Enviado" : "Não enviado"
-      );
-
     } catch (Exception e) {
-      e.printStackTrace();
-      return new NotificationResponse(
-          false,
-          "Erro interno: " + e.getMessage(),
-          "Erro",
-          "Erro"
-      );
-    }
-  }
-
-  public NotificationResponse sendOverdueBilletNotification(String clientName, String billetInfo) {
-    try {
-      String subject = "Aviso: Boleto em Atraso - " + clientName;
-      String message = buildOverdueMessage(clientName, billetInfo);
-
-      // Enviar para múltiplos emails configurados no .env
-      boolean emailSent = sendToMultipleEmails(overdueNotificationEmails, subject, message);
-      
-      boolean whatsappSent = false;
-      if (managerWhatsapp != null && !managerWhatsapp.isEmpty()) {
-        whatsappSent = whatsAppService.sendTextMessage(managerWhatsapp, message);
-      }
-
-      return new NotificationResponse(
-          emailSent,
-          emailSent ? "Notificação de boleto vencido enviada para todos os destinatários" : "Falha no envio da notificação",
-          emailSent ? "Enviado" : "Não enviado",
-          whatsappSent ? "Enviado" : "Não enviado"
-      );
-
-    } catch (Exception e) {
-      e.printStackTrace();
-      return new NotificationResponse(
-          false,
-          "Erro interno: " + e.getMessage(),
-          "Erro",
-          "Erro"
-      );
-    }
-  }
-
-  private String buildAccountingMessage(AccountingNotificationRequest request) {
-    StringBuilder message = new StringBuilder();
-    message.append("<html><body>");
-    message.append("<h2>Documentos Contábeis</h2>");
-    message.append("<p>Segue em anexo os documentos contábeis referentes ao mês <strong>");
-    message.append(request.month()).append("/").append(request.year()).append("</strong>:</p>");
-    
-    // Adicionar informações sobre a cobertura dos statements
-    try {
-      var statements = statementSelectionService.getBestStatementsForMonth(request.month(), request.year());
-      String coverageInfo = statementSelectionService.getStatementCoverageInfo(statements, request.month(), request.year());
-      
-      message.append("<div style='background-color: #f0f8ff; padding: 10px; margin: 10px 0; border-left: 4px solid #007acc;'>");
-      message.append("<h3>Informações dos Extratos Selecionados:</h3>");
-      message.append("<pre style='font-family: monospace; font-size: 12px;'>").append(coverageInfo).append("</pre>");
-      message.append("</div>");
-    } catch (Exception e) {
-      // Se houver erro ao obter informações, apenas continua sem elas
-      System.err.println("Erro ao obter informações de cobertura: " + e.getMessage());
-    }
-    
-    message.append("<ul>");
-    message.append("<li>ZIP com as notas fiscais do mês</li>");
-    message.append("<li>Extratos bancários do BB e Sicoob (melhores disponíveis para o período)</li>");
-    message.append("<li>Planilhas Excel geradas dos extratos</li>");
-    
-    if (request.additionalFiles() != null && !request.additionalFiles().isEmpty()) {
-      message.append("<li>Resumo financeiro processado</li>");
-    }
-    
-    message.append("</ul>");
-    
-    if (request.customMessage() != null && !request.customMessage().trim().isEmpty()) {
-      message.append("<p><strong>Mensagem adicional:</strong></p>");
-      message.append("<p>").append(request.customMessage()).append("</p>");
-    }
-    
-    message.append("<p>Atenciosamente,<br/>Hortifruti Santa Luzia</p>");
-    message.append("</body></html>");
-    
-    return message.toString();
-  }
-
-  private String buildClientMessage(ClientNotificationRequest request, Client client) {
-    StringBuilder message = new StringBuilder();
-    message.append("<html><body>");
-    message.append("<h2>Olá, ").append(client.getClientName()).append("!</h2>");
-    
-    if (request.customMessage() != null && !request.customMessage().trim().isEmpty()) {
-      message.append("<p>").append(request.customMessage()).append("</p>");
-    } else {
-      message.append("<p>Segue em anexo os documentos solicitados.</p>");
-    }
-    
-    if (request.includeBoleto()) {
-      message.append("<p>• Boleto de cobrança</p>");
-    }
-    
-    if (request.includeNotaFiscal()) {
-      message.append("<p>• Nota fiscal</p>");
-    }
-    
-    message.append("<p>Em caso de dúvidas, entre em contato conosco.</p>");
-    message.append("<p>Atenciosamente,<br/>Hortifruti Santa Luzia</p>");
-    message.append("</body></html>");
-    
-    return message.toString();
-  }
-
-  private String buildOverdueMessage(String clientName, String billetInfo) {
-    return String.format(
-        "⚠️ AVISO: Boleto Vencido\n\n" +
-        "Cliente: %s\n" +
-        "Informações: %s\n\n" +
-        "Favor verificar e tomar as medidas necessárias.\n\n" +
-        "Sistema Hortifruti Santa Luzia",
-        clientName, billetInfo
-    );
-  }
-
-  public NotificationResponse checkAndNotifyOverdueBillets() {
-    try {
-      // TODO: Implementar busca por boletos vencidos quando o repositório estiver disponível
-      // List<Boleto> overdueBillets = boletoRepository.findOverdueBillets(LocalDate.now());
-      
-      // Por enquanto, retorna sucesso com mensagem informativa
-      String message = "Verificação de boletos vencidos executada com sucesso. " +
-          "Implementação completa requer repositório de boletos.";
-      
-      return new NotificationResponse(true, message, "N/A", "N/A");
-    } catch (Exception e) {
-      return new NotificationResponse(false, "Erro ao verificar boletos vencidos: " + e.getMessage(), "ERRO", "ERRO");
-    }
-  }
-
-  public boolean testEmailService() {
-    try {
-      // Testa configuração do email
-      return emailService != null && accountingEmail != null && !accountingEmail.trim().isEmpty();
-    } catch (Exception e) {
-      System.err.println("Erro ao testar serviço de email: " + e.getMessage());
-      return false;
-    }
-  }
-
-  public boolean testWhatsAppService() {
-    try {
-      // Testa configuração do WhatsApp
-      return whatsAppService != null && accountingWhatsapp != null && !accountingWhatsapp.trim().isEmpty();
-    } catch (Exception e) {
-      System.err.println("Erro ao testar serviço de WhatsApp: " + e.getMessage());
-      return false;
+      log.error("Erro ao enviar extratos mensais", e);
+      return new NotificationResponse(false, "Erro: " + e.getMessage());
     }
   }
 
   /**
-   * Envia email para múltiplos destinatários configurados no .env
-   * Os emails devem estar separados por vírgula na variável de ambiente
+   * Envio para contabilidade: Arquivos genéricos com cálculo de redução de 60%
    */
-  private boolean sendToMultipleEmails(String emailsString, String subject, String message) {
-    if (emailsString == null || emailsString.trim().isEmpty()) {
-      System.err.println("AVISO: Nenhum email configurado para notificações de boletos vencidos");
-      return false;
-    }
-
+  public NotificationResponse sendGenericFilesToAccounting(List<MultipartFile> files, GenericFilesAccountingRequest request) {
     try {
-      // Separar emails por vírgula e remover espaços
-      String[] emailAddresses = emailsString.split(",");
-      int sucessCount = 0;
+      log.info("Enviando arquivos genéricos para contabilidade");
+      
+      List<byte[]> fileContents = new ArrayList<>();
+      List<String> fileNames = new ArrayList<>();
+      
+      // Converter arquivos
+      for (MultipartFile file : files) {
+        fileContents.add(file.getBytes());
+        fileNames.add(file.getOriginalFilename());
+      }
+      
+      // Calcular valores com redução de 60%
+      BigDecimal adjustedDebit = request.debitValue().multiply(BigDecimal.valueOf(0.4));
+      BigDecimal adjustedCredit = request.creditValue().multiply(BigDecimal.valueOf(0.4));
 
-      for (String email : emailAddresses) {
-        email = email.trim();
-        if (!email.isEmpty()) {
-          try {
-            boolean sent = emailService.sendSimpleEmail(email, subject, message);
-            if (sent) {
-              sucessCount++;
-              System.out.println("Notificação de boleto vencido enviada para: " + email);
-            } else {
-              System.err.println("Falha ao enviar notificação para: " + email);
-            }
-          } catch (Exception e) {
-            System.err.println("Erro ao enviar para " + email + ": " + e.getMessage());
-          }
+      String subject = "Arquivos Contábeis - Resumo Financeiro";
+      String message = buildGenericFilesMessage(request, adjustedDebit, adjustedCredit);
+
+      return sendToAccounting(request.channel(), subject, message, fileContents, fileNames);
+      
+    } catch (IOException e) {
+      log.error("Erro ao processar arquivos", e);
+      return new NotificationResponse(false, "Erro ao processar arquivos: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Envio para cliente: Boleto + Nota Fiscal + arquivos genéricos
+   */
+  public NotificationResponse sendDocumentsToClient(List<MultipartFile> files, ClientDocumentsRequest request) {
+    try {
+      log.info("Enviando documentos para cliente ID: {}", request.clientId());
+      
+      Optional<Client> clientOpt = clientRepository.findById(request.clientId());
+      if (clientOpt.isEmpty()) {
+        return new NotificationResponse(false, "Cliente não encontrado");
+      }
+      
+      Client client = clientOpt.get();
+      List<byte[]> attachments = new ArrayList<>();
+      List<String> fileNames = new ArrayList<>();
+      
+      // Adicionar arquivos genéricos
+      if (files != null && !files.isEmpty()) {
+        for (MultipartFile file : files) {
+          attachments.add(file.getBytes());
+          fileNames.add(file.getOriginalFilename());
+        }
+      }
+      
+      // Gerar boleto se solicitado
+      if (request.includeBoleto()) {
+        try {
+          byte[] boleto = fileGenerationService.generateClientBoleto(request.clientId());
+          attachments.add(boleto);
+          fileNames.add("boleto_cliente_" + request.clientId() + ".xlsx");
+        } catch (IOException e) {
+          log.error("Erro ao gerar boleto para cliente {}", request.clientId(), e);
+        }
+      }
+      
+      // Gerar nota fiscal se solicitado
+      if (request.includeNotaFiscal()) {
+        try {
+          byte[] notaFiscal = fileGenerationService.generateClientNotaFiscal(request.clientId());
+          attachments.add(notaFiscal);
+          fileNames.add("nota_fiscal_cliente_" + request.clientId() + ".xlsx");
+        } catch (IOException e) {
+          log.error("Erro ao gerar nota fiscal para cliente {}", request.clientId(), e);
         }
       }
 
-      System.out.println("Notificações enviadas: " + sucessCount + "/" + emailAddresses.length);
-      return sucessCount > 0; // Retorna true se pelo menos um email foi enviado
+      String subject = "Documentos - " + client.getClientName();
+      String message = buildClientMessage(request, client);
+
+      return sendToClient(client, request.channel(), subject, message, attachments, fileNames);
       
-    } catch (Exception e) {
-      System.err.println("Erro ao processar lista de emails: " + e.getMessage());
-      return false;
+    } catch (IOException e) {
+      log.error("Erro ao processar arquivos do cliente", e);
+      return new NotificationResponse(false, "Erro ao processar arquivos: " + e.getMessage());
     }
   }
+
+
+
+  /**
+   * Teste dos serviços de comunicação
+   */
+  public NotificationResponse testCommunicationServices() {
+    try {
+      boolean emailOk = emailService != null && accountingEmail != null && !accountingEmail.isEmpty();
+      boolean whatsappOk = whatsAppService != null && accountingWhatsapp != null && !accountingWhatsapp.isEmpty();
+      
+      String message = String.format("Email: %s, WhatsApp: %s", 
+          emailOk ? "OK" : "FALHA", whatsappOk ? "OK" : "FALHA");
+      
+      return NotificationResponse.withStatuses(emailOk && whatsappOk, message, 
+          emailOk ? "OK" : "FALHA", whatsappOk ? "OK" : "FALHA");
+      
+    } catch (Exception e) {
+      log.error("Erro ao testar serviços", e);
+      return new NotificationResponse(false, "Erro ao testar serviços: " + e.getMessage());
+    }
+  }
+
+  // Métodos auxiliares privados
+  
+  private NotificationResponse sendToAccounting(NotificationChannel channel, String subject, 
+                                               String message, List<byte[]> attachments, List<String> fileNames) {
+    boolean emailSent = false;
+    boolean whatsappSent = false;
+
+    if (channel == NotificationChannel.EMAIL || channel == NotificationChannel.BOTH) {
+      emailSent = emailService.sendEmailWithAttachments(accountingEmail, subject, message, attachments, fileNames);
+    }
+
+    if (channel == NotificationChannel.WHATSAPP || channel == NotificationChannel.BOTH) {
+      whatsappSent = whatsAppService.sendMultipleDocuments(accountingWhatsapp, message, attachments, fileNames);
+    }
+
+    boolean success = (channel == NotificationChannel.EMAIL && emailSent) ||
+                     (channel == NotificationChannel.WHATSAPP && whatsappSent) ||
+                     (channel == NotificationChannel.BOTH && emailSent && whatsappSent);
+
+    return NotificationResponse.withStatuses(success, 
+        success ? "Enviado com sucesso" : "Falha no envio",
+        emailSent ? "OK" : (channel == NotificationChannel.EMAIL || channel == NotificationChannel.BOTH ? "FALHA" : "N/A"),
+        whatsappSent ? "OK" : (channel == NotificationChannel.WHATSAPP || channel == NotificationChannel.BOTH ? "FALHA" : "N/A"));
+  }
+
+  private NotificationResponse sendToClient(Client client, NotificationChannel channel, String subject,
+                                          String message, List<byte[]> attachments, List<String> fileNames) {
+    boolean emailSent = false;
+    boolean whatsappSent = false;
+
+    if (channel == NotificationChannel.EMAIL || channel == NotificationChannel.BOTH) {
+      if (client.getEmail() != null && !client.getEmail().isEmpty()) {
+        emailSent = emailService.sendEmailWithAttachments(client.getEmail(), subject, message, attachments, fileNames);
+      }
+    }
+
+    if (channel == NotificationChannel.WHATSAPP || channel == NotificationChannel.BOTH) {
+      log.info("=== DEBUG WHATSAPP ===");
+      log.info("Cliente ID: {}", client.getId());
+      log.info("Cliente Nome: {}", client.getClientName());
+      log.info("Número do banco (raw): '{}'", client.getPhoneNumber());
+      log.info("Número é null: {}", client.getPhoneNumber() == null);
+      log.info("Número é vazio: {}", client.getPhoneNumber() != null ? client.getPhoneNumber().isEmpty() : "N/A");
+
+      if (client.getPhoneNumber() != null && !client.getPhoneNumber().isEmpty()) {
+        log.info("Enviando WhatsApp para: '{}'", client.getPhoneNumber());
+        whatsappSent = whatsAppService.sendMultipleDocuments(client.getPhoneNumber(), message, attachments, fileNames);
+        log.info("Resultado WhatsApp: {}", whatsappSent);
+      } else {
+        log.warn("Número de telefone do cliente {} é null ou vazio", client.getClientName());
+      }
+    }
+
+    boolean success = (channel == NotificationChannel.EMAIL && emailSent) ||
+                     (channel == NotificationChannel.WHATSAPP && whatsappSent) ||
+                     (channel == NotificationChannel.BOTH && emailSent && whatsappSent);
+
+    return NotificationResponse.withStatuses(success,
+        success ? "Enviado para " + client.getClientName() : "Falha no envio para " + client.getClientName(),
+        emailSent ? "OK" : (channel == NotificationChannel.EMAIL || channel == NotificationChannel.BOTH ? "FALHA" : "N/A"),
+        whatsappSent ? "OK" : (channel == NotificationChannel.WHATSAPP || channel == NotificationChannel.BOTH ? "FALHA" : "N/A"));
+  }
+
+  private String buildMonthlyMessage(MonthlyStatementsRequest request) {
+    StringBuilder msg = new StringBuilder();
+    msg.append("Prezados,\n\n");
+    msg.append("Segue anexos referentes ao mês ").append(request.month()).append("/").append(request.year()).append(":\n\n");
+    msg.append("• Extratos bancários (BB e Sicoob)\n");
+    msg.append("• Planilhas Excel com movimentos\n");
+    msg.append("• Notas fiscais do período\n\n");
+    
+    if (request.customMessage() != null && !request.customMessage().isEmpty()) {
+      msg.append("Observações:\n").append(request.customMessage()).append("\n\n");
+    }
+    
+    msg.append("Atenciosamente,\nHortifruti SL");
+    return msg.toString();
+  }
+
+  private String buildGenericFilesMessage(GenericFilesAccountingRequest request, BigDecimal adjustedDebit, BigDecimal adjustedCredit) {
+    StringBuilder msg = new StringBuilder();
+    msg.append("Prezados,\n\n");
+    msg.append("Segue anexos contábeis solicitados.\n\n");
+    msg.append("Resumo Financeiro (após ajuste de 60%):\n");
+    msg.append("• Débito: R$ ").append(adjustedDebit).append("\n");
+    msg.append("• Crédito: R$ ").append(adjustedCredit).append("\n");
+    msg.append("• Dinheiro: R$ ").append(request.cashValue()).append("\n\n");
+    
+    if (request.customMessage() != null && !request.customMessage().isEmpty()) {
+      msg.append("Observações:\n").append(request.customMessage()).append("\n\n");
+    }
+    
+    msg.append("Atenciosamente,\nHortifruti SL");
+    return msg.toString();
+  }
+
+  private String buildClientMessage(ClientDocumentsRequest request, Client client) {
+    StringBuilder msg = new StringBuilder();
+    msg.append("Prezado(a) ").append(client.getClientName()).append(",\n\n");
+    msg.append("Segue anexos solicitados:\n\n");
+    
+    if (request.includeBoleto()) msg.append("• Boleto de pagamento\n");
+    if (request.includeNotaFiscal()) msg.append("• Nota fiscal\n");
+    
+    if (request.customMessage() != null && !request.customMessage().isEmpty()) {
+      msg.append("\n").append(request.customMessage()).append("\n");
+    }
+    
+    msg.append("\nAtenciosamente,\nHortifruti SL");
+    return msg.toString();
+  }
+
+
 }
