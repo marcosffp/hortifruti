@@ -4,13 +4,12 @@ import {
   Bell,
   ChevronDown,
   Database,
-  DollarSign,
+  BadgeDollarSign,
   Home,
   type LucideIcon,
   ShoppingBasket,
   ShoppingCart,
-  Upload,
-  UserLock,
+  Truck,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -34,24 +33,10 @@ interface MenuItem {
 
 const menu: MenuItem[] = [
   {
-    label: "Módulo Financeiro",
-    icon: DollarSign,
-    href: "#",
+    label: "Módulo Lançamentos",
+    icon: BadgeDollarSign,
+    href: "/lancamentos",
     roles: ["MANAGER", "EMPLOYEE"],
-    submenu: [
-      {
-        label: "Lançamentos",
-        icon: DollarSign,
-        href: "/financeiro/lancamentos",
-        roles: ["MANAGER", "EMPLOYEE"],
-      },
-      {
-        label: "Fluxo de Caixa",
-        icon: BarChart,
-        href: "/financeiro/fluxo",
-        roles: ["MANAGER", "EMPLOYEE"],
-      },
-    ],
   },
   {
     label: "Módulo Comércio",
@@ -67,7 +52,7 @@ const menu: MenuItem[] = [
       },
       {
         label: "Cálculo de Frete",
-        icon: DollarSign,
+        icon: Truck,
         href: "/comercio/frete",
         roles: ["MANAGER", "EMPLOYEE"],
       },
@@ -76,11 +61,13 @@ const menu: MenuItem[] = [
         icon: ShoppingBasket,
         href: "/comercio/compras",
         roles: ["MANAGER", "EMPLOYEE"],
+      },
+      {
         label: "Recomendações de Produtos",
         icon: BarChart,
         href: "/comercio/recomendacoes",
         roles: ["MANAGER"],
-      },
+      }
     ],
   },
   {
@@ -96,12 +83,6 @@ const menu: MenuItem[] = [
     roles: ["MANAGER"],
   },
   { label: "Módulo Acesso", icon: Users, href: "/acesso", roles: ["MANAGER"] },
-  {
-    label: "Administração",
-    icon: UserLock,
-    href: "/admin",
-    roles: ["MANAGER"],
-  },
 ];
 
 export default function Sidebar({

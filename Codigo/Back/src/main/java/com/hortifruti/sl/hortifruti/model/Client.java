@@ -12,6 +12,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -61,10 +62,14 @@ public class Client {
   @JsonIgnore // Adiciona essa anotação para evitar a serialização dessa coleção
   private List<Purchase> purchases;
 
+  @Column(nullable = true)
+  private BigDecimal totalPurchaseValue;
+
   @PrePersist
   protected void onCreate() {
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
+    this.totalPurchaseValue = BigDecimal.ZERO;
   }
 
   @PreUpdate

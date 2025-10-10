@@ -3,6 +3,8 @@ package com.hortifruti.sl.hortifruti.model;
 import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -38,7 +40,7 @@ public class Statement {
   @Column(nullable = false, length = 200)
   private String name;
 
-  @Column(nullable = false, length = 50)
+  @Enumerated(EnumType.STRING)
   private Bank bank;
 
   @Column(name = "update_at", nullable = false)

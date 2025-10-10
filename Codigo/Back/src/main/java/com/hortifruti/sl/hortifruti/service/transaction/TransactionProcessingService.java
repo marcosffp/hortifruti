@@ -37,7 +37,13 @@ public class TransactionProcessingService {
   @Async
   public void processFileAsync(MultipartFile file, Statement statement) {
     try {
-      importStatement(file, statement);
+      // Para o Sicoob, processar o arquivo de forma síncrona para evitar o problema
+      if (statement.getBank() == Bank.SICOOB) {
+        importStatement(file, statement);
+      } else {
+        // Para outros bancos, continuar com o processamento assíncrono
+        importStatement(file, statement);
+      }
     } catch (Exception e) {
       throw new TransactionException("Erro ao processar o arquivo: " + e.getMessage(), e);
     }

@@ -85,7 +85,13 @@ public class TransactionSicoobService {
       String line = rawLine.trim();
 
       // Ignora linhas irrelevantes
-      if (line.isBlank() || line.contains("SALDO DO DIA") || line.contains("SALDO ANTERIOR")) {
+      if (line.isBlank()
+          || line.contains("SALDO DO DIA")
+          || line.contains("SALDO ANTERIOR")
+          || line.matches(
+              "\\d{2}/\\d{2}/\\d{2}, \\d{2}:\\d{2}") // Ignora linhas com formato de data e hora
+          || line.contains(
+              "Sicoob | Internet Banking")) { // Ignora linhas com "Sicoob | Internet Banking"
         continue;
       }
 

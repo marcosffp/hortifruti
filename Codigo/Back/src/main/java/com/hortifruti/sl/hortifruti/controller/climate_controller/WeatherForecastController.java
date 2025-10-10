@@ -18,27 +18,29 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class WeatherForecastController {
 
-    private final WeatherForecastService weatherForecastService;
+  private final WeatherForecastService weatherForecastService;
 
-    @GetMapping("/forecast/5days")
-    @ApiResponses(value = {
+  @GetMapping("/forecast/5days")
+  @ApiResponses(
+      value = {
         @ApiResponse(responseCode = "200", description = "Previsão obtida com sucesso"),
         @ApiResponse(responseCode = "500", description = "Erro interno do servidor"),
-        @ApiResponse(responseCode = "503", description = "Serviço de previsão do tempo indisponível")
-    })
-    public ResponseEntity<WeatherForecastDTO> getFiveDayForecast() {
-        try {
-            log.info("Solicitando previsão do tempo para 5 dias");
-            WeatherForecastDTO forecast = weatherForecastService.getFiveDayForecast();
-            log.info("Previsão obtida com sucesso para cidade: {}", forecast.city());
-            return ResponseEntity.ok(forecast);
-        } catch (WeatherApiException e) {
-            log.error("Erro ao obter previsão do tempo: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
-        } catch (Exception e) {
-            log.error("Erro interno ao processar previsão do tempo: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
-        }
+        @ApiResponse(
+            responseCode = "503",
+            description = "Serviço de previsão do tempo indisponível")
+      })
+  public ResponseEntity<WeatherForecastDTO> getFiveDayForecast() {
+    try {
+      log.info("Solicitando previsão do tempo para 5 dias");
+      WeatherForecastDTO forecast = weatherForecastService.getFiveDayForecast();
+      log.info("Previsão obtida com sucesso para cidade: {}", forecast.city());
+      return ResponseEntity.ok(forecast);
+    } catch (WeatherApiException e) {
+      log.error("Erro ao obter previsão do tempo: {}", e.getMessage(), e);
+      return ResponseEntity.internalServerError().build();
+    } catch (Exception e) {
+      log.error("Erro interno ao processar previsão do tempo: {}", e.getMessage(), e);
+      return ResponseEntity.internalServerError().build();
     }
-    
+  }
 }

@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.dto.purchase;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import java.util.List;
 
 public record CombinedScoreRequest(
-    @NotBlank(message = "O nome do agrupamento é obrigatório") String name) {}
+    @NotNull Long clientId, List<GroupedProductRequest> groupedProducts) {}

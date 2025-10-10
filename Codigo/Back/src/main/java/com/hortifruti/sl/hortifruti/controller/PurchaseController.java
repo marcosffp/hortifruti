@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.controller;
 
 import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductsResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.PurchaseResponse;
 import com.hortifruti.sl.hortifruti.service.purchase.PurchaseService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -8,6 +9,9 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -55,7 +59,6 @@ public class PurchaseController {
           purchaseService.getGroupedProductsByClientAndPeriod(clientId, startDate, endDate);
       return ResponseEntity.ok(response);
     } catch (Exception e) {
-      logger.error("Erro ao buscar produtos agrupados: ", e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
   }
@@ -69,6 +72,21 @@ public class PurchaseController {
       logger.error("Erro ao deletar compra: ", e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
           .body(Map.of("error", "Falha ao deletar a compra"));
+    }
+  }
+
+  @GetMapping("/client/{clientId}/ordered")
+  public ResponseEntity<Page<PurchaseResponse>> getPurchasesByClientOrdered(
+      @PathVariable Long clientId,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size) {
+    try {
+      Pageable pageable = PageRequest.of(page, size);
+      Page<PurchaseResponse> purchases =
+          purchaseService.getPurchasesByClientOrdered(clientId, pageable);
+      return ResponseEntity.ok(purchases);
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
   }
 }
