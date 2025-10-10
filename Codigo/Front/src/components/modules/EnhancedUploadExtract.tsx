@@ -2,8 +2,10 @@
 
 import { useState, useRef } from "react";
 import { useUpload } from "@/hooks/useUpload";
+import { useStatement } from "@/hooks/useStatement";
+import Button from "@/components/ui/Button";
 import Loading from "@/components/ui/Loading";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, FileText, X, AlertCircle } from "lucide-react";
 import { showError, showSuccess } from "@/services/notificationService";
 
 export default function EnhancedUploadExtract() {
@@ -12,8 +14,8 @@ export default function EnhancedUploadExtract() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Usar apenas um hook para simplificar
-  const { formatFileSize, validateFiles, processFiles, error } = useUpload();
+const { formatFileSize, validateFiles, processFiles, error } = useUpload();
+const { validateFiles: validateStatementFiles, processFiles: processStatementFiles } = useStatement();
 
 const handleFileUpload = async (file: File) => {
   setLoading(true);
@@ -22,8 +24,7 @@ const handleFileUpload = async (file: File) => {
     const validFiles = validateFiles([file]);
     if (validFiles.length === 0) return;
 
-    // Processarfiles com tipo "statement" 
-    await processFiles(validFiles, "statement");
+    await processFiles(validFiles);
 
     showSuccess(`O arquivo "${file.name}" foi processado com sucesso!`);
   } catch (err) {
@@ -65,7 +66,15 @@ const handleFileUpload = async (file: File) => {
     fileInputRef.current?.click();
   };
 
-
+const handleProcessFiles = async () => {
+  try {
+    await processFiles(files, "statement");
+    // Limpar arquivos após processamento bem-sucedido
+    setFiles([]);
+  } catch (err) {
+    // O erro já é tratado no hook useStatement
+  }
+};
   return (
     <div className="min-h-full flex-1 flex items-center justify-center bg-white relative rounded-lg shadow-sm p-4">
       {/* Loading overlay */}
