@@ -120,20 +120,21 @@ public class ClientService {
 
   @Transactional(readOnly = true)
   public ClientSummary getClientSummary(Long id) {
-      Client client = clientRepository.findById(id)
-              .orElseThrow(() -> new ClientException("Cliente não encontrado"));
+    Client client =
+        clientRepository
+            .findById(id)
+            .orElseThrow(() -> new ClientException("Cliente não encontrado"));
 
-      List<Purchase> purchases = purchaseRepository.findByClientId(id);
+    List<Purchase> purchases = purchaseRepository.findByClientId(id);
 
-      int totalProducts = purchases.stream()
-              .mapToInt(purchase -> purchase.getInvoiceProducts().size())
-              .sum();
+    int totalProducts =
+        purchases.stream().mapToInt(purchase -> purchase.getInvoiceProducts().size()).sum();
 
-      double totalValue = purchases.stream()
-              .mapToDouble(purchase -> purchase.getTotal().doubleValue())
-              .sum();
+    double totalValue =
+        purchases.stream().mapToDouble(purchase -> purchase.getTotal().doubleValue()).sum();
 
-      return new ClientSummary(client.getClientName(), client.getAddress(), totalProducts, totalValue);
+    return new ClientSummary(
+        client.getClientName(), client.getAddress(), totalProducts, totalValue);
   }
 
   public List<ClientSelectionInfo> getAllClientsForSelection() {

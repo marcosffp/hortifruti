@@ -44,6 +44,8 @@
         <poi-ooxml.version>5.2.3</poi-ooxml.version>
         <pdfbox.version>2.0.30</pdfbox.version>
         <json.version>20210307</json.version>
+        <httpclient5.version>5.3.1</httpclient5.version>
+        <plugin-saucelabs.version>5.13.0</plugin-saucelabs.version>
     </properties>
 
     <dependencies>
@@ -156,25 +158,16 @@
             <artifactId>json</artifactId>
             <version>${json.version}</version>
         </dependency>
-        <!-- ADICIONE esta dependência do Spring Boot para HttpClient compatível -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        
-        <!-- ADICIONE explicitamente a versão compatível do HttpClient -->
         <dependency>
             <groupId>org.apache.httpcomponents.client5</groupId>
             <artifactId>httpclient5</artifactId>
-            <version>5.3.1</version>
+            <version>${httpclient5.version}</version>
         </dependency>
-    
-      <dependency>
-        <groupId>com.epam.reportportal</groupId>
-        <artifactId>plugin-saucelabs</artifactId>
-        <version>5.13.0</version>
-      </dependency>
-
+        <dependency>
+            <groupId>com.epam.reportportal</groupId>
+            <artifactId>plugin-saucelabs</artifactId>
+            <version>${plugin-saucelabs.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>

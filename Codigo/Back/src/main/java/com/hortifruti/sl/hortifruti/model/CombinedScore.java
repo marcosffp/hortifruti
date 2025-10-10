@@ -1,22 +1,13 @@
 package com.hortifruti.sl.hortifruti.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import java.util.List;
+import lombok.*;
 
 @Entity
-@Table(name = "grouped_products")
+@Table(name = "combined_scores")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -28,8 +19,8 @@ public class CombinedScore {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable = false, length = 100)
-  private String name;
+  @Column(name = "client_id", nullable = false)
+  private Long clientId;
 
   @Column(name = "confirmed_at")
   private LocalDateTime confirmedAt;
@@ -40,14 +31,31 @@ public class CombinedScore {
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
+  @Column(name = "total_value", nullable = false)
+  private BigDecimal totalValue;
+
+  @OneToMany(mappedBy = "combinedScore", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<GroupedProduct> groupedProducts;
+
   @PrePersist
   protected void onCreate() {
     this.confirmedAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
+    this.totalValue = calculateTotalValue();
   }
 
   @PreUpdate
   protected void onUpdate() {
     this.updatedAt = LocalDateTime.now();
+    this.totalValue = calculateTotalValue();
+  }
+
+  private BigDecimal calculateTotalValue() {
+    if (groupedProducts == null || groupedProducts.isEmpty()) {
+      return BigDecimal.ZERO;
+    }
+    return groupedProducts.stream()
+        .map(GroupedProduct::getTotalValue)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 }

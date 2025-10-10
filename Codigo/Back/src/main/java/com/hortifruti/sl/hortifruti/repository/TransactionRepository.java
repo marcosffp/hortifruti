@@ -48,7 +48,6 @@ public interface TransactionRepository
 
   boolean existsByHash(String hash);
 
-
   List<Transaction> findByTransactionDateBetweenAndTransactionType(
       LocalDate startDate, LocalDate endDate, TransactionType type);
 
@@ -59,8 +58,7 @@ public interface TransactionRepository
       WHERE t.transactionDate >= :startDate
         AND t.transactionDate <= :endDate
         AND t.category = :category
-      """
-  )
+      """)
   List<Transaction> findByTransactionDateBetweenAndCategory(
       @Param("startDate") LocalDate startDate,
       @Param("endDate") LocalDate endDate,

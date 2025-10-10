@@ -11,17 +11,17 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface CombinedScoreMapper {
 
-  CombinedScoreResponse toResponse(CombinedScore entity);
+  @Mapping(target = "id", ignore = true) // ID será gerado automaticamente
+  @Mapping(target = "confirmedAt", ignore = true) // Gerenciado pelo @PrePersist
+  @Mapping(target = "updatedAt", ignore = true) // Gerenciado pelo @PreUpdate
+  @Mapping(target = "totalValue", ignore = true) // Calculado automaticamente
+  CombinedScore toEntity(CombinedScoreRequest request);
 
-  @Mapping(target = "id", ignore = true)
-  @Mapping(target = "confirmedAt", ignore = true)
-  @Mapping(target = "updatedAt", ignore = true)
-  @Mapping(target = "dueDate", ignore = true)
-  void updateEntityFromRequest(@MappingTarget CombinedScore entity, CombinedScoreRequest dto);
+  CombinedScoreResponse toResponse(CombinedScore combinedScore);
 
-  @Mapping(target = "id", ignore = true)
-  @Mapping(target = "confirmedAt", expression = "java(java.time.LocalDateTime.now())")
-  @Mapping(target = "updatedAt", expression = "java(java.time.LocalDateTime.now())")
-  @Mapping(target = "dueDate", expression = "java(java.time.LocalDateTime.now().plusDays(20))")
-  CombinedScore toEntity(CombinedScoreRequest dto);
+  @Mapping(target = "id", ignore = true) // ID não deve ser alterado
+  @Mapping(target = "confirmedAt", ignore = true) // Não deve ser alterado
+  @Mapping(target = "updatedAt", ignore = true) // Gerenciado pelo @PreUpdate
+  @Mapping(target = "totalValue", ignore = true) // Calculado automaticamente
+  void updateEntityFromRequest(CombinedScoreRequest request, @MappingTarget CombinedScore entity);
 }
