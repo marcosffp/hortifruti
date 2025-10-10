@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Long> {
 
-  Page<CombinedScore> findByNameContainingIgnoreCase(String name, Pageable pageable);
+  Page<CombinedScore> findByClientId(Long clientId, Pageable pageable);
 }

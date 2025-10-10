@@ -1,22 +1,19 @@
 package com.hortifruti.sl.hortifruti.config;
 
-
 import com.hortifruti.sl.hortifruti.model.Client;
 import com.hortifruti.sl.hortifruti.model.ClimateProduct;
 import com.hortifruti.sl.hortifruti.model.FreightConfig;
 import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.model.enumeration.Month;
 import com.hortifruti.sl.hortifruti.model.enumeration.Role;
-import com.hortifruti.sl.hortifruti.repository.ClientRepository;
 import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
-import com.hortifruti.sl.hortifruti.repository.ProductRepository;
+import com.hortifruti.sl.hortifruti.repository.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.FreightConfigRepository;
+import com.hortifruti.sl.hortifruti.repository.ProductRepository;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
-
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -46,77 +43,84 @@ public class UserInitializer implements CommandLineRunner {
       createUser("admin", "admin", Role.EMPLOYEE, "Administrador");
     }
 
-     if (productRepository.count() == 0) {
-            log.info("Populando dados de exemplo de produtos...");
-            createSampleProducts();
-            log.info("Dados de exemplo criados com sucesso!");
-        } else {
-            log.info("Produtos já existem no banco de dados. Pulando inicialização de dados.");
-        }
+    if (productRepository.count() == 0) {
+      log.info("Populando dados de exemplo de produtos...");
+      createSampleProducts();
+      log.info("Dados de exemplo criados com sucesso!");
+    } else {
+      log.info("Produtos já existem no banco de dados. Pulando inicialização de dados.");
     }
-    
-    private void createSampleProducts() {
-        // Produtos QUENTES (>=25°C)
-        productRepository.save(new ClimateProduct(
+  }
+
+  private void createSampleProducts() {
+    // Produtos QUENTES (>=25°C)
+    productRepository.save(
+        new ClimateProduct(
             "Melancia",
             TemperatureCategory.QUENTE,
             List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO, Month.MARCO), // Verão
             List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO) // Inverno
-        ));
-        
-        productRepository.save(new ClimateProduct(
+            ));
+
+    productRepository.save(
+        new ClimateProduct(
             "Abacaxi",
             TemperatureCategory.QUENTE,
             List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO),
-            List.of(Month.MAIO, Month.JUNHO, Month.JULHO)
-        ));
-        
-        productRepository.save(new ClimateProduct(
+            List.of(Month.MAIO, Month.JUNHO, Month.JULHO)));
+
+    productRepository.save(
+        new ClimateProduct(
             "Água de Coco",
             TemperatureCategory.QUENTE,
             List.of(Month.NOVEMBRO, Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO, Month.MARCO),
-            List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO)
-        ));
-        
-        // Produtos AMENOS (15-24°C)
-        productRepository.save(new ClimateProduct(
+            List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO)));
+
+    // Produtos AMENOS (15-24°C)
+    productRepository.save(
+        new ClimateProduct(
             "Maçã",
             TemperatureCategory.AMENO,
             List.of(Month.MARCO, Month.ABRIL, Month.MAIO, Month.SETEMBRO, Month.OUTUBRO),
-            List.of(Month.DEZEMBRO, Month.JANEIRO)
-        ));
-        
-        productRepository.save(new ClimateProduct(
+            List.of(Month.DEZEMBRO, Month.JANEIRO)));
+
+    productRepository.save(
+        new ClimateProduct(
             "Banana",
             TemperatureCategory.AMENO,
-            List.of(Month.MARCO, Month.ABRIL, Month.MAIO, Month.SETEMBRO, Month.OUTUBRO, Month.NOVEMBRO),
-            List.of(Month.JULHO, Month.AGOSTO)
-        ));
-        
-        // Produtos FRIOS (6-14°C)
-        productRepository.save(new ClimateProduct(
+            List.of(
+                Month.MARCO,
+                Month.ABRIL,
+                Month.MAIO,
+                Month.SETEMBRO,
+                Month.OUTUBRO,
+                Month.NOVEMBRO),
+            List.of(Month.JULHO, Month.AGOSTO)));
+
+    // Produtos FRIOS (6-14°C)
+    productRepository.save(
+        new ClimateProduct(
             "Batata Doce",
             TemperatureCategory.FRIO,
             List.of(Month.MAIO, Month.JUNHO, Month.JULHO, Month.AGOSTO, Month.SETEMBRO),
-            List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO)
-        ));
-        
-        productRepository.save(new ClimateProduct(
+            List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO)));
+
+    productRepository.save(
+        new ClimateProduct(
             "Mandioca",
             TemperatureCategory.FRIO,
             List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO, Month.SETEMBRO),
-            List.of(Month.JANEIRO, Month.FEVEREIRO, Month.MARCO)
-        ));
-        
-        // Produtos CONGELANDO (<=5°C)
-        productRepository.save(new ClimateProduct(
+            List.of(Month.JANEIRO, Month.FEVEREIRO, Month.MARCO)));
+
+    // Produtos CONGELANDO (<=5°C)
+    productRepository.save(
+        new ClimateProduct(
             "Gengibre",
             TemperatureCategory.CONGELANDO,
             List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO),
-            List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO)
-        ));
-        
-        log.info("Criados {} produtos de exemplo", productRepository.count());
+            List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO)));
+
+    log.info("Criados {} produtos de exemplo", productRepository.count());
   }
 
   // Cria um usuário com os dados fornecidos

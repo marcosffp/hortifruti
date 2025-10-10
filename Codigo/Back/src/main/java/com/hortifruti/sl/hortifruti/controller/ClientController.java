@@ -15,7 +15,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.GetMapping;
 
-
 @RestController
 @RequestMapping("/clients")
 @AllArgsConstructor
@@ -65,9 +64,9 @@ public class ClientController {
 
   @GetMapping("/{id}/summary")
   public ClientSummary getClientSummary(@PathVariable Long id) {
-      return clientService.getClientSummary(id);
+    return clientService.getClientSummary(id);
   }
-  
+
   @GetMapping("/for-selection")
   public ResponseEntity<List<ClientSelectionInfo>> getAllClientsForSelection() {
     List<ClientSelectionInfo> clients = clientService.getAllClientsForSelection();

@@ -55,6 +55,7 @@ public class TransactionUtil {
     map.put("marlucia natania vieira", Category.FUNCIONARIO);
     map.put("amanda gabriele da silva", Category.FUNCIONARIO);
     map.put("anderson cosme de souza", Category.FUNCIONARIO);
+    map.put("alexandre conceição dos sa", Category.FUNCIONARIO);
 
     // Família
     map.put("marcos", Category.FAMÍLIA);

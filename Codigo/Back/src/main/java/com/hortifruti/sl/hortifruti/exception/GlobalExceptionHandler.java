@@ -172,7 +172,8 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(RecommendationException.class)
-  public ResponseEntity<Map<String, String>> handleRecommendationException(RecommendationException ex) {
+  public ResponseEntity<Map<String, String>> handleRecommendationException(
+      RecommendationException ex) {
     Map<String, String> response = new HashMap<>();
     response.put("error", "Erro de Recomendação");
     response.put("message", ex.getMessage());

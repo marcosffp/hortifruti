@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.service.purchase;
 
 import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProduct;
 import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductsResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.PurchaseResponse;
 import com.hortifruti.sl.hortifruti.exception.ClientException;
 import com.hortifruti.sl.hortifruti.exception.PurchaseException;
 import com.hortifruti.sl.hortifruti.model.Client;
@@ -13,6 +14,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,11 +29,14 @@ public class PurchaseService {
   private final ClientRepository clientRepository;
   private final ProductGrouper productGrouper;
 
+  @Transactional
   public Purchase processPurchaseFile(MultipartFile file) throws IOException {
     if (file == null) {
       throw new PurchaseException("Arquivo não fornecido");
     }
-    return purchaseProcessingService.processPurchaseFile(file);
+
+    Purchase purchase = purchaseProcessingService.processPurchaseFile(file);
+    return purchase;
   }
 
   @Transactional(readOnly = true)
@@ -80,9 +86,24 @@ public class PurchaseService {
     Purchase purchase =
         purchaseRepository
             .findById(id)
-            .orElseThrow(
-                () -> new IllegalArgumentException("Compra não encontrada com o ID: " + id));
-
+            .orElseThrow(() -> new PurchaseException("Compra não encontrada com o ID: " + id));
     purchaseRepository.delete(purchase);
+  }
+
+  @Transactional(readOnly = true)
+  public Page<PurchaseResponse> getPurchasesByClientOrdered(Long clientId, Pageable pageable) {
+    clientRepository
+        .findById(clientId)
+        .orElseThrow(() -> new ClientException("Cliente não encontrado com o ID: " + clientId));
+
+    return purchaseRepository
+        .findByClientIdOrderByPurchaseDateDesc(clientId, pageable)
+        .map(
+            purchase ->
+                new PurchaseResponse(
+                    purchase.getId(),
+                    purchase.getPurchaseDate(),
+                    purchase.getTotal(),
+                    purchase.getUpdatedAt()));
   }
 }
