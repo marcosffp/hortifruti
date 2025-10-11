@@ -5,7 +5,5 @@ import com.hortifruti.sl.hortifruti.model.enumeration.NotificationChannel;
 public record ClientDocumentsRequest(
     Long clientId,
     NotificationChannel channel,
-    String customMessage,
-    boolean includeBoleto,
-    boolean includeNotaFiscal
+    String customMessage
 ) {}

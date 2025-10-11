@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -43,6 +44,7 @@ public class NotificationService {
   /**
    * Envio mensal para contabilidade: Extratos BB/Sicoob + Notas fiscais
    */
+  @Transactional(readOnly = true)
   public NotificationResponse sendMonthlyStatements(MonthlyStatementsRequest request) {
     try {
       log.info("Enviando extratos mensais {}/{}", request.month(), request.year());
@@ -80,12 +82,15 @@ public class NotificationService {
         fileNames.add(file.getOriginalFilename());
       }
       
-      // Calcular valores com redução de 60%
-      BigDecimal adjustedDebit = request.debitValue().multiply(BigDecimal.valueOf(0.4));
-      BigDecimal adjustedCredit = request.creditValue().multiply(BigDecimal.valueOf(0.4));
+  // Somar todos os valores e aplicar desconto de 60%
+  BigDecimal total = BigDecimal.ZERO;
+  if (request.debitValue() != null) total = total.add(request.debitValue());
+  if (request.creditValue() != null) total = total.add(request.creditValue());
+  if (request.cashValue() != null) total = total.add(request.cashValue());
+  BigDecimal totalComDesconto = total.multiply(BigDecimal.valueOf(0.4));
 
-      String subject = "Arquivos Contábeis - Resumo Financeiro";
-      String message = buildGenericFilesMessage(request, adjustedDebit, adjustedCredit);
+  String subject = "Arquivos Contábeis - Resumo Financeiro";
+  String message = buildGenericFilesMessage(request, total, totalComDesconto);
 
       return sendToAccounting(request.channel(), subject, message, fileContents, fileNames);
       
@@ -111,33 +116,11 @@ public class NotificationService {
       List<byte[]> attachments = new ArrayList<>();
       List<String> fileNames = new ArrayList<>();
       
-      // Adicionar arquivos genéricos
+      // Adicionar arquivos enviados
       if (files != null && !files.isEmpty()) {
         for (MultipartFile file : files) {
           attachments.add(file.getBytes());
           fileNames.add(file.getOriginalFilename());
-        }
-      }
-      
-      // Gerar boleto se solicitado
-      if (request.includeBoleto()) {
-        try {
-          byte[] boleto = fileGenerationService.generateClientBoleto(request.clientId());
-          attachments.add(boleto);
-          fileNames.add("boleto_cliente_" + request.clientId() + ".xlsx");
-        } catch (IOException e) {
-          log.error("Erro ao gerar boleto para cliente {}", request.clientId(), e);
-        }
-      }
-      
-      // Gerar nota fiscal se solicitado
-      if (request.includeNotaFiscal()) {
-        try {
-          byte[] notaFiscal = fileGenerationService.generateClientNotaFiscal(request.clientId());
-          attachments.add(notaFiscal);
-          fileNames.add("nota_fiscal_cliente_" + request.clientId() + ".xlsx");
-        } catch (IOException e) {
-          log.error("Erro ao gerar nota fiscal para cliente {}", request.clientId(), e);
         }
       }
 
@@ -247,6 +230,11 @@ public class NotificationService {
     
     if (request.customMessage() != null && !request.customMessage().isEmpty()) {
       msg.append("Observações:\n").append(request.customMessage()).append("\n\n");
+    } else {
+      // Mensagem padrão quando não há mensagem customizada
+      msg.append("Todos os documentos estão organizados e prontos para análise contábil.\n");
+      msg.append("Os extratos bancários incluem as movimentações completas do período.\n");
+      msg.append("Ficamos à disposição para esclarecimentos adicionais.\n\n");
     }
     
     msg.append("Atenciosamente,\nHortifruti SL");
@@ -257,13 +245,15 @@ public class NotificationService {
     StringBuilder msg = new StringBuilder();
     msg.append("Prezados,\n\n");
     msg.append("Segue anexos contábeis solicitados.\n\n");
-    msg.append("Resumo Financeiro (após ajuste de 60%):\n");
-    msg.append("• Débito: R$ ").append(adjustedDebit).append("\n");
-    msg.append("• Crédito: R$ ").append(adjustedCredit).append("\n");
-    msg.append("• Dinheiro: R$ ").append(request.cashValue()).append("\n\n");
+  msg.append("Resumo Financeiro:\n");
+  msg.append("• Soma dos valores: R$ ").append(String.format("%.2f", adjustedCredit)).append("\n\n");
     
     if (request.customMessage() != null && !request.customMessage().isEmpty()) {
       msg.append("Observações:\n").append(request.customMessage()).append("\n\n");
+    } else {
+      // Mensagem padrão quando não há mensagem customizada
+      msg.append("Todos os arquivos estão organizados e prontos para processamento contábil.\n");
+      msg.append("Qualquer dúvida, estamos à disposição.\n\n");
     }
     
     msg.append("Atenciosamente,\nHortifruti SL");
@@ -273,16 +263,17 @@ public class NotificationService {
   private String buildClientMessage(ClientDocumentsRequest request, Client client) {
     StringBuilder msg = new StringBuilder();
     msg.append("Prezado(a) ").append(client.getClientName()).append(",\n\n");
-    msg.append("Segue anexos solicitados:\n\n");
-    
-    if (request.includeBoleto()) msg.append("• Boleto de pagamento\n");
-    if (request.includeNotaFiscal()) msg.append("• Nota fiscal\n");
-    
+    msg.append("Seguem os anexo(s).\n\n");
+
     if (request.customMessage() != null && !request.customMessage().isEmpty()) {
-      msg.append("\n").append(request.customMessage()).append("\n");
+      msg.append(request.customMessage()).append("\n\n");
+    } else {
+      // Mensagem padrão quando não há mensagem customizada
+      msg.append("Esperamos que os documentos sejam úteis para suas necessidades.\n");
+      msg.append("Em caso de dúvidas, entre em contato conosco.\n\n");
     }
     
-    msg.append("\nAtenciosamente,\nHortifruti SL");
+    msg.append("Atenciosamente,\nHortifruti SL");
     return msg.toString();
   }
 

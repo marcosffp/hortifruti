@@ -82,34 +82,28 @@ public class NotificationController {
   }
 
   /**
-   * Envio para cliente - Boleto, Nota Fiscal, etc.
+   * Envio para cliente - Documentos diversos
    */
   @Operation(summary = "Enviar documentos para cliente",
-             description = "Envio de documentos para cliente com geração automática de boleto e nota fiscal se solicitado")
+             description = "Envio de documentos para cliente específico via email e/ou WhatsApp")
   @PostMapping(value = "/client/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @PreAuthorize("hasRole('MANAGER')")
   public ResponseEntity<NotificationResponse> sendDocumentsToClient(
-      @Parameter(description = "Arquivos opcionais a serem enviados para o cliente", 
+      @Parameter(description = "Arquivos a serem enviados para o cliente", 
                  content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
-      @RequestParam(value = "files", required = false) List<MultipartFile> files,
+      @RequestParam("files") List<MultipartFile> files,
       
       @Parameter(description = "ID do cliente")
       @RequestParam("clientId") Long clientId,
       @Parameter(description = "Canal de comunicação (EMAIL, WHATSAPP, BOTH)")
       @RequestParam("channel") String channel,
-      @Parameter(description = "Gerar boleto automaticamente")
-      @RequestParam(value = "generateBillet", defaultValue = "false") boolean generateBillet,
-      @Parameter(description = "Gerar nota fiscal automaticamente")
-      @RequestParam(value = "generateInvoice", defaultValue = "false") boolean generateInvoice,
       @Parameter(description = "Mensagem personalizada (opcional)")
       @RequestParam(value = "customMessage", required = false) String customMessage) {
     try {
       ClientDocumentsRequest request = new ClientDocumentsRequest(
           clientId,
           NotificationChannel.valueOf(channel.toUpperCase()),
-          customMessage,
-          generateBillet,
-          generateInvoice
+          customMessage
       );
       NotificationResponse response = notificationService.sendDocumentsToClient(files, request);
       return ResponseEntity.ok(response);
