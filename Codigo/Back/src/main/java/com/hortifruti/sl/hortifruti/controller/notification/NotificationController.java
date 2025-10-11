@@ -28,7 +28,7 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/notifications")
+@RequestMapping("/notifications")
 @RequiredArgsConstructor
 @io.swagger.v3.oas.annotations.tags.Tag(name = "Notificações", description = "API para envio de notificações e documentos via email e WhatsApp")
 public class NotificationController {

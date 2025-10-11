@@ -33,14 +33,8 @@ public class NotificationService {
   @Value("${accounting.email}")
   private String accountingEmail;
 
-  @Value("${manager.email}")
-  private String managerEmail;
-
   @Value("${accounting.whatsapp}")
   private String accountingWhatsapp;
-
-  @Value("${manager.whatsapp}")
-  private String managerWhatsapp;
 
   /**
    * Envio mensal para contabilidade: Extratos BB/Sicoob + Notas fiscais
