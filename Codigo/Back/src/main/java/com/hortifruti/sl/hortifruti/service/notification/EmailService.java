@@ -4,6 +4,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -43,6 +44,17 @@ public class EmailService {
       helper.setSubject(subject);
       helper.setText(text, true); // true para HTML
       helper.setFrom("noreply@hortifrutisantaluzia.com");
+
+      // Adicionar logo como anexo inline
+      try {
+        ClassPathResource logoResource = new ClassPathResource("static/images/logo.png");
+        if (logoResource.exists()) {
+          helper.addInline("logo", logoResource);
+        }
+      } catch (Exception e) {
+        // Logo não encontrado, continuar sem ele
+        System.out.println("Logo não encontrado: " + e.getMessage());
+      }
 
       // Adicionar anexos
       if (attachments != null && fileNames != null) {

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumo Financeiro - Hortifruti SL</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        }
+        .email-container {
+            max-width: 650px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .header {
+            background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #a78bfa 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #7c3aed, #8b5cf6, #a78bfa, #c4b5fd);
+            border-radius: 18px;
+            z-index: -1;
+        }
+        .logo-section {
+            margin-bottom: 20px;
+        }
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+        .header .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-top: 8px;
+            font-weight: 400;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 24px;
+            color: #374151;
+        }
+        .financial-card {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 30%, #fed7aa 70%, #fecaca 100%);
+            border-radius: 16px;
+            padding: 30px;
+            margin: 30px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .financial-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 50%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+            0%, 100% { transform: translateX(-100%) rotate(45deg); }
+            50% { transform: translateX(100%) rotate(45deg); }
+        }
+        .financial-card h3 {
+            color: #92400e;
+            margin: 0 0 24px 0;
+            font-size: 20px;
+            font-weight: 700;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .value-grid {
+            display: grid;
+            gap: 20px;
+        }
+        .value-item {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #f59e0b;
+        }
+        .value-item.total {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            border-left-color: #10b981;
+            position: relative;
+        }
+        .value-item.total::after {
+            content: '⭐';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 24px;
+        }
+        .value-label {
+            font-weight: 600;
+            color: #374151;
+            font-size: 16px;
+        }
+        .value-amount {
+            font-weight: 800;
+            font-size: 20px;
+            color: #059669;
+        }
+        .value-item.total .value-amount {
+            color: #047857;
+            font-size: 24px;
+        }
+        .observations {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #fcd34d;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 24px 0;
+        }
+        .observations h4 {
+            color: #d97706;
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .observations p {
+            margin: 0;
+            color: #92400e;
+            font-weight: 500;
+        }
+        .default-message {
+            color: #6b7280;
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #d1d5db;
+            margin: 24px 0;
+        }
+        .footer {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+        .company-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #7c3aed;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .footer-text {
+            color: #6b7280;
+            font-size: 14px;
+            margin: 0;
+        }
+        .copyright {
+            margin-top: 16px;
+            font-size: 12px;
+            color: #9ca3af;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+             <div class="logo-section">
+                <div class="logo-icon"><img src="cid:logo" alt="Hortifruti SL" width="60" height="60" /></div>
+            </div>
+            <h1>Resumo Financeiro</h1>
+            <div class="subtitle">Arquivos Contábeis</div>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                <strong>Prezados colaboradores da contabilidade,</strong>
+            </div>
+            
+            <p>Seguem anexos contábeis conforme solicitado, incluindo o resumo financeiro detalhado abaixo:</p>
+            
+            <div class="financial-card">
+                <h3>
+                    💰 Resumo Financeiro Consolidado
+                </h3>
+                <div class="value-grid">
+                    <div class="value-item">
+                        <span class="value-label">💵 Soma Total dos Valores</span>
+                        <span class="value-amount">R$ {{TOTAL_VALUE}}</span>
+                    </div>
+                    <div class="value-item total">
+                        <span class="value-label">🎯 Valor Final (após desconto de 60%)</span>
+                        <span class="value-amount">R$ {{DISCOUNTED_VALUE}}</span>
+                    </div>
+                </div>
+            </div>
+            
+            {{#CUSTOM_MESSAGE}}
+            <div class="observations">
+                <h4>
+                    � Observações Especiais
+                </h4>
+                <p>{{CUSTOM_MESSAGE}}</p>
+            </div>
+            {{/CUSTOM_MESSAGE}}
+            
+            {{#DEFAULT_MESSAGE}}
+            <div class="default-message">
+                <p><strong>Informações importantes:</strong></p>
+                <p>• Todos os arquivos estão organizados e validados</p>
+                <p>• O desconto de 60% já foi aplicado automaticamente</p>
+                <p>• Ficamos à disposição para esclarecimentos adicionais</p>
+            </div>
+            {{/DEFAULT_MESSAGE}}
+            
+            <p>Lembre-se de verificar no sistema o agendamento e conferir o comprovante de pagamento em anexo. Após isso, aprove ou recuse o agendamento pela plataforma.</p>
+        </div>
+        
+        <div class="footer">
+            <div class="company-name">
+                🥬 Hortifruti SL
+            </div>
+            <p class="footer-text"><strong>Atenciosamente,<br>Equipe Hortifruti SL</strong></p>
+            <div class="copyright">
+                Copyright © 2025 Hortifruti SL. Todos os direitos reservados.
+            </div>
+        </div>
+    </div>
+</body>
+</html>

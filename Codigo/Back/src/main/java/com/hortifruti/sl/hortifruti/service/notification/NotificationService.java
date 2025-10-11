@@ -15,7 +15,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -28,6 +30,7 @@ public class NotificationService {
   private final FileGenerationService fileGenerationService;
   private final StatementSelectionService statementSelectionService;
   private final ClientRepository clientRepository;
+  private final EmailTemplateService emailTemplateService;
 
   @Value("${accounting.email}")
   private String accountingEmail;
@@ -58,7 +61,10 @@ public class NotificationService {
       String subject = "Documentos Contábeis - " + request.month() + "/" + request.year();
       String message = buildMonthlyMessage(request);
 
-      return sendToAccounting(request.channel(), subject, message, attachments, fileNames);
+      // Para extratos mensais, passar período e mensagem customizada se houver
+      String period = request.month() + "/" + request.year();
+      String customMessage = request.customMessage() != null ? request.customMessage() : "";
+      return sendToAccounting(request.channel(), subject, message, attachments, fileNames, customMessage, period);
       
     } catch (Exception e) {
       log.error("Erro ao enviar extratos mensais", e);
@@ -92,7 +98,8 @@ public class NotificationService {
   String subject = "Arquivos Contábeis - Resumo Financeiro";
   String message = buildGenericFilesMessage(request, total, totalComDesconto);
 
-      return sendToAccounting(request.channel(), subject, message, fileContents, fileNames);
+      return sendToAccounting(request.channel(), subject, message, fileContents, fileNames, 
+                             request.customMessage(), String.format("%.2f", totalComDesconto));
       
     } catch (IOException e) {
       log.error("Erro ao processar arquivos", e);
@@ -127,7 +134,7 @@ public class NotificationService {
       String subject = "Documentos - " + client.getClientName();
       String message = buildClientMessage(request, client);
 
-      return sendToClient(client, request.channel(), subject, message, attachments, fileNames);
+      return sendToClient(client, request.channel(), subject, message, attachments, fileNames, request.customMessage());
       
     } catch (IOException e) {
       log.error("Erro ao processar arquivos do cliente", e);
@@ -161,6 +168,12 @@ public class NotificationService {
   
   private NotificationResponse sendToAccounting(NotificationChannel channel, String subject, 
                                                String message, List<byte[]> attachments, List<String> fileNames) {
+    return sendToAccounting(channel, subject, message, attachments, fileNames, null, null);
+  }
+  
+  private NotificationResponse sendToAccounting(NotificationChannel channel, String subject, 
+                                               String message, List<byte[]> attachments, List<String> fileNames,
+                                               String customMessage, String totalValue) {
     boolean emailSent = false;
     boolean whatsappSent = false;
 
@@ -169,7 +182,9 @@ public class NotificationService {
     }
 
     if (channel == NotificationChannel.WHATSAPP || channel == NotificationChannel.BOTH) {
-      whatsappSent = whatsAppService.sendMultipleDocuments(accountingWhatsapp, message, attachments, fileNames);
+      // Para WhatsApp, criar mensagem específica baseada no contexto
+      String whatsappMessage = createContextualWhatsAppMessage(message, subject, customMessage, totalValue);
+      whatsappSent = whatsAppService.sendMultipleDocuments(accountingWhatsapp, whatsappMessage, attachments, fileNames);
     }
 
     boolean success = (channel == NotificationChannel.EMAIL && emailSent) ||
@@ -184,6 +199,11 @@ public class NotificationService {
 
   private NotificationResponse sendToClient(Client client, NotificationChannel channel, String subject,
                                           String message, List<byte[]> attachments, List<String> fileNames) {
+    return sendToClient(client, channel, subject, message, attachments, fileNames, null);
+  }
+  
+  private NotificationResponse sendToClient(Client client, NotificationChannel channel, String subject,
+                                          String message, List<byte[]> attachments, List<String> fileNames, String customMessage) {
     boolean emailSent = false;
     boolean whatsappSent = false;
 
@@ -203,7 +223,9 @@ public class NotificationService {
 
       if (client.getPhoneNumber() != null && !client.getPhoneNumber().isEmpty()) {
         log.info("Enviando WhatsApp para: '{}'", client.getPhoneNumber());
-        whatsappSent = whatsAppService.sendMultipleDocuments(client.getPhoneNumber(), message, attachments, fileNames);
+        // Para WhatsApp, criar mensagem específica para cliente com contexto
+        String whatsappMessage = buildWhatsAppClientMessageWithContext(client.getClientName(), customMessage);
+        whatsappSent = whatsAppService.sendMultipleDocuments(client.getPhoneNumber(), whatsappMessage, attachments, fileNames);
         log.info("Resultado WhatsApp: {}", whatsappSent);
       } else {
         log.warn("Número de telefone do cliente {} é null ou vazio", client.getClientName());
@@ -221,60 +243,287 @@ public class NotificationService {
   }
 
   private String buildMonthlyMessage(MonthlyStatementsRequest request) {
-    StringBuilder msg = new StringBuilder();
-    msg.append("Prezados,\n\n");
-    msg.append("Segue anexos referentes ao mês ").append(request.month()).append("/").append(request.year()).append(":\n\n");
-    msg.append("• Extratos bancários (BB e Sicoob)\n");
-    msg.append("• Planilhas Excel com movimentos\n");
-    msg.append("• Notas fiscais do período\n\n");
+    Map<String, String> variables = new HashMap<>();
+    variables.put("MONTH", String.valueOf(request.month()));
+    variables.put("YEAR", String.valueOf(request.year()));
     
     if (request.customMessage() != null && !request.customMessage().isEmpty()) {
-      msg.append("Observações:\n").append(request.customMessage()).append("\n\n");
+      variables.put("CUSTOM_MESSAGE", request.customMessage());
+      variables.put("DEFAULT_MESSAGE", ""); // Não mostrar mensagem padrão
     } else {
-      // Mensagem padrão quando não há mensagem customizada
-      msg.append("Todos os documentos estão organizados e prontos para análise contábil.\n");
-      msg.append("Os extratos bancários incluem as movimentações completas do período.\n");
-      msg.append("Ficamos à disposição para esclarecimentos adicionais.\n\n");
+      variables.put("CUSTOM_MESSAGE", ""); // Não mostrar observações
+      variables.put("DEFAULT_MESSAGE", "true"); // Mostrar mensagem padrão
     }
     
-    msg.append("Atenciosamente,\nHortifruti SL");
-    return msg.toString();
+    return emailTemplateService.processTemplate("monthly-statements", variables);
   }
 
   private String buildGenericFilesMessage(GenericFilesAccountingRequest request, BigDecimal adjustedDebit, BigDecimal adjustedCredit) {
-    StringBuilder msg = new StringBuilder();
-    msg.append("Prezados,\n\n");
-    msg.append("Segue anexos contábeis solicitados.\n\n");
-  msg.append("Resumo Financeiro:\n");
-  msg.append("• Soma dos valores: R$ ").append(String.format("%.2f", adjustedCredit)).append("\n\n");
+    Map<String, String> variables = new HashMap<>();
+    variables.put("DISCOUNTED_VALUE", String.format("%.2f", adjustedCredit));
     
     if (request.customMessage() != null && !request.customMessage().isEmpty()) {
-      msg.append("Observações:\n").append(request.customMessage()).append("\n\n");
+      variables.put("CUSTOM_MESSAGE", request.customMessage());
+      variables.put("DEFAULT_MESSAGE", ""); // Não mostrar mensagem padrão
     } else {
-      // Mensagem padrão quando não há mensagem customizada
-      msg.append("Todos os arquivos estão organizados e prontos para processamento contábil.\n");
-      msg.append("Qualquer dúvida, estamos à disposição.\n\n");
+      variables.put("CUSTOM_MESSAGE", ""); // Não mostrar observações
+      variables.put("DEFAULT_MESSAGE", "true"); // Mostrar mensagem padrão
     }
     
-    msg.append("Atenciosamente,\nHortifruti SL");
-    return msg.toString();
+    return emailTemplateService.processTemplate("generic-files", variables);
   }
 
   private String buildClientMessage(ClientDocumentsRequest request, Client client) {
-    StringBuilder msg = new StringBuilder();
-    msg.append("Prezado(a) ").append(client.getClientName()).append(",\n\n");
-    msg.append("Seguem os anexo(s).\n\n");
-
+    Map<String, String> variables = new HashMap<>();
+    variables.put("CLIENT_NAME", client.getClientName());
+    
+    // Adicionar data atual
+    java.time.LocalDate today = java.time.LocalDate.now();
+    java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    variables.put("CURRENT_DATE", today.format(formatter));
+    
     if (request.customMessage() != null && !request.customMessage().isEmpty()) {
-      msg.append(request.customMessage()).append("\n\n");
+      variables.put("CUSTOM_MESSAGE", request.customMessage());
+      variables.put("DEFAULT_MESSAGE", ""); // Não mostrar mensagem padrão
     } else {
-      // Mensagem padrão quando não há mensagem customizada
-      msg.append("Esperamos que os documentos sejam úteis para suas necessidades.\n");
-      msg.append("Em caso de dúvidas, entre em contato conosco.\n\n");
+      variables.put("CUSTOM_MESSAGE", ""); // Não mostrar mensagem customizada
+      variables.put("DEFAULT_MESSAGE", "true"); // Mostrar mensagem padrão
     }
     
-    msg.append("Atenciosamente,\nHortifruti SL");
-    return msg.toString();
+    return emailTemplateService.processTemplate("client-documents", variables);
+  }
+
+  /**
+   * Cria mensagem específica para WhatsApp baseada no contexto da requisição
+   */
+  private String createContextualWhatsAppMessage(String htmlMessage, String subject, String customMessage, String totalValue) {
+    // Determinar tipo baseado no subject
+    if (subject != null) {
+      if (subject.contains("Documentos Contábeis")) {
+        // Para extratos mensais, totalValue é o período (mes/ano)
+        return buildWhatsAppMonthlyMessageWithContext(totalValue, customMessage);
+      }
+      if (subject.contains("Arquivos Contábeis")) {
+        // Para arquivos genéricos, totalValue é o valor monetário
+        return buildWhatsAppGenericFilesMessageWithContext(customMessage, totalValue);
+      }
+    }
+    
+    // Fallback para método original
+    return convertHtmlToPlainText(htmlMessage);
+  }
+  
+  private String buildWhatsAppMonthlyMessageWithContext(String period, String customMessage) {
+    StringBuilder message = new StringBuilder();
+    message.append("Prezados\n\n");
+    message.append("Segue anexos contábeis.\n\n");
+    message.append("Período: ").append(period != null ? period : "Atual").append("\n\n");
+    message.append("Arquivos inclusos:\n");
+    message.append("• Extratos bancários (Banco do Brasil e Sicoob)\n");
+    message.append("• Planilhas Excel com movimentações financeiras\n");
+    message.append("• Notas fiscais do período\n\n");
+    
+    if (customMessage != null && !customMessage.isEmpty()) {
+      message.append("Observações:\n");
+      message.append(customMessage).append("\n\n");
+    }
+    
+    message.append("Atenciosamente,\n");
+    message.append("Hortifruti SL");
+    
+    return message.toString();
+  }
+  
+  private String buildWhatsAppGenericFilesMessageWithContext(String customMessage, String totalValue) {
+    StringBuilder message = new StringBuilder();
+    message.append("Prezados\n\n");
+    message.append("Segue anexos contábeis.\n\n");
+    
+    if (totalValue != null && !totalValue.isEmpty()) {
+      message.append("Resumo Financeiro:\n");
+      message.append("• Soma dos valores: R$ ").append(totalValue).append("\n\n");
+    }
+    
+    if (customMessage != null && !customMessage.isEmpty()) {
+      message.append("Observações:\n");
+      message.append(customMessage).append("\n\n");
+    }
+    
+    message.append("Atenciosamente,\n");
+    message.append("Hortifruti SL");
+    
+    return message.toString();
+  }
+  
+  private String buildWhatsAppClientMessageWithContext(String clientName, String customMessage) {
+    StringBuilder message = new StringBuilder();
+    message.append("Prezados");
+    if (clientName != null && !clientName.isEmpty()) {
+      message.append(" - ").append(clientName);
+    }
+    message.append("\n\n");
+    message.append("Olá.\n");
+    message.append("Por favor verifique os documentos em anexo.\n\n");
+    
+    if (customMessage != null && !customMessage.isEmpty()) {
+      message.append("Observações:\n");
+      message.append(customMessage).append("\n\n");
+    }
+    
+    message.append("Atenciosamente,\n");
+    message.append("Hortifruti SL");
+    
+    return message.toString();
+  }
+
+  /**
+   * Cria mensagem simples para WhatsApp com contexto específico
+   */
+  private String convertHtmlToPlainText(String htmlMessage) {
+    // Extrair contexto da mensagem para criar resposta específica
+    String messageType = determineMessageType(htmlMessage);
+    
+    switch (messageType) {
+      case "monthly-statements":
+        return buildWhatsAppMonthlyMessage(htmlMessage);
+      case "generic-files":
+        return buildWhatsAppGenericFilesMessage(htmlMessage);
+      case "client-documents":
+        return buildWhatsAppClientMessage(htmlMessage);
+      default:
+        return "Por favor verifique os documentos em anexo.\n\nAtenciosamente,\nHortifruti SL";
+    }
+  }
+  
+  private String determineMessageType(String htmlMessage) {
+    if (htmlMessage == null) return "default";
+    
+    if (htmlMessage.contains("Extratos Mensais") || htmlMessage.contains("monthly-statements")) {
+      return "monthly-statements";
+    }
+    if (htmlMessage.contains("arquivos genéricos") || htmlMessage.contains("generic-files")) {
+      return "generic-files";
+    }
+    if (htmlMessage.contains("client-documents")) {
+      return "client-documents";
+    }
+    return "default";
+  }
+  
+  private String buildWhatsAppMonthlyMessage(String htmlMessage) {
+    // Extrair mês/ano do HTML
+    String period = extractPeriod(htmlMessage);
+    
+    return "Prezados\n\n" +
+           "Segue anexos contábeis.\n\n" +
+           "Período: " + period + "\n\n" +
+           "Arquivos inclusos:\n" +
+           "• Extratos bancários (Banco do Brasil e Sicoob)\n" +
+           "• Planilhas Excel com movimentações financeiras\n" +
+           "• Notas fiscais do período\n\n" +
+           "Atenciosamente,\n" +
+           "Hortifruti SL";
+  }
+  
+  private String buildWhatsAppGenericFilesMessage(String htmlMessage) {
+    // Extrair valor total se disponível
+    String totalValue = extractTotalValue(htmlMessage);
+    String customMessage = extractCustomMessage(htmlMessage);
+    
+    StringBuilder message = new StringBuilder();
+    message.append("Prezados\n\n");
+    message.append("Segue anexos contábeis.\n\n");
+    
+    if (!totalValue.isEmpty()) {
+      message.append("Resumo Financeiro:\n");
+      message.append("• Soma dos valores: R$ ").append(totalValue).append("\n\n");
+    }
+    
+    if (!customMessage.isEmpty()) {
+      message.append("Observações:\n");
+      message.append(customMessage).append("\n\n");
+    }
+    
+    message.append("Atenciosamente,\n");
+    message.append("Hortifruti SL");
+    
+    return message.toString();
+  }
+  
+  private String buildWhatsAppClientMessage(String htmlMessage) {
+    String clientName = extractClientName(htmlMessage);
+    String customMessage = extractCustomMessage(htmlMessage);
+    
+    StringBuilder message = new StringBuilder();
+    message.append("Prezados");
+    if (!clientName.isEmpty()) {
+      message.append(" - ").append(clientName);
+    }
+    message.append("\n\n");
+    message.append("Por favor verifique os documentos em anexo..\n\n");
+    
+    if (!customMessage.isEmpty()) {
+      message.append("Observações:\n");
+      message.append(customMessage).append("\n\n");
+    }
+    
+    message.append("Atenciosamente,\n");
+    message.append("Hortifruti SL");
+    
+    return message.toString();
+  }
+  
+  private String extractPeriod(String htmlMessage) {
+    // Procurar por padrões de data como "10/2025"
+    java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(\\d{1,2}/\\d{4})");
+    java.util.regex.Matcher matcher = pattern.matcher(htmlMessage);
+    if (matcher.find()) {
+      return matcher.group(1);
+    }
+    return "Atual";
+  }
+  
+  private String extractTotalValue(String htmlMessage) {
+    // Procurar por valores monetários
+    java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("R\\$\\s*([\\d.,]+)");
+    java.util.regex.Matcher matcher = pattern.matcher(htmlMessage);
+    if (matcher.find()) {
+      return matcher.group(1);
+    }
+    return "";
+  }
+  
+  private String extractCustomMessage(String htmlMessage) {
+    // Extrair mensagem personalizada entre tags específicas
+    if (htmlMessage.contains("{{CUSTOM_MESSAGE}}")) {
+      // Buscar o valor da variável CUSTOM_MESSAGE no contexto
+      return ""; // Por enquanto vazio, será preenchido pelo contexto da requisição
+    }
+    
+    // Procurar por mensagens entre tags p que não sejam padrão
+    java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("<p[^>]*>([^<]+)</p>");
+    java.util.regex.Matcher matcher = pattern.matcher(htmlMessage);
+    while (matcher.find()) {
+      String text = matcher.group(1).trim();
+      if (!text.isEmpty() && 
+          !text.contains("Prezados") && 
+          !text.contains("Atenciosamente") && 
+          !text.contains("anexo") &&
+          !text.contains("{{")) {
+        return text;
+      }
+    }
+    return "";
+  }
+  
+  private String extractClientName(String htmlMessage) {
+    // Procurar por nome do cliente
+    java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("{{CLIENT_NAME}}|Cliente[:\\s]+([^<\\n]+)");
+    java.util.regex.Matcher matcher = pattern.matcher(htmlMessage);
+    if (matcher.find() && matcher.groupCount() > 0) {
+      return matcher.group(1);
+    }
+    return "";
   }
 
 
