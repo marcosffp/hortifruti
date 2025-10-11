@@ -3,7 +3,6 @@ package com.hortifruti.sl.hortifruti.service;
 import com.hortifruti.sl.hortifruti.model.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.CombinedScoreRepository;
 import com.hortifruti.sl.hortifruti.repository.ClientRepository;
-import com.hortifruti.sl.hortifruti.service.notification.NotificationService;
 import com.hortifruti.sl.hortifruti.service.notification.EmailTemplateService;
 import com.hortifruti.sl.hortifruti.service.notification.EmailService;
 import lombok.extern.slf4j.Slf4j;

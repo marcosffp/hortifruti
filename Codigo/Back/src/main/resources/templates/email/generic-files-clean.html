@@ -234,7 +234,7 @@
         
         <!-- Financial Summary Section -->
         <div class="period-section">
-            <div class="period-label">Valor Total (com desconto de 60%):</div>
+            <div class="period-label">Valor Total:</div>
             <h1 class="period-value">R$ {{DISCOUNTED_VALUE}}</h1>
         </div>
         
@@ -280,7 +280,7 @@
             {{#DEFAULT_MESSAGE}}
             <div class="message-content">
                 <p>Prezados,</p>
-                <p>Seguem os arquivos contábeis solicitados. Todos os documentos foram organizados e estão prontos para análise.</p>
+                <p>Segue os arquivos contábeis.</p>
                 <p>Qualquer dúvida, estamos à disposição.</p>
                 <p>Atenciosamente,<br>Hortifruti SL</p>
             </div>
@@ -292,12 +292,6 @@
                 <p>Seguem os arquivos contábeis solicitados.</p>
                 <p><strong>Observações:</strong><br>{{CUSTOM_MESSAGE}}</p>
                 <p>Atenciosamente,<br>Hortifruti SL</p>
-            </div>
-            {{/CUSTOM_MESSAGE}}
-            
-            {{#CUSTOM_MESSAGE}}
-            <div class="message-content">
-                <p>{{CUSTOM_MESSAGE}}</p>
             </div>
             {{/CUSTOM_MESSAGE}}
         </div>
