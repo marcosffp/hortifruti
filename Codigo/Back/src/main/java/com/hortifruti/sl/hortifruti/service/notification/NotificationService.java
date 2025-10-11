@@ -28,7 +28,6 @@ public class NotificationService {
   private final EmailService emailService;
   private final WhatsAppService whatsAppService;
   private final FileGenerationService fileGenerationService;
-  private final StatementSelectionService statementSelectionService;
   private final ClientRepository clientRepository;
   private final EmailTemplateService emailTemplateService;
 
@@ -167,11 +166,6 @@ public class NotificationService {
   // Métodos auxiliares privados
   
   private NotificationResponse sendToAccounting(NotificationChannel channel, String subject, 
-                                               String message, List<byte[]> attachments, List<String> fileNames) {
-    return sendToAccounting(channel, subject, message, attachments, fileNames, null, null);
-  }
-  
-  private NotificationResponse sendToAccounting(NotificationChannel channel, String subject, 
                                                String message, List<byte[]> attachments, List<String> fileNames,
                                                String customMessage, String totalValue) {
     boolean emailSent = false;
@@ -197,11 +191,7 @@ public class NotificationService {
         whatsappSent ? "OK" : (channel == NotificationChannel.WHATSAPP || channel == NotificationChannel.BOTH ? "FALHA" : "N/A"));
   }
 
-  private NotificationResponse sendToClient(Client client, NotificationChannel channel, String subject,
-                                          String message, List<byte[]> attachments, List<String> fileNames) {
-    return sendToClient(client, channel, subject, message, attachments, fileNames, null);
-  }
-  
+
   private NotificationResponse sendToClient(Client client, NotificationChannel channel, String subject,
                                           String message, List<byte[]> attachments, List<String> fileNames, String customMessage) {
     boolean emailSent = false;
@@ -251,7 +241,7 @@ public class NotificationService {
       variables.put("CUSTOM_MESSAGE", request.customMessage());
       variables.put("DEFAULT_MESSAGE", ""); // Não mostrar mensagem padrão
     } else {
-      variables.put("CUSTOM_MESSAGE", ""); // Não mostrar observações
+      variables.put("CUSTOM_MESSAGE", ""); // Não mostrar Mensagem
       variables.put("DEFAULT_MESSAGE", "true"); // Mostrar mensagem padrão
     }
     
@@ -266,7 +256,7 @@ public class NotificationService {
       variables.put("CUSTOM_MESSAGE", request.customMessage());
       variables.put("DEFAULT_MESSAGE", ""); // Não mostrar mensagem padrão
     } else {
-      variables.put("CUSTOM_MESSAGE", ""); // Não mostrar observações
+      variables.put("CUSTOM_MESSAGE", ""); // Não mostrar Mensagem
       variables.put("DEFAULT_MESSAGE", "true"); // Mostrar mensagem padrão
     }
     
@@ -315,7 +305,7 @@ public class NotificationService {
   
   private String buildWhatsAppMonthlyMessageWithContext(String period, String customMessage) {
     StringBuilder message = new StringBuilder();
-    message.append("Prezados\n\n");
+    message.append("Olá.\n\n");
     message.append("Segue anexos contábeis.\n\n");
     message.append("Período: ").append(period != null ? period : "Atual").append("\n\n");
     message.append("Arquivos inclusos:\n");
@@ -324,7 +314,7 @@ public class NotificationService {
     message.append("• Notas fiscais do período\n\n");
     
     if (customMessage != null && !customMessage.isEmpty()) {
-      message.append("Observações:\n");
+      message.append("Mensagem:\n");
       message.append(customMessage).append("\n\n");
     }
     
@@ -345,7 +335,7 @@ public class NotificationService {
     }
     
     if (customMessage != null && !customMessage.isEmpty()) {
-      message.append("Observações:\n");
+      message.append("Mensagem:\n");
       message.append(customMessage).append("\n\n");
     }
     
@@ -366,7 +356,7 @@ public class NotificationService {
     message.append("Por favor verifique os documentos em anexo.\n\n");
     
     if (customMessage != null && !customMessage.isEmpty()) {
-      message.append("Observações:\n");
+      message.append("Mensagem:\n");
       message.append(customMessage).append("\n\n");
     }
     
@@ -440,7 +430,7 @@ public class NotificationService {
     }
     
     if (!customMessage.isEmpty()) {
-      message.append("Observações:\n");
+      message.append("Mensagem:\n");
       message.append(customMessage).append("\n\n");
     }
     
@@ -463,7 +453,7 @@ public class NotificationService {
     message.append("Por favor verifique os documentos em anexo..\n\n");
     
     if (!customMessage.isEmpty()) {
-      message.append("Observações:\n");
+      message.append("Mensagem:\n");
       message.append(customMessage).append("\n\n");
     }
     

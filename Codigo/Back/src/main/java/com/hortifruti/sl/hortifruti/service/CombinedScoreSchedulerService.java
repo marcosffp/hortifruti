@@ -4,14 +4,18 @@ import com.hortifruti.sl.hortifruti.model.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.CombinedScoreRepository;
 import com.hortifruti.sl.hortifruti.repository.ClientRepository;
 import com.hortifruti.sl.hortifruti.service.notification.NotificationService;
+import com.hortifruti.sl.hortifruti.service.notification.EmailTemplateService;
+import com.hortifruti.sl.hortifruti.service.notification.EmailService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -25,19 +29,45 @@ public class CombinedScoreSchedulerService {
     private ClientRepository clientRepository;
 
     @Autowired
-    private NotificationService notificationService;
+    private EmailTemplateService emailTemplateService;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Value("${overdue.notification.emails}")
+    private String overdueNotificationEmails;
 
     /**
      * Verifica diariamente por CombinedScores vencidos e envia notificações
-     * Executa todos os dias às 09:00
+     * Executa todos os dias às 07:00
      */
     @Scheduled(cron = "0 0 7 * * ?")
-    public void checkOverdueCombinedScores() {
+    public void scheduledOverdueCheck() {
+        log.info("Verificação automática de CombinedScores vencidos iniciada");
+        checkOverdueCombinedScores();
+    }
+
+    /**
+     * Método público para verificação manual de CombinedScores vencidos
+     * Pode ser chamado via endpoint ou programaticamente
+     */
+    public List<CombinedScore> manualOverdueCheck() {
+        log.info("Verificação manual de CombinedScores vencidos iniciada");
+        return checkOverdueCombinedScores();
+    }
+
+    /**
+     * Lógica principal para verificação de CombinedScores vencidos
+     * Separada para permitir uso tanto automático quanto manual
+     */
+    public List<CombinedScore> checkOverdueCombinedScores() {
         log.info("Iniciando verificação de CombinedScores vencidos...");
         
         try {
-            LocalDateTime now = LocalDateTime.now();
-            List<CombinedScore> overdueScores = combinedScoreRepository.findOverdueUnpaidScores(now);
+            // Usa o início do dia atual para comparação
+            // Um boleto com dueDate = "2025-01-11" será considerado vencido a partir de "2025-01-12 00:00:00"
+            LocalDateTime startOfToday = LocalDateTime.now().toLocalDate().atStartOfDay();
+            List<CombinedScore> overdueScores = combinedScoreRepository.findOverdueUnpaidScores(startOfToday);
             
             log.info("Encontrados {} CombinedScores vencidos", overdueScores.size());
             
@@ -48,163 +78,214 @@ public class CombinedScoreSchedulerService {
                 
                 log.info("Enviando notificações para {} clientes com CombinedScores vencidos", scoresByClient.size());
                 
-                scoresByClient.forEach((clientId, clientScores) -> {
-                    try {
-                        sendOverdueNotification(clientId, clientScores);
-                        log.info("Notificação enviada para cliente ID: {}, {} CombinedScores vencidos", 
-                               clientId, clientScores.size());
-                    } catch (Exception e) {
-                        log.error("Erro ao enviar notificação para cliente ID: {}", clientId, e);
-                    }
-                });
+                // Envia apenas resumo para os emails de notificação de vencimento
+                // (Não enviamos mais notificações diretas para clientes)
+                try {
+                    sendOverdueSummaryToManagement(overdueScores);
+                } catch (Exception e) {
+                    log.error("Erro ao enviar resumo de CombinedScores vencidos para gerência", e);
+                }
             }
+            
+            return overdueScores;
             
         } catch (Exception e) {
             log.error("Erro durante verificação de CombinedScores vencidos", e);
+            throw new RuntimeException("Erro ao verificar CombinedScores vencidos", e);
         }
     }
 
     /**
-     * Envia notificação de CombinedScores vencidos para um cliente específico
+     * Busca apenas os CombinedScores vencidos sem enviar notificações
+     * Útil para consultas e testes
      */
-    private void sendOverdueNotification(Long clientId, List<CombinedScore> overdueScores) {
-        var client = clientRepository.findById(clientId);
+    public List<CombinedScore> getOverdueScoresOnly() {
+        log.info("Buscando CombinedScores vencidos sem enviar notificações...");
         
-        if (client.isEmpty()) {
-            log.warn("Cliente com ID {} não encontrado", clientId);
+        try {
+            // Usa o início do dia atual para comparação
+            LocalDateTime startOfToday = LocalDateTime.now().toLocalDate().atStartOfDay();
+            log.info("Buscando boletos com dueDate < {} e confirmedAt IS NULL", startOfToday);
+            
+            List<CombinedScore> overdueScores = combinedScoreRepository.findOverdueUnpaidScores(startOfToday);
+            
+            log.info("Encontrados {} CombinedScores vencidos", overdueScores.size());
+            
+            // Log detalhado para debug
+            if (overdueScores.isEmpty()) {
+                log.info("Nenhum boleto vencido não pago encontrado. Critérios: dueDate < {} AND confirmedAt IS NULL", startOfToday);
+            } else {
+                overdueScores.forEach(score -> 
+                    log.info("Boleto vencido encontrado - ID: {}, ClientID: {}, DueDate: {}, ConfirmedAt: {}", 
+                        score.getId(), score.getClientId(), score.getDueDate(), score.getConfirmedAt()));
+            }
+            
+            return overdueScores;
+            
+        } catch (Exception e) {
+            log.error("Erro ao buscar CombinedScores vencidos", e);
+            throw new RuntimeException("Erro ao buscar CombinedScores vencidos", e);
+        }
+    }
+
+
+    /**
+     * Envia resumo dos CombinedScores vencidos para os emails de notificação configurados
+     */
+    private void sendOverdueSummaryToManagement(List<CombinedScore> overdueScores) {
+        if (overdueNotificationEmails == null || overdueNotificationEmails.trim().isEmpty()) {
+            log.warn("Nenhum email configurado para notificações de CombinedScores vencidos");
             return;
         }
-        
-        var clientData = client.get();
-        
+
+        String[] emails = overdueNotificationEmails.split(",");
+        String subject = "Relatório de Boletos Vencidos - " + LocalDateTime.now().toLocalDate();
+        String emailBody = buildManagementOverdueHtmlBody(overdueScores);
+
+        for (String email : emails) {
+            try {
+                sendHtmlEmailDirectly(email.trim(), subject, emailBody);
+                log.info("Resumo de CombinedScores vencidos enviado para: {}", email.trim());
+            } catch (Exception e) {
+                log.error("Erro ao enviar resumo para email: {}", email.trim(), e);
+            }
+        }
+    }
+
+    /**
+     * Método auxiliar para enviar email HTML diretamente
+     */
+    private void sendHtmlEmailDirectly(String email, String subject, String htmlBody) {
         try {
-            // Envia por email
-            String subject = "⚠️ Aviso: Pagamentos em Atraso - " + clientData.getClientName();
-            String emailBody = buildOverdueEmailBody(clientData.getClientName(), overdueScores);
+            log.info("Tentando enviar email HTML para: {}", email);
             
-            sendEmailDirectly(clientData.getEmail(), subject, emailBody);
-            
-            // Envia por WhatsApp
-            String whatsappMessage = buildOverdueWhatsAppMessage(clientData.getClientName(), overdueScores);
-            
-            sendWhatsAppDirectly(clientData.getPhoneNumber(), whatsappMessage);
-            
-            log.info("Notificações de CombinedScores vencidos enviadas para cliente: {} ({})", 
-                   clientData.getClientName(), clientData.getEmail());
-                   
-        } catch (Exception e) {
-            log.error("Erro ao enviar notificações para cliente {}", clientData.getClientName(), e);
-        }
-    }
-
-    /**
-     * Método auxiliar para enviar email diretamente
-     */
-    private void sendEmailDirectly(String email, String subject, String body) {
-        try {
-            // Usar o EmailService diretamente através do NotificationService
-            // Como não temos acesso direto, vamos usar reflection ou criar um método auxiliar
-            var emailService = notificationService.getClass().getDeclaredField("emailService");
-            emailService.setAccessible(true);
-            var emailServiceInstance = emailService.get(notificationService);
-            
-            // Chama o método sendEmail do EmailService
-            var sendEmailMethod = emailServiceInstance.getClass().getMethod("sendEmail", String.class, String.class, String.class);
-            sendEmailMethod.invoke(emailServiceInstance, email, subject, body);
-            
-            log.info("Email enviado com sucesso para: {}", email);
-        } catch (Exception e) {
-            log.error("Erro ao enviar email para: {}", email, e);
-        }
-    }
-
-    /**
-     * Método auxiliar para enviar WhatsApp diretamente
-     */
-    private void sendWhatsAppDirectly(String phoneNumber, String message) {
-        try {
-            // Usar o WhatsAppService diretamente através do NotificationService
-            var whatsAppService = notificationService.getClass().getDeclaredField("whatsAppService");
-            whatsAppService.setAccessible(true);
-            var whatsAppServiceInstance = whatsAppService.get(notificationService);
-            
-            // Chama o método sendTextMessage do WhatsAppService
-            var sendTextMethod = whatsAppServiceInstance.getClass().getMethod("sendTextMessage", String.class, String.class);
-            sendTextMethod.invoke(whatsAppServiceInstance, phoneNumber, message);
-            
-            log.info("WhatsApp enviado com sucesso para: {}", phoneNumber);
-        } catch (Exception e) {
-            log.error("Erro ao enviar WhatsApp para: {}", phoneNumber, e);
-        }
-    }
-
-    /**
-     * Constrói o corpo do email para CombinedScores vencidos
-     */
-    private String buildOverdueEmailBody(String clientName, List<CombinedScore> overdueScores) {
-        StringBuilder body = new StringBuilder();
-        
-        body.append("Prezado(a) ").append(clientName).append(",\n\n");
-        body.append("Identificamos que há pagamentos em atraso em sua conta.\n\n");
-        body.append("Detalhes dos pagamentos vencidos:\n\n");
-        
-        BigDecimal totalOverdue = BigDecimal.ZERO;
-        
-        for (CombinedScore score : overdueScores) {
-            body.append("• Data de vencimento: ").append(score.getDueDate().toLocalDate());
-            body.append(" - Valor: R$ ").append(String.format("%.2f", score.getTotalValue()));
-            body.append(" (Vencido há ")
-                .append(java.time.temporal.ChronoUnit.DAYS.between(score.getDueDate().toLocalDate(), LocalDateTime.now().toLocalDate()))
-                .append(" dias)\n");
-            
-            totalOverdue = totalOverdue.add(score.getTotalValue());
-        }
-        
-        body.append("\n📊 Total em atraso: R$ ").append(String.format("%.2f", totalOverdue)).append("\n\n");
-        body.append("Para regularizar sua situação, entre em contato conosco ou acesse nosso sistema.\n\n");
-        body.append("Atenciosamente,\n");
-        body.append("Equipe HortiFruti SL");
-        
-        return body.toString();
-    }
-
-    /**
-     * Constrói a mensagem do WhatsApp para CombinedScores vencidos
-     */
-    private String buildOverdueWhatsAppMessage(String clientName, List<CombinedScore> overdueScores) {
-        StringBuilder message = new StringBuilder();
-        
-        message.append("🚨 *AVISO IMPORTANTE* 🚨\n\n");
-        message.append("Olá *").append(clientName).append("*!\n\n");
-        message.append("Identificamos pagamentos em atraso em sua conta:\n\n");
-        
-        BigDecimal totalOverdue = BigDecimal.ZERO;
-        
-        for (CombinedScore score : overdueScores) {
-            long daysOverdue = java.time.temporal.ChronoUnit.DAYS.between(
-                score.getDueDate().toLocalDate(), 
-                LocalDateTime.now().toLocalDate()
+            // Usar o EmailService diretamente (injetado via @Autowired)
+            // O método sendEmailWithAttachments suporta HTML (setText com true)
+            boolean success = emailService.sendEmailWithAttachments(
+                email, 
+                subject, 
+                htmlBody, 
+                null, // sem anexos
+                null  // sem nomes de arquivo
             );
             
-            message.append("💰 Vencimento: ").append(score.getDueDate().toLocalDate());
-            message.append("\n💵 Valor: R$ ").append(String.format("%.2f", score.getTotalValue()));
-            message.append("\n⏰ Atraso: ").append(daysOverdue).append(" dias\n\n");
+            if (success) {
+                log.info("Email HTML enviado com sucesso para: {}", email);
+            } else {
+                log.warn("Falhou ao enviar email HTML para: {}", email);
+            }
             
-            totalOverdue = totalOverdue.add(score.getTotalValue());
+        } catch (Exception e) {
+            log.error("Erro ao enviar email HTML para: {}", email, e);
+            
+            // Como fallback, log o conteúdo que seria enviado
+            log.info("Conteúdo do email que seria enviado para {}: Subject: {}, Body: {}", 
+                email, subject, htmlBody.substring(0, Math.min(200, htmlBody.length())) + "...");
         }
-        
-        message.append("📊 *Total em atraso: R$ ").append(String.format("%.2f", totalOverdue)).append("*\n\n");
-        message.append("📞 Entre em contato para regularizar sua situação.\n\n");
-        message.append("_Equipe HortiFruti SL_");
-        
-        return message.toString();
     }
 
     /**
-     * Método para verificação manual de CombinedScores vencidos
+     * Constrói o corpo do email HTML de resumo gerencial para CombinedScores vencidos
      */
-    public void manualOverdueCheck() {
-        log.info("Verificação manual de CombinedScores vencidos iniciada");
-        checkOverdueCombinedScores();
+    private String buildManagementOverdueHtmlBody(List<CombinedScore> overdueScores) {
+        try {
+            // Agrupa por cliente para o resumo
+            var scoresByClient = overdueScores.stream()
+                .collect(Collectors.groupingBy(CombinedScore::getClientId));
+            
+            BigDecimal totalOverdueAmount = overdueScores.stream()
+                .map(CombinedScore::getTotalValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            
+            // Prepara as variáveis para o template
+            Map<String, String> variables = new java.util.HashMap<>();
+            variables.put("REPORT_DATE", LocalDateTime.now().toLocalDate().toString());
+            variables.put("TOTAL_CLIENTS", String.valueOf(scoresByClient.size()));
+            variables.put("TOTAL_OVERDUE_BOLETOS", String.valueOf(overdueScores.size()));
+            variables.put("TOTAL_OVERDUE_AMOUNT", String.format("%.2f", totalOverdueAmount));
+            
+            // Constrói as linhas da tabela de clientes
+            StringBuilder clientRows = new StringBuilder();
+            
+            scoresByClient.forEach((clientId, clientScores) -> {
+                var client = clientRepository.findById(clientId);
+                String clientName = client.map(c -> c.getClientName()).orElse("Cliente ID: " + clientId);
+                
+                BigDecimal clientTotal = clientScores.stream()
+                    .map(CombinedScore::getTotalValue)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                
+                clientRows.append("<tr>");
+                clientRows.append("<td class=\"client-name\">").append(clientName).append("</td>");
+                
+                // Lógica para mostrar a quantidade de boletos
+                if (clientScores.size() == 1) {
+                    clientRows.append("<td><span class=\"boleto-count\">1 boleto</span></td>");
+                } else {
+                    clientRows.append("<td><span class=\"boleto-count\">").append(clientScores.size()).append(" boletos</span></td>");
+                }
+                
+                clientRows.append("<td class=\"amount\">R$ ").append(String.format("%.2f", clientTotal)).append("</td>");
+                clientRows.append("</tr>");
+            });
+            
+            variables.put("CLIENT_ROWS", clientRows.toString());
+            
+            // Usa o EmailTemplateService para processar o template
+            return emailTemplateService.processTemplate("overdue-management", variables);
+            
+        } catch (Exception e) {
+            log.error("Erro ao construir email HTML de CombinedScores vencidos", e);
+            // Fallback para texto simples
+            return buildManagementOverdueFallbackBody(overdueScores);
+        }
+    }
+
+    /**
+     * Constrói um corpo de email simples como fallback
+     */
+    private String buildManagementOverdueFallbackBody(List<CombinedScore> overdueScores) {
+        var scoresByClient = overdueScores.stream()
+            .collect(Collectors.groupingBy(CombinedScore::getClientId));
+        
+        BigDecimal totalOverdueAmount = overdueScores.stream()
+            .map(CombinedScore::getTotalValue)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        StringBuilder body = new StringBuilder();
+        body.append("<h2> Relatório de Boletos Vencidos</h2>");
+        body.append("<p><strong>Data:</strong> ").append(LocalDateTime.now().toLocalDate()).append("</p>");
+        body.append("<br>");
+        body.append("<p><strong>Resumo:</strong></p>");
+        body.append("<ul>");
+        body.append("<li>").append(scoresByClient.size()).append(" clientes com boletos vencidos</li>");
+        body.append("<li>").append(overdueScores.size()).append(" boletos em atraso</li>");
+        body.append("<li>Valor total: R$ ").append(String.format("%.2f", totalOverdueAmount)).append("</li>");
+        body.append("</ul>");
+        body.append("<br>");
+        body.append("<p><strong>Clientes:</strong></p>");
+        body.append("<ul>");
+        
+        scoresByClient.forEach((clientId, clientScores) -> {
+            var client = clientRepository.findById(clientId);
+            String clientName = client.map(c -> c.getClientName()).orElse("Cliente ID: " + clientId);
+            
+            BigDecimal clientTotal = clientScores.stream()
+                .map(CombinedScore::getTotalValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            
+            body.append("<li>").append(clientName).append(": ");
+            if (clientScores.size() == 1) {
+                body.append("1 boleto");
+            } else {
+                body.append(clientScores.size()).append(" boletos");
+            }
+            body.append(" - R$ ").append(String.format("%.2f", clientTotal)).append("</li>");
+        });
+        
+        body.append("</ul>");
+        body.append("<br><p>Para mais detalhes, acesse o painel administrativo do sistema.</p>");
+        
+        return body.toString();
     }
 }

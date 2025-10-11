@@ -1,12 +1,19 @@
 package com.hortifruti.sl.hortifruti.controller.notification;
 
 import com.hortifruti.sl.hortifruti.dto.notification.*;
+import com.hortifruti.sl.hortifruti.model.CombinedScore;
 import com.hortifruti.sl.hortifruti.model.enumeration.NotificationChannel;
+import com.hortifruti.sl.hortifruti.service.CombinedScoreSchedulerService;
 import com.hortifruti.sl.hortifruti.service.notification.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,8 +21,12 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
@@ -23,6 +34,10 @@ import java.util.List;
 public class NotificationController {
 
   private final NotificationService notificationService;
+
+  @Autowired
+  private CombinedScoreSchedulerService schedulerService;
+
 
   /**
    * Envio para contabilidade - Notas fiscais do mês anterior + extratos bancários
@@ -114,21 +129,97 @@ public class NotificationController {
   }
 
 
-
-  /**
-   * Teste dos serviços de comunicação
-   */
-  @Operation(summary = "Testar serviços de comunicação",
-             description = "Verifica se os serviços de email e WhatsApp estão configurados e funcionando corretamente")
-  @PostMapping("/test-services")
-  @PreAuthorize("hasRole('MANAGER')")
-  public ResponseEntity<NotificationResponse> testServices() {
-    try {
-      NotificationResponse response = notificationService.testCommunicationServices();
-      return ResponseEntity.ok(response);
-    } catch (Exception e) {
-      return ResponseEntity.badRequest()
-          .body(new NotificationResponse(false, "Erro ao testar serviços: " + e.getMessage()));
+    @PostMapping("/overdue/check")
+    @Operation(summary = "Executar verificação manual de boletos vencidos", 
+               description = "Força a execução da verificação de CombinedScores vencidos e envio de notificações")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Verificação executada com sucesso"),
+        @ApiResponse(responseCode = "500", description = "Erro interno do servidor"),
+        @ApiResponse(responseCode = "403", description = "Acesso negado - apenas administradores")
+    })
+    public ResponseEntity<Map<String, Object>> checkOverdueScores() {
+        try {
+            log.info("Solicitação de verificação manual de boletos vencidos recebida");
+            
+            List<CombinedScore> overdueScores = schedulerService.manualOverdueCheck();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Verificação de boletos vencidos executada com sucesso");
+            response.put("timestamp", LocalDateTime.now());
+            response.put("overdueCount", overdueScores.size());
+            response.put("overdueScores", overdueScores.stream().map(score -> {
+                Map<String, Object> scoreInfo = new HashMap<>();
+                scoreInfo.put("id", score.getId());
+                scoreInfo.put("clientId", score.getClientId());
+                scoreInfo.put("dueDate", score.getDueDate());
+                scoreInfo.put("totalValue", score.getTotalValue());
+                scoreInfo.put("confirmedAt", score.getConfirmedAt());
+                scoreInfo.put("isPaid", score.getConfirmedAt() != null);
+                return scoreInfo;
+            }).toList());
+            
+            log.info("Verificação manual concluída. Encontrados {} boletos vencidos", overdueScores.size());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Erro ao executar verificação manual de boletos vencidos", e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Erro ao executar verificação: " + e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            errorResponse.put("overdueCount", 0);
+            
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
     }
-  }
+
+    @GetMapping("/overdue")
+    @Operation(summary = "Consultar boletos vencidos", 
+               description = "Retorna a lista de CombinedScores vencidos sem enviar notificações")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Lista de boletos vencidos recuperada com sucesso"),
+        @ApiResponse(responseCode = "500", description = "Erro interno do servidor"),
+        @ApiResponse(responseCode = "403", description = "Acesso negado - apenas administradores")
+    })
+    public ResponseEntity<Map<String, Object>> getOverdueScores() {
+        try {
+            log.info("Solicitação de consulta de boletos vencidos recebida");
+            
+            List<CombinedScore> overdueScores = schedulerService.getOverdueScoresOnly();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Consulta de boletos vencidos executada com sucesso");
+            response.put("timestamp", LocalDateTime.now());
+            response.put("overdueCount", overdueScores.size());
+            response.put("overdueScores", overdueScores.stream().map(score -> {
+                Map<String, Object> scoreInfo = new HashMap<>();
+                scoreInfo.put("id", score.getId());
+                scoreInfo.put("clientId", score.getClientId());
+                scoreInfo.put("dueDate", score.getDueDate());
+                scoreInfo.put("totalValue", score.getTotalValue());
+                scoreInfo.put("confirmedAt", score.getConfirmedAt());
+                scoreInfo.put("isPaid", score.getConfirmedAt() != null);
+                return scoreInfo;
+            }).toList());
+            
+            log.info("Consulta concluída. Encontrados {} boletos vencidos", overdueScores.size());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Erro ao consultar boletos vencidos", e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Erro ao consultar boletos vencidos: " + e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            errorResponse.put("overdueCount", 0);
+            
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
 }
