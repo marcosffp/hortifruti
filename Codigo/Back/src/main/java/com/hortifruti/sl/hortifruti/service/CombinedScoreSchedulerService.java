@@ -144,9 +144,9 @@ public class CombinedScoreSchedulerService {
         for (String email : emails) {
             try {
                 sendHtmlEmailDirectly(email.trim(), subject, emailBody);
-                log.info("Resumo de CombinedScores vencidos enviado para: {}", email.trim());
+                log.info("Resumo de CombinedScores vencidos enviado: SUCESSO");
             } catch (Exception e) {
-                log.error("Erro ao enviar resumo para email: {}", email.trim(), e);
+                log.error("Erro ao enviar resumo de CombinedScores vencidos: FALHA", e);
             }
         }
     }
@@ -156,7 +156,7 @@ public class CombinedScoreSchedulerService {
      */
     private void sendHtmlEmailDirectly(String email, String subject, String htmlBody) {
         try {
-            log.info("Tentando enviar email HTML para: {}", email);
+            log.info("Tentando enviar email HTML de boletos vencidos");
             
             // Usar o EmailService diretamente (injetado via @Autowired)
             // O método sendEmailWithAttachments suporta HTML (setText com true)
@@ -169,17 +169,17 @@ public class CombinedScoreSchedulerService {
             );
             
             if (success) {
-                log.info("Email HTML enviado com sucesso para: {}", email);
+                log.info("Email HTML de boletos vencidos enviado: SUCESSO");
             } else {
-                log.warn("Falhou ao enviar email HTML para: {}", email);
+                log.warn("Email HTML de boletos vencidos enviado: FALHA");
             }
             
         } catch (Exception e) {
-            log.error("Erro ao enviar email HTML para: {}", email, e);
+            log.error("Erro ao enviar email HTML de boletos vencidos: FALHA", e);
             
-            // Como fallback, log o conteúdo que seria enviado
-            log.info("Conteúdo do email que seria enviado para {}: Subject: {}, Body: {}", 
-                email, subject, htmlBody.substring(0, Math.min(200, htmlBody.length())) + "...");
+            // Como fallback, log apenas informações básicas sem dados sensíveis
+            log.info("Conteúdo do email seria enviado com subject: {} e {} caracteres de body", 
+                subject, htmlBody.length());
         }
     }
 

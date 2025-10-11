@@ -60,7 +60,7 @@ public class NotificationCoordinator {
             if (emailRecipient != null && !emailRecipient.trim().isEmpty()) {
                 emailSent = emailService.sendEmailWithAttachments(
                     emailRecipient, subject, emailBody, attachments, fileNames);
-                log.info("Email enviado para {}: {}", emailRecipient, emailSent ? "SUCESSO" : "FALHA");
+                log.info("Email enviado: {}", emailSent ? "SUCESSO" : "FALHA");
             }
         }
 
@@ -70,7 +70,7 @@ public class NotificationCoordinator {
                 String whatsappMessage = buildWhatsAppMessage(whatsAppType, whatsAppContext);
                 whatsappSent = whatsAppService.sendMultipleDocuments(
                     whatsAppRecipient, whatsappMessage, attachments, fileNames);
-                log.info("WhatsApp enviado para {}: {}", whatsAppRecipient, whatsappSent ? "SUCESSO" : "FALHA");
+                log.info("WhatsApp enviado: {}", whatsappSent ? "SUCESSO" : "FALHA");
             }
         }
 
@@ -101,11 +101,6 @@ public class NotificationCoordinator {
             case CLIENT_DOCUMENTS:
                 return whatsAppMessageBuilder.buildClientDocumentsMessage(
                     context.getClient(), context.getCustomMessage());
-                    
-            case OVERDUE_BOLETOS:
-                return whatsAppMessageBuilder.buildOverdueBoletosMessage(
-                    context.getTotalClients(), context.getTotalBoletos(), 
-                    context.getTotalValue(), context.getCustomMessage());
                     
             case GENERIC:
             default:
@@ -144,7 +139,6 @@ public class NotificationCoordinator {
         MONTHLY_STATEMENTS,
         GENERIC_FILES,
         CLIENT_DOCUMENTS,
-        OVERDUE_BOLETOS,
         GENERIC
     }
 
@@ -157,8 +151,6 @@ public class NotificationCoordinator {
         private String clientName;
         private String customMessage;
         private String subject;
-        private int totalClients;
-        private int totalBoletos;
         private Client client;
 
         // Builder pattern
@@ -191,16 +183,6 @@ public class NotificationCoordinator {
             return this;
         }
 
-        public WhatsAppMessageContext totalClients(int totalClients) {
-            this.totalClients = totalClients;
-            return this;
-        }
-
-        public WhatsAppMessageContext totalBoletos(int totalBoletos) {
-            this.totalBoletos = totalBoletos;
-            return this;
-        }
-
         public WhatsAppMessageContext client(Client client) {
             this.client = client;
             return this;
@@ -212,8 +194,6 @@ public class NotificationCoordinator {
         public String getClientName() { return clientName; }
         public String getCustomMessage() { return customMessage; }
         public String getSubject() { return subject; }
-        public int getTotalClients() { return totalClients; }
-        public int getTotalBoletos() { return totalBoletos; }
         public Client getClient() { return client; }
     }
 }
