@@ -39,50 +39,30 @@ public class NotificationController {
   private CombinedScoreSchedulerService schedulerService;
 
 
-  /**
-   * Envio para contabilidade - Notas fiscais do mês anterior + extratos bancários
-   */
-  @Operation(summary = "Enviar extratos mensais para contabilidade",
-             description = "Envia ZIP com notas fiscais, extratos bancários (BB e Sicoob) e planilhas Excel para contabilidade")
-  @PostMapping("/accounting/monthly-statements")
-  @PreAuthorize("hasRole('MANAGER')")
-  public ResponseEntity<NotificationResponse> sendMonthlyStatements(
-      @Parameter(description = "Dados da requisição com mês, ano e canal de comunicação")
-      @RequestBody MonthlyStatementsRequest request) {
-    try {
-      NotificationResponse response = notificationService.sendMonthlyStatements(request);
-      return ResponseEntity.ok(response);
-    } catch (Exception e) {
-      return ResponseEntity.badRequest()
-          .body(new NotificationResponse(false, "Erro ao enviar extratos mensais: " + e.getMessage()));
-    }
-  }
+
 
   /**
-   * Envio para contabilidade - Arquivos genéricos com valores de débito/crédito
+   * Envio para contabilidade - Arquivos genéricos com valores de débito/crédito (opcional)
    */
   @Operation(summary = "Enviar arquivos genéricos para contabilidade",
-             description = "Upload de arquivos genéricos com cálculo automático de redução de 60% nos valores de débito e crédito")
+             description = "Upload de arquivos genéricos (opcional) e valores de débito, crédito e dinheiro (opcionais). Envia apenas via email.")
   @PostMapping(value = "/accounting/generic-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @PreAuthorize("hasRole('MANAGER')")
   public ResponseEntity<NotificationResponse> sendGenericFilesToAccounting(
-      @Parameter(description = "Arquivos a serem enviados para contabilidade", 
+      @Parameter(description = "Arquivos a serem enviados para contabilidade (opcional)", 
                  content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
-      @RequestParam("files") List<MultipartFile> files,
+      @RequestParam(value = "files", required = false) List<MultipartFile> files,
       
-      @Parameter(description = "Canal de comunicação (EMAIL, WHATSAPP, BOTH)")
-      @RequestParam("channel") String channel,
-      @Parameter(description = "Valor de débito")
-      @RequestParam("debitValue") String debitValue,
-      @Parameter(description = "Valor de crédito")
-      @RequestParam("creditValue") String creditValue,
+      @Parameter(description = "Valor de débito (opcional)")
+      @RequestParam(value = "debitValue", required = false, defaultValue = "0") String debitValue,
+      @Parameter(description = "Valor de crédito (opcional)")
+      @RequestParam(value = "creditValue", required = false, defaultValue = "0") String creditValue,
       @Parameter(description = "Valor em dinheiro (opcional)")
       @RequestParam(value = "cashValue", required = false, defaultValue = "0") String cashValue,
       @Parameter(description = "Mensagem personalizada (opcional)")
       @RequestParam(value = "customMessage", required = false) String customMessage) {
     try {
       GenericFilesAccountingRequest request = new GenericFilesAccountingRequest(
-          NotificationChannel.valueOf(channel.toUpperCase()),
           new BigDecimal(debitValue),
           new BigDecimal(creditValue),
           new BigDecimal(cashValue),
@@ -104,9 +84,9 @@ public class NotificationController {
   @PostMapping(value = "/client/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @PreAuthorize("hasRole('MANAGER')")
   public ResponseEntity<NotificationResponse> sendDocumentsToClient(
-      @Parameter(description = "Arquivos a serem enviados para o cliente", 
+      @Parameter(description = "Arquivos a serem enviados para o cliente (opcional)", 
                  content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
-      @RequestParam("files") List<MultipartFile> files,
+      @RequestParam(value = "files", required = false) List<MultipartFile> files,
       
       @Parameter(description = "ID do cliente")
       @RequestParam("clientId") Long clientId,

@@ -118,6 +118,22 @@ public class NotificationCoordinator {
         }
     }
 
+    /**
+     * Envia apenas email (sem WhatsApp)
+     */
+    public boolean sendEmailOnly(String recipient, String subject, String body, List<byte[]> attachments, List<String> fileNames) {
+        try {
+            if (attachments != null && !attachments.isEmpty()) {
+                return emailService.sendEmailWithAttachments(recipient, subject, body, attachments, fileNames);
+            } else {
+                return emailService.sendSimpleEmail(recipient, subject, body);
+            }
+        } catch (Exception e) {
+            log.error("Erro ao enviar email para: {}", recipient.contains("@") ? "EMAIL_ENDERECO" : recipient, e);
+            return false;
+        }
+    }
+
     private String getEmailStatus(NotificationChannel channel, boolean emailSent) {
         if (channel == NotificationChannel.EMAIL || channel == NotificationChannel.BOTH) {
             return emailSent ? "OK" : "FALHA";

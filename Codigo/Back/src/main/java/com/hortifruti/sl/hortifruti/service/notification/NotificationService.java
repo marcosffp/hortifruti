@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -26,7 +25,6 @@ import java.util.Optional;
 public class NotificationService {
 
   private final NotificationCoordinator notificationCoordinator;
-  private final FileGenerationService fileGenerationService;
   private final ClientRepository clientRepository;
   private final EmailTemplateService emailTemplateService;
 
@@ -36,49 +34,10 @@ public class NotificationService {
   @Value("${accounting.whatsapp}")
   private String accountingWhatsapp;
 
-  /**
-   * Envio mensal para contabilidade: Extratos BB/Sicoob + Notas fiscais
-   */
-  @Transactional(readOnly = true)
-  public NotificationResponse sendMonthlyStatements(MonthlyStatementsRequest request) {
-    try {
-      log.info("Enviando extratos mensais {}/{}", request.month(), request.year());
-      
-      // Gerar ZIP com statements
-      byte[] zipFile = fileGenerationService.createZipWithStatements(request.month(), request.year());
-      List<byte[]> attachments = List.of(zipFile);
-      List<String> fileNames = List.of("extratos_" + request.month() + "_" + request.year() + ".zip");
 
-      // Preparar dados
-      String subject = "Documentos Contábeis - " + request.month() + "/" + request.year();
-      String emailBody = buildMonthlyMessage(request);
-      String period = request.month() + "/" + request.year();
-
-      // Context para WhatsApp
-      var whatsAppContext = NotificationCoordinator.WhatsAppMessageContext.builder()
-          .period(period)
-          .customMessage(request.customMessage());
-
-      return notificationCoordinator.sendNotification(
-          accountingEmail,
-          accountingWhatsapp,
-          request.channel(),
-          subject,
-          emailBody,
-          NotificationCoordinator.WhatsAppMessageType.MONTHLY_STATEMENTS,
-          whatsAppContext,
-          attachments,
-          fileNames
-      );
-      
-    } catch (Exception e) {
-      log.error("Erro ao enviar extratos mensais", e);
-      return new NotificationResponse(false, "Erro: " + e.getMessage());
-    }
-  }
 
   /**
-   * Envio para contabilidade: Arquivos genéricos com cálculo de redução de 60%
+   * Envio para contabilidade: Arquivos genéricos com cálculo de redução de 60% separado para débito e crédito
    */
   public NotificationResponse sendGenericFilesToAccounting(List<MultipartFile> files, GenericFilesAccountingRequest request) {
     try {
@@ -87,40 +46,44 @@ public class NotificationService {
       List<byte[]> fileContents = new ArrayList<>();
       List<String> fileNames = new ArrayList<>();
       
-      // Converter arquivos
-      for (MultipartFile file : files) {
-        fileContents.add(file.getBytes());
-        fileNames.add(file.getOriginalFilename());
+      // Converter arquivos (se fornecidos)
+      if (files != null && !files.isEmpty()) {
+        for (MultipartFile file : files) {
+          fileContents.add(file.getBytes());
+          fileNames.add(file.getOriginalFilename());
+        }
       }
       
-      // Calcular valores com desconto de 60%
-      BigDecimal total = BigDecimal.ZERO;
-      if (request.debitValue() != null) total = total.add(request.debitValue());
-      if (request.creditValue() != null) total = total.add(request.creditValue());
-      if (request.cashValue() != null) total = total.add(request.cashValue());
-      BigDecimal totalComDesconto = total.multiply(BigDecimal.valueOf(0.4));
+      // Calcular valores com desconto de 60% separadamente
+      BigDecimal debitValue = request.debitValue() != null ? request.debitValue() : BigDecimal.ZERO;
+      BigDecimal creditValue = request.creditValue() != null ? request.creditValue() : BigDecimal.ZERO;
+      BigDecimal cashValue = request.cashValue() != null ? request.cashValue() : BigDecimal.ZERO;
+      
+      BigDecimal debitComDesconto = debitValue.multiply(BigDecimal.valueOf(0.4));
+      BigDecimal creditComDesconto = creditValue.multiply(BigDecimal.valueOf(0.4));
 
       // Preparar dados
       String subject = "Arquivos Contábeis - Resumo Financeiro";
-      String emailBody = buildGenericFilesMessage(request, total, totalComDesconto);
-      String totalValue = String.format("%.2f", totalComDesconto);
+      boolean hasFiles = fileContents != null && !fileContents.isEmpty();
+      int filesCount = hasFiles ? fileContents.size() : 0;
+      String emailBody = buildGenericFilesMessage(request, debitComDesconto, creditComDesconto, cashValue, hasFiles, filesCount);
 
-      // Context para WhatsApp
-      var whatsAppContext = NotificationCoordinator.WhatsAppMessageContext.builder()
-          .totalValue(totalValue)
-          .customMessage(request.customMessage());
-
-      return notificationCoordinator.sendNotification(
-          accountingEmail,
-          accountingWhatsapp,
-          request.channel(),
-          subject,
-          emailBody,
-          NotificationCoordinator.WhatsAppMessageType.GENERIC_FILES,
-          whatsAppContext,
-          fileContents,
-          fileNames
-      );
+      // Enviar apenas por email (sem WhatsApp para contabilidade)
+      try {
+        boolean emailSent = notificationCoordinator.sendEmailOnly(
+            accountingEmail,
+            subject,
+            emailBody,
+            fileContents,
+            fileNames
+        );
+        
+        return new NotificationResponse(emailSent, emailSent ? "Email enviado com sucesso" : "Falha no envio do email");
+        
+      } catch (Exception e) {
+        log.error("Erro ao enviar email para contabilidade", e);
+        return new NotificationResponse(false, "Erro ao enviar email: " + e.getMessage());
+      }
       
     } catch (IOException e) {
       log.error("Erro ao processar arquivos", e);
@@ -203,25 +166,36 @@ public class NotificationService {
 
   // Métodos auxiliares privados
 
-  private String buildMonthlyMessage(MonthlyStatementsRequest request) {
+
+
+  private String buildGenericFilesMessage(GenericFilesAccountingRequest request, BigDecimal debitComDesconto, BigDecimal creditComDesconto, BigDecimal cashValue, boolean hasFiles, int filesCount) {
     Map<String, String> variables = new HashMap<>();
-    variables.put("MONTH", String.valueOf(request.month()));
-    variables.put("YEAR", String.valueOf(request.year()));
+    variables.put("DEBIT_VALUE", String.format("%.2f", debitComDesconto));
+    variables.put("CREDIT_VALUE", String.format("%.2f", creditComDesconto));
+    variables.put("CASH_VALUE", String.format("%.2f", cashValue));
     
-    if (request.customMessage() != null && !request.customMessage().isEmpty()) {
-      variables.put("CUSTOM_MESSAGE", request.customMessage());
-      variables.put("DEFAULT_MESSAGE", ""); // Não mostrar mensagem padrão
+    // Controle de valores financeiros - só exibir se pelo menos um valor for diferente de zero
+    boolean hasFinancialValues = debitComDesconto.compareTo(BigDecimal.ZERO) != 0 || 
+                                creditComDesconto.compareTo(BigDecimal.ZERO) != 0 || 
+                                cashValue.compareTo(BigDecimal.ZERO) != 0;
+    if (hasFinancialValues) {
+      variables.put("HAS_FINANCIAL_VALUES", "true");
+      variables.put("NO_FINANCIAL_VALUES", "");
     } else {
-      variables.put("CUSTOM_MESSAGE", ""); // Não mostrar Mensagem
-      variables.put("DEFAULT_MESSAGE", "true"); // Mostrar mensagem padrão
+      variables.put("HAS_FINANCIAL_VALUES", "");
+      variables.put("NO_FINANCIAL_VALUES", "true");
     }
     
-    return emailTemplateService.processTemplate("monthly-statements", variables);
-  }
-
-  private String buildGenericFilesMessage(GenericFilesAccountingRequest request, BigDecimal adjustedDebit, BigDecimal adjustedCredit) {
-    Map<String, String> variables = new HashMap<>();
-    variables.put("DISCOUNTED_VALUE", String.format("%.2f", adjustedCredit));
+    // Controle de arquivos
+    if (hasFiles) {
+      variables.put("HAS_FILES", "true");
+      variables.put("NO_FILES", "");
+      variables.put("FILES_COUNT", String.valueOf(filesCount));
+    } else {
+      variables.put("HAS_FILES", "");
+      variables.put("NO_FILES", "true");
+      variables.put("FILES_COUNT", "0");
+    }
     
     if (request.customMessage() != null && !request.customMessage().isEmpty()) {
       variables.put("CUSTOM_MESSAGE", request.customMessage());

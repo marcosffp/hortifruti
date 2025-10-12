@@ -5,7 +5,6 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -20,13 +19,26 @@ public class EmailService {
 
   public boolean sendSimpleEmail(String to, String subject, String text) {
     try {
-      SimpleMailMessage message = new SimpleMailMessage();
-      message.setTo(to);
-      message.setSubject(subject);
-      message.setText(text);
-      message.setFrom("noreply@hortifrutisantaluzia.com");
+      MimeMessage mimeMessage = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
-      mailSender.send(message);
+      helper.setTo(to);
+      helper.setSubject(subject);
+      helper.setText(text, true); // true para HTML
+      helper.setFrom("noreply@hortifrutisantaluzia.com");
+
+      // Adicionar logo como anexo inline
+      try {
+        ClassPathResource logoResource = new ClassPathResource("static/images/logo.png");
+        if (logoResource.exists()) {
+          helper.addInline("logo", logoResource);
+        }
+      } catch (Exception e) {
+        // Logo não encontrado, continuar sem ele
+        System.out.println("Logo não encontrado: " + e.getMessage());
+      }
+
+      mailSender.send(mimeMessage);
       return true;
     } catch (Exception e) {
       e.printStackTrace();
