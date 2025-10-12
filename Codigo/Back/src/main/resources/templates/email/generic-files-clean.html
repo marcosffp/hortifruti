@@ -1,307 +1,362 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Arquivos Genéricos - Hortifruti SL</title>
     <style>
-        * {
-            box-sizing: border-box;
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #ffffff;
+        font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+      }
+
+      .email-container {
+        width: 100%;
+        max-width: 595px;
+        margin: 0 auto;
+        background-color: #ffffff;
+      }
+
+      .message-logo-container .message-cell {
+        width: 75%;
+        padding: 40px 20px 20px;
+        vertical-align: middle;
+      }
+
+      .message-logo-container .logo-cell {
+        width: 25%;
+        padding: 20px;
+        text-align: right;
+        vertical-align: middle;
+      }
+
+      .logo-cell img {
+        max-width: 99px;
+        height: auto;
+      }
+
+      .message-title {
+        color: #26a555;
+        font-size: 29px;
+        font-weight: 700;
+        margin: 0 0 20px;
+        text-align: left;
+      }
+
+      .message-content {
+        color: #101112;
+        font-size: 16px;
+        line-height: 1.5;
+        text-align: left;
+      }
+
+      .message-content p {
+        margin: 10px 0;
+      }
+
+      .divider {
+        height: 1px;
+        background-color: #dddddd;
+        margin: 20px 0;
+      }
+
+      .section-title {
+        color: #26a555;
+        font-size: 24px;
+        font-weight: 700;
+        text-align: center;
+        margin: 20px 0;
+        line-height: 1.2;
+      }
+
+      .financial-summary {
+        text-align: center;
+        padding: 20px;
+      }
+
+      .financial-summary-box {
+        margin: 20px auto;
+        max-width: 400px;
+      }
+
+      .summary-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 8px 0;
+        padding: 12px;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+      }
+
+      .summary-item span {
+        font-weight: bold;
+        font-size: 16px;
+      }
+
+      .summary-item.debit {
+        border-left: 4px solid #28a745;
+        color: #28a745;
+      }
+      .summary-item.credit {
+        border-left: 4px solid #28a745;
+        color: #28a745;
+      }
+      .summary-item.cash {
+        border-left: 4px solid #17a2b8;
+        color: #17a2b8;
+      }
+
+      .status-section {
+        padding: 20px;
+      }
+
+      .status-card {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid;
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      .status-card img {
+        width: 24px;
+        height: 24px;
+        margin-right: 12px;
+      }
+
+      .status-card span {
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      .status-card.status-with-files {
+        background-color: #eaf6ec;
+        border-color: #28a745;
+        color: #28a745;
+      }
+
+      .status-card.status-no-files {
+        background-color: #fdeded;
+        border-color: #dc2626;
+        color: #dc2626;
+      }
+
+      .content-section {
+        padding: 20px;
+      }
+      .content-title {
+        color: #555555;
+        font-size: 24px;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .feature-item {
+        display: flex;
+        align-items: center;
+        margin: 10px 0;
+        justify-content: center;
+        text-align: center;
+      }
+      .feature-icon {
+        width: 16px;
+        height: 16px;
+        margin-right: 10px;
+        background: url("https://beefree.imgdist.com/public/default-rows-images/check.png")
+          no-repeat;
+        background-size: contain;
+      }
+      .feature-text {
+        color: #444a5b;
+        font-size: 16px;
+      }
+
+      .footer-section {
+        padding: 30px 20px;
+        background-color: #f8f9fa;
+      }
+
+      .footer-columns .footer-left {
+        width: 40%;
+        text-align: left;
+        vertical-align: middle;
+      }
+
+      .footer-columns .footer-right {
+        width: 60%;
+        text-align: right;
+        vertical-align: middle;
+      }
+
+      .footer-logo {
+        max-width: 150px;
+        height: auto;
+      }
+
+      .footer-phone,
+      .footer-copyright {
+        color: #444a5b;
+        font-size: 14px;
+        margin: 5px 0;
+      }
+
+      .social-icons a {
+        margin: 0 5px;
+        display: inline-block;
+      }
+
+      .social-icons img {
+        width: 24px;
+        height: 24px;
+      }
+
+      @media (max-width: 615px) {
+        .message-logo-container .message-cell,
+        .message-logo-container .logo-cell {
+          display: block;
+          width: 100%;
+          text-align: center;
+          padding: 10px;
         }
-        
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #FFFFFF;
-            font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+        .message-logo-container .message-cell {
+          padding-top: 20px;
         }
-        
-        .email-container {
-            width: 100%;
-            max-width: 595px;
-            margin: 0 auto;
-            background-color: #FFFFFF;
-        }
-        
-        .header-section {
-            display: table;
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .logo-column {
-            display: table-cell;
-            width: 16.67%;
-            vertical-align: top;
-            text-align: center;
-            padding: 10px;
-        }
-        
-        .logo-column img {
-            max-width: 99px;
-            height: auto;
-            display: block;
-            margin: 0 auto;
-        }
-        
-        .title-column {
-            display: table-cell;
-            width: 83.33%;
-            vertical-align: top;
-            padding: 10px;
-        }
-        
-        .main-title {
-            color: #26a555;
-            font-size: 38px;
-            font-weight: 700;
-            text-align: center;
-            margin: 0;
-            line-height: 1.2;
-        }
-        
-        .divider {
-            height: 1px;
-            background-color: #dddddd;
-            margin: 20px 0;
-        }
-        
-        .section-title {
-            color: #26a555;
-            font-size: 24px;
-            font-weight: 700;
-            text-align: center;
-            margin: 20px 0;
-            line-height: 1.2;
-        }
-        
-        .status-section {
-            text-align: center;
-            padding: 20px;
-        }
-        
-        .status-label {
-            color: #101112;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-        
-        .status-value {
-            font-size: 38px;
-            font-weight: 700;
-            margin: 0;
-            line-height: 1.2;
-        }
-        
-        .status-with-files {
-            color: #7747FF;
-        }
-        
-        .status-no-files {
-            color: #dc2626;
-        }
-        
-        .content-section {
-            padding: 20px;
-        }
-        
-        .content-title {
-            color: #555555;
-            font-size: 24px;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .feature-item {
-            display: flex;
-            align-items: center;
-            margin: 10px 0;
-            justify-content: center;
-            text-align: center;
-        }
-        
-        .feature-icon {
-            width: 16px;
-            height: 16px;
-            margin-right: 10px;
-            background: url('https://beefree.imgdist.com/public/default-rows-images/check.png') no-repeat;
-            background-size: contain;
-        }
-        
-        .feature-text {
-            color: #444a5b;
-            font-size: 16px;
-        }
-        
-        .message-section {
-            padding: 60px 20px 20px;
-            text-align: center;
-        }
-        
-        .message-title {
-            color: #26a555;
-            font-size: 29px;
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
-        
+        .message-title,
         .message-content {
-            color: #101112;
-            font-size: 16px;
-            line-height: 1.5;
-            text-align: center;
+          text-align: center;
         }
-        
-        .message-content p {
-            margin: 10px 0;
+        .status-value,
+        .message-title {
+          font-size: 28px;
         }
-        
-        .footer-section {
-            padding: 30px 20px;
-            text-align: center;
-            background-color: #f8f9fa;
+        .feature-item {
+          flex-direction: column;
         }
-        
-        .footer-logo {
-            max-width: 200px;
-            height: auto;
-            margin-bottom: 20px;
+        .feature-icon {
+          margin-right: 0;
+          margin-bottom: 5px;
         }
-        
-        .footer-phone {
-            color: #444a5b;
-            font-size: 14px;
-            margin: 10px 0;
+
+        .footer-columns .footer-left,
+        .footer-columns .footer-right {
+          display: block;
+          width: 100%;
+          text-align: center;
+          padding: 10px 0;
         }
-        
-        .footer-copyright {
-            color: #444a5b;
-            font-size: 14px;
-            line-height: 1.8;
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        @media (max-width: 615px) {
-            .header-section {
-                display: block;
-            }
-            
-            .logo-column, .title-column {
-                display: block;
-                width: 100%;
-            }
-            
-            .main-title {
-                font-size: 28px;
-            }
-            
-            .status-value {
-                font-size: 28px;
-            }
-            
-            .feature-item {
-                flex-direction: column;
-            }
-            
-            .feature-icon {
-                margin-right: 0;
-                margin-bottom: 5px;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="email-container">
-        <!-- Header Section -->
-        <div class="header-section">
-            <div class="logo-column">
-                <img src="cid:logo" alt="Hortifruti SL" title="Hortifruti SL">
-            </div>
-            <div class="title-column">
-                <h1 class="main-title">Hortifruti SL</h1>
-            </div>
-        </div>
-        
-        <!-- Divider -->
-        <div class="divider"></div>
-        
-        <!-- Section Title -->
-        <h3 class="section-title">Arquivos Contábeis - Resumo Financeiro</h3>
-        
-        <!-- Financial Summary Section -->
-        <div class="period-section">
-            <div class="period-label">Valor Total:</div>
-            <h1 class="period-value">R$ {{DISCOUNTED_VALUE}}</h1>
-        </div>
-        
-        <!-- Status Section -->
-        <div class="status-section">
-            {{#HAS_FILES}}
-            <div class="status-label">Quantidade de arquivos anexados:</div>
-            <h1 class="status-value status-with-files">{{FILES_COUNT}} arquivo(s)</h1>
-            {{/HAS_FILES}}
-            
-            {{#NO_FILES}}
-            <div class="status-label">Status:</div>
-            <h1 class="status-value status-no-files">Sem Anexos</h1>
-            {{/NO_FILES}}
-        </div>
-        
-        <!-- Content Section (only shown when files exist) -->
-        {{#HAS_FILES}}
-        <div class="content-section">
-            <h2 class="content-title">O que está anexado?</h2>
-            
-            <div class="feature-item">
-                <div class="feature-icon"></div>
-                <div class="feature-text">Documentos digitalizados</div>
-            </div>
-            
-            <div class="feature-item">
-                <div class="feature-icon"></div>
-                <div class="feature-text">Arquivos organizados por categoria</div>
-            </div>
-            
-            <div class="feature-item">
-                <div class="feature-icon"></div>
-                <div class="feature-text">Formato compatível para análise</div>
-            </div>
-        </div>
-        {{/HAS_FILES}}
-        
-        <!-- Message Section -->
-        <div class="message-section">
-            <h1 class="message-title">Mensagem</h1>
-            
+      <table
+        class="message-logo-container"
+        role="presentation"
+        border="0"
+        cellpadding="0"
+        cellspacing="0"
+        width="100%"
+      >
+        <tr>
+          <td class="message-cell">
+            <h2 class="message-title">Hortifruti SL</h2>
             {{#DEFAULT_MESSAGE}}
             <div class="message-content">
-                <p>Prezados,</p>
-                <p>Segue os arquivos contábeis.</p>
-                <p>Qualquer dúvida, estamos à disposição.</p>
-                <p>Atenciosamente,<br>Hortifruti SL</p>
+              <p>Prezados,</p>
+              <p>Segue os arquivos contábeis.</p>
+              <p>Qualquer dúvida, estamos à disposição.</p>
+              <p>Atenciosamente,Hortifruti SL</p>
             </div>
-            {{/DEFAULT_MESSAGE}}
-            
-            {{#CUSTOM_MESSAGE}}
+            {{/DEFAULT_MESSAGE}} {{#CUSTOM_MESSAGE}}
             <div class="message-content">
-                <p>Prezados,</p>
-                <p>Seguem os arquivos contábeis solicitados.</p>
-                <p><strong>Observações:</strong><br>{{CUSTOM_MESSAGE}}</p>
-                <p>Atenciosamente,<br>Hortifruti SL</p>
+              <p>{{CUSTOM_MESSAGE}}</p>
             </div>
             {{/CUSTOM_MESSAGE}}
+          </td>
+          <td class="logo-cell">
+            <img src="cid:logo" alt="Hortifruti SL" title="Hortifruti SL" />
+          </td>
+        </tr>
+      </table>
+
+      <div class="divider"></div>
+
+      {{#HAS_FINANCIAL_VALUES}}
+      <h3 class="section-title">Arquivos Contábeis - Resumo Financeiro</h3>
+
+      <div class="financial-summary">
+        <div class="financial-summary-box">
+          <div class="summary-item debit">
+            <span>Débito:</span><span>R$ {{DEBIT_VALUE}}</span>
+          </div>
+          <div class="summary-item credit">
+            <span>Crédito:</span><span>R$ {{CREDIT_VALUE}}</span>
+          </div>
+          <div class="summary-item cash">
+            <span>Dinheiro:</span><span>R$ {{CASH_VALUE}}</span>
+          </div>
         </div>
-        
-        <!-- Footer Section -->
-        <div class="footer-section">
-            <img src="cid:logo" alt="Hortifruti SL" title="Hortifruti SL" class="footer-logo">
-            <div class="footer-phone">(31) 3649-7064</div>
-            <div class="footer-copyright">© 2025 Hortifruti SL. Todos os direitos reservados.</div>
+      </div>
+      {{/HAS_FINANCIAL_VALUES}}
+
+      <div class="status-section">
+        {{#HAS_FILES}}
+        <div class="status-card status-with-files">
+          <img
+            src="https://img.icons8.com/ios-glyphs/30/28a745/attach.png"
+            alt="Anexo"
+          />
+          <span>{{FILES_COUNT}} arquivo(s) em anexo</span>
         </div>
+        {{/HAS_FILES}} {{#NO_FILES}}
+        <div class="status-card status-no-files">
+          <img
+            src="https://img.icons8.com/ios-glyphs/30/dc2626/error--v1.png"
+            alt="Alerta"
+          />
+          <span>Nenhum arquivo foi anexado</span>
+        </div>
+        {{/NO_FILES}}
+      </div>
+
+      
+      <div class="footer-section">
+        <table
+          class="footer-columns"
+          role="presentation"
+          border="0"
+          cellpadding="0"
+          cellspacing="0"
+          width="100%"
+        >
+          <tr>
+            <td class="footer-left">
+              <img
+                src="cid:logo"
+                alt="Hortifruti SL"
+                title="Hortifruti SL"
+                class="footer-logo"
+              />
+            </td>
+            <td class="footer-right">
+              <div class="footer-phone">(31) 3649-7064</div>
+              <div class="footer-copyright">
+                © 2025 Hortifruti SL. Todos os direitos reservados.
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
     </div>
-</body>
+  </body>
 </html>

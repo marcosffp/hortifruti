@@ -22,133 +22,118 @@
             margin: 0 auto;
             background-color: #FFFFFF;
         }
-        
-        .header-section {
-            display: table;
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .logo-column {
-            display: table-cell;
-            width: 16.67%;
+
+        /* Estrutura da Mensagem e Logo */
+        .message-logo-container .message-cell {
+            width: 75%;
+            padding: 40px 20px 20px;
             vertical-align: top;
-            text-align: center;
-            padding: 10px;
         }
-        
-        .logo-column img {
+
+        .message-logo-container .logo-cell {
+            width: 25%;
+            padding: 20px;
+            text-align: right;
+            vertical-align: top;
+        }
+
+        .logo-cell img {
             max-width: 99px;
             height: auto;
-            display: block;
-            margin: 0 auto;
         }
-        
-        .title-column {
-            display: table-cell;
-            width: 83.33%;
-            vertical-align: top;
-            padding: 10px;
-        }
-        
-        .main-title {
+
+        .message-title {
             color: #26a555;
-            font-size: 38px;
+            font-size: 29px;
             font-weight: 700;
-            text-align: center;
-            margin: 0;
-            line-height: 1.2;
+            margin: 0 0 20px;
+            text-align: left;
+        }
+
+        .message-content {
+            color: #101112;
+            font-size: 16px;
+            line-height: 1.5;
+            text-align: left;
         }
         
         .divider {
             height: 1px;
             background-color: #dddddd;
-            margin: 20px 0;
+            margin: 0 20px;
         }
         
-        .section-title {
-            color: #26a555;
-            font-size: 24px;
-            font-weight: 700;
-            text-align: center;
-            margin: 20px 0;
-            line-height: 1.2;
-        }
-        
-        .status-section {
-            text-align: center;
+        /* NOVO CARD DE RESUMO PRINCIPAL */
+        .summary-card-section {
             padding: 20px;
         }
-        
-        .status-label {
-            color: #101112;
-            font-size: 16px;
-            margin-bottom: 10px;
+        .summary-card {
+            background-color: #fdeded;
+            border: 1px solid #dc2626;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
         }
-        
-        .status-value {
-            font-size: 38px;
+        .summary-card-label {
+            font-size: 14px;
+            color: #555555;
+            margin-bottom: 8px;
+        }
+        .summary-card-value {
+            font-size: 32px;
             font-weight: 700;
-            margin: 0;
+            color: #dc2626;
             line-height: 1.2;
         }
-        
-        .status-overdue {
-            color: #dc2626;
+        .summary-card-date {
+            font-size: 14px;
+            color: #555555;
+            margin-top: 8px;
         }
-        
-        .status-warning {
-            color: #f59e0b;
-        }
-        
+
+        /* Seção de Conteúdo e Tabelas */
         .content-section {
             padding: 20px;
         }
         
         .content-title {
-            color: #555555;
-            font-size: 24px;
+            color: #333333;
+            font-size: 22px;
             font-weight: 700;
             text-align: center;
             margin-bottom: 20px;
         }
         
-        .summary-table {
+        .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            overflow: hidden;
+            margin-bottom: 30px;
         }
         
-        .summary-table th {
-            background-color: #26a555;
-            color: white;
+        .data-table th, .data-table td {
             padding: 12px;
             text-align: left;
-            font-weight: 700;
-        }
-        
-        .summary-table td {
-            padding: 12px;
             border-bottom: 1px solid #dee2e6;
-            color: #495057;
         }
         
-        .summary-table tr:last-child td {
-            border-bottom: none;
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .data-table td strong {
+            font-weight: 600;
         }
         
         .client-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
-            border: 1px solid #dee2e6;
             border-radius: 8px;
-            overflow: hidden;
+            overflow: hidden; /* Garante que o border-radius funcione nos cantos da tabela */
+            border: 1px solid #dee2e6;
         }
-        
+
         .client-table th {
             background-color: #dc2626;
             color: white;
@@ -162,11 +147,11 @@
             border-bottom: 1px solid #dee2e6;
             color: #495057;
         }
-        
+
         .client-table tr:last-child td {
             border-bottom: none;
         }
-        
+
         .client-table tr:nth-child(even) {
             background-color: #f8f9fa;
         }
@@ -181,155 +166,118 @@
             text-align: center;
             font-weight: 600;
         }
-        
-        .message-section {
-            padding: 60px 20px 20px;
-            text-align: center;
-        }
-        
-        .message-title {
-            color: #26a555;
-            font-size: 29px;
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
-        
-        .message-content {
-            color: #101112;
-            font-size: 16px;
-            line-height: 1.5;
-            text-align: center;
-        }
-        
-        .message-content p {
-            margin: 10px 0;
-        }
-        
+
+        /* Rodapé */
         .footer-section {
             padding: 30px 20px;
-            text-align: center;
             background-color: #f8f9fa;
         }
-        
+
+        .footer-columns .footer-left {
+            width: 40%; text-align: left; vertical-align: middle;
+        }
+
+        .footer-columns .footer-right {
+            width: 60%; text-align: right; vertical-align: middle;
+        }
+
         .footer-logo {
-            max-width: 200px;
-            height: auto;
-            margin-bottom: 20px;
+            max-width: 150px; height: auto;
         }
-        
-        .footer-phone {
-            color: #444a5b;
-            font-size: 14px;
-            margin: 10px 0;
-        }
-        
-        .footer-copyright {
-            color: #444a5b;
-            font-size: 14px;
-            line-height: 1.8;
+
+        .footer-phone, .footer-copyright {
+            color: #444a5b; font-size: 14px; margin: 5px 0;
         }
         
         @media (max-width: 615px) {
-            .header-section {
-                display: block;
+            .message-logo-container .message-cell,
+            .message-logo-container .logo-cell {
+                display: block; width: 100%; text-align: center; padding: 10px;
             }
+            .message-logo-container .message-cell { padding-top: 20px; }
+            .message-title { text-align: center; font-size: 24px; }
+            .summary-card-value { font-size: 28px; }
             
-            .logo-column, .title-column {
-                display: block;
-                width: 100%;
-            }
-            
-            .main-title {
-                font-size: 28px;
-            }
-            
-            .status-value {
-                font-size: 28px;
-            }
-            
-            .summary-table, .client-table {
-                font-size: 14px;
-            }
-            
-            .summary-table th, .summary-table td,
-            .client-table th, .client-table td {
-                padding: 8px;
+            .footer-columns .footer-left,
+            .footer-columns .footer-right {
+                display: block; width: 100%; text-align: center; padding: 10px 0;
             }
         }
     </style>
 </head>
 <body>
     <div class="email-container">
-        <!-- Header Section -->
-        <div class="header-section">
-            <div class="logo-column">
-                <img src="cid:logo" alt="Hortifruti SL" title="Hortifruti SL">
-            </div>
-            <div class="title-column">
-                <h1 class="main-title">Hortifruti SL</h1>
+        <table class="message-logo-container" role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+            <tr>
+                <td class="message-cell">
+                    <h2 class="message-title">Relatório de Boletos Vencidos</h2>
+                    <div class="message-content">
+                        <p>Segue o resumo dos boletos com pagamento pendente até a data de hoje.</p>
+                    </div>
+                </td>
+                <td class="logo-cell">
+                    <img src="cid:logo" alt="Hortifruti SL" title="Hortifruti SL" />
+                </td>
+            </tr>
+        </table>
+        
+        <div class="summary-card-section">
+            <div class="summary-card">
+                <div class="summary-card-label">Valor Total em Atraso</div>
+                <div class="summary-card-value">R$ {{TOTAL_OVERDUE_AMOUNT}}</div>
+                <div class="summary-card-date">Relatório gerado em: {{REPORT_DATE}}</div>
             </div>
         </div>
-        
-        <!-- Divider -->
+
         <div class="divider"></div>
-        <!-- Section Title -->
-        <h3 class="section-title">Relatório de Boletos Vencidos</h3>
         
-        <!-- Status Section -->
-        <div class="status-section">
-            <div class="status-label">Data do Relatório:</div>
-            <h1 class="status-value status-overdue">{{REPORT_DATE}}</h1>
-        </div>
-        
-        <!-- Content Section -->
         <div class="content-section">
-            <h2 class="content-title">Resumo Executivo</h2>
-            
-            <table class="summary-table">
+            <h3 class="content-title">Resumo Geral</h3>
+            <table class="data-table" role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                    <th>Métrica</th>
-                    <th>Valor</th>
-                </tr>
-                <tr>
-                    <td>Clientes com boletos vencidos</td>
+                    <td>Clientes com pendências</td>
                     <td><strong>{{TOTAL_CLIENTS}}</strong></td>
                 </tr>
                 <tr>
-                    <td>Total de boletos em atraso</td>
+                    <td>Total de boletos vencidos</td>
                     <td><strong>{{TOTAL_OVERDUE_BOLETOS}}</strong></td>
                 </tr>
-                <tr>
-                    <td>Valor total em atraso</td>
-                    <td><strong>R$ {{TOTAL_OVERDUE_AMOUNT}}</strong></td>
-                </tr>
             </table>
-            
-            <h2 class="content-title">Detalhamento por Cliente</h2>
-            
-            <table class="client-table">
+
+            <h3 class="content-title">Detalhamento por Cliente</h3>
+            <table class="client-table" role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <thead>
                     <tr>
                         <th>Cliente</th>
-                        <th>Qtd. Boletos</th>
-                        <th>Valor Total</th>
+                        <th class="count-cell">Qtd. Boletos</th>
+                        <th class="amount-cell">Valor Total</th>
                     </tr>
                 </thead>
                 <tbody>
                     {{CLIENT_ROWS}}
-                </tbody>
+                    </tbody>
             </table>
+
+            <h3 class="content-title" style="margin-top: 40px;">Ação Necessária</h3>
+            <p style="text-align: center; color: #444a5b; font-size: 16px; line-height: 1.5;">
+                Por favor, inicie o processo de contato com os clientes listados para a regularização dos pagamentos.
+            </p>
         </div>
         
-        <!-- Message Section -->
-        <div class="message-section">
-            <h1 class="message-title">Ação Necessária</h1>
-        </div>
-        
-        <!-- Footer Section -->
         <div class="footer-section">
-            <img src="cid:logo" alt="Hortifruti SL" title="Hortifruti SL" class="footer-logo">
-            <div class="footer-phone">(31) 3649-7064</div>
-            <div class="footer-copyright">© 2025 Hortifruti SL. Todos os direitos reservados.</div>
+            <table class="footer-columns" role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                    <td class="footer-left">
+                        <img src="cid:logo" alt="Hortifruti SL" title="Hortifruti SL" class="footer-logo" />
+                    </td>
+                    <td class="footer-right">
+                        <div class="footer-phone">(31) 3649-7064</div>
+                        <div class="footer-copyright">
+                            © 2025 Hortifruti SL. Todos os direitos reservados.
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
     </div>
 </body>
