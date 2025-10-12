@@ -48,3 +48,8 @@ src/main/resources/cert/*.pfx
 *.key
 *.pfx
 */resources/cert/*
+
+
+# Ignorar arquivos nas pastas tokens e credentials
+tokens/
+credentials/

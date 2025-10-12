@@ -179,4 +179,12 @@ public class GlobalExceptionHandler {
     response.put("message", ex.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
+
+  @ExceptionHandler(BackupException.class)
+  public ResponseEntity<Map<String, String>> handleBackupException(BackupException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro de Backup");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+  }
 }
