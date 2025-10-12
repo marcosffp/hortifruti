@@ -42,4 +42,10 @@ public class CombinedScoreController {
     Page<CombinedScoreResponse> response = combinedScoreService.listGroupings(clientId, pageable);
     return ResponseEntity.ok(response);
   }
+
+  @PatchMapping("confirm-payment/{id}")
+  public ResponseEntity<?> confirmPayment(@PathVariable Long id) {
+    combinedScoreService.confirmPayment(id);
+    return ResponseEntity.ok().body("Pagamento confirmado com sucesso.");
+  }
 }

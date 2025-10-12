@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.service;
+package com.hortifruti.sl.hortifruti.service.billet;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -6,18 +6,20 @@ import com.hortifruti.sl.hortifruti.config.billet.BilletHttpClient;
 import com.hortifruti.sl.hortifruti.dto.sicoob.BilletRequest;
 import com.hortifruti.sl.hortifruti.dto.sicoob.BilletRequestSimplified;
 import com.hortifruti.sl.hortifruti.dto.sicoob.BilletResponse;
+import com.hortifruti.sl.hortifruti.dto.sicoob.Pagador;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
+import com.hortifruti.sl.hortifruti.model.Client;
+import com.hortifruti.sl.hortifruti.model.CombinedScore;
+import com.hortifruti.sl.hortifruti.repository.ClientRepository;
+import com.hortifruti.sl.hortifruti.repository.CombinedScoreRepository;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -26,6 +28,11 @@ import org.springframework.web.client.HttpClientErrorException;
 @RequiredArgsConstructor
 public class BilletService {
 
+  private final CombinedScoreRepository combinedScoreRepository;
+  private final ClientRepository clientRepository;
+  private final BilletFactory billetFactory;
+  private final PdfCreate pdfCreate;
+
   @Value("${sicoob.num.cliente}")
   private Integer clientNumber;
 
@@ -33,37 +40,8 @@ public class BilletService {
   private Integer accountNumber;
 
   private Integer MODALITY_CODE = 1;
-  private String DOCUMENT_SPECIES_CODE = "DM";
-  private Integer BOLETO_ISSUANCE_IDENTIFICATION = 1;
-  private Integer BOLETO_DISTRIBUTION_IDENTIFICATION = 1;
-  private Integer DISCOUNT_TYPE = 0;
-  private Integer FINE_TYPE = 0;
-  private Integer INTEREST_TYPE = 3;
-  private Integer INSTALLMENT_NUMBER = 1;
-  private Boolean GENERATE_PDF = true;
   private String BASE_URL = "/cobranca-bancaria/v3/";
   private final BilletHttpClient httpClient;
-
-  private BilletRequest createCompleteBoletoRequest(BilletRequestSimplified boletoSimplificado) {
-    return new BilletRequest(
-        clientNumber, // numeroCliente
-        MODALITY_CODE, // codigoModalidade
-        accountNumber, // numeroContaCorrente
-        DOCUMENT_SPECIES_CODE, // codigoEspecieDocumento
-        boletoSimplificado.dataEmissao(),
-        boletoSimplificado.seuNumero(),
-        BOLETO_ISSUANCE_IDENTIFICATION, // identificacaoEmissaoBoleto
-        BOLETO_DISTRIBUTION_IDENTIFICATION, // identificacaoDistribuicaoBoleto
-        boletoSimplificado.valor(),
-        boletoSimplificado.dataVencimento(),
-        DISCOUNT_TYPE, // tipoDesconto
-        FINE_TYPE, // tipoMulta
-        INTEREST_TYPE, // tipoJurosMora
-        INSTALLMENT_NUMBER, // numeroParcela
-        boletoSimplificado.pagador(),
-        GENERATE_PDF // gerarPdf
-        );
-  }
 
   /**
    * Emite um boleto através da API do Sicoob e retorna o PDF para download.
@@ -72,10 +50,10 @@ public class BilletService {
    * @return Resposta HTTP contendo o PDF do boleto emitido
    * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
-  public ResponseEntity<byte[]> issueBillet(BilletRequestSimplified boleto) throws IOException {
+  private ResponseEntity<byte[]> issueBillet(BilletRequestSimplified boleto) throws IOException {
     try {
       // Cria o objeto BoletoRequest completo
-      BilletRequest boletoCompleto = createCompleteBoletoRequest(boleto);
+      BilletRequest boletoCompleto = billetFactory.createCompleteBoletoRequest(boleto);
       ObjectMapper mapper = new ObjectMapper();
       JsonNode boletoJson = mapper.valueToTree(boletoCompleto);
 
@@ -101,7 +79,7 @@ public class BilletService {
       String pdfBase64 = resultado.get("pdfBoleto").asText();
 
       // Converte o PDF Base64 para bytes e prepara a resposta
-      return createResponsePdf(pdfBase64, "BOL-" + boletoCompleto.seuNumero() + ".pdf");
+      return pdfCreate.createResponsePdf(pdfBase64, "BOL-" + boletoCompleto.seuNumero() + ".pdf");
 
     } catch (HttpClientErrorException e) {
       throw new BilletException(
@@ -116,11 +94,12 @@ public class BilletService {
   /**
    * Lista os boletos de um pagador específico.
    *
-   * @param numeroCpfCnpj Número do CPF ou CNPJ do pagador
+   * @param clientId ID do cliente (CPF ou CNPJ)
    * @return Lista de boletos do pagador
    * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
-  public List<BilletResponse> listBilletByPayer(String numeroCpfCnpj) throws IOException {
+  public List<BilletResponse> listBilletByPayer(long clientId) throws IOException {
+    String numeroCpfCnpj = getClientById(clientId).getDocument();
     try {
       // Monta o endpoint para a requisição
       String endpoint =
@@ -212,7 +191,7 @@ public class BilletService {
       String pdfBase64 = resultado.get("pdfBoleto").asText();
 
       // Converte o PDF Base64 para bytes e prepara a resposta
-      return createResponsePdf(pdfBase64, "SEGUNDA-VIA-BOL-" + seuNumero + ".pdf");
+      return pdfCreate.createResponsePdf(pdfBase64, "SEGUNDA-VIA-BOL-" + seuNumero + ".pdf");
 
     } catch (HttpClientErrorException.NotFound e) {
       throw new BilletException(
@@ -273,36 +252,46 @@ public class BilletService {
   }
 
   /**
-   * Cria uma resposta HTTP contendo um PDF.
+   * Gera um boleto para um CombinedScore específico e retorna o PDF para download.
    *
-   * @param pdfBase64 String Base64 contendo o PDF
-   * @param nomeArquivo Nome do arquivo PDF para download
-   * @return Resposta HTTP com o PDF
-   * @throws BilletException Se o PDF em Base64 for inválido ou ocorrer algum erro na decodificação
+   * @param combinedScoreId ID do CombinedScore
+   * @return Resposta HTTP contendo o PDF do boleto gerado
+   * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
-  private ResponseEntity<byte[]> createResponsePdf(String pdfBase64, String nomeArquivo) {
-    try {
-      // Verifica se o Base64 está vazio ou nulo
-      if (pdfBase64 == null || pdfBase64.trim().isEmpty()) {
-        throw new BilletException("O conteúdo do PDF em Base64 está vazio ou nulo.");
-      }
+  public ResponseEntity<byte[]> generateBilletForCombinedScore(Long combinedScoreId, String number)
+      throws IOException {
+    CombinedScore combinedScore = getCombinedScoreById(combinedScoreId);
+    Client client = getClientById(combinedScore.getClientId());
+    Pagador pagador = billetFactory.createPagadorFromClient(client);
+    BilletRequestSimplified billetRequest =
+        billetFactory.createBilletRequest(combinedScore, combinedScoreId, pagador, number);
+    return issueBillet(billetRequest);
+  }
 
-      // Decodifica o Base64 para bytes
-      byte[] pdfBytes = Base64.getDecoder().decode(pdfBase64);
+  /**
+   * Busca o CombinedScore pelo ID.
+   *
+   * @param combinedScoreId ID do CombinedScore
+   * @return CombinedScore encontrado
+   */
+  private CombinedScore getCombinedScoreById(Long combinedScoreId) {
+    return combinedScoreRepository
+        .findById(combinedScoreId)
+        .orElseThrow(
+            () ->
+                new BilletException(
+                    "Agrupamento com o ID " + combinedScoreId + " não encontrado."));
+  }
 
-      // Configura os headers para retornar o PDF
-      HttpHeaders headers = new HttpHeaders();
-      headers.setContentType(MediaType.APPLICATION_PDF);
-      headers.setContentDispositionFormData("attachment", nomeArquivo);
-
-      // Retorna o PDF como resposta
-      return ResponseEntity.ok().headers(headers).body(pdfBytes);
-
-    } catch (IllegalArgumentException e) {
-      throw new BilletException(
-          "Erro ao decodificar o PDF em Base64. O conteúdo pode estar corrompido ou inválido.", e);
-    } catch (Exception e) {
-      throw new BilletException("Erro inesperado ao criar a resposta do PDF.", e);
-    }
+  /**
+   * Busca o cliente pelo ID.
+   *
+   * @param clientId ID do cliente
+   * @return Cliente encontrado
+   */
+  private Client getClientById(Long clientId) {
+    return clientRepository
+        .findById(clientId)
+        .orElseThrow(() -> new BilletException("Cliente com ID " + clientId + " não encontrado."));
   }
 }

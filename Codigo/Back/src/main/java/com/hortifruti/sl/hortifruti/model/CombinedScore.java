@@ -34,6 +34,9 @@ public class CombinedScore {
   @Column(name = "total_value", nullable = false)
   private BigDecimal totalValue;
 
+  @Column(name = "paid", nullable = false)
+  private boolean paid;
+
   @OneToMany(mappedBy = "combinedScore", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<GroupedProduct> groupedProducts;
 
@@ -42,6 +45,7 @@ public class CombinedScore {
     this.confirmedAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
     this.totalValue = calculateTotalValue();
+    this.paid = false;
   }
 
   @PreUpdate
