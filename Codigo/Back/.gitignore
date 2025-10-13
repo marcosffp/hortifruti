@@ -47,8 +47,8 @@ src/main/resources/cert/*.pfx
 *.crt
 *.key
 *.pfx
+cert/
 */resources/cert/*
-
 
 # Ignorar arquivos nas pastas tokens e credentials
 tokens/
