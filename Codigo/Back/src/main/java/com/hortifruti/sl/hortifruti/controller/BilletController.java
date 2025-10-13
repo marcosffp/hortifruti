@@ -1,9 +1,9 @@
 package com.hortifruti.sl.hortifruti.controller;
 
-import com.hortifruti.sl.hortifruti.dto.sicoob.BilletRequestSimplified;
 import com.hortifruti.sl.hortifruti.dto.sicoob.BilletResponse;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
-import com.hortifruti.sl.hortifruti.service.BilletService;
+import com.hortifruti.sl.hortifruti.service.billet.BilletService;
+import java.io.IOException;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,10 +23,11 @@ public class BilletController {
    * @param boleto Dados do boleto a ser emitido.
    * @return PDF do boleto emitido.
    */
-  @PostMapping("/issue")
-  public ResponseEntity<byte[]> issueBillet(@RequestBody BilletRequestSimplified boleto) {
+  @GetMapping("/generate/{combinedScoreId}")
+  public ResponseEntity<byte[]> generateBillet(@PathVariable Long combinedScoreId, String number)
+      throws IOException {
     try {
-      return billetService.issueBillet(boleto);
+      return billetService.generateBilletForCombinedScore(combinedScoreId, number);
     } catch (Exception e) {
       e.printStackTrace();
       return ResponseEntity.badRequest()
@@ -37,13 +38,13 @@ public class BilletController {
   /**
    * Lista boletos de um pagador específico.
    *
-   * @param cnpjNumber Número do CPF ou CNPJ do pagador.
+   * @param clientId ID do cliente (CPF ou CNPJ).
    * @return Lista de boletos do pagador.
    */
-  @GetMapping("/billets/{cnpjNumber}")
-  public ResponseEntity<List<BilletResponse>> listBilletByPayer(@PathVariable String cnpjNumber) {
+  @GetMapping("/billets/{clientId}")
+  public ResponseEntity<List<BilletResponse>> listBilletByPayer(@PathVariable long clientId) {
     try {
-      List<BilletResponse> billets = billetService.listBilletByPayer(cnpjNumber);
+      List<BilletResponse> billets = billetService.listBilletByPayer(clientId);
       return ResponseEntity.ok(billets);
     } catch (Exception e) {
       e.printStackTrace();

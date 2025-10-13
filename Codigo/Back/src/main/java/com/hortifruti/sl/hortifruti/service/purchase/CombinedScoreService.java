@@ -55,6 +55,22 @@ public class CombinedScoreService {
     combinedScoreRepository.deleteById(id);
   }
 
+  public void confirmPayment(Long id) {
+    CombinedScore combinedScore =
+        combinedScoreRepository
+            .findById(id)
+            .orElseThrow(
+                () ->
+                    new CombinedScoreException("Agrupamento com o ID " + id + " não encontrado."));
+
+    if (combinedScore.isPaid()) {
+      throw new CombinedScoreException("O pagamento já foi confirmado para este agrupamento.");
+    }
+
+    combinedScore.setPaid(true);
+    combinedScoreRepository.save(combinedScore);
+  }
+
   public Page<CombinedScoreResponse> listGroupings(Long clientId, Pageable pageable) {
     Page<CombinedScore> groupings;
 
