@@ -89,6 +89,20 @@ public class BilletHttpClient {
     }
   }
 
+  public ResponseEntity<JsonNode> getWithResponse(String endpoint) throws IOException {
+    try {
+        HttpHeaders headers = createHeaders();
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        return restTemplate.exchange(apiUrl + endpoint, HttpMethod.GET, entity, JsonNode.class);
+    } catch (HttpClientErrorException | HttpServerErrorException ex) {
+        throw new BilletException(
+            "Erro ao realizar requisição GET: " + ex.getResponseBodyAsString(), ex);
+    } catch (Exception ex) {
+        throw new BilletException("Erro inesperado ao realizar requisição GET.", ex);
+    }
+  }
+
   private HttpHeaders createHeaders() throws IOException {
     HttpHeaders headers = new HttpHeaders();
     headers.setBearerAuth(sicoobToken.getAccessToken());

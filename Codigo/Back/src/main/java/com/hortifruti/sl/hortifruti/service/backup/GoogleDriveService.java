@@ -15,7 +15,12 @@ import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
+import com.hortifruti.sl.hortifruti.config.Base64FileDecoder;
 import com.hortifruti.sl.hortifruti.exception.BackupException;
+
+import io.netty.handler.codec.base64.Base64Decoder;
+import lombok.AllArgsConstructor;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -27,15 +32,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
+@AllArgsConstructor
 public class GoogleDriveService {
 
   private static final String APPLICATION_NAME = "Hortifruti SL Backup";
   private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
   private static final String TOKENS_DIRECTORY_PATH = "tokens";
   private static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE);
-
-  @Value("${google.drive.credentials}")
-  private String credentialsFilePath;
+  private final Base64FileDecoder base64FileDecoder;
 
   /**
    * Cria um cliente autorizado do Google Drive.
@@ -61,9 +65,10 @@ public class GoogleDriveService {
    */
   private Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) {
     try {
-      java.io.File credentialsFile = new java.io.File(credentialsFilePath);
+      base64FileDecoder.decodeGoogleDriveCredentials();
+      java.io.File credentialsFile = base64FileDecoder.getGoogleDriveCredentialsFile();
       if (!credentialsFile.exists()) {
-        throw new BackupException("Arquivo de credenciais não encontrado: " + credentialsFilePath);
+        throw new BackupException("Arquivo de credenciais não encontrado: ");
       }
 
       GoogleClientSecrets clientSecrets =
