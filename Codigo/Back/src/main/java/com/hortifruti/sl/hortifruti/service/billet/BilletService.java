@@ -101,53 +101,60 @@ public class BilletService {
   public List<BilletResponse> listBilletByPayer(long clientId) throws IOException {
     String numeroCpfCnpj = getClientById(clientId).getDocument();
     try {
-      // Monta o endpoint para a requisição
-      String endpoint =
-          String.format(
-              BASE_URL + "pagadores/%s/boletos?numeroCliente=%d&codigoSituacao=1",
-              numeroCpfCnpj,
-              clientNumber);
+        // Monta o endpoint para a requisição
+        String endpoint =
+            String.format(
+                BASE_URL + "pagadores/%s/boletos?numeroCliente=%d&codigoSituacao=1",
+                numeroCpfCnpj,
+                clientNumber);
 
-      // Faz a requisição para obter os boletos
-      JsonNode resposta = httpClient.get(endpoint);
+        // Faz a requisição para obter os boletos
+        ResponseEntity<JsonNode> response = httpClient.getWithResponse(endpoint);
 
-      // Verifica se a resposta é nula
-      if (resposta == null) {
-        throw new BilletException("A resposta da API está nula.");
-      }
+        // Verifica o status da resposta
+        if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
+            return List.of(); // Retorna lista vazia
+        }
 
-      // Acessa o campo "resultado" que contém a lista de boletos
-      JsonNode resultado = resposta.path("resultado");
+        JsonNode resposta = response.getBody();
 
-      // Verifica se o resultado é uma lista válida
-      if (!resultado.isArray()) {
-        throw new BilletException("Resposta inválida da API: campo 'resultado' não é uma lista.");
-      }
+        // Verifica se a resposta é nula ou vazia
+        if (resposta == null || resposta.isEmpty()) {
+            return List.of(); // Retorna lista vazia
+        }
 
-      // Mapeia os dados para uma lista de BoletoResponse
-      List<BilletResponse> boletos = new ArrayList<>();
-      for (JsonNode boletoNode : resultado) {
-        BilletResponse boleto =
-            new BilletResponse(
-                boletoNode.path("pagador").path("nome").asText(),
-                boletoNode.path("dataEmissao").asText(),
-                boletoNode.path("dataVencimento").asText(),
-                boletoNode.path("seuNumero").asText(),
-                boletoNode.path("situacaoBoleto").asText(),
-                boletoNode.path("nossoNumero").asText(),
-                boletoNode.path("valor").decimalValue());
-        boletos.add(boleto);
-      }
+        // Acessa o campo "resultado" que contém a lista de boletos
+        JsonNode resultado = resposta.path("resultado");
 
-      return boletos;
+        // Verifica se o resultado é uma lista válida
+        if (!resultado.isArray()) {
+            throw new BilletException("Resposta inválida da API: campo 'resultado' não é uma lista.");
+        }
+
+        // Mapeia os dados para uma lista de BoletoResponse
+        List<BilletResponse> boletos = new ArrayList<>();
+        for (JsonNode boletoNode : resultado) {
+            BilletResponse boleto =
+                new BilletResponse(
+                    boletoNode.path("pagador").path("nome").asText(),
+                    boletoNode.path("dataEmissao").asText(),
+                    boletoNode.path("dataVencimento").asText(),
+                    boletoNode.path("seuNumero").asText(),
+                    boletoNode.path("situacaoBoleto").asText(),
+                    boletoNode.path("nossoNumero").asText(),
+                    boletoNode.path("valor").decimalValue());
+            boletos.add(boleto);
+        }
+
+        return boletos;
 
     } catch (HttpClientErrorException e) {
-      throw new BilletException(
-          "Erro na requisição para listar boletos: " + e.getResponseBodyAsString(), e);
+        throw new BilletException(
+            "Erro na requisição para listar boletos: " + e.getResponseBodyAsString(), e);
     } catch (IOException e) {
-      throw new BilletException("Erro ao processar a resposta da API ao listar boletos.", e);
+        throw new BilletException("Erro ao processar a resposta da API ao listar boletos.", e);
     } catch (Exception e) {
-      throw new BilletException("Erro inesperado ao listar boletos.", e);
+        throw new BilletException("Erro inesperado ao listar boletos.", e);
     }
   }
 
