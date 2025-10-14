@@ -30,6 +30,10 @@ WORKDIR /app
 # Copia o JAR de forma explícita
 COPY --from=builder --chown=appuser:appuser /app/target/*.jar app.jar
 
+# Cria diretório temp com permissões
+RUN mkdir -p /app/temp/cert /app/temp/google /app/temp/notifications && \
+    chown -R appuser:appuser /app/temp
+
 # Otimizações JVM para containers
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
 ENV SPRING_PROFILES_ACTIVE="prod"
