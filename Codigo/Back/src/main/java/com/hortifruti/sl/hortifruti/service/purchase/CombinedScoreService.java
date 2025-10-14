@@ -79,9 +79,9 @@ public class CombinedScoreService {
     Page<CombinedScore> groupings;
 
     if (clientId != null) {
-      groupings = combinedScoreRepository.findByClientId(clientId, pageable);
+      groupings = combinedScoreRepository.findByClientIdOrderByConfirmedAtDesc(clientId, pageable);
     } else {
-      groupings = combinedScoreRepository.findAll(pageable);
+      groupings = combinedScoreRepository.findAllByOrderByConfirmedAtDesc(pageable);
     }
 
     return groupings.map(combinedScoreMapper::toResponse);
