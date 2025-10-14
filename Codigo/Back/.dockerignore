@@ -33,3 +33,6 @@ build/
 dist/
 out/
 node_modules/
+
+# Ignorar o diretório temp
+temp/

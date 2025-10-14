@@ -48,9 +48,11 @@ src/main/resources/cert/*.pfx
 *.key
 *.pfx
 */resources/cert/*
-
+**/temp/*
+**/temp/google/*
 
 # Ignorar arquivos nas pastas tokens e credentials
 tokens/
 credentials/
+google/
 
