@@ -33,7 +33,7 @@ export default function NotificacoesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [arquivos, setArquivos] = useState<File[]>([]);
   const [mensagemPersonalizada, setMensagemPersonalizada] = useState("");
   const [canaisEnvio, setCanaisEnvio] = useState<{
     email: boolean;
@@ -109,31 +109,43 @@ export default function NotificacoesPage() {
     );
   };
 
-  // Upload de arquivo
+  // Upload de arquivos
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const maxSize = 10 * 1024 * 1024; // 10MB
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      const maxSize = 10 * 1024 * 1024; // 10MB por arquivo
 
-      if (file.size > maxSize) {
-        showError("O arquivo deve ter no máximo 10MB");
+      // Validar tamanho de cada arquivo
+      const arquivosInvalidos = newFiles.filter(file => file.size > maxSize);
+      if (arquivosInvalidos.length > 0) {
+        showError(`${arquivosInvalidos.length} arquivo(s) excede(m) o tamanho máximo de 10MB`);
         return;
       }
 
-      setArquivo(file);
-      showSuccess("Arquivo carregado com sucesso");
+      setArquivos(prev => [...prev, ...newFiles]);
+      showSuccess(`${newFiles.length} arquivo(s) adicionado(s) com sucesso`);
+      
+      // Limpar o input para permitir adicionar o mesmo arquivo novamente
+      e.target.value = '';
     }
   };
 
-  // Remover arquivo
-  const removerArquivo = () => {
-    setArquivo(null);
+  // Remover arquivo específico
+  const removerArquivo = (index: number) => {
+    setArquivos(prev => prev.filter((_, i) => i !== index));
+    showSuccess("Arquivo removido");
+  };
+
+  // Remover todos os arquivos
+  const removerTodosArquivos = () => {
+    setArquivos([]);
+    showSuccess("Todos os arquivos foram removidos");
   };
 
   // Validações básicas
   const validarArquivoECanais = () => {
-    if (!arquivo) {
-      showError("Por favor, selecione um arquivo para enviar");
+    if (arquivos.length === 0) {
+      showError("Por favor, selecione pelo menos um arquivo para enviar");
       return false;
     }
     if (!canaisEnvio.email && !canaisEnvio.whatsapp) {
@@ -209,11 +221,11 @@ export default function NotificacoesPage() {
       const canaisTexto = canais.join(" e ");
 
       showSuccess(
-        `Notificação enviada com sucesso para ${qtdDestinatarios} destinatário(s) via ${canaisTexto}!`
+        `${arquivos.length} arquivo(s) enviado(s) com sucesso para ${qtdDestinatarios} destinatário(s) via ${canaisTexto}!`
       );
 
       // Limpar formulário
-      setArquivo(null);
+      setArquivos([]);
       setMensagemPersonalizada("");
       setDataVencimento("");
       setValorBoleto("");
@@ -386,47 +398,74 @@ export default function NotificacoesPage() {
                 </div>
               </div>
 
-              {/* Upload de Arquivo */}
+              {/* Upload de Arquivos */}
               <div>
-                <div className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
-                  Arquivo (PDF, JPG, PNG - Máx. 10MB)
+                <div className="flex items-center justify-between mb-2">
+                  <div className="block text-sm font-medium text-[var(--neutral-700)]">
+                    Arquivos (PDF, JPG, PNG - Máx. 10MB cada)
+                  </div>
+                  {arquivos.length > 0 && (
+                    <span className="text-sm text-[var(--primary)] font-medium">
+                      {arquivos.length} arquivo(s)
+                    </span>
+                  )}
                 </div>
-                {!arquivo ? (
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[var(--neutral-300)] rounded-lg cursor-pointer hover:border-[var(--primary)] hover:bg-[var(--primary-bg)] transition-all">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-8 h-8 text-[var(--neutral-500)] mb-2" />
-                      <p className="text-sm text-[var(--neutral-600)]">
-                        <span className="font-semibold">Clique para enviar</span> ou
-                        arraste o arquivo
-                      </p>
-                    </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={handleFileChange}
-                    />
-                  </label>
-                ) : (
-                  <div className="flex items-center justify-between p-4 bg-[var(--primary-bg)] border border-[var(--primary)] rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <FileText className="w-8 h-8 text-[var(--primary)]" />
-                      <div>
-                        <p className="font-medium text-[var(--neutral-900)]">
-                          {arquivo.name}
-                        </p>
-                        <p className="text-sm text-[var(--neutral-600)]">
-                          {(arquivo.size / 1024).toFixed(2)} KB
-                        </p>
+
+                {/* Área de Upload */}
+                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-[var(--neutral-300)] rounded-lg cursor-pointer hover:border-[var(--primary)] hover:bg-[var(--primary-bg)] transition-all mb-3">
+                  <div className="flex flex-col items-center justify-center">
+                    <Upload className="w-6 h-6 text-[var(--neutral-500)] mb-1" />
+                    <p className="text-sm text-[var(--neutral-600)]">
+                      <span className="font-semibold">Clique para adicionar</span> ou arraste arquivos
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleFileChange}
+                    multiple
+                  />
+                </label>
+
+                {/* Lista de Arquivos */}
+                {arquivos.length > 0 && (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {arquivos.map((arquivo, index) => (
+                      <div
+                        key={`${arquivo.name}-${index}`}
+                        className="flex items-center justify-between p-3 bg-[var(--primary-bg)] border border-[var(--primary)] rounded-lg"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <FileText className="w-6 h-6 text-[var(--primary)] flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-[var(--neutral-900)] truncate">
+                              {arquivo.name}
+                            </p>
+                            <p className="text-sm text-[var(--neutral-600)]">
+                              {(arquivo.size / 1024).toFixed(2)} KB
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removerArquivo(index)}
+                          className="p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                          title="Remover arquivo"
+                        >
+                          <X className="w-5 h-5 text-[var(--secondary)]" />
+                        </button>
                       </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={removerArquivo}
-                      className="p-1 hover:bg-red-100 rounded-full transition-colors"
-                    >
-                      <X className="w-5 h-5 text-[var(--secondary)]" />
-                    </button>
+                    ))}
+                    {arquivos.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={removerTodosArquivos}
+                        className="w-full py-2 text-sm text-[var(--secondary)] hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors font-medium"
+                      >
+                        Remover todos os arquivos
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
