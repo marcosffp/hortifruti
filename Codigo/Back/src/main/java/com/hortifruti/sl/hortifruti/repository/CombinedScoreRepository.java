@@ -12,8 +12,10 @@ import java.util.List;
 
 public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Long> {
 
-  Page<CombinedScore> findByClientId(Long clientId, Pageable pageable);
-  
+  Page<CombinedScore> findByClientIdOrderByConfirmedAtDesc(Long clientId, Pageable pageable);
+
+  Page<CombinedScore> findAllByOrderByConfirmedAtDesc(Pageable pageable);
+
   /**
    * Busca CombinedScores vencidos que ainda não foram pagos (confirmedAt is null)
    */
