@@ -31,9 +31,6 @@ public class NotificationService {
   @Value("${accounting.email}")
   private String accountingEmail;
 
-  @Value("${accounting.whatsapp}")
-  private String accountingWhatsapp;
-
 
 
   /**
@@ -138,29 +135,6 @@ public class NotificationService {
     } catch (IOException e) {
       log.error("Erro ao processar arquivos do cliente", e);
       return new NotificationResponse(false, "Erro ao processar arquivos: " + e.getMessage());
-    }
-  }
-
-
-
-  /**
-   * Teste dos serviços de comunicação
-   */
-  public NotificationResponse testCommunicationServices() {
-    try {
-      // Testar serviços através do coordinator
-      boolean emailOk = notificationCoordinator != null && accountingEmail != null && !accountingEmail.isEmpty();
-      boolean whatsappOk = notificationCoordinator != null && accountingWhatsapp != null && !accountingWhatsapp.isEmpty();
-      
-      String message = String.format("Email: %s, WhatsApp: %s", 
-          emailOk ? "OK" : "FALHA", whatsappOk ? "OK" : "FALHA");
-      
-      return NotificationResponse.withStatuses(emailOk && whatsappOk, message, 
-          emailOk ? "OK" : "FALHA", whatsappOk ? "OK" : "FALHA");
-      
-    } catch (Exception e) {
-      log.error("Erro ao testar serviços", e);
-      return new NotificationResponse(false, "Erro ao testar serviços: " + e.getMessage());
     }
   }
 
