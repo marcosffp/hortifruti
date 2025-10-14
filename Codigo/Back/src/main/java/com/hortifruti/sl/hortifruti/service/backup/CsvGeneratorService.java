@@ -204,7 +204,6 @@ public class CsvGeneratorService {
             combinedScore.getClientId(),
             combinedScore.getConfirmedAt(),
             combinedScore.getDueDate(),
-            combinedScore.getUpdatedAt(),
             combinedScore.getTotalValue(),
             combinedScore.isPaid());
       }

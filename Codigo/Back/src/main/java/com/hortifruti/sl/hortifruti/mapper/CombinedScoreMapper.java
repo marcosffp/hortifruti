@@ -13,7 +13,6 @@ public interface CombinedScoreMapper {
 
   @Mapping(target = "id", ignore = true) // ID será gerado automaticamente
   @Mapping(target = "confirmedAt", ignore = true) // Gerenciado pelo @PrePersist
-  @Mapping(target = "updatedAt", ignore = true) // Gerenciado pelo @PreUpdate
   @Mapping(target = "totalValue", ignore = true) // Calculado automaticamente
   CombinedScore toEntity(CombinedScoreRequest request);
 
@@ -21,7 +20,6 @@ public interface CombinedScoreMapper {
 
   @Mapping(target = "id", ignore = true) // ID não deve ser alterado
   @Mapping(target = "confirmedAt", ignore = true) // Não deve ser alterado
-  @Mapping(target = "updatedAt", ignore = true) // Gerenciado pelo @PreUpdate
   @Mapping(target = "totalValue", ignore = true) // Calculado automaticamente
   void updateEntityFromRequest(CombinedScoreRequest request, @MappingTarget CombinedScore entity);
 }

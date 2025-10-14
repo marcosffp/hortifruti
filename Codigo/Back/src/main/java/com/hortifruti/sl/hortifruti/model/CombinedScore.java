@@ -28,9 +28,6 @@ public class CombinedScore {
   @Column(name = "due_date")
   private LocalDateTime dueDate;
 
-  @Column(name = "updated_at", nullable = false)
-  private LocalDateTime updatedAt;
-
   @Column(name = "total_value", nullable = false)
   private BigDecimal totalValue;
 
@@ -43,14 +40,13 @@ public class CombinedScore {
   @PrePersist
   protected void onCreate() {
     this.confirmedAt = LocalDateTime.now();
-    this.updatedAt = LocalDateTime.now();
+    this.dueDate = this.confirmedAt.plusDays(20); 
     this.totalValue = calculateTotalValue();
     this.paid = false;
   }
 
   @PreUpdate
   protected void onUpdate() {
-    this.updatedAt = LocalDateTime.now();
     this.totalValue = calculateTotalValue();
   }
 
