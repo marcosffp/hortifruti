@@ -214,11 +214,16 @@ export default function NovoClientePage() {
       setIsSubmitting(true);
 
       // Mapear os dados do formulário para o formato esperado pelo backend
+      // Ordem do endereço conforme backend: bairro, cidade, cep, uf, rua
+      // Backend extrai: [0]=bairro, [1]=cidade, [2]=cep, [3]=uf, [4]=rua
+      const rua = `${formData.endereco}, ${formData.numero}${formData.complemento ? ", " + formData.complemento : ""}`;
+      const addressFormatted = `${formData.bairro},${formData.cidade},${formData.cep},${formData.estado},${rua}`;
+      
       const clientData = {
         clientName: formData.nome,
         email: formData.email,
         phoneNumber: formData.telefone,
-        address: `${formData.endereco}, ${formData.numero}${formData.complemento ? ", " + formData.complemento : ""}, ${formData.bairro}, ${formData.cidade} - ${formData.estado}${formData.cep ? ", CEP: " + formData.cep : ""}`,
+        address: addressFormatted,
         variablePrice: formData.variablePrice === "true", // Convertendo string para booleano
         document: formData.cpfCnpj, // Nome do campo conforme esperado pelo backend
       };
