@@ -4,7 +4,7 @@ import { Calculator, Star, Truck } from 'lucide-react';
 import { SetStateAction, useState } from 'react';
 import AddressAutocomplete from '@/components/modules/AddressAutocomplete';
 import MapComponent from '@/components/modules/Map';
-import FavoritesModal from '@/components/modules/FavoritesModal';
+import FavoritesModal from '@/components/modals/FavoritesModal';
 import { AddressType, RouteData } from '@/types/addressType';
 import { freightService } from '@/services/freightService';
 import FreightConfigInfo from '@/components/modules/FreightConfigInfo';

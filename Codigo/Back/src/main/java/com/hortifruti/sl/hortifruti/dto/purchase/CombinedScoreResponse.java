@@ -7,5 +7,6 @@ public record CombinedScoreResponse(
     Long id,
     Long clientId,
     BigDecimal totalValue,
+    boolean paid,
     LocalDateTime dueDate,
     LocalDateTime confirmedAt) {}

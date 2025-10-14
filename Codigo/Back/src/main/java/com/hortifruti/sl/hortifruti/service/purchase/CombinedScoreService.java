@@ -28,6 +28,10 @@ public class CombinedScoreService {
     }
 
     CombinedScore groupedProducts = combinedScoreMapper.toEntity(request);
+
+    // Associe o CombinedScore aos GroupedProducts
+    groupedProducts.getGroupedProducts().forEach(product -> product.setCombinedScore(groupedProducts));
+
     CombinedScore savedEntity = combinedScoreRepository.save(groupedProducts);
     return combinedScoreMapper.toResponse(savedEntity);
   }
@@ -75,9 +79,9 @@ public class CombinedScoreService {
     Page<CombinedScore> groupings;
 
     if (clientId != null) {
-      groupings = combinedScoreRepository.findByClientId(clientId, pageable);
+      groupings = combinedScoreRepository.findByClientIdOrderByConfirmedAtDesc(clientId, pageable);
     } else {
-      groupings = combinedScoreRepository.findAll(pageable);
+      groupings = combinedScoreRepository.findAllByOrderByConfirmedAtDesc(pageable);
     }
 
     return groupings.map(combinedScoreMapper::toResponse);
