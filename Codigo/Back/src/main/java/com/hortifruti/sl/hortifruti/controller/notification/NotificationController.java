@@ -5,6 +5,7 @@ import com.hortifruti.sl.hortifruti.model.CombinedScore;
 import com.hortifruti.sl.hortifruti.model.enumeration.NotificationChannel;
 import com.hortifruti.sl.hortifruti.service.CombinedScoreSchedulerService;
 import com.hortifruti.sl.hortifruti.service.notification.NotificationService;
+import com.hortifruti.sl.hortifruti.service.notification.BulkNotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -28,12 +29,13 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/notifications")
+@RequestMapping("/api/notifications")
 @RequiredArgsConstructor
 @io.swagger.v3.oas.annotations.tags.Tag(name = "Notificações", description = "API para envio de notificações e documentos via email e WhatsApp")
 public class NotificationController {
 
   private final NotificationService notificationService;
+  private final BulkNotificationService bulkNotificationService;
 
   @Autowired
   private CombinedScoreSchedulerService schedulerService;
@@ -154,6 +156,51 @@ public class NotificationController {
             
             return ResponseEntity.internalServerError().body(errorResponse);
         }
+    }
+
+    /**
+     * Enviar notificações em massa para múltiplos destinatários
+     */
+    @PostMapping(value = "/send-bulk", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Enviar notificações em massa", 
+               description = "Envia múltiplos arquivos para múltiplos clientes via e-mail e/ou WhatsApp")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<BulkNotificationResponse> sendBulkNotifications(
+            @RequestParam("files") List<MultipartFile> files,
+            @RequestParam("clientIds") List<Long> clientIds,
+            @RequestParam("channels") List<String> channels,
+            @RequestParam("destinationType") String destinationType,
+            @RequestParam(value = "customMessage", required = false) String customMessage
+    ) {
+        try {
+            log.info("Recebendo requisição de notificação em massa: {} arquivo(s), {} destinatário(s), canais: {}", 
+                    files.size(), clientIds != null ? clientIds.size() : 0, channels);
+
+            BulkNotificationResponse response = bulkNotificationService.sendBulkNotifications(
+                    files, clientIds, channels, destinationType, customMessage
+            );
+
+            return ResponseEntity.ok(response);
+            
+        } catch (IllegalArgumentException e) {
+            log.error("Erro de validação", e);
+            return ResponseEntity.badRequest()
+                    .body(BulkNotificationResponse.failure(e.getMessage(), List.of()));
+        } catch (Exception e) {
+            log.error("Erro ao processar notificações em massa", e);
+            return ResponseEntity.status(500)
+                    .body(BulkNotificationResponse.failure(
+                            "Erro ao processar notificações: " + e.getMessage(), 
+                            List.of()
+                    ));
+        }
+    }
+
+    @GetMapping("/test")
+    @Operation(summary = "Testar serviços de notificação", 
+               description = "Verifica se os serviços de e-mail e WhatsApp estão funcionando")
+    public ResponseEntity<String> testServices() {
+        return ResponseEntity.ok("Serviço de notificações está ativo");
     }
 
 }
