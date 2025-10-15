@@ -36,7 +36,12 @@ public class SecurityConfig {
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers(
-                        "/auth", "/swagger-ui/**", "/v3/api-docs/**", "/billet/**", "/backup/**")
+                        "/auth", 
+                        "/swagger-ui/**", 
+                        "/v3/api-docs/**", 
+                        "/billet/**", 
+                        "/backup/**", 
+                        "/api/scheduler/**") // Adicionamos a permissão para os endpoints do scheduler
                     .permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.GET, "/clients/**")
                     .permitAll()
