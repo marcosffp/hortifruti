@@ -17,6 +17,7 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { clientService } from "@/services/clientService";
 import { showError, showSuccess } from "@/services/notificationService";
+import { bulkNotificationService } from "@/services/bulkNotificationService";
 
 interface Cliente {
   id: number;
@@ -206,45 +207,61 @@ export default function NotificacoesPage() {
     try {
       setEnviando(true);
 
-      // Simular envio (aqui você implementaria a chamada real para o backend)
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
+      // Preparar dados para envio
       const clientesSelecionados = clientes.filter((c) => c.selecionado);
-      const qtdDestinatarios =
-        tipoDestinatario === "clientes"
-          ? clientesSelecionados.length
-          : 1;
+      const clientIds = tipoDestinatario === "clientes" 
+        ? clientesSelecionados.map((c) => c.id)
+        : []; // Vazio para contabilidade
 
-      const canais = [];
-      if (canaisEnvio.email) canais.push("e-mail");
-      if (canaisEnvio.whatsapp) canais.push("WhatsApp");
-      const canaisTexto = canais.join(" e ");
+      const channels: string[] = [];
+      if (canaisEnvio.email) channels.push("email");
+      if (canaisEnvio.whatsapp) channels.push("whatsapp");
 
-      showSuccess(
-        `${arquivos.length} arquivo(s) enviado(s) com sucesso para ${qtdDestinatarios} destinatário(s) via ${canaisTexto}!`
-      );
+      // Chamar serviço de notificação
+      const response = await bulkNotificationService.sendBulkNotifications({
+        files: arquivos,
+        clientIds,
+        channels,
+        destinationType: tipoDestinatario,
+        customMessage: mensagemPersonalizada || undefined,
+      });
 
-      // Limpar formulário
-      setArquivos([]);
-      setMensagemPersonalizada("");
-      setDataVencimento("");
-      setValorBoleto("");
-      setClientes(clientes.map((c) => ({ ...c, selecionado: false })));
-      setCanaisEnvio({ email: false, whatsapp: false });
+      if (response.success) {
+        showSuccess(response.message);
 
-      // Atualizar estatísticas
-      const incrementoWhatsapp = canaisEnvio.whatsapp ? qtdDestinatarios : 0;
-      setStats((prev) => ({
-        ...prev,
-        enviadosHoje: prev.enviadosHoje + qtdDestinatarios,
-        whatsappEnviados: prev.whatsappEnviados + incrementoWhatsapp,
-        dadosContador:
-          tipoDestinatario === "contabilidade"
-            ? prev.dadosContador + 1
-            : prev.dadosContador,
-      }));
+        // Limpar formulário
+        setArquivos([]);
+        setMensagemPersonalizada("");
+        setDataVencimento("");
+        setValorBoleto("");
+        setClientes(clientes.map((c) => ({ ...c, selecionado: false })));
+        setCanaisEnvio({ email: false, whatsapp: false });
+
+        // Atualizar estatísticas
+        const qtdDestinatarios = response.totalSent;
+        const incrementoWhatsapp = canaisEnvio.whatsapp ? qtdDestinatarios : 0;
+        setStats((prev) => ({
+          ...prev,
+          enviadosHoje: prev.enviadosHoje + qtdDestinatarios,
+          whatsappEnviados: prev.whatsappEnviados + incrementoWhatsapp,
+          dadosContador:
+            tipoDestinatario === "contabilidade"
+              ? prev.dadosContador + 1
+              : prev.dadosContador,
+        }));
+      } else {
+        showError(response.message);
+        
+        // Mostrar falhas específicas se houver
+        if (response.failedRecipients.length > 0) {
+          const failedList = response.failedRecipients.join(", ");
+          showError(`Falha ao enviar para: ${failedList}`);
+        }
+      }
+
     } catch (error) {
-      showError("Erro ao enviar notificação. Tente novamente.");
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+      showError(`Erro ao enviar notificação: ${errorMessage}`);
       console.error("Erro ao enviar:", error);
     } finally {
       setEnviando(false);
@@ -468,35 +485,6 @@ export default function NotificacoesPage() {
                     )}
                   </div>
                 )}
-              </div>
-
-              {/* Informações do Boleto (opcional) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="dataVencimento" className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
-                    Data de Vencimento (opcional)
-                  </label>
-                  <input
-                    id="dataVencimento"
-                    type="date"
-                    value={dataVencimento}
-                    onChange={(e) => setDataVencimento(e.target.value)}
-                    className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="valorBoleto" className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
-                    Valor do Boleto (opcional)
-                  </label>
-                  <input
-                    id="valorBoleto"
-                    type="text"
-                    placeholder="R$ 0,00"
-                    value={valorBoleto}
-                    onChange={(e) => setValorBoleto(e.target.value)}
-                    className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                  />
-                </div>
               </div>
 
               {/* Mensagem Personalizada */}
