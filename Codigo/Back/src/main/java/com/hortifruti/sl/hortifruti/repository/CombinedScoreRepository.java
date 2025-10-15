@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Long> {
@@ -20,11 +20,11 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
    * Busca CombinedScores vencidos que ainda não foram pagos (confirmedAt is null)
    */
   @Query("SELECT cs FROM CombinedScore cs WHERE cs.dueDate < :currentDate AND cs.confirmedAt IS NULL")
-  List<CombinedScore> findOverdueUnpaidScores(@Param("currentDate") LocalDateTime currentDate);
+  List<CombinedScore> findOverdueUnpaidScores(@Param("currentDate") LocalDate currentDate);
   
   /**
    * Busca CombinedScores vencidos por cliente
    */
   @Query("SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.dueDate < :currentDate AND cs.confirmedAt IS NULL")
-  List<CombinedScore> findOverdueUnpaidScoresByClient(@Param("clientId") Long clientId, @Param("currentDate") LocalDateTime currentDate);
+  List<CombinedScore> findOverdueUnpaidScoresByClient(@Param("clientId") Long clientId, @Param("currentDate") LocalDate currentDate);
 }

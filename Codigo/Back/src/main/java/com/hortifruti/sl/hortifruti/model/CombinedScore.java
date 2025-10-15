@@ -2,7 +2,7 @@ package com.hortifruti.sl.hortifruti.model;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.*;
 
@@ -23,13 +23,10 @@ public class CombinedScore {
   private Long clientId;
 
   @Column(name = "confirmed_at")
-  private LocalDateTime confirmedAt;
+  private LocalDate confirmedAt;
 
   @Column(name = "due_date")
-  private LocalDateTime dueDate;
-
-  @Column(name = "updated_at", nullable = false)
-  private LocalDateTime updatedAt;
+  private LocalDate dueDate;
 
   @Column(name = "total_value", nullable = false)
   private BigDecimal totalValue;
@@ -42,16 +39,10 @@ public class CombinedScore {
 
   @PrePersist
   protected void onCreate() {
-    this.confirmedAt = LocalDateTime.now();
-    this.updatedAt = LocalDateTime.now();
+    this.confirmedAt = LocalDate.now();
+    this.dueDate = this.confirmedAt.plusDays(20);
     this.totalValue = calculateTotalValue();
     this.paid = false;
-  }
-
-  @PreUpdate
-  protected void onUpdate() {
-    this.updatedAt = LocalDateTime.now();
-    this.totalValue = calculateTotalValue();
   }
 
   private BigDecimal calculateTotalValue() {

@@ -110,14 +110,14 @@ public class BilletFactory {
 
     // Extrai CEP se vier como "CEP: 12345-678"
     if (cep.startsWith("CEP:")) {
-      cep = cep.replace("CEP:", "").trim();
+      cep = cep.replace("CEP:", "").trim().replaceAll("[^0-9]", "");
     }
 
     // Monta rua completa
     String ruaCompleta = rua + ", " + numero + (complemento.isEmpty() ? "" : ", " + complemento);
 
     return new Pagador(
-        client.getDocument(),
+        client.getDocument().replaceAll("[^0-9]", ""),
         client.getClientName(),
         ruaCompleta, // Rua + número + complemento
         bairro,

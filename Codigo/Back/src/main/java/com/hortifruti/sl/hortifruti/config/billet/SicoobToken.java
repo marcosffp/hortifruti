@@ -46,14 +46,15 @@ public class SicoobToken {
     try {
       // Verifica se o token atual ainda é válido
       if (accessToken != null && System.currentTimeMillis() < tokenExpiresAt - 30000) {
+        System.out.println("[DEBUG] Token ainda válido. Retornando token existente.");
         return accessToken;
       }
 
-      // Configura os headers da requisição
       HttpHeaders headers = new HttpHeaders();
       headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+      
+      headers.add("Accept", MediaType.APPLICATION_JSON_VALUE);
 
-      // Configura o corpo da requisição
       MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
       body.add("grant_type", "client_credentials");
       body.add("client_id", clientId);
@@ -61,11 +62,15 @@ public class SicoobToken {
 
       HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
 
-      // Faz a requisição para obter o token
       ResponseEntity<String> response = restTemplate.postForEntity(authUrl, request, String.class);
 
-      // Processa a resposta
-      return processTokenResponse(response);
+      String token = processTokenResponse(response);
+      
+      accessToken = token;
+      
+      tokenExpiresAt = System.currentTimeMillis() + (55 * 60 * 1000); // 55 minutos
+      
+      return token;
 
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
       throw new BilletException(
@@ -85,23 +90,16 @@ public class SicoobToken {
    */
   private String processTokenResponse(ResponseEntity<String> response) throws IOException {
     if (response.getBody() == null || response.getBody().trim().isEmpty()) {
-      throw new BilletException("A resposta da API de autenticação está vazia ou nula.");
+      throw new BilletException("Resposta de token vazia do servidor.");
     }
 
     ObjectMapper mapper = new ObjectMapper();
-    JsonNode root = mapper.readTree(response.getBody());
+    JsonNode jsonResponse = mapper.readTree(response.getBody());
 
-    // Verifica se o token está presente na resposta
-    if (!root.has("access_token") || root.get("access_token").isNull()) {
-      throw new BilletException("Token de acesso não encontrado na resposta da API.");
+    if (!jsonResponse.has("access_token") || jsonResponse.get("access_token").isNull()) {
+      throw new BilletException("Token de acesso não encontrado na resposta.");
     }
 
-    accessToken = root.path("access_token").asText();
-    int expiresIn = root.path("expires_in").asInt();
-
-    // Calcula o tempo de expiração do token
-    tokenExpiresAt = System.currentTimeMillis() + (expiresIn * 1000);
-
-    return accessToken;
+    return jsonResponse.get("access_token").asText();
   }
 }
