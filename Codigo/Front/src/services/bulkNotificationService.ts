@@ -10,6 +10,10 @@ export interface BulkNotificationRequest {
   channels: string[]; // ["email", "whatsapp"]
   destinationType: string; // "clientes" ou "contabilidade"
   customMessage?: string;
+  // Campos financeiros para contabilidade
+  creditValue?: string;
+  debitValue?: string;
+  cashValue?: string;
 }
 
 export interface BulkNotificationResponse {
@@ -51,6 +55,17 @@ export const bulkNotificationService = {
       // Adicionar mensagem personalizada (se houver)
       if (request.customMessage) {
         formData.append("customMessage", request.customMessage);
+      }
+
+      // Adicionar campos financeiros para contabilidade (se houver)
+      if (request.creditValue) {
+        formData.append("creditValue", request.creditValue);
+      }
+      if (request.debitValue) {
+        formData.append("debitValue", request.debitValue);
+      }
+      if (request.cashValue) {
+        formData.append("cashValue", request.cashValue);
       }
 
       // Obter token de autenticação
