@@ -17,7 +17,7 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { clientService } from "@/services/clientService";
 import { showError, showSuccess } from "@/services/notificationService";
-import { bulkNotificationService } from "@/services/bulkNotificationService";
+import { bulkNotificationService, BulkNotificationRequest } from "@/services/bulkNotificationService";
 
 interface Cliente {
   id: number;
@@ -45,13 +45,21 @@ export default function NotificacoesPage() {
   const [valorBoleto, setValorBoleto] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  // Estatísticas
-  const [stats, setStats] = useState({
-    enviadosHoje: 24,
-    whatsappEnviados: 156,
-    alertasVencimento: 8,
-    dadosContador: 12,
-  });
+  // Estados específicos para contabilidade
+  const [debitValue, setDebitValue] = useState("");
+  const [creditValue, setCreditValue] = useState("");
+  const [cashValue, setCashValue] = useState("");
+
+  // Efeito para ajustar canais de envio quando muda o tipo de destinatário
+  useEffect(() => {
+    if (tipoDestinatario === "contabilidade") {
+      // Para contabilidade, apenas email
+      setCanaisEnvio({ email: true, whatsapp: false });
+    } else {
+      // Para clientes, permitir escolha
+      setCanaisEnvio({ email: false, whatsapp: false });
+    }
+  }, [tipoDestinatario]);
 
   // Carregar clientes
   useEffect(() => {
@@ -218,13 +226,22 @@ export default function NotificacoesPage() {
       if (canaisEnvio.whatsapp) channels.push("whatsapp");
 
       // Chamar serviço de notificação
-      const response = await bulkNotificationService.sendBulkNotifications({
+      const requestData: BulkNotificationRequest = {
         files: arquivos,
         clientIds,
         channels,
         destinationType: tipoDestinatario,
         customMessage: mensagemPersonalizada || undefined,
-      });
+      };
+
+      // Adicionar campos financeiros se for contabilidade
+      if (tipoDestinatario === "contabilidade") {
+        if (creditValue) requestData.creditValue = creditValue;
+        if (debitValue) requestData.debitValue = debitValue;
+        if (cashValue) requestData.cashValue = cashValue;
+      }
+
+      const response = await bulkNotificationService.sendBulkNotifications(requestData);
 
       if (response.success) {
         showSuccess(response.message);
@@ -236,19 +253,12 @@ export default function NotificacoesPage() {
         setValorBoleto("");
         setClientes(clientes.map((c) => ({ ...c, selecionado: false })));
         setCanaisEnvio({ email: false, whatsapp: false });
+        
+        // Limpar campos financeiros
+        setCreditValue("");
+        setDebitValue("");
+        setCashValue("");
 
-        // Atualizar estatísticas
-        const qtdDestinatarios = response.totalSent;
-        const incrementoWhatsapp = canaisEnvio.whatsapp ? qtdDestinatarios : 0;
-        setStats((prev) => ({
-          ...prev,
-          enviadosHoje: prev.enviadosHoje + qtdDestinatarios,
-          whatsappEnviados: prev.whatsappEnviados + incrementoWhatsapp,
-          dadosContador:
-            tipoDestinatario === "contabilidade"
-              ? prev.dadosContador + 1
-              : prev.dadosContador,
-        }));
       } else {
         showError(response.message);
         
@@ -283,65 +293,6 @@ export default function NotificacoesPage() {
         </p>
       </div>
 
-      {/* Cards de Estatísticas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-[var(--neutral-600)]">Enviados Hoje</p>
-              <p className="text-2xl font-bold text-[var(--primary)]">
-                {stats.enviadosHoje}
-              </p>
-            </div>
-            <div className="p-3 bg-[var(--primary-bg)] rounded-lg">
-              <Mail className="w-6 h-6 text-[var(--primary)]" />
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-[var(--neutral-600)]">WhatsApp/E-mail</p>
-              <p className="text-2xl font-bold text-[var(--primary)]">
-                {stats.whatsappEnviados}
-              </p>
-            </div>
-            <div className="p-3 bg-[var(--primary-bg)] rounded-lg">
-              <MessageCircle className="w-6 h-6 text-[var(--primary)]" />
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-[var(--neutral-600)]">Alertas Vencimento</p>
-              <p className="text-2xl font-bold text-[var(--warning)]">
-                {stats.alertasVencimento}
-              </p>
-            </div>
-            <div className="p-3 bg-orange-50 rounded-lg">
-              <Calendar className="w-6 h-6 text-[var(--warning)]" />
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-[var(--neutral-600)]">Dados p/ Contador</p>
-              <p className="text-2xl font-bold text-[var(--info)]">
-                {stats.dadosContador}
-              </p>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <Building2 className="w-6 h-6 text-[var(--info)]" />
-            </div>
-          </div>
-        </Card>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Formulário de Envio */}
         <div className="lg:col-span-2 space-y-4">
@@ -356,7 +307,7 @@ export default function NotificacoesPage() {
                   <button
                     type="button"
                     onClick={() => setTipoDestinatario("clientes")}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${
+                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
                       tipoDestinatario === "clientes"
                         ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
                         : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
@@ -368,7 +319,7 @@ export default function NotificacoesPage() {
                   <button
                     type="button"
                     onClick={() => setTipoDestinatario("contabilidade")}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${
+                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
                       tipoDestinatario === "contabilidade"
                         ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
                         : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
@@ -389,7 +340,7 @@ export default function NotificacoesPage() {
                   <button
                     type="button"
                     onClick={() => setCanaisEnvio((prev) => ({ ...prev, email: !prev.email }))}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${
+                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
                       canaisEnvio.email
                         ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
                         : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
@@ -399,19 +350,21 @@ export default function NotificacoesPage() {
                     <span className="font-medium">E-mail</span>
                     {canaisEnvio.email && <CheckCircle2 className="w-4 h-4 ml-auto" />}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setCanaisEnvio((prev) => ({ ...prev, whatsapp: !prev.whatsapp }))}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                      canaisEnvio.whatsapp
-                        ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
-                        : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
-                    }`}
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                    <span className="font-medium">WhatsApp</span>
-                    {canaisEnvio.whatsapp && <CheckCircle2 className="w-4 h-4 ml-auto" />}
-                  </button>
+                  {tipoDestinatario !== "contabilidade" && (
+                    <button
+                      type="button"
+                      onClick={() => setCanaisEnvio((prev) => ({ ...prev, whatsapp: !prev.whatsapp }))}
+                      className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                        canaisEnvio.whatsapp
+                          ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
+                          : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
+                      }`}
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      <span className="font-medium">WhatsApp</span>
+                      {canaisEnvio.whatsapp && <CheckCircle2 className="w-4 h-4 ml-auto" />}
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -467,7 +420,7 @@ export default function NotificacoesPage() {
                         <button
                           type="button"
                           onClick={() => removerArquivo(index)}
-                          className="p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                          className="p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0 cursor-pointer"
                           title="Remover arquivo"
                         >
                           <X className="w-5 h-5 text-[var(--secondary)]" />
@@ -478,7 +431,7 @@ export default function NotificacoesPage() {
                       <button
                         type="button"
                         onClick={removerTodosArquivos}
-                        className="w-full py-2 text-sm text-[var(--secondary)] hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors font-medium"
+                        className="w-full py-2 text-sm text-[var(--secondary)] hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors font-medium cursor-pointer"
                       >
                         Remover todos os arquivos
                       </button>
@@ -501,6 +454,66 @@ export default function NotificacoesPage() {
                   className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent resize-none"
                 />
               </div>
+
+              {/* Campos específicos para Contabilidade */}
+              {tipoDestinatario === "contabilidade" && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-[var(--neutral-900)]">Valores Financeiros</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Campo Crédito */}
+                    <div>
+                      <label htmlFor="credito" className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
+                        Valor de Crédito (R$)
+                      </label>
+                      <input
+                        type="number"
+                        id="credito"
+                        step="0.01"
+                        min="0"
+                        placeholder="0,00"
+                        value={creditValue}
+                        onChange={(e) => setCreditValue(e.target.value)}
+                        className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Campo Débito */}
+                    <div>
+                      <label htmlFor="debito" className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
+                        Valor de Débito (R$)
+                      </label>
+                      <input
+                        type="number"
+                        id="debito"
+                        step="0.01"
+                        min="0"
+                        placeholder="0,00"
+                        value={debitValue}
+                        onChange={(e) => setDebitValue(e.target.value)}
+                        className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Campo Dinheiro */}
+                    <div>
+                      <label htmlFor="dinheiro" className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
+                        Valor em Dinheiro (R$)
+                      </label>
+                      <input
+                        type="number"
+                        id="dinheiro"
+                        step="0.01"
+                        min="0"
+                        placeholder="0,00"
+                        value={cashValue}
+                        onChange={(e) => setCashValue(e.target.value)}
+                        className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Botão de Enviar */}
               <Button
@@ -549,7 +562,7 @@ export default function NotificacoesPage() {
                   <button
                     type="button"
                     onClick={toggleTodos}
-                    className="text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] font-medium"
+                    className="text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] font-medium cursor-pointer"
                   >
                     {todosAtivos ? "Desselecionar" : "Selecionar"} todos
                   </button>
@@ -664,59 +677,6 @@ export default function NotificacoesPage() {
         </div>
       </div>
 
-      {/* Atividades Recentes */}
-      <Card title="Atividades Recentes">
-        <div className="space-y-3">
-          <div className="flex items-start gap-4 p-3 bg-[var(--neutral-50)] rounded-lg">
-            <div className="p-2 bg-green-100 rounded-full">
-              <Mail className="w-5 h-5 text-green-600" />
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-[var(--neutral-900)]">Boleto enviado</p>
-              <p className="text-sm text-[var(--neutral-600)]">
-                João Silva Gomes • 2024-10-15
-              </p>
-            </div>
-            <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-              enviado
-            </span>
-          </div>
-
-          <div className="flex items-start gap-4 p-3 bg-[var(--neutral-50)] rounded-lg">
-            <div className="p-2 bg-green-100 rounded-full">
-              <MessageCircle className="w-5 h-5 text-green-600" />
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-[var(--neutral-900)]">
-                Alerta de vencimento
-              </p>
-              <p className="text-sm text-[var(--neutral-600)]">
-                Maria Oliveira • 2024-09-14
-              </p>
-            </div>
-            <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-              whatsapp
-            </span>
-          </div>
-
-          <div className="flex items-start gap-4 p-3 bg-[var(--neutral-50)] rounded-lg">
-            <div className="p-2 bg-blue-100 rounded-full">
-              <FileText className="w-5 h-5 text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-[var(--neutral-900)]">
-                Dados enviados
-              </p>
-              <p className="text-sm text-[var(--neutral-600)]">
-                Contador • Silva Associados • 2024-09-14
-              </p>
-            </div>
-            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
-              enviado
-            </span>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }
