@@ -24,19 +24,21 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String clientIp = request.getRemoteAddr();
+        String endpoint = request.getRequestURI(); // Obtém o endpoint acessado
+        String key = clientIp + ":" + endpoint; // Combina o IP do cliente com o endpoint para criar uma chave única
 
-        Bucket bucket = buckets.computeIfAbsent(clientIp, this::createNewBucket);
+        Bucket bucket = buckets.computeIfAbsent(key, this::createNewBucket);
 
         if (bucket.tryConsume(1)) {
             filterChain.doFilter(request, response);
         } else {
             response.setStatus(429);
-            response.getWriter().write("{\"error\": \"Too many requests. Please try again later.\"}");
+            response.getWriter().write("{\"error\": \"Too many requests to this endpoint. Please try again later.\"}");
         }
     }
 
-    private Bucket createNewBucket(String clientIp) {
-        Bandwidth limit = Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1))); // 10 requests per minute
+    private Bucket createNewBucket(String key) {
+        Bandwidth limit = Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1))); // 10 requests por minuto por endpoint
         return Bucket.builder().addLimit(limit).build();
     }
 }

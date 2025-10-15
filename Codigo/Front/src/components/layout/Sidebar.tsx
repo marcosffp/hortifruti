@@ -36,7 +36,7 @@ const menu: MenuItem[] = [
     label: "Módulo Lançamentos",
     icon: BadgeDollarSign,
     href: "/lancamentos",
-    roles: ["MANAGER", "EMPLOYEE"],
+    roles: ["MANAGER"],
   },
   {
     label: "Módulo Comércio",
