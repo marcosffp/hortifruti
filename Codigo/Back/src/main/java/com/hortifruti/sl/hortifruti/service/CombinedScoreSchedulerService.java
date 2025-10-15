@@ -38,12 +38,11 @@ public class CombinedScoreSchedulerService {
     private String overdueNotificationEmails;
 
     /**
-     * Verifica diariamente por CombinedScores vencidos e envia notificações
-     * Executa todos os dias às 07:00
+     * Verifica CombinedScores vencidos e envia notificações.
+     * Este método será chamado manualmente via endpoint.
      */
-    @Scheduled(cron = "0 0 7 * * ?")
     public void scheduledOverdueCheck() {
-        log.info("Verificação automática de CombinedScores vencidos iniciada");
+        log.info("Verificação de CombinedScores vencidos iniciada via endpoint");
         checkOverdueCombinedScores();
     }
 

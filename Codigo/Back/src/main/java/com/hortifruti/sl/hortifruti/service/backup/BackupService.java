@@ -3,7 +3,6 @@ package com.hortifruti.sl.hortifruti.service.backup;
 import com.hortifruti.sl.hortifruti.exception.BackupException;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -28,10 +27,23 @@ public class BackupService {
     }
   }
 
-  /** Executa o processo de backup semanal. */
+  /**
+   * Realiza o backup acionado pelo GitHub Actions.
+   *
+   * @return mensagem de sucesso ou erro
+   */
+  public String performSchedulerBackup() {
+    try {
+      performBackup();
+      return "Backup acionado pelo Scheduler concluído com sucesso";
+    } catch (BackupException e) {
+      throw new BackupException("Erro ao executar backup via Scheduler: " + e.getMessage(), e);
+    }
+  }
+
+  /** Executa o processo de backup. */
   private void performBackup() {
     try {
-
       // Obter o caminho da pasta de backup no Google Drive
       String folderId = backupPathService.getOrCreateBackupPath();
 
@@ -46,15 +58,6 @@ public class BackupService {
 
     } catch (Exception e) {
       throw new BackupException("Erro ao executar o processo de backup.", e);
-    }
-  }
-
-  @Scheduled(cron = "0 0 0 * * MON") // Executa toda segunda-feira à meia-noite
-  public void performWeeklyBackup() {
-    try {
-      performBackup();
-    } catch (BackupException e) {
-      throw new BackupException("Erro ao executar backup semanal: " + e.getMessage(), e);
     }
   }
 }

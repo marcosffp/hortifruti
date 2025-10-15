@@ -3,6 +3,7 @@ package com.hortifruti.sl.hortifruti.service.notification;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -16,6 +17,9 @@ import java.util.List;
 public class EmailService {
 
   private final JavaMailSender mailSender;
+  
+  @Value("${spring.mail.username}")
+  private String fromEmail;
 
   public boolean sendSimpleEmail(String to, String subject, String text) {
     try {
@@ -25,7 +29,7 @@ public class EmailService {
       helper.setTo(to);
       helper.setSubject(subject);
       helper.setText(text, true); // true para HTML
-      helper.setFrom("noreply@hortifrutisantaluzia.com");
+      helper.setFrom(fromEmail);
 
       // Adicionar logo como anexo inline
       try {
@@ -55,7 +59,7 @@ public class EmailService {
       helper.setTo(to);
       helper.setSubject(subject);
       helper.setText(text, true); // true para HTML
-      helper.setFrom("noreply@hortifrutisantaluzia.com");
+      helper.setFrom(fromEmail);
 
       // Adicionar logo como anexo inline
       try {
