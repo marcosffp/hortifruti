@@ -12,6 +12,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -37,12 +38,11 @@ public class CombinedScoreSchedulerService {
     private String overdueNotificationEmails;
 
     /**
-     * Verifica diariamente por CombinedScores vencidos e envia notificações
-     * Executa todos os dias às 07:00
+     * Verifica CombinedScores vencidos e envia notificações.
+     * Este método será chamado manualmente via endpoint.
      */
-    @Scheduled(cron = "0 0 7 * * ?")
     public void scheduledOverdueCheck() {
-        log.info("Verificação automática de CombinedScores vencidos iniciada");
+        log.info("Verificação de CombinedScores vencidos iniciada via endpoint");
         checkOverdueCombinedScores();
     }
 
@@ -65,7 +65,7 @@ public class CombinedScoreSchedulerService {
         try {
             // Usa o início do dia atual para comparação
             // Um boleto com dueDate = "2025-01-11" será considerado vencido a partir de "2025-01-12 00:00:00"
-            LocalDateTime startOfToday = LocalDateTime.now().toLocalDate().atStartOfDay();
+            LocalDate startOfToday = LocalDate.now();
             List<CombinedScore> overdueScores = combinedScoreRepository.findOverdueUnpaidScores(startOfToday);
             
             log.info("Encontrados {} CombinedScores vencidos", overdueScores.size());
@@ -103,7 +103,7 @@ public class CombinedScoreSchedulerService {
         
         try {
             // Usa o início do dia atual para comparação
-            LocalDateTime startOfToday = LocalDateTime.now().toLocalDate().atStartOfDay();
+            LocalDate startOfToday = LocalDate.now();
             log.info("Buscando boletos com dueDate < {} e confirmedAt IS NULL", startOfToday);
             
             List<CombinedScore> overdueScores = combinedScoreRepository.findOverdueUnpaidScores(startOfToday);

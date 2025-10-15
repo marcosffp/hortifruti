@@ -4,6 +4,7 @@ import com.hortifruti.sl.hortifruti.dto.notification.*;
 import com.hortifruti.sl.hortifruti.model.CombinedScore;
 import com.hortifruti.sl.hortifruti.model.enumeration.NotificationChannel;
 import com.hortifruti.sl.hortifruti.service.CombinedScoreSchedulerService;
+import com.hortifruti.sl.hortifruti.service.DatabaseStorageService;
 import com.hortifruti.sl.hortifruti.service.notification.NotificationService;
 import com.hortifruti.sl.hortifruti.service.notification.BulkNotificationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +37,7 @@ public class NotificationController {
 
   private final NotificationService notificationService;
   private final BulkNotificationService bulkNotificationService;
+  private final DatabaseStorageService databaseStorageService;
 
   @Autowired
   private CombinedScoreSchedulerService schedulerService;
@@ -110,6 +112,58 @@ public class NotificationController {
     }
   }
 
+
+    /**
+     * Teste manual do email de alerta de armazenamento do banco de dados
+     */
+    @PostMapping("/test/database-storage-alert")
+    @Operation(summary = "Testar email de alerta de armazenamento, excluir depois", 
+               description = "Envia um email de teste com dados reais do banco de dados atual")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Email de teste enviado com sucesso"),
+        @ApiResponse(responseCode = "500", description = "Erro ao enviar email de teste"),
+        @ApiResponse(responseCode = "403", description = "Acesso negado - apenas administradores")
+    })
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<Map<String, Object>> testDatabaseStorageAlert() {
+        try {
+            log.info("Solicitação de teste de email de alerta de armazenamento recebida");
+            
+            // Obter tamanho real atual do banco de dados
+            BigDecimal currentSizeMB = databaseStorageService.getDatabaseSizeInMB();
+            
+            // Enviar notificação com dados reais
+            databaseStorageService.sendTestStorageNotification(currentSizeMB);
+            
+            // Calcular percentual de uso para a resposta
+            BigDecimal maxSize = new BigDecimal("5120"); // 5GB
+            BigDecimal storagePercentage = currentSizeMB.multiply(new BigDecimal("100"))
+                    .divide(maxSize, 1, java.math.RoundingMode.HALF_UP);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Email de teste de alerta de armazenamento enviado com sucesso");
+            response.put("timestamp", LocalDateTime.now());
+            response.put("currentStoragePercentage", storagePercentage + "%");
+            response.put("currentSize", currentSizeMB + " MB");
+            response.put("maxSize", maxSize + " MB");
+            response.put("isOverThreshold", databaseStorageService.isDatabaseOverThreshold());
+            
+            log.info("Email de teste enviado - Tamanho atual: {} MB ({}%)", currentSizeMB, storagePercentage);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Erro ao enviar email de teste de alerta de armazenamento", e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Erro ao enviar email de teste: " + e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
 
     @PostMapping("/overdue/check")
     @Operation(summary = "Executar verificação manual de boletos vencidos", 
