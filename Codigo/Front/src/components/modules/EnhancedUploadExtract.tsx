@@ -2,9 +2,8 @@
 
 import { useState, useRef } from "react";
 import { useUpload } from "@/hooks/useUpload";
-import Button from "@/components/ui/Button";
 import Loading from "@/components/ui/Loading";
-import { ArrowUp, FileText, X, AlertCircle } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { showError, showSuccess } from "@/services/notificationService";
 
 export default function EnhancedUploadExtract() {
@@ -13,25 +12,24 @@ export default function EnhancedUploadExtract() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-const { formatFileSize, validateFiles, processFiles, error } = useUpload();
-const { validateFiles: validateStatementFiles, processFiles: processStatementFiles } = useUpload();
+  const { validateFiles, processFiles } = useUpload();
 
-const handleFileUpload = async (file: File) => {
-  setLoading(true);
+  const handleFileUpload = async (file: File) => {
+    setLoading(true);
 
-  try {
-    const validFiles = validateFiles([file]);
-    if (validFiles.length === 0) return;
+    try {
+      const validFiles = validateFiles([file]);
+      if (validFiles.length === 0) return;
 
-    await processFiles(validFiles, "statement");
+      await processFiles(validFiles, "statement");
 
-    showSuccess(`O arquivo "${file.name}" foi processado com sucesso!`);
-  } catch (err) {
-    showError(`Erro ao processar o arquivo "${file.name}".`);
-  } finally {
-    setLoading(false);
-  }
-};
+      showSuccess(`O arquivo "${file.name}" foi processado com sucesso!`);
+    } catch (err) {
+      showError(`Erro ao processar o arquivo "${file.name}".`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];

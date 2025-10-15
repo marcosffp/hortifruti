@@ -47,6 +47,7 @@ src/main/resources/cert/*.pfx
 *.crt
 *.key
 *.pfx
+cert/
 */resources/cert/*
 **/temp/*
 **/temp/google/*
