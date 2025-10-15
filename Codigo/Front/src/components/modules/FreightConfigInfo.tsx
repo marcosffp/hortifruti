@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Car, User, DollarSign, Edit } from 'lucide-react';
-import FreightConfigModal from './FreightConfigsModal';
+import FreightConfigModal from '../modals/FreightConfigsModal';
 import { FreightConfigDTO } from '@/types/freightType';
 import { freightService } from '@/services/freightService';
 
