@@ -14,6 +14,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -24,6 +25,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @AllArgsConstructor
 public class SecurityConfig {
   private final SecurityFilter securityFilter;
+  private final RateLimitingFilter rateLimitingFilter;
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -34,7 +36,12 @@ public class SecurityConfig {
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers(
-                        "/auth", "/swagger-ui/**", "/v3/api-docs/**", "/billet/**", "/backup/**")
+                        "/auth", 
+                        "/swagger-ui/**", 
+                        "/v3/api-docs/**", 
+                        "/billet/**", 
+                        "/backup/**", 
+                        "/api/scheduler/**") // Adicionamos a permissão para os endpoints do scheduler
                     .permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.GET, "/clients/**")
                     .permitAll()
@@ -46,6 +53,7 @@ public class SecurityConfig {
                     .hasRole("MANAGER")
                     .anyRequest()
                     .authenticated())
+        .addFilterBefore(rateLimitingFilter, BasicAuthenticationFilter.class)
         .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
   }
@@ -53,7 +61,7 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(List.of("http://localhost:8080", "http://localhost:3000"));
+    configuration.setAllowedOrigins(List.of("http://localhost:8080", "http://localhost:3000","https://plf-es-2025-2-ti4-1247100-hortifruti-sl.onrender.com"));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
     configuration.setAllowedHeaders(List.of("*"));
     configuration.setAllowCredentials(true);
