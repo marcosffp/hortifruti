@@ -15,6 +15,7 @@ import com.hortifruti.sl.hortifruti.repository.ProductRepository;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -220,7 +221,7 @@ public class UserInitializer implements CommandLineRunner {
     System.out.println("Cliente " + clientName + " criado com sucesso!");
   }
 
-  private void createCombinedScore(Long clientId, LocalDateTime dueDate, BigDecimal totalValue, boolean paid) {
+  private void createCombinedScore(Long clientId, LocalDate dueDate, BigDecimal totalValue, boolean paid) {
     CombinedScore combinedScore =
         CombinedScore.builder()
             .clientId(clientId)
@@ -236,7 +237,7 @@ public class UserInitializer implements CommandLineRunner {
 
   private void inicializarCombinedScores() {
     if (combinedScoreRepository.count() == 0) {
-      createCombinedScore(2L, LocalDateTime.now().plusDays(15), BigDecimal.valueOf(200.00), true);
+      createCombinedScore(2L, LocalDate.now().plusDays(15), BigDecimal.valueOf(200.00), true);
     }
   }
 }
