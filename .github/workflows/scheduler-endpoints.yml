@@ -1,26 +1,60 @@
-name: Execute Scheduler Endpoints Daily
+name: Execute Scheduler Endpoints
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Executa diariamente à meia-noite UTC
-  workflow_dispatch: # Permite execução manual do workflow
+    - cron: '0 0 */3 * *' # check-overdue a cada 3 dias
+    - cron: '0 0 * * *'   # check-database-storage diariamente
+    - cron: '0 0 */15 * *' # perform-backup a cada 15 dias
+  workflow_dispatch:
 
 jobs:
+  wake-up-application:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake up application once
+        run: |
+          echo "🔔 Acordando aplicação..."
+          # Tenta acordar com qualquer endpoint
+          curl -X POST "${{ secrets.API_BASE_URL }}/api/scheduler/check-database-storage" \
+          -H "Authorization: Bearer ${{ secrets.API_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          --max-time 10 \
+          --retry 0 || true
+          
+          echo "⏳ Aguardando 60 segundos para aplicação inicializar..."
+          sleep 60
+
   call-scheduler-endpoints:
     runs-on: ubuntu-latest
-
+    needs: wake-up-application
+    
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v3
-
       - name: Call "check-overdue" endpoint
+        if: github.event.schedule == '0 0 */3 * *' || github.event_name == 'workflow_dispatch'
         run: |
           curl -X POST "${{ secrets.API_BASE_URL }}/api/scheduler/check-overdue" \
           -H "Authorization: Bearer ${{ secrets.API_TOKEN }}" \
-          -H "Content-Type: application/json"
+          -H "Content-Type: application/json" \
+          --max-time 120 \
+          --retry 2
+          echo "✅ Check-overdue concluído!"
 
       - name: Call "check-database-storage" endpoint
+        if: github.event.schedule == '0 0 * * *' || github.event_name == 'workflow_dispatch'
         run: |
           curl -X POST "${{ secrets.API_BASE_URL }}/api/scheduler/check-database-storage" \
           -H "Authorization: Bearer ${{ secrets.API_TOKEN }}" \
-          -H "Content-Type: application/json"
+          -H "Content-Type: application/json" \
+          --max-time 120 \
+          --retry 2
+          echo "✅ Check-database-storage concluído!"
+
+      - name: Trigger Backup
+        if: github.event.schedule == '0 0 */15 * *' || github.event_name == 'workflow_dispatch'
+        run: |
+          curl -X POST "${{ secrets.API_BASE_URL }}/api/scheduler/perform-backup" \
+          -H "Authorization: Bearer ${{ secrets.API_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          --max-time 300 \
+          --retry 2
+          echo "✅ Backup concluído!"

@@ -3,6 +3,7 @@ package com.hortifruti.sl.hortifruti.controller;
 import com.hortifruti.sl.hortifruti.service.ApiTokenService;
 import com.hortifruti.sl.hortifruti.service.CombinedScoreSchedulerService;
 import com.hortifruti.sl.hortifruti.service.DatabaseStorageSchedulerService;
+import com.hortifruti.sl.hortifruti.service.backup.BackupService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ public class SchedulerController {
 
     private final CombinedScoreSchedulerService combinedScoreSchedulerService;
     private final DatabaseStorageSchedulerService databaseStorageSchedulerService;
+    private final BackupService backupService;
     private final ApiTokenService apiTokenService;
 
     /**
@@ -56,7 +58,26 @@ public class SchedulerController {
         databaseStorageSchedulerService.scheduledDatabaseCheck();
         return ResponseEntity.ok("Verificação de armazenamento do banco de dados iniciada com sucesso.");
     }
-    
+
+
+    /**
+     * Endpoint para executar o backup.
+     * Requer token de autenticação específico para APIs programáticas.
+     */
+    @PostMapping("/perform-backup")
+    public ResponseEntity<String> performBackup(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        // Validação do token
+        if (!isValidToken(authHeader)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body("Token de autenticação inválido ou não fornecido");
+        }
+
+        backupService.performSchedulerBackup();
+        return ResponseEntity.ok("Backup iniciado com sucesso.");
+    }
+
     /**
      * Método auxiliar para validar o token de autenticação.
      * Extrai o token do header "Authorization" (remove o prefixo "Bearer ").
