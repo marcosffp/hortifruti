@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import SkeletonTableLoading from "../ui/SkeletonTableLoading";
+import SkeletonTableLoading from "@/components/ui/SkeletonTableLoading";
 import { useGroupedProducts } from "@/hooks/useGroupedProducts";
 import { GroupedScoreResponse, GroupedScoreType } from "@/types/groupedType";
 import { BadgeCheck, FileBadge, Trash } from "lucide-react";
@@ -45,7 +45,7 @@ export default function GroupedProductsTable({ clientId, refreshKey }: GroupedPr
     };
 
     loadData();
-  }, [clientId, refreshKey, page, fetchGroupedProducts]);
+  }, [clientId, refreshKey, page]);
 
   const handlePaymentConfirmation = async (groupId: number) => {
     confirmPayment(groupId)

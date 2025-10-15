@@ -1,19 +1,20 @@
 "use client";
 
-import ClientProductsTable from "@/components/modules/ClientProductsTable";
-import GroupedProductsTable from "@/components/modules/GroupedProductsTable";
-import BilletsTable from "@/components/modules/BilletsTable";
-import NotesTable from "@/components/modules/NotesTable";
+import ClientProductsTable from "@/components/modules/tables/ClientProductsTable";
+import GroupedProductsTable from "@/components/modules/tables/GroupedProductsTable";
+import BilletsTable from "@/components/modules/tables/BilletsTable";
+import NotesTable from "@/components/modules/tables/NotesTable";
 import ClientSelector from "@/components/modules/ClientSelector";
 import ClientSummaryCards from "@/components/modules/ClientSummaryCards";
 import EnhancedUploadNotes from "@/components/modules/EnhancedUploadNotes";
 import { ClientSelectionInfo } from "@/types/clientType";
 import { useState } from "react";
+import PurchaseFilesTable from "@/components/modules/tables/PurchaseFilesTable";
 
 export default function PurchasesPage() {
     const [selectedClient, setSelectedClient] = useState<ClientSelectionInfo | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
-    const [tab, setTab] = useState<"products" | "grouped" | "notes" | "boletos">("products");
+    const [tab, setTab] = useState<"products" | "purchaseFiles" | "grouped" | "notes" | "boletos">("products");
 
     const handleUploadSuccess = () => {
         setRefreshKey((prev) => prev + 1);
@@ -51,6 +52,15 @@ export default function PurchasesPage() {
                         Produtos
                     </button>
                     <button
+                        className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${tab === "purchaseFiles"
+                                ? "bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-2px_4px_-2px_rgba(0,0,0,0.06)]"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            }`}
+                        onClick={() => setTab("purchaseFiles")}
+                    >
+                        Arquivos de Compras
+                    </button>
+                    <button
                         className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${tab === "grouped"
                                 ? "bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-2px_4px_-2px_rgba(0,0,0,0.06)]"
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -81,6 +91,12 @@ export default function PurchasesPage() {
                 <div className="bg-white rounded-b-lg shadow-sm p-4 overflow-x-auto">
                     {tab === "products" && (
                         <ClientProductsTable
+                            clientId={selectedClient?.clientId}
+                            refreshKey={refreshKey}
+                        />
+                    )}
+                    {tab === "purchaseFiles" && (
+                        <PurchaseFilesTable
                             clientId={selectedClient?.clientId}
                             refreshKey={refreshKey}
                         />
