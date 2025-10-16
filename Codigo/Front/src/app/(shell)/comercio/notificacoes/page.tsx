@@ -263,7 +263,7 @@ export default function NotificacoesPage() {
         showError(response.message);
         
         // Mostrar falhas específicas se houver
-        if (response.failedRecipients.length > 0) {
+        if (response.failedRecipients && response.failedRecipients.length > 0) {
           const failedList = response.failedRecipients.join(", ");
           showError(`Falha ao enviar para: ${failedList}`);
         }
@@ -656,7 +656,7 @@ export default function NotificacoesPage() {
                     {canaisEnvio.email && (
                       <p className="text-sm text-[var(--neutral-600)] flex items-center gap-2">
                         <Mail className="w-4 h-4" />
-                        contabilidade@hortifruti.com.br
+                        carlosdybala.fig@gmail.com
                       </p>
                     )}
                     {canaisEnvio.whatsapp && (

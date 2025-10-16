@@ -78,7 +78,7 @@ export const bulkNotificationService = {
 
       // NÃO definir Content-Type - o browser define automaticamente com boundary correto
       const response = await fetch(
-        `${API_BASE_URL}/api/notifications/send-bulk`,
+        `${API_BASE_URL}/api/notifications/accounting/generic-files`,
         {
           method: "POST",
           headers,
