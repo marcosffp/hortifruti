@@ -51,6 +51,8 @@ public class SecurityConfig {
                     .hasRole("MANAGER")
                     .requestMatchers("/api/recommendations/**")
                     .hasRole("MANAGER")
+                    .requestMatchers("/api/notifications/**")
+                    .hasRole("MANAGER")
                     .anyRequest()
                     .authenticated())
         .addFilterBefore(rateLimitingFilter, BasicAuthenticationFilter.class)
