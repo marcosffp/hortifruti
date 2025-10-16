@@ -1,19 +1,21 @@
-"use client";
+'use client';
 
-import ClientProductsTable from "@/components/modules/ClientProductsTable";
-import GroupedProductsTable from "@/components/modules/GroupedProductsTable";
-import BilletsTable from "@/components/modules/BilletsTable";
-import NotesTable from "@/components/modules/NotesTable";
+import ClientProductsTable from "@/components/modules/tables/ClientProductsTable";
+import GroupedProductsTable from "@/components/modules/tables/GroupedProductsTable";
+import BilletsTable from "@/components/modules/tables/BilletsTable";
+import NotesTable from "@/components/modules/tables/NotesTable";
 import ClientSelector from "@/components/modules/ClientSelector";
 import ClientSummaryCards from "@/components/modules/ClientSummaryCards";
 import EnhancedUploadNotes from "@/components/modules/EnhancedUploadNotes";
 import { ClientSelectionInfo } from "@/types/clientType";
 import { useState } from "react";
+import PurchaseFilesTable from "@/components/modules/tables/PurchaseFilesTable";
+import { Box, Boxes, FileBadge, FileBox, FileDigit } from "lucide-react";
 
 export default function PurchasesPage() {
     const [selectedClient, setSelectedClient] = useState<ClientSelectionInfo | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
-    const [tab, setTab] = useState<"products" | "grouped" | "notes" | "boletos">("products");
+    const [tab, setTab] = useState<"products" | "purchaseFiles" | "grouped" | "notes" | "boletos">("products");
 
     const handleUploadSuccess = () => {
         setRefreshKey((prev) => prev + 1);
@@ -40,47 +42,78 @@ export default function PurchasesPage() {
 
             {/* Tabs */}
             <div className="mt-8">
-                <div className="flex gap-2">
+                {/* Container das tabs responsivo */}
+                <div className="flex gap-2 flex-nowrap overflow-x-auto w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                     <button
-                        className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${tab === "products"
+                        className={`flex items-center px-4 py-2 rounded-t-lg font-medium transition-colors ${
+                            tab === "products"
                                 ? "bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-2px_4px_-2px_rgba(0,0,0,0.06)]"
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                            }`}
+                        }`}
                         onClick={() => setTab("products")}
                     >
-                        Produtos
+                        <div title="Produtos" className="mr-2"><Box/></div>
+                        <span className="hidden lg:inline">Produtos</span>
+                        <span className="hidden md:inline lg:hidden">Prod.</span>
                     </button>
                     <button
-                        className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${tab === "grouped"
+                        className={`flex items-center px-4 py-2 rounded-t-lg font-medium transition-colors ${
+                            tab === "purchaseFiles"
                                 ? "bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-2px_4px_-2px_rgba(0,0,0,0.06)]"
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                            }`}
+                        }`}
+                        onClick={() => setTab("purchaseFiles")}
+                    >
+                        <div title="Arquivos de Compras" className="mr-2"><FileBox/></div>
+                        <span className="hidden lg:inline">Arquivos de Compras</span>
+                        <span className="hidden md:inline lg:hidden">Arquivos</span>
+                    </button>
+                    <button
+                        className={`flex items-center px-4 py-2 rounded-t-lg font-medium transition-colors ${
+                            tab === "grouped"
+                                ? "bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-2px_4px_-2px_rgba(0,0,0,0.06)]"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
                         onClick={() => setTab("grouped")}
                     >
-                        Produtos Agrupados
+                        <div title="Produtos Agrupados" className="mr-2"><Boxes/></div>
+                        <span className="hidden lg:inline">Produtos Agrupados</span>
+                        <span className="hidden md:inline lg:hidden">Agrup.</span>
                     </button>
                     <button
-                        className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${tab === "notes"
+                        className={`flex items-center px-4 py-2 rounded-t-lg font-medium transition-colors ${
+                            tab === "notes"
                                 ? "bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-2px_4px_-2px_rgba(0,0,0,0.06)]"
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                            }`}
+                        }`}
                         onClick={() => setTab("notes")}
                     >
-                        Notas Fiscais
+                        <div title="Notas Fiscais" className="mr-2"><FileDigit/></div>
+                        <span className="hidden lg:inline">Notas Fiscais</span>
+                        <span className="hidden md:inline lg:hidden">Notas</span>
                     </button>
                     <button
-                        className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${tab === "boletos"
+                        className={`flex items-center px-4 py-2 rounded-t-lg font-medium transition-colors ${
+                            tab === "boletos"
                                 ? "bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-2px_4px_-2px_rgba(0,0,0,0.06)]"
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                            }`}
+                        }`}
                         onClick={() => setTab("boletos")}
                     >
-                        Boletos
+                        <div title="Boletos" className="mr-2"><FileBadge/></div>
+                        <span className="hidden lg:inline">Boletos</span>
+                        <span className="hidden md:inline lg:hidden">Bol.</span>
                     </button>
                 </div>
                 <div className="bg-white rounded-b-lg shadow-sm p-4 overflow-x-auto">
                     {tab === "products" && (
                         <ClientProductsTable
+                            clientId={selectedClient?.clientId}
+                            refreshKey={refreshKey}
+                        />
+                    )}
+                    {tab === "purchaseFiles" && (
+                        <PurchaseFilesTable
                             clientId={selectedClient?.clientId}
                             refreshKey={refreshKey}
                         />
