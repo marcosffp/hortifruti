@@ -51,7 +51,6 @@ public class NotificationController {
   @Operation(summary = "Enviar arquivos genéricos para contabilidade",
              description = "Upload de arquivos genéricos (opcional) e valores de débito, crédito e dinheiro (opcionais). Envia apenas via email.")
   @PostMapping(value = "/accounting/generic-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  @PreAuthorize("hasRole('MANAGER')")
   public ResponseEntity<NotificationResponse> sendGenericFilesToAccounting(
       @Parameter(description = "Arquivos a serem enviados para contabilidade (opcional)", 
                  content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
@@ -86,7 +85,6 @@ public class NotificationController {
   @Operation(summary = "Enviar documentos para cliente",
              description = "Envio de documentos para cliente específico via email e/ou WhatsApp")
   @PostMapping(value = "/client/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  @PreAuthorize("hasRole('MANAGER')")
   public ResponseEntity<NotificationResponse> sendDocumentsToClient(
       @Parameter(description = "Arquivos a serem enviados para o cliente (opcional)", 
                  content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
@@ -124,7 +122,6 @@ public class NotificationController {
         @ApiResponse(responseCode = "500", description = "Erro ao enviar email de teste"),
         @ApiResponse(responseCode = "403", description = "Acesso negado - apenas administradores")
     })
-    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<Map<String, Object>> testDatabaseStorageAlert() {
         try {
             log.info("Solicitação de teste de email de alerta de armazenamento recebida");
@@ -218,7 +215,6 @@ public class NotificationController {
     @PostMapping(value = "/send-bulk", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Enviar notificações em massa", 
                description = "Envia múltiplos arquivos para múltiplos clientes via e-mail e/ou WhatsApp")
-    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<BulkNotificationResponse> sendBulkNotifications(
             @RequestParam("files") List<MultipartFile> files,
             @RequestParam("clientIds") List<Long> clientIds,
