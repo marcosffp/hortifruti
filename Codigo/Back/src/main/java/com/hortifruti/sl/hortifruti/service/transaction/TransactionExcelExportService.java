@@ -139,6 +139,9 @@ public class TransactionExcelExportService {
     if (transaction.getHistory() != null && transaction.getHistory().contains("Marlucia")) {
       return "Pagamento de fornecedor";
     }
+    if (transaction.getHistory() != null && transaction.getHistory().contains("Alexandre")) {
+      return "Pagamento de fornecedor";
+    }
 
     return switch (transaction.getCategory()) {
       case VENDAS_CARTAO -> "Antecipação dos Recebíveis";

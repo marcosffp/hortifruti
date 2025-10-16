@@ -35,3 +35,25 @@ build/
 ## environment variables ##
 .env
 .env.local
+
+### OS generated files ###
+*.pfx
+
+# Ignorar arquivos na pasta cert
+src/main/resources/cert/*.pfx
+
+### Certificates ###
+*.pem
+*.crt
+*.key
+*.pfx
+cert/
+*/resources/cert/*
+**/temp/*
+**/temp/google/*
+
+# Ignorar arquivos nas pastas tokens e credentials
+tokens/
+credentials/
+google/
+

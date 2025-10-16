@@ -224,3 +224,28 @@ export function validarEmail(email: string): boolean {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return regex.test(email);
 }
+
+export function validarArquivos(selectedFiles: File[]): File[] | string {
+  let error = '';
+  const validFiles = selectedFiles.filter((file) => {
+    // Verificar o tamanho do arquivo (10MB = 10 * 1024 * 1024 bytes)
+    if (file.size > 10 * 1024 * 1024) {
+      error += `O arquivo ${file.name} excede o limite de 10MB.`;
+      return false;
+    }
+
+    // Verificar se é um PDF
+    if (file.type !== "application/pdf") {
+      error += `O arquivo ${file.name} não é um PDF.`;
+      return false;
+    }
+
+    return true;
+  });
+
+  if (error) {
+    return error;
+  }
+
+  return validFiles;
+};

@@ -1,27 +1,63 @@
 package com.hortifruti.sl.hortifruti.config;
 
+import com.hortifruti.sl.hortifruti.model.Client;
+import com.hortifruti.sl.hortifruti.model.ClimateProduct;
+import com.hortifruti.sl.hortifruti.model.CombinedScore;
 import com.hortifruti.sl.hortifruti.model.FreightConfig;
 import com.hortifruti.sl.hortifruti.model.User;
+import com.hortifruti.sl.hortifruti.model.enumeration.Month;
 import com.hortifruti.sl.hortifruti.model.enumeration.Role;
+import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
+import com.hortifruti.sl.hortifruti.repository.ClientRepository;
+import com.hortifruti.sl.hortifruti.repository.CombinedScoreRepository;
 import com.hortifruti.sl.hortifruti.repository.FreightConfigRepository;
+import com.hortifruti.sl.hortifruti.repository.ProductRepository;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
+@Order(1)
 public class UserInitializer implements CommandLineRunner {
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
+  private final ProductRepository productRepository;
   private final FreightConfigRepository freightConfigRepository;
+  private final ClientRepository clientRepository;
+  private final CombinedScoreRepository combinedScoreRepository; 
+  private final Base64FileDecoder base64FileDecoder; // Adicionado para salvar o cliente
 
   @Override
   public void run(String... args) throws Exception {
+    decodeBase64Files(); // Decodifica os arquivos Base64 primeiro
     initializeUsers();
     initializeFreightConfig();
+    initializeClients(); // Inicializa os clientes
+    inicializarCombinedScores(); // Inicializa os CombinedScores
+  }
+
+  // Decodifica os arquivos Base64 necessários
+  private void decodeBase64Files() {
+    try {
+        log.info("Decodificando arquivos Base64...");
+        base64FileDecoder.decodeGoogleDriveCredentials();
+        base64FileDecoder.decodePfx();
+        log.info("Arquivos Base64 decodificados com sucesso!");
+    } catch (Exception e) {
+        log.error("Erro ao decodificar arquivos Base64: ", e);
+    }
   }
 
   // Inicializa os usuários padrão
@@ -30,6 +66,85 @@ public class UserInitializer implements CommandLineRunner {
       createUser("root", "root", Role.MANAGER, "Desenvolvedor");
       createUser("admin", "admin", Role.EMPLOYEE, "Administrador");
     }
+
+    if (productRepository.count() == 0) {
+      log.info("Populando dados de exemplo de produtos...");
+      createSampleProducts();
+      log.info("Dados de exemplo criados com sucesso!");
+    } else {
+      log.info("Produtos já existem no banco de dados. Pulando inicialização de dados.");
+    }
+  }
+
+  private void createSampleProducts() {
+    // Produtos QUENTES (>=25°C)
+    productRepository.save(
+        new ClimateProduct(
+            "Melancia",
+            TemperatureCategory.QUENTE,
+            List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO, Month.MARCO), // Verão
+            List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO) // Inverno
+            ));
+
+    productRepository.save(
+        new ClimateProduct(
+            "Abacaxi",
+            TemperatureCategory.QUENTE,
+            List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO),
+            List.of(Month.MAIO, Month.JUNHO, Month.JULHO)));
+
+    productRepository.save(
+        new ClimateProduct(
+            "Água de Coco",
+            TemperatureCategory.QUENTE,
+            List.of(Month.NOVEMBRO, Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO, Month.MARCO),
+            List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO)));
+
+    // Produtos AMENOS (15-24°C)
+    productRepository.save(
+        new ClimateProduct(
+            "Maçã",
+            TemperatureCategory.AMENO,
+            List.of(Month.MARCO, Month.ABRIL, Month.MAIO, Month.SETEMBRO, Month.OUTUBRO),
+            List.of(Month.DEZEMBRO, Month.JANEIRO)));
+
+    productRepository.save(
+        new ClimateProduct(
+            "Banana",
+            TemperatureCategory.AMENO,
+            List.of(
+                Month.MARCO,
+                Month.ABRIL,
+                Month.MAIO,
+                Month.SETEMBRO,
+                Month.OUTUBRO,
+                Month.NOVEMBRO),
+            List.of(Month.JULHO, Month.AGOSTO)));
+
+    // Produtos FRIOS (6-14°C)
+    productRepository.save(
+        new ClimateProduct(
+            "Batata Doce",
+            TemperatureCategory.FRIO,
+            List.of(Month.MAIO, Month.JUNHO, Month.JULHO, Month.AGOSTO, Month.SETEMBRO),
+            List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO)));
+
+    productRepository.save(
+        new ClimateProduct(
+            "Mandioca",
+            TemperatureCategory.FRIO,
+            List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO, Month.SETEMBRO),
+            List.of(Month.JANEIRO, Month.FEVEREIRO, Month.MARCO)));
+
+    // Produtos CONGELANDO (<=5°C)
+    productRepository.save(
+        new ClimateProduct(
+            "Gengibre",
+            TemperatureCategory.CONGELANDO,
+            List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO),
+            List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO)));
+
+    log.info("Criados {} produtos de exemplo", productRepository.count());
   }
 
   // Cria um usuário com os dados fornecidos
@@ -70,5 +185,59 @@ public class UserInitializer implements CommandLineRunner {
         .marginPercentage(20.0)
         .fixedFee(3.00)
         .build();
+  }
+
+  // Inicializa os clientes padrão
+  private void initializeClients() {
+    if (clientRepository.count() == 0) {
+      createClient(
+          "Llinea Irani",
+          "llinea.irani@example.com",
+          "123456789",
+          "Rua Exemplo, 123",
+          "12345678900",
+          false);
+    }
+  }
+
+  // Cria um cliente com os dados fornecidos
+  private void createClient(
+      String clientName,
+      String email,
+      String phoneNumber,
+      String address,
+      String document,
+      boolean variablePrice) {
+    Client client =
+        Client.builder()
+            .clientName(clientName)
+            .email(email)
+            .phoneNumber(phoneNumber)
+            .address(address)
+            .document(document)
+            .variablePrice(variablePrice)
+            .build();
+    clientRepository.save(client);
+    System.out.println("Cliente " + clientName + " criado com sucesso!");
+  }
+
+  private void createCombinedScore(Long clientId, LocalDate dueDate, BigDecimal totalValue, boolean paid) {
+    CombinedScore combinedScore =
+        CombinedScore.builder()
+            .clientId(clientId)
+
+            .dueDate(dueDate)
+            .totalValue(totalValue)
+            .paid(paid)
+            .build();
+    
+    combinedScoreRepository.save(combinedScore);
+    System.out.println("CombinedScore criado para o cliente ID: " + clientId);
+  }
+
+  private void inicializarCombinedScores() {
+    if (combinedScoreRepository.count() == 0) {
+      createCombinedScore(2L, LocalDate.now().plusDays(15), BigDecimal.valueOf(200.00), true);
+    }
   }
 }

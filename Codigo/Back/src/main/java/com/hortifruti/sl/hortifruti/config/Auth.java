@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.config;
 
-import com.hortifruti.sl.hortifruti.dto.AuthRequest;
+import com.hortifruti.sl.hortifruti.dto.user.AuthRequest;
 import com.hortifruti.sl.hortifruti.exception.AuthException;
 import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;

@@ -36,8 +36,7 @@ export default function NovoClientePage() {
     bairro: "",
     cidade: "",
     estado: "",
-    observacoes: "",
-    status: "ativo",
+    variablePrice: "false", // Novo campo para preço variável (como string para uso no select)
   });
   
   // Estado para erros de validação
@@ -215,12 +214,17 @@ export default function NovoClientePage() {
       setIsSubmitting(true);
 
       // Mapear os dados do formulário para o formato esperado pelo backend
+      // Ordem do endereço conforme backend: bairro, cidade, cep, uf, rua
+      // Backend extrai: [0]=bairro, [1]=cidade, [2]=cep, [3]=uf, [4]=rua
+      const rua = `${formData.endereco}, ${formData.numero}${formData.complemento ? ", " + formData.complemento : ""}`;
+      const addressFormatted = `${formData.bairro},${formData.cidade},${formData.cep},${formData.estado},${rua}`;
+      
       const clientData = {
         clientName: formData.nome,
         email: formData.email,
         phoneNumber: formData.telefone,
-        address: `${formData.endereco}, ${formData.numero}${formData.complemento ? ", " + formData.complemento : ""}, ${formData.bairro}, ${formData.cidade} - ${formData.estado}${formData.cep ? ", CEP: " + formData.cep : ""}`,
-        variablePrice: false, // Valor padrão
+        address: addressFormatted,
+        variablePrice: formData.variablePrice === "true", // Convertendo string para booleano
         document: formData.cpfCnpj, // Nome do campo conforme esperado pelo backend
       };
 
@@ -557,37 +561,25 @@ export default function NovoClientePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label
-                  htmlFor="status"
+                  htmlFor="variablePrice"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Status
+                  Tipo de Preço *
                 </label>
                 <select
-                  id="status"
-                  name="status"
-                  value={formData.status}
+                  id="variablePrice"
+                  name="variablePrice"
+                  value={formData.variablePrice}
                   onChange={handleChange}
+                  required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                 >
-                  <option value="ativo">Ativo</option>
-                  <option value="inativo">Inativo</option>
+                  <option value="false">Preço Fixo</option>
+                  <option value="true">Preço Variável</option>
                 </select>
-              </div>
-              <div className="md:col-span-2">
-                <label
-                  htmlFor="observacoes"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Observações
-                </label>
-                <textarea
-                  id="observacoes"
-                  name="observacoes"
-                  rows={4}
-                  value={formData.observacoes}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Selecione "Preço Variável" se o cliente tiver valores negociados caso a caso.
+                </p>
               </div>
             </div>
           </div>
