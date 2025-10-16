@@ -82,18 +82,6 @@ export default function PurchasesPage() {
                     </button>
                     <button
                         className={`flex items-center px-4 py-2 rounded-t-lg font-medium transition-colors ${
-                            tab === "notes"
-                                ? "bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-2px_4px_-2px_rgba(0,0,0,0.06)]"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
-                        onClick={() => setTab("notes")}
-                    >
-                        <div title="Notas Fiscais" className="mr-2"><FileDigit/></div>
-                        <span className="hidden lg:inline">Notas Fiscais</span>
-                        <span className="hidden md:inline lg:hidden">Notas</span>
-                    </button>
-                    <button
-                        className={`flex items-center px-4 py-2 rounded-t-lg font-medium transition-colors ${
                             tab === "boletos"
                                 ? "bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-2px_4px_-2px_rgba(0,0,0,0.06)]"
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -103,6 +91,18 @@ export default function PurchasesPage() {
                         <div title="Boletos" className="mr-2"><FileBadge/></div>
                         <span className="hidden lg:inline">Boletos</span>
                         <span className="hidden md:inline lg:hidden">Bol.</span>
+                    </button>
+                    <button
+                        className={`flex items-center px-4 py-2 rounded-t-lg font-medium transition-colors ${
+                            tab === "notes"
+                                ? "bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-2px_4px_-2px_rgba(0,0,0,0.06)]"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                        onClick={() => setTab("notes")}
+                    >
+                        <div title="Notas Fiscais" className="mr-2"><FileDigit/></div>
+                        <span className="hidden lg:inline">Notas Fiscais</span>
+                        <span className="hidden md:inline lg:hidden">Notas</span>
                     </button>
                 </div>
                 <div className="bg-white rounded-b-lg shadow-sm p-4 overflow-x-auto">
