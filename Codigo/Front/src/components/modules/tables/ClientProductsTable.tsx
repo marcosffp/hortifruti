@@ -1,7 +1,7 @@
-import { getAuthHeaders } from "@/utils/httpUtils";
 import { useEffect, useState, useRef } from "react";
-import SkeletonTableLoading from "../ui/SkeletonTableLoading";
+import SkeletonTableLoading from "@/components/ui/SkeletonTableLoading";
 import { groupedProductsService } from "@/services/groupedProductsService";
+import { purchaseService } from "@/services/purchaseService";
 import { GroupedProductRequest } from "@/types/groupedType";
 import { showError, showSuccess } from "@/services/notificationService";
 
@@ -84,19 +84,8 @@ export default function ClientProductsTable({ clientId, refreshKey }: ClientProd
         setIsLoading(true);
         setError(null);
         try {
-          const sDate = startDate ? `${startDate}T00:00:00` : "";
-          const eDate = endDate ? `${endDate}T23:59:59` : "";
-
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/purchases/client/products?clientId=${clientId}&startDate=${encodeURIComponent(
-              sDate
-            )}&endDate=${encodeURIComponent(eDate)}`, {
-              headers: getAuthHeaders()
-            }
-          );
-          if (!response.ok) throw new Error("Erro ao buscar produtos do cliente");
-          const data = await response.json();
-          setProducts(data.products || []);
+          const products = await purchaseService.fetchClientProducts(clientId, startDate, endDate);
+          setProducts(products);
         } catch (err: any) {
           setError(err.message || "Erro ao buscar produtos do cliente");
         } finally {
@@ -105,7 +94,7 @@ export default function ClientProductsTable({ clientId, refreshKey }: ClientProd
       };
 
       fetchProducts();
-    }, 600); // 600ms de espera
+    }, 600);
 
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);

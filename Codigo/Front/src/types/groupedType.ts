@@ -1,3 +1,5 @@
+import { Pageable, Sort } from "./PagesType";
+
 export interface GroupedScoreType {
   id: number;
   clientId: number;
@@ -7,34 +9,15 @@ export interface GroupedScoreType {
   confirmedAt: string;
 }
 
-export interface GroupedScoreResponsePageable {
-  pageNumber: number;
-  pageSize: number;
-  sort: {
-    sorted: boolean;
-    unsorted: boolean;
-    empty: boolean;
-  };
-  offset: number;
-  paged: boolean;
-  unpaged: boolean;
-}
-
-export interface GroupedScoreResponseSort {
-  sorted: boolean;
-  unsorted: boolean;
-  empty: boolean;
-}
-
 export interface GroupedScoreResponse {
   content: GroupedScoreType[];
-  pageable: GroupedScoreResponsePageable;
+  pageable: Pageable;
   totalElements: number;
   totalPages: number;
   last: boolean;
   size: number;
   number: number;
-  sort: GroupedScoreResponseSort;
+  sort: Sort;
   first: boolean;
   numberOfElements: number;
   empty: boolean;
