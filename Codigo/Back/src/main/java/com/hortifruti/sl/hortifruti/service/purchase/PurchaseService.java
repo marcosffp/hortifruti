@@ -97,7 +97,7 @@ public class PurchaseService {
         .orElseThrow(() -> new ClientException("Cliente não encontrado com o ID: " + clientId));
 
     return purchaseRepository
-        .findByClientIdOrderByPurchaseDateDesc(clientId, pageable)
+        .findByClientIdOrderByCreatedAtDesc(clientId, pageable)
         .map(
             purchase ->
                 new PurchaseResponse(

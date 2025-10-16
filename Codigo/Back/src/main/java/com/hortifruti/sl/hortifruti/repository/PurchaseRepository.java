@@ -23,4 +23,7 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
 
   Page<Purchase> findByClientIdOrderByPurchaseDateDesc(
       @Param("clientId") Long clientId, Pageable pageable);
+
+  Page<Purchase> findByClientIdOrderByCreatedAtDesc(
+      @Param("clientId") Long clientId, Pageable pageable);
 }
