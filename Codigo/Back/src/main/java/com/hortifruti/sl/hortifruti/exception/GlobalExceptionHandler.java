@@ -5,6 +5,7 @@ import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -101,6 +102,16 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
+  @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+  public ResponseEntity<Map<String, String>> handleHttpMediaTypeNotSupportedException(
+      HttpMediaTypeNotSupportedException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Tipo de conteúdo não suportado");
+    response.put("message", "O tipo de conteúdo '" + ex.getContentType() + 
+        "' não é suportado para este endpoint. Use 'multipart/form-data' para upload de arquivos.");
+    return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(response);
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
     Map<String, String> response = new HashMap<>();
@@ -136,5 +147,55 @@ public class GlobalExceptionHandler {
     response.put("error", "Erro de Distância");
     response.put("message", ex.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
+
+  @ExceptionHandler(BilletException.class)
+  public ResponseEntity<Map<String, String>> handleBilletException(BilletException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro na Integração com Sicoob");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
+
+  @ExceptionHandler(PurchaseException.class)
+  public ResponseEntity<Map<String, String>> handlePurchaseException(PurchaseException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro no Processamento da Compra");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
+
+  @ExceptionHandler(ProductException.class)
+  public ResponseEntity<Map<String, String>> handleProductException(ProductException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro de Produto");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
+
+  @ExceptionHandler(CombinedScoreException.class)
+  public ResponseEntity<Map<String, String>> handleCombinedScoreException(
+      CombinedScoreException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro no Agrupamento de Pontuação Combinada");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
+
+  @ExceptionHandler(RecommendationException.class)
+  public ResponseEntity<Map<String, String>> handleRecommendationException(
+      RecommendationException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro de Recomendação");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
+
+  @ExceptionHandler(BackupException.class)
+  public ResponseEntity<Map<String, String>> handleBackupException(BackupException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro de Backup");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
   }
 }

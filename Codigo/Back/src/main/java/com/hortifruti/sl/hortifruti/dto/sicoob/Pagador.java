@@ -1,0 +1,10 @@
+package com.hortifruti.sl.hortifruti.dto.sicoob;
+
+public record Pagador(
+    String numeroCpfCnpj,
+    String nome,
+    String endereco,
+    String bairro,
+    String cidade,
+    String cep,
+    String uf) {}

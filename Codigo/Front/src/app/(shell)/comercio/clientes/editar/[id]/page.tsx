@@ -77,6 +77,7 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
         const clientData = await clientService.getClientById(clientId);
 
         // Extrair informações do endereço (vem como um campo único do backend)
+        // Formato esperado: Rua, Número, [Complemento,] Bairro, Cidade - UF, CEP: XXXXX-XXX
         let enderecoParts = {
           endereco: "",
           numero: "",
@@ -87,42 +88,45 @@ export default function EditarClientePage({ params }: EditarClientePageProps) {
           cep: "",
         };
 
-        // Tentar extrair partes do endereço - lógica simplificada
         try {
           if (clientData.address) {
             const fullAddress = clientData.address;
 
-            // Tentar extrair CEP
-            const cepMatch = fullAddress.match(/CEP: ([0-9\-]+)/);
+            //[Rua, Número, (Complemento,) Bairro, Cidade - UF, CEP: XXXXX-XXX]
+            const addressSplit = fullAddress.split(",");
+
+            // Extrai CEP
+            const cepMatch = fullAddress.match(/CEP:\s*([0-9\-]+)/);
             if (cepMatch) enderecoParts.cep = cepMatch[1];
 
-            // Tentar extrair cidade e estado
-            const cidadeEstadoMatch = fullAddress.match(/([^,]+) - ([A-Z]{2})/);
-            if (cidadeEstadoMatch) {
-              enderecoParts.cidade = cidadeEstadoMatch[1].trim();
-              enderecoParts.estado = cidadeEstadoMatch[2];
+            // Extrai Cidade e Estado
+            const cityStateMatch = fullAddress.match(/,\s*([^,]+)\s*-\s*([A-Z]{2})\s*(,|$)/);
+            if (cityStateMatch) {
+              enderecoParts.cidade = cityStateMatch[1].trim();
+              enderecoParts.estado = cityStateMatch[2].trim();
             }
 
-            // Assumir que o primeiro segmento é o endereço e número
-            const parts = fullAddress.split(",");
-            if (parts.length > 0) {
-              const endNumMatch = parts[0].match(/(.*) ([0-9]+)/);
-              if (endNumMatch) {
-                enderecoParts.endereco = endNumMatch[1].trim();
-                enderecoParts.numero = endNumMatch[2];
-              } else {
-                enderecoParts.endereco = parts[0].trim();
+            const bairroPart = addressSplit[addressSplit.length - 3];
+            if (bairroPart) {
+              enderecoParts.bairro = bairroPart.trim();
+            }
+
+            const numeroPart = addressSplit[1];
+            if (numeroPart) {
+              enderecoParts.numero = numeroPart.trim();
+            }
+
+            const ruaPart = addressSplit[0];
+            if (ruaPart) {
+              enderecoParts.endereco = ruaPart.trim();
+            }
+
+            // Verifica se há complemento
+            if (addressSplit.length === 6) {
+              const complementoPart = addressSplit[2];
+              if (complementoPart) {
+                enderecoParts.complemento = complementoPart.trim();
               }
-            }
-
-            // Se houver mais de 1 parte, pode ser complemento
-            if (parts.length > 1) {
-              enderecoParts.complemento = parts[1].trim();
-            }
-
-            // Se houver mais de 2 partes, pode ser bairro
-            if (parts.length > 2) {
-              enderecoParts.bairro = parts[2].trim();
             }
           }
         } catch (e) {

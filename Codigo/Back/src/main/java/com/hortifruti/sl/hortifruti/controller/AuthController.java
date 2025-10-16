@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.controller;
 
 import com.hortifruti.sl.hortifruti.config.Auth;
-import com.hortifruti.sl.hortifruti.dto.AuthRequest;
+import com.hortifruti.sl.hortifruti.dto.user.AuthRequest;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;

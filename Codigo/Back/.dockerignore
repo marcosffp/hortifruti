@@ -1,0 +1,38 @@
+# Ignorar arquivos e diretórios desnecessários para o build
+target/
+.mvn/
+.idea/
+*.iml
+*.ipr
+*.iws
+*.log
+*.tmp
+*.bak
+*.swp
+
+# Ignorar arquivos de configuração de IDEs
+.vscode/
+*.class
+*.project
+*.classpath
+*.factorypath
+*.settings/
+
+# Ignorar arquivos sensíveis
+.env
+tokens/
+credentials/
+src/main/resources/cert/
+*.pfx
+*.pem
+*.crt
+*.key
+
+# Ignorar arquivos de build e cache
+build/
+dist/
+out/
+node_modules/
+
+# Ignorar o diretório temp
+temp/
