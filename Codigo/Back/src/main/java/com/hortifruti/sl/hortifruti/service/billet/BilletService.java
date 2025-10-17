@@ -8,12 +8,15 @@ import com.hortifruti.sl.hortifruti.dto.billet.BilletRequestSimplified;
 import com.hortifruti.sl.hortifruti.dto.billet.BilletResponse;
 import com.hortifruti.sl.hortifruti.dto.billet.Pagador;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
+import com.hortifruti.sl.hortifruti.exception.CombinedScoreException;
+import com.hortifruti.sl.hortifruti.model.enumeration.Status;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +26,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 
 @Service
@@ -270,30 +274,45 @@ public class BilletService {
    * @return Resposta HTTP contendo o PDF do boleto gerado
    * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
-  public ResponseEntity<byte[]> generateBilletForCombinedScore(Long combinedScoreId, String number)
-      throws IOException {
-    CombinedScore combinedScore = getCombinedScoreById(combinedScoreId);
-    Client client = getClientById(combinedScore.getClientId());
-    Pagador pagador = billetFactory.createPagadorFromClient(client);
-    BilletRequestSimplified billetRequest =
-        billetFactory.createBilletRequest(combinedScore, combinedScoreId, pagador, number);
-    return issueBillet(billetRequest);
-  }
+@Transactional
+public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number) throws IOException {
+    // Busca o agrupamento pelo ID
+    CombinedScore combinedScore =
+        combinedScoreRepository
+            .findById(combinedScoreId)
+            .orElseThrow(
+                () ->
+                    new CombinedScoreException(
+                        "Agrupamento com o ID " + combinedScoreId + " não encontrado."));
 
-  /**
-   * Busca o CombinedScore pelo ID.
-   *
-   * @param combinedScoreId ID do CombinedScore
-   * @return CombinedScore encontrado
-   */
-  private CombinedScore getCombinedScoreById(Long combinedScoreId) {
-    return combinedScoreRepository
-        .findById(combinedScoreId)
-        .orElseThrow(
-            () ->
-                new BilletException(
-                    "Agrupamento com o ID " + combinedScoreId + " não encontrado."));
-  }
+    // Verifica se o boleto já foi gerado
+    if (combinedScore.isHasBillet()) {
+        throw new CombinedScoreException("O boleto para este agrupamento já foi gerado.");
+    }
+
+    try {
+        // Busca o cliente associado ao agrupamento
+        Client client = getClientById(combinedScore.getClientId());
+
+        // Cria o objeto Pagador e a requisição simplificada do boleto
+        Pagador pagador = billetFactory.createPagadorFromClient(client);
+        BilletRequestSimplified billetRequest =
+            billetFactory.createBilletRequest(combinedScore, combinedScoreId, pagador, number);
+
+        // Emite o boleto através da API
+        ResponseEntity<byte[]> billetResponse = issueBillet(billetRequest);
+
+        // Atualiza o status do agrupamento para indicar que o boleto foi gerado
+        combinedScore.setHasBillet(true);
+        combinedScore.setNumber(number);
+        combinedScoreRepository.save(combinedScore);
+
+        return billetResponse;
+    } catch (Exception e) {
+        throw new CombinedScoreException("Erro ao gerar o boleto: " + e.getMessage(), e);
+    }
+}
+
 
   /**
    * Busca o cliente pelo ID.
@@ -306,4 +325,49 @@ public class BilletService {
         .findById(clientId)
         .orElseThrow(() -> new BilletException("Cliente com ID " + clientId + " não encontrado."));
   }
+
+    @Transactional
+  public List<CombinedScore> syncAndFindOverdueUnpaidScores(LocalDate currentDate) {
+    // Busca todos os CombinedScore vencidos e não confirmados
+    List<CombinedScore> overdueScores =
+        combinedScoreRepository.findOverdueUnpaidScores(currentDate);
+
+    // Lista para armazenar os CombinedScore que permanecem pendentes
+    List<CombinedScore> remainingPendingScores = new ArrayList<>(overdueScores);
+
+    for (CombinedScore combinedScore : overdueScores) {
+      // Verifica se o CombinedScore possui um boleto associado
+      if (combinedScore.isHasBillet() && combinedScore.getStatus() == Status.PENDENTE) {
+        try {
+          // Busca a lista de boletos atualizada do BilletService
+          List<BilletResponse> updatedBillets = listBilletByPayer(combinedScore.getClientId());
+
+          // Verifica se o boleto do CombinedScore está presente na lista retornada
+          boolean billetExists =
+              updatedBillets.stream()
+                  .anyMatch(billet -> billet.seuNumero().equals(combinedScore.getNumber()));
+
+          // Se o boleto não estiver presente, considera como pago
+          if (!billetExists) {
+            combinedScore.setStatus(Status.PAGO);
+            combinedScoreRepository.save(combinedScore);
+
+            // Remove o CombinedScore da lista de pendentes
+            remainingPendingScores.remove(combinedScore);
+          }
+        } catch (Exception e) {
+          throw new CombinedScoreException(
+              "Erro ao sincronizar o status do boleto para o CombinedScore ID "
+                  + combinedScore.getId()
+                  + ": "
+                  + e.getMessage(),
+              e);
+        }
+      }
+    }
+
+    // Retorna apenas os CombinedScore que permanecem pendentes e vencidos
+    return remainingPendingScores;
+  }
+
 }

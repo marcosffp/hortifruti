@@ -1,6 +1,14 @@
 package com.hortifruti.sl.hortifruti.service.purchase;
 
-import com.hortifruti.sl.hortifruti.dto.billet.BilletResponse;
+import java.math.BigDecimal;
+import java.util.Comparator;
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductResponse;
@@ -17,18 +25,8 @@ import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.ProductGrouperRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
-import com.hortifruti.sl.hortifruti.service.billet.BilletService;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+
 import lombok.AllArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
@@ -40,7 +38,6 @@ public class CombinedScoreService {
   private final PurchaseRepository purchaseRepository;
   private final ProductGrouperService productGrouper;
   private final ProductGrouperRepository productGrouperRepository;
-  private final BilletService billetService;
 
   public void cancelGrouping(Long id) {
     if (!combinedScoreRepository.existsById(id)) {
@@ -187,38 +184,6 @@ public class CombinedScoreService {
     combinedScoreRepository.save(combinedScore);
   }
 
-  @Transactional
-  public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number) {
-    // Busca o agrupamento pelo ID
-    CombinedScore combinedScore =
-        combinedScoreRepository
-            .findById(combinedScoreId)
-            .orElseThrow(
-                () ->
-                    new CombinedScoreException(
-                        "Agrupamento com o ID " + combinedScoreId + " não encontrado."));
-
-    // Verifica se o boleto já foi gerado
-    if (combinedScore.isHasBillet()) {
-      throw new CombinedScoreException("O boleto para este agrupamento já foi gerado.");
-    }
-
-    try {
-      // Chama o BilletService para gerar o boleto
-      ResponseEntity<byte[]> billetResponse =
-          billetService.generateBilletForCombinedScore(combinedScoreId, number);
-
-      // Atualiza o status do agrupamento para indicar que o boleto foi gerado
-      combinedScore.setHasBillet(true);
-      combinedScore.setNumber(number);
-      combinedScoreRepository.save(combinedScore);
-
-      return billetResponse;
-    } catch (Exception e) {
-      throw new CombinedScoreException("Erro ao gerar o boleto: " + e.getMessage(), e);
-    }
-  }
-
   public List<GroupedProductResponse> getGroupedProductsByCombinedScoreId(Long combinedScoreId) {
     CombinedScore combinedScore =
         combinedScoreRepository
@@ -278,50 +243,5 @@ public class CombinedScoreService {
     }
 
     combinedScoreRepository.save(combinedScore);
-  }
-
-  @Transactional
-  public List<CombinedScore> syncAndFindOverdueUnpaidScores(LocalDate currentDate) {
-    // Busca todos os CombinedScore vencidos e não confirmados
-    List<CombinedScore> overdueScores =
-        combinedScoreRepository.findOverdueUnpaidScores(currentDate);
-
-    // Lista para armazenar os CombinedScore que permanecem pendentes
-    List<CombinedScore> remainingPendingScores = new ArrayList<>(overdueScores);
-
-    for (CombinedScore combinedScore : overdueScores) {
-      // Verifica se o CombinedScore possui um boleto associado
-      if (combinedScore.isHasBillet() && combinedScore.getStatus() == Status.PENDENTE) {
-        try {
-          // Busca a lista de boletos atualizada do BilletService
-          List<BilletResponse> updatedBillets =
-              billetService.listBilletByPayer(combinedScore.getClientId());
-
-          // Verifica se o boleto do CombinedScore está presente na lista retornada
-          boolean billetExists =
-              updatedBillets.stream()
-                  .anyMatch(billet -> billet.seuNumero().equals(combinedScore.getNumber()));
-
-          // Se o boleto não estiver presente, considera como pago
-          if (!billetExists) {
-            combinedScore.setStatus(Status.PAGO);
-            combinedScoreRepository.save(combinedScore);
-
-            // Remove o CombinedScore da lista de pendentes
-            remainingPendingScores.remove(combinedScore);
-          }
-        } catch (Exception e) {
-          throw new CombinedScoreException(
-              "Erro ao sincronizar o status do boleto para o CombinedScore ID "
-                  + combinedScore.getId()
-                  + ": "
-                  + e.getMessage(),
-              e);
-        }
-      }
-    }
-
-    // Retorna apenas os CombinedScore que permanecem pendentes e vencidos
-    return remainingPendingScores;
   }
 }

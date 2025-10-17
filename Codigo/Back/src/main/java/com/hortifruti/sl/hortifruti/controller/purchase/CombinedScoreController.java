@@ -66,12 +66,6 @@ public class CombinedScoreController {
     return ResponseEntity.ok("Pagamento cancelado com sucesso.");
   }
 
-  /** Gera um boleto para um agrupamento de compras pelo ID. */
-  @PostMapping("/generate-billet/{id}")
-  public ResponseEntity<byte[]> generateBillet(@PathVariable Long id, @RequestParam String number) {
-    return combinedScoreService.generateBillet(id, number);
-  }
-
   /** Lista os produtos agrupados associados a um CombinedScore pelo ID. */
   @GetMapping("/{id}/grouped-products")
   public ResponseEntity<List<GroupedProductResponse>> getGroupedProductsByCombinedScoreId(
