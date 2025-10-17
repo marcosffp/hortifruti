@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.controller;
 
-import com.hortifruti.sl.hortifruti.dto.sicoob.BilletResponse;
+import com.hortifruti.sl.hortifruti.dto.billet.BilletResponse;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import com.hortifruti.sl.hortifruti.service.billet.BilletService;
 import java.io.IOException;
@@ -56,14 +56,12 @@ public class BilletController {
    * Emite a segunda via de um boleto e retorna o PDF.
    *
    * @param ourNumber Número identificador do boleto no Sisbr.
-   * @param yourNumber Número identificador do boleto no sistema do cliente.
    * @return PDF do boleto emitido.
    */
-  @GetMapping("/issue-copy/{ourNumber}/{yourNumber}")
-  public ResponseEntity<byte[]> issueCopy(
-      @PathVariable String ourNumber, @PathVariable String yourNumber) {
+  @GetMapping("/issue-copy/{ourNumber}")
+  public ResponseEntity<byte[]> issueCopy(@PathVariable String ourNumber) {
     try {
-      return billetService.issueCopy(ourNumber, yourNumber);
+      return billetService.issueCopy(ourNumber);
     } catch (Exception e) {
       e.printStackTrace();
       return ResponseEntity.badRequest().body(null);

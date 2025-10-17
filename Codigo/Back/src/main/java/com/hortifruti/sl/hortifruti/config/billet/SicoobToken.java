@@ -52,7 +52,7 @@ public class SicoobToken {
 
       HttpHeaders headers = new HttpHeaders();
       headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-      
+
       headers.add("Accept", MediaType.APPLICATION_JSON_VALUE);
 
       MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
@@ -65,11 +65,11 @@ public class SicoobToken {
       ResponseEntity<String> response = restTemplate.postForEntity(authUrl, request, String.class);
 
       String token = processTokenResponse(response);
-      
+
       accessToken = token;
-      
+
       tokenExpiresAt = System.currentTimeMillis() + (55 * 60 * 1000); // 55 minutos
-      
+
       return token;
 
     } catch (HttpClientErrorException | HttpServerErrorException ex) {

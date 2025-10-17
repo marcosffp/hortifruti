@@ -1,117 +1,104 @@
 package com.hortifruti.sl.hortifruti.service.notification;
 
-import com.hortifruti.sl.hortifruti.model.Client;
+import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import org.springframework.stereotype.Service;
 
-/**
- * Service responsável por construir mensagens de WhatsApp
- * Independente dos templates de email
- */
+/** Service responsável por construir mensagens de WhatsApp Independente dos templates de email */
 @Service
 public class WhatsAppMessageBuilder {
 
-    /**
-     * Constrói mensagem para extratos mensais
-     */
-    public String buildMonthlyStatementsMessage(String period, String customMessage) {
-        StringBuilder message = new StringBuilder();
-        message.append("Olá! Segue anexos contábeis.\n\n");
-        message.append("*Período:* ").append(period != null ? period : "Atual").append("\n\n");
-        
-        message.append("*Arquivos inclusos:*\n");
-        message.append("• Extratos bancários (BB e Sicoob)\n");
-        message.append("• Planilhas Excel com movimentações\n");
-        message.append("• Notas fiscais do período\n\n");
-        
-        if (customMessage != null && !customMessage.trim().isEmpty()) {
-            message.append("*Mensagem:*\n");
-            message.append(customMessage.trim()).append("\n\n");
-        }
-        
-        message.append("Atenciosamente, ");
-        message.append("*Hortifruti SL*");
-        
-        return message.toString();
+  /** Constrói mensagem para extratos mensais */
+  public String buildMonthlyStatementsMessage(String period, String customMessage) {
+    StringBuilder message = new StringBuilder();
+    message.append("Olá! Segue anexos contábeis.\n\n");
+    message.append("*Período:* ").append(period != null ? period : "Atual").append("\n\n");
+
+    message.append("*Arquivos inclusos:*\n");
+    message.append("• Extratos bancários (BB e Sicoob)\n");
+    message.append("• Planilhas Excel com movimentações\n");
+    message.append("• Notas fiscais do período\n\n");
+
+    if (customMessage != null && !customMessage.trim().isEmpty()) {
+      message.append("*Mensagem:*\n");
+      message.append(customMessage.trim()).append("\n\n");
     }
 
-    /**
-     * Constrói mensagem para arquivos genéricos da contabilidade
-     */
-    public String buildGenericFilesMessage(String totalValue, String customMessage) {
-        StringBuilder message = new StringBuilder();
+    message.append("Atenciosamente, ");
+    message.append("*Hortifruti SL*");
 
-        message.append("Prezados, segue anexos contábeis.\n\n");
-        
-        if (totalValue != null && !totalValue.trim().isEmpty()) {
-            message.append("*Resumo Financeiro:*\n");
-            message.append("• Valor total: R$ ").append(totalValue).append("\n\n");
-        }
-        
-        if (customMessage != null && !customMessage.trim().isEmpty()) {
-            message.append("*Mensagem:*\n");
-            message.append(customMessage.trim()).append("\n\n");
-        }
-        
-        message.append("Atenciosamente, ");
-        message.append("*Hortifruti SL*");
-        
-        return message.toString();
+    return message.toString();
+  }
+
+  /** Constrói mensagem para arquivos genéricos da contabilidade */
+  public String buildGenericFilesMessage(String totalValue, String customMessage) {
+    StringBuilder message = new StringBuilder();
+
+    message.append("Prezados, segue anexos contábeis.\n\n");
+
+    if (totalValue != null && !totalValue.trim().isEmpty()) {
+      message.append("*Resumo Financeiro:*\n");
+      message.append("• Valor total: R$ ").append(totalValue).append("\n\n");
     }
 
-    /**
-     * Constrói mensagem para documentos de cliente
-     */
-    public String buildClientDocumentsMessage(String clientName, String customMessage) {
-        StringBuilder message = new StringBuilder();
-        
-        if (clientName != null && !clientName.trim().isEmpty()) {
-            message.append("Prezado(a) *").append(clientName.trim()).append("*,\n\n");
-        } else {
-            message.append("Prezado(a) cliente,\n\n");
-        }
-        
-        message.append("Segue documentos em anexo para sua análise.\n\n");
-        
-        if (customMessage != null && !customMessage.trim().isEmpty()) {
-            message.append("*Mensagem:*\n");
-            message.append(customMessage.trim()).append("\n\n");
-        }
-        
-        message.append("Qualquer dúvida, estamos à disposição.\n\n");
-        message.append("Atenciosamente,\n");
-        message.append("*Hortifruti SL*");
-        
-        return message.toString();
+    if (customMessage != null && !customMessage.trim().isEmpty()) {
+      message.append("*Mensagem:*\n");
+      message.append(customMessage.trim()).append("\n\n");
     }
 
-    /**
-     * Constrói mensagem para documentos de cliente usando objeto Client
-     */
-    public String buildClientDocumentsMessage(Client client, String customMessage) {
-        String clientName = client != null ? client.getClientName() : null;
-        return buildClientDocumentsMessage(clientName, customMessage);
+    message.append("Atenciosamente, ");
+    message.append("*Hortifruti SL*");
+
+    return message.toString();
+  }
+
+  /** Constrói mensagem para documentos de cliente */
+  public String buildClientDocumentsMessage(String clientName, String customMessage) {
+    StringBuilder message = new StringBuilder();
+
+    if (clientName != null && !clientName.trim().isEmpty()) {
+      message.append("Prezado(a) *").append(clientName.trim()).append("*,\n\n");
+    } else {
+      message.append("Prezado(a) cliente,\n\n");
     }
 
-    /**
-     * Mensagem genérica para casos não mapeados
-     */
-    public String buildGenericMessage(String subject, String customMessage) {
-        StringBuilder message = new StringBuilder();
-        
-        if (subject != null && !subject.trim().isEmpty()) {
-            message.append("*Assunto:* ").append(subject.trim()).append("\n\n");
-        }
-        
-        if (customMessage != null && !customMessage.trim().isEmpty()) {
-            message.append("*Mensagem:*\n");
-            message.append(customMessage.trim()).append("\n\n");
-        } else {
-            message.append("Por favor verificar documentos em anexo.\n\n");
-        }
-        
-        message.append("Atenciosamente, ");
-        message.append("*Hortifruti SL*");
-        
-        return message.toString();
+    message.append("Segue documentos em anexo para sua análise.\n\n");
+
+    if (customMessage != null && !customMessage.trim().isEmpty()) {
+      message.append("*Mensagem:*\n");
+      message.append(customMessage.trim()).append("\n\n");
     }
+
+    message.append("Qualquer dúvida, estamos à disposição.\n\n");
+    message.append("Atenciosamente,\n");
+    message.append("*Hortifruti SL*");
+
+    return message.toString();
+  }
+
+  /** Constrói mensagem para documentos de cliente usando objeto Client */
+  public String buildClientDocumentsMessage(Client client, String customMessage) {
+    String clientName = client != null ? client.getClientName() : null;
+    return buildClientDocumentsMessage(clientName, customMessage);
+  }
+
+  /** Mensagem genérica para casos não mapeados */
+  public String buildGenericMessage(String subject, String customMessage) {
+    StringBuilder message = new StringBuilder();
+
+    if (subject != null && !subject.trim().isEmpty()) {
+      message.append("*Assunto:* ").append(subject.trim()).append("\n\n");
+    }
+
+    if (customMessage != null && !customMessage.trim().isEmpty()) {
+      message.append("*Mensagem:*\n");
+      message.append(customMessage.trim()).append("\n\n");
+    } else {
+      message.append("Por favor verificar documentos em anexo.\n\n");
+    }
+
+    message.append("Atenciosamente, ");
+    message.append("*Hortifruti SL*");
+
+    return message.toString();
+  }
 }

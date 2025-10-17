@@ -1,11 +1,11 @@
 package com.hortifruti.sl.hortifruti.service.purchase;
 
 import com.hortifruti.sl.hortifruti.exception.PurchaseException;
-import com.hortifruti.sl.hortifruti.model.Client;
-import com.hortifruti.sl.hortifruti.model.InvoiceProduct;
-import com.hortifruti.sl.hortifruti.model.Purchase;
-import com.hortifruti.sl.hortifruti.repository.InvoiceProductRepository;
-import com.hortifruti.sl.hortifruti.repository.PurchaseRepository;
+import com.hortifruti.sl.hortifruti.model.purchase.Client;
+import com.hortifruti.sl.hortifruti.model.purchase.InvoiceProduct;
+import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
+import com.hortifruti.sl.hortifruti.repository.purchase.InvoiceProductRepository;
+import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
 import com.hortifruti.sl.hortifruti.util.PdfUtil;
 import java.io.IOException;
 import java.math.BigDecimal;
