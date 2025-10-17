@@ -3,9 +3,9 @@ package com.hortifruti.sl.hortifruti.service.scheduler;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
+import com.hortifruti.sl.hortifruti.service.billet.BilletService;
 import com.hortifruti.sl.hortifruti.service.notification.EmailService;
 import com.hortifruti.sl.hortifruti.service.notification.EmailTemplateService;
-import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,7 +29,7 @@ public class CombinedScoreSchedulerService {
 
   @Autowired private EmailService emailService;
 
-  @Autowired private CombinedScoreService combinedScoreService;
+  @Autowired private BilletService billetService;
 
   @Value("${overdue.notification.emails}")
   private String overdueNotificationEmails;
@@ -107,7 +107,7 @@ public class CombinedScoreSchedulerService {
       log.info("Buscando boletos com dueDate < {} e confirmedAt IS NULL", startOfToday);
 
       List<CombinedScore> overdueScores =
-          combinedScoreService.syncAndFindOverdueUnpaidScores(startOfToday);
+          billetService.syncAndFindOverdueUnpaidScores(startOfToday);
 
       log.info("Encontrados {} CombinedScores vencidos", overdueScores.size());
 

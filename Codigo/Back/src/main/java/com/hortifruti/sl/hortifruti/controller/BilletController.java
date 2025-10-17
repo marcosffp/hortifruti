@@ -27,7 +27,7 @@ public class BilletController {
   public ResponseEntity<byte[]> generateBillet(@PathVariable Long combinedScoreId, String number)
       throws IOException {
     try {
-      return billetService.generateBilletForCombinedScore(combinedScoreId, number);
+      return billetService.generateBillet(combinedScoreId, number);
     } catch (Exception e) {
       e.printStackTrace();
       return ResponseEntity.badRequest()
