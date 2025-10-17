@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.notification;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -10,8 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -29,46 +28,47 @@ public class WhatsAppService {
   private final RestTemplate restTemplate;
 
   /**
-   * Formatar número de telefone brasileiro para WhatsApp
-   * Converte para formato internacional: +55DDNNNNNNNNN
+   * Formatar número de telefone brasileiro para WhatsApp Converte para formato internacional:
+   * +55DDNNNNNNNNN
    */
   private String formatPhoneNumber(String phoneNumber) {
     if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
       throw new IllegalArgumentException("Número de telefone não pode ser vazio");
     }
-    
+
     // Remove todos os caracteres não numéricos
     String cleanNumber = phoneNumber.replaceAll("[^0-9]", "");
-    
+
     // Se já começa com 55 (código do Brasil), assume que está correto
     if (cleanNumber.startsWith("55") && cleanNumber.length() >= 12) {
       return "+" + cleanNumber;
     }
-    
+
     // Se tem 11 dígitos (DDD + número com 9), adiciona código do país
     if (cleanNumber.length() == 11) {
       return "+55" + cleanNumber;
     }
-    
+
     // Se tem 10 dígitos (DDD + número sem 9), adiciona 9 e código do país
     if (cleanNumber.length() == 10) {
       String ddd = cleanNumber.substring(0, 2);
       String numero = cleanNumber.substring(2);
       return "+55" + ddd + "9" + numero;
     }
-    
+
     // Se tem 9 dígitos (sem DDD), assume DDD 31 (Belo Horizonte)
     if (cleanNumber.length() == 9) {
       return "+5531" + cleanNumber;
     }
-    
+
     // Se tem 8 dígitos (sem DDD e sem 9), adiciona 9 e assume DDD 31
     if (cleanNumber.length() == 8) {
       return "+55319" + cleanNumber;
     }
-    
+
     // Se não conseguiu formatar, lança exceção
-    throw new IllegalArgumentException("Formato de número de telefone não reconhecido: " + phoneNumber);
+    throw new IllegalArgumentException(
+        "Formato de número de telefone não reconhecido: " + phoneNumber);
   }
 
   public boolean sendTextMessage(String phoneNumber, String message) {
@@ -95,7 +95,7 @@ public class WhatsAppService {
       // Verificar se tem erro na resposta
       String responseBody = response.getBody();
       boolean hasError = responseBody != null && responseBody.contains("\"error\"");
-      
+
       return response.getStatusCode().is2xxSuccessful() && !hasError;
     } catch (Exception e) {
       System.err.println("Erro ao enviar WhatsApp para " + phoneNumber + ": " + e.getMessage());
@@ -104,7 +104,8 @@ public class WhatsAppService {
     }
   }
 
-  public boolean sendDocument(String phoneNumber, String message, byte[] document, String fileName) {
+  public boolean sendDocument(
+      String phoneNumber, String message, byte[] document, String fileName) {
     try {
       String formattedPhone = formatPhoneNumber(phoneNumber);
       String url = baseUrl + instanceId + "/messages/document?token=" + ultraMsgToken;
@@ -122,7 +123,7 @@ public class WhatsAppService {
       if (message != null && !message.isEmpty()) {
         body.add("caption", message);
       }
-      
+
       System.out.println("WhatsApp Document - Dados enviados:");
       System.out.println("  to: " + formattedPhone);
       System.out.println("  filename: " + fileName);
@@ -142,45 +143,50 @@ public class WhatsAppService {
       // Verificar se tem erro na resposta
       String responseBody = response.getBody();
       boolean hasError = responseBody != null && responseBody.contains("\"error\"");
-      
+
       return response.getStatusCode().is2xxSuccessful() && !hasError;
     } catch (Exception e) {
-      System.err.println("Erro ao enviar documento WhatsApp para " + phoneNumber + ": " + e.getMessage());
+      System.err.println(
+          "Erro ao enviar documento WhatsApp para " + phoneNumber + ": " + e.getMessage());
       e.printStackTrace();
       return false;
     }
   }
 
-  public boolean sendMultipleDocuments(String phoneNumber, String message, List<byte[]> documents, List<String> fileNames) {
+  public boolean sendMultipleDocuments(
+      String phoneNumber, String message, List<byte[]> documents, List<String> fileNames) {
     boolean allSent = true;
-    
+
     // Enviar mensagem de texto primeiro
     sendTextMessage(phoneNumber, message);
-    
+
     // Enviar cada documento
     for (int i = 0; i < documents.size() && i < fileNames.size(); i++) {
-      boolean sent = sendDocument(phoneNumber, "Documento: " + fileNames.get(i), documents.get(i), fileNames.get(i));
+      boolean sent =
+          sendDocument(
+              phoneNumber, "Documento: " + fileNames.get(i), documents.get(i), fileNames.get(i));
       if (!sent) {
         allSent = false;
       }
     }
-    
+
     return allSent;
   }
 
   /**
-   * Método genérico para envio de mensagens
-   * Usado pelo NotificationService para enviar mensagens simples
+   * Método genérico para envio de mensagens Usado pelo NotificationService para enviar mensagens
+   * simples
    */
   public boolean sendMessage(String phoneNumber, String message) {
     return sendTextMessage(phoneNumber, message);
   }
 
   /**
-   * Método para enviar mensagem com anexos
-   * Usado pelo NotificationService para enviar mensagens com documentos
+   * Método para enviar mensagem com anexos Usado pelo NotificationService para enviar mensagens com
+   * documentos
    */
-  public boolean sendMessage(String phoneNumber, String message, List<byte[]> attachments, List<String> fileNames) {
+  public boolean sendMessage(
+      String phoneNumber, String message, List<byte[]> attachments, List<String> fileNames) {
     if (attachments == null || attachments.isEmpty()) {
       return sendTextMessage(phoneNumber, message);
     }

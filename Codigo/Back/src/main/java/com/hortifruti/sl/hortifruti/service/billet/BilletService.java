@@ -3,15 +3,16 @@ package com.hortifruti.sl.hortifruti.service.billet;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.config.billet.BilletHttpClient;
-import com.hortifruti.sl.hortifruti.dto.sicoob.BilletRequest;
-import com.hortifruti.sl.hortifruti.dto.sicoob.BilletRequestSimplified;
-import com.hortifruti.sl.hortifruti.dto.sicoob.BilletResponse;
-import com.hortifruti.sl.hortifruti.dto.sicoob.Pagador;
+import com.hortifruti.sl.hortifruti.dto.billet.BilletRequest;
+import com.hortifruti.sl.hortifruti.dto.billet.BilletRequestSimplified;
+import com.hortifruti.sl.hortifruti.dto.billet.BilletResponse;
+import com.hortifruti.sl.hortifruti.dto.billet.Pagador;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
-import com.hortifruti.sl.hortifruti.model.Client;
-import com.hortifruti.sl.hortifruti.model.CombinedScore;
-import com.hortifruti.sl.hortifruti.repository.ClientRepository;
-import com.hortifruti.sl.hortifruti.repository.CombinedScoreRepository;
+import com.hortifruti.sl.hortifruti.model.purchase.Client;
+import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
+import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
+import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
+import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ public class BilletService {
   private final ClientRepository clientRepository;
   private final BilletFactory billetFactory;
   private final PdfCreate pdfCreate;
+  private final CombinedScoreService combinedScoreService;
 
   @Value("${sicoob.num.cliente}")
   private Integer clientNumber;
@@ -101,60 +103,60 @@ public class BilletService {
   public List<BilletResponse> listBilletByPayer(long clientId) throws IOException {
     String numeroCpfCnpj = getClientById(clientId).getDocument();
     try {
-        // Monta o endpoint para a requisição
-        String endpoint =
-            String.format(
-                BASE_URL + "pagadores/%s/boletos?numeroCliente=%d&codigoSituacao=1",
-                numeroCpfCnpj,
-                clientNumber);
+      // Monta o endpoint para a requisição
+      String endpoint =
+          String.format(
+              BASE_URL + "pagadores/%s/boletos?numeroCliente=%d&codigoSituacao=1",
+              numeroCpfCnpj,
+              clientNumber);
 
-        // Faz a requisição para obter os boletos
-        ResponseEntity<JsonNode> response = httpClient.getWithResponse(endpoint);
+      // Faz a requisição para obter os boletos
+      ResponseEntity<JsonNode> response = httpClient.getWithResponse(endpoint);
 
-        // Verifica o status da resposta
-        if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
-            return List.of(); // Retorna lista vazia
-        }
+      // Verifica o status da resposta
+      if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
+        return List.of(); // Retorna lista vazia
+      }
 
-        JsonNode resposta = response.getBody();
+      JsonNode resposta = response.getBody();
 
-        // Verifica se a resposta é nula ou vazia
-        if (resposta == null || resposta.isEmpty()) {
-            return List.of(); // Retorna lista vazia
-        }
+      // Verifica se a resposta é nula ou vazia
+      if (resposta == null || resposta.isEmpty()) {
+        return List.of(); // Retorna lista vazia
+      }
 
-        // Acessa o campo "resultado" que contém a lista de boletos
-        JsonNode resultado = resposta.path("resultado");
+      // Acessa o campo "resultado" que contém a lista de boletos
+      JsonNode resultado = resposta.path("resultado");
 
-        // Verifica se o resultado é uma lista válida
-        if (!resultado.isArray()) {
-            throw new BilletException("Resposta inválida da API: campo 'resultado' não é uma lista.");
-        }
+      // Verifica se o resultado é uma lista válida
+      if (!resultado.isArray()) {
+        throw new BilletException("Resposta inválida da API: campo 'resultado' não é uma lista.");
+      }
 
-        // Mapeia os dados para uma lista de BoletoResponse
-        List<BilletResponse> boletos = new ArrayList<>();
-        for (JsonNode boletoNode : resultado) {
-            BilletResponse boleto =
-                new BilletResponse(
-                    boletoNode.path("pagador").path("nome").asText(),
-                    boletoNode.path("dataEmissao").asText(),
-                    boletoNode.path("dataVencimento").asText(),
-                    boletoNode.path("seuNumero").asText(),
-                    boletoNode.path("situacaoBoleto").asText(),
-                    boletoNode.path("nossoNumero").asText(),
-                    boletoNode.path("valor").decimalValue());
-            boletos.add(boleto);
-        }
+      // Mapeia os dados para uma lista de BoletoResponse
+      List<BilletResponse> boletos = new ArrayList<>();
+      for (JsonNode boletoNode : resultado) {
+        BilletResponse boleto =
+            new BilletResponse(
+                boletoNode.path("pagador").path("nome").asText(),
+                boletoNode.path("dataEmissao").asText(),
+                boletoNode.path("dataVencimento").asText(),
+                boletoNode.path("seuNumero").asText(),
+                boletoNode.path("situacaoBoleto").asText(),
+                boletoNode.path("nossoNumero").asText(),
+                boletoNode.path("valor").decimalValue());
+        boletos.add(boleto);
+      }
 
-        return boletos;
+      return boletos;
 
     } catch (HttpClientErrorException e) {
-        throw new BilletException(
-            "Erro na requisição para listar boletos: " + e.getResponseBodyAsString(), e);
+      throw new BilletException(
+          "Erro na requisição para listar boletos: " + e.getResponseBodyAsString(), e);
     } catch (IOException e) {
-        throw new BilletException("Erro ao processar a resposta da API ao listar boletos.", e);
+      throw new BilletException("Erro ao processar a resposta da API ao listar boletos.", e);
     } catch (Exception e) {
-        throw new BilletException("Erro inesperado ao listar boletos.", e);
+      throw new BilletException("Erro inesperado ao listar boletos.", e);
     }
   }
 
@@ -165,7 +167,7 @@ public class BilletService {
    * @return Resposta da API contendo o PDF do boleto emitido
    * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
-  public ResponseEntity<byte[]> issueCopy(String nossoNumero, String seuNumero) throws IOException {
+  public ResponseEntity<byte[]> issueCopy(String nossoNumero) throws IOException {
     // Monta o endpoint para a requisição
     String endpoint =
         String.format(
@@ -198,7 +200,7 @@ public class BilletService {
       String pdfBase64 = resultado.get("pdfBoleto").asText();
 
       // Converte o PDF Base64 para bytes e prepara a resposta
-      return pdfCreate.createResponsePdf(pdfBase64, "SEGUNDA-VIA-BOL-" + seuNumero + ".pdf");
+      return pdfCreate.createResponsePdf(pdfBase64, "SEGUNDA-VIA-BOL-" + nossoNumero + ".pdf");
 
     } catch (HttpClientErrorException.NotFound e) {
       throw new BilletException(
@@ -232,6 +234,9 @@ public class BilletService {
 
       // Faz a requisição POST para realizar a baixa do boleto
       httpClient.post(endpoint, requestBody);
+
+      // Atualiza o status do CombinedScore após o cancelamento do boleto
+      combinedScoreService.updateStatusAfterBilletCancellation(nossoNumero);
 
       // Se chegou até aqui, a operação foi bem-sucedida (código 204)
       return ResponseEntity.noContent().build();
