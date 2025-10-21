@@ -55,13 +55,13 @@ public class BilletController {
   /**
    * Emite a segunda via de um boleto e retorna o PDF.
    *
-   * @param ourNumber Número identificador do boleto no Sisbr.
+   * @param  idCombinedScore ID do CombinedScore associado ao boleto.
    * @return PDF do boleto emitido.
    */
-  @GetMapping("/issue-copy/{ourNumber}")
-  public ResponseEntity<byte[]> issueCopy(@PathVariable String ourNumber) {
+  @GetMapping("/issue-copy/{idCombinedScore}")
+  public ResponseEntity<byte[]> issueCopy(@PathVariable Long idCombinedScore) {
     try {
-      return billetService.issueCopy(ourNumber);
+      return billetService.issueCopy(idCombinedScore);
     } catch (Exception e) {
       e.printStackTrace();
       return ResponseEntity.badRequest().body(null);
@@ -71,13 +71,13 @@ public class BilletController {
   /**
    * Realiza a baixa (cancelamento) de um boleto.
    *
-   * @param ourNumber Número identificador do boleto no Sisbr.
+   * @param idCombinedScore ID do CombinedScore associado ao boleto.
    * @return Resposta indicando o sucesso ou falha da operação.
    */
-  @PostMapping("/cancel/{ourNumber}")
-  public ResponseEntity<String> cancelBillet(@PathVariable String ourNumber) {
+  @PostMapping("/cancel/{idCombinedScore}")
+  public ResponseEntity<String> cancelBillet(@PathVariable Long idCombinedScore) {
     try {
-      ResponseEntity<String> response = billetService.cancelBillet(ourNumber);
+      ResponseEntity<String> response = billetService.cancelBillet(idCombinedScore);
       return ResponseEntity.status(response.getStatusCode()).body("Boleto cancelado com sucesso");
     } catch (BilletException e) {
       e.printStackTrace();
