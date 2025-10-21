@@ -210,7 +210,7 @@ public class CombinedScoreService {
   public void updateStatusAfterBilletCancellation(String nossoNumero) {
     CombinedScore combinedScore =
         combinedScoreRepository
-            .findByNumber(nossoNumero)
+            .findByYourNumber(nossoNumero)
             .orElseThrow(
                 () ->
                     new CombinedScoreException(
@@ -229,7 +229,7 @@ public class CombinedScoreService {
   public void updateStatusAfterInvoiceCancellation(String invoiceNumber) {
     CombinedScore combinedScore =
         combinedScoreRepository
-            .findByNumber(invoiceNumber)
+            .findByYourNumber(invoiceNumber)
             .orElseThrow(
                 () ->
                     new CombinedScoreException(
