@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { billetService } from "@/services/billetService";
 
@@ -72,5 +74,5 @@ export function useBillet() {
         }
     };
 
-    return { generateBillet, getClientBillets, issueCopy, cancelBillet, isLoading, error };
+    return { downloadBillet, generateBillet, getClientBillets, issueCopy, cancelBillet, isLoading, error };
 }

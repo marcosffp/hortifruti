@@ -25,7 +25,7 @@ export const billetService = {
 
   async fetchBilletPdf(combinedScoreId: number): Promise<Blob> {
     try {
-      const response = await fetch(`${API_BASE_URL}/billet/pdf/${combinedScoreId}`, {
+      const response = await fetch(`${API_BASE_URL}/billet/${combinedScoreId}`, {
         method: "GET",
         headers: getAuthHeaders(),
       });
@@ -44,7 +44,7 @@ export const billetService = {
 
   async getClientBillets(clientId: number): Promise<BilletResponse[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/billet/billets/${clientId}`, {
+      const response = await fetch(`${API_BASE_URL}/billet/client/${clientId}`, {
         method: "GET",
         headers: getAuthHeaders(),
       });
