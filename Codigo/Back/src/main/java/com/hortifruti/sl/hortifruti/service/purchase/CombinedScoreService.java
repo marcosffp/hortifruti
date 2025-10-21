@@ -1,14 +1,5 @@
 package com.hortifruti.sl.hortifruti.service.purchase;
 
-import java.math.BigDecimal;
-import java.util.Comparator;
-import java.util.List;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductResponse;
@@ -25,8 +16,14 @@ import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.ProductGrouperRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
-
+import java.math.BigDecimal;
+import java.util.Comparator;
+import java.util.List;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
@@ -123,14 +120,14 @@ public class CombinedScoreService {
     CombinedScore combinedScore =
         CombinedScore.builder().clientId(request.clientId()).totalValue(totalValue).build();
 
-    // Salva o CombinedScore
-    combinedScoreRepository.save(combinedScore);
+    // Salva o CombinedScore e pega a entidade salva com ID (com flush para garantir o ID)
+    CombinedScore savedCombinedScore = combinedScoreRepository.saveAndFlush(combinedScore);
 
-    // Associação dos produtos agrupados ao CombinedScore
-    groupedProducts.forEach(product -> product.setCombinedScore(combinedScore));
+    // Associação dos produtos agrupados ao CombinedScore salvo
+    groupedProducts.forEach(product -> product.setCombinedScore(savedCombinedScore));
 
-    // Salva os produtos agrupados
-    groupedProducts.forEach(productGrouperRepository::save);
+    // Salva os produtos agrupados em lote
+    productGrouperRepository.saveAll(groupedProducts);
   }
 
   @Transactional
@@ -176,7 +173,8 @@ public class CombinedScoreService {
     // Verifica as condições para cancelamento
     if (combinedScore.isHasBillet() || combinedScore.isHasInvoice()) {
       throw new CombinedScoreException(
-          "Não é possível cancelar o pagamento enquanto o boleto ou a nota fiscal não forem resolvidos.");
+          "Não é possível cancelar o pagamento enquanto o boleto ou a nota fiscal não forem"
+              + " resolvidos.");
     }
 
     // Atualiza o status para cancelado
@@ -184,6 +182,7 @@ public class CombinedScoreService {
     combinedScoreRepository.save(combinedScore);
   }
 
+  @Transactional(readOnly = true)
   public List<GroupedProductResponse> getGroupedProductsByCombinedScoreId(Long combinedScoreId) {
     CombinedScore combinedScore =
         combinedScoreRepository

@@ -21,8 +21,7 @@ export function useBillet() {
         setError(null);
         try {
             const blob = await billetService.generateBillet(combinedScoreId, number);
-            await downloadBillet(blob, combinedScoreId, number);
-            return "Boleto gerado com sucesso";
+            return blob;
         } catch (err: any) {
             setError(err.message || "Erro ao gerar boleto");
             throw err;
