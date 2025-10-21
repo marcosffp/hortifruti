@@ -189,8 +189,20 @@ public class BilletService {
    * @return Resposta da API contendo o PDF do boleto emitido
    * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
-  public ResponseEntity<byte[]> issueCopy(String nossoNumero) throws IOException {
+  public ResponseEntity<byte[]> issueCopy(Long idCombinedScore) throws IOException {
     // Monta o endpoint para a requisição
+    CombinedScore combinedScore =
+        combinedScoreRepository
+            .findById(idCombinedScore)
+            .orElseThrow(
+                () ->
+                    new CombinedScoreException(
+                        "Agrupamento com o ID " + idCombinedScore + " não encontrado."));
+    if (combinedScore.isHasBillet() == false) {
+      throw new CombinedScoreException("Agrupamento não possui boleto associado.");
+    }
+
+    String nossoNumero = combinedScore.getOurNumber_sicoob();
     String endpoint =
         String.format(
             BASE_URL
@@ -243,13 +255,24 @@ public class BilletService {
    * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    * @throws BilletException Se houver erro específico da API de boletos
    */
-  public ResponseEntity<String> cancelBillet(String nossoNumero)
+  public ResponseEntity<String> cancelBillet(Long idCombinedScore)
       throws IOException, BilletException {
+    CombinedScore combinedScore =
+        combinedScoreRepository
+            .findById(idCombinedScore)
+            .orElseThrow(
+                () ->
+                    new CombinedScoreException(
+                        "Agrupamento com o ID " + idCombinedScore + " não encontrado."));
+    if (combinedScore.isHasBillet() == false) {
+      throw new CombinedScoreException("Agrupamento não possui boleto associado.");
+    }
     try {
       // Monta o objeto de requisição para a baixa do boleto
       Map<String, Object> requestBody = new HashMap<>();
       requestBody.put("numeroCliente", clientNumber);
       requestBody.put("codigoModalidade", MODALITY_CODE);
+      String nossoNumero = combinedScore.getOurNumber_sicoob();
 
       // Monta o endpoint com o número do boleto
       String endpoint = String.format(BASE_URL + "boletos/%s/baixar", nossoNumero);
