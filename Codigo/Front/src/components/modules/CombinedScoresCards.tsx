@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { FileText, Eye, Trash2, CheckCircle, XCircle, Calendar } from "lucide-react";
-import { toast } from "react-toastify";
 import { combinedScoreService } from "@/services/combinedScoreService";
 import { billetService } from "@/services/billetService";
 import { CombinedScoreType } from "@/types/combinedScoreType";
 import GroupedProductsModal from "@/components/modals/GroupedProductsModal";
-import ShowBilletModal from "@/components/modals/ShowBilletModa";
+import ShowBilletModal from "@/components/modals/ShowBilletModal";
 import { useBillet } from "@/hooks/useBillet";
 import ClientNumberModal from "../modals/ClientNumberModal";
+import { showError, showInfo, showSuccess } from "@/services/notificationService";
 
 interface CombinedScoresCardsProps {
     clientId?: number;
@@ -27,6 +27,8 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
     const [showBilletModal, setShowBilletModal] = useState(false);
     const [billetPdf, setBilletPdf] = useState<Blob | null>(null);
 
+    const { generateBillet, downloadBillet } = useBillet();
+
     const fetchScores = async () => {
         if (!clientId) {
             setScores([]);
@@ -40,7 +42,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
             setScores(data.content);
             setTotalPages(data.totalPages);
         } catch (error) {
-            toast.error("Erro ao carregar agrupamentos");
+            showError("Erro ao carregar agrupamentos");
             console.error(error);
         } finally {
             setLoading(false);
@@ -56,10 +58,10 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
 
         try {
             await combinedScoreService.cancelGrouping(id);
-            toast.success("Agrupamento deletado com sucesso");
+            showSuccess("Agrupamento deletado com sucesso");
             fetchScores();
         } catch (error) {
-            toast.error("Erro ao deletar agrupamento");
+            showError("Erro ao deletar agrupamento");
             console.error(error);
         }
     };
@@ -68,14 +70,14 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
         try {
             if (score.status === "PAID") {
                 await combinedScoreService.cancelPayment(score.id);
-                toast.success("Pagamento cancelado com sucesso");
+                showSuccess("Pagamento cancelado com sucesso");
             } else {
                 await combinedScoreService.confirmPayment(score.id);
-                toast.success("Pagamento confirmado com sucesso");
+                showSuccess("Pagamento confirmado com sucesso");
             }
             fetchScores();
         } catch (error) {
-            toast.error("Erro ao atualizar pagamento");
+            showError("Erro ao atualizar pagamento");
             console.error(error);
         }
     };
@@ -86,35 +88,33 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
     };
 
     const handleGenerateBillet = async (scoreId: number, clientNumber: string) => {
-        const { generateBillet, isLoading, error } = useBillet();
         try {
             const pdfBlob = await generateBillet(scoreId, clientNumber);
             // Abre o modal com o PDF
             setBilletPdf(pdfBlob);
             setShowBilletModal(true);
-            toast.success("Boleto gerado com sucesso!");
-
+            showSuccess("Boleto gerado com sucesso!");
         } catch (error) {
-            toast.error("Erro ao gerar boleto");
+            showError("Erro ao gerar boleto");
             console.error(error);
         }
     };
 
     const handleShowBillet = async (score: CombinedScoreType) => {
         try {
-            toast.info("Buscando boleto...");
+            showInfo("Buscando boleto...");
             setSelectedScore(score);
-            
+
             // Busca o PDF do boleto via API
             const pdfBlob = await billetService.fetchBilletPdf(score.id);
-            
+
             // Abre o modal com o PDF
             setBilletPdf(pdfBlob);
             setShowBilletModal(true);
-            
-            toast.success("Boleto carregado com sucesso!");
+
+            showSuccess("Boleto carregado com sucesso!");
         } catch (error) {
-            toast.error("Erro ao buscar boleto");
+            showError("Erro ao buscar boleto");
             console.error(error);
         }
     };
@@ -280,7 +280,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
 
                                         {score.hasInvoice ? (
                                             <button
-                                                onClick={() => toast.info("Funcionalidade de consultar NF em desenvolvimento")}
+                                                onClick={() => showInfo("Funcionalidade de consultar NF em desenvolvimento")}
                                                 className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-xs"
                                             >
                                                 <FileText className="w-3 h-3" />
@@ -288,7 +288,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                             </button>
                                         ) : (
                                             <button
-                                                onClick={() => toast.info("Funcionalidade de gerar NF em desenvolvimento")}
+                                                onClick={() => showInfo("Funcionalidade de gerar NF em desenvolvimento")}
                                                 className="flex items-center justify-center gap-1 px-2 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs"
                                             >
                                                 <FileText className="w-3 h-3" />
@@ -303,8 +303,8 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                             <button
                                                 onClick={() => handleTogglePayment(score)}
                                                 className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg transition-colors text-xs ${score.status === "PAID"
-                                                        ? "bg-yellow-600 text-white hover:bg-yellow-700"
-                                                        : "bg-green-600 text-white hover:bg-green-700"
+                                                    ? "bg-yellow-600 text-white hover:bg-yellow-700"
+                                                    : "bg-green-600 text-white hover:bg-green-700"
                                                     }`}
                                             >
                                                 {score.status === "PAID" ? (

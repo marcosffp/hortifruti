@@ -41,7 +41,7 @@ public class BilletController {
    * @param clientId ID do cliente (CPF ou CNPJ).
    * @return Lista de boletos do pagador.
    */
-  @GetMapping("/billets/{clientId}")
+  @GetMapping("/client/{clientId}")
   public ResponseEntity<List<BilletResponse>> listBilletByPayer(@PathVariable long clientId) {
     try {
       List<BilletResponse> billets = billetService.listBilletByPayer(clientId);
@@ -156,7 +156,7 @@ public class BilletController {
    * @param combinedScoreId ID do CombinedScore
    * @return Detalhes do boleto associado
    */
-  @GetMapping("/billets/{combinedScoreId}")
+  @GetMapping("/{combinedScoreId}")
   public ResponseEntity<BilletResponse> getBilletCombinedScore(@PathVariable long combinedScoreId) {
     try {
       BilletResponse billet = billetService.getBilletByCombinedScore(combinedScoreId);
