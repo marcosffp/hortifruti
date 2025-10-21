@@ -27,6 +27,5 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
   List<CombinedScore> findOverdueUnpaidScoresByClient(
       @Param("clientId") Long clientId, @Param("currentDate") LocalDate currentDate);
 
-  /** Busca um CombinedScore pelo número do boleto */
-  Optional<CombinedScore> findByNumber(String number);
+  Optional<CombinedScore> findByYourNumber(String yourNumber);
 }
