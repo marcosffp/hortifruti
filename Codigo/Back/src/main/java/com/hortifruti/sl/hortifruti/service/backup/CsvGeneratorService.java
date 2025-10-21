@@ -221,7 +221,7 @@ public class CsvGeneratorService {
             combinedScore.getTotalValue(),
             combinedScore.getStatus(),
             combinedScore.isHasBillet(),
-            combinedScore.getNumber(),
+            combinedScore.getYourNumber(),
             combinedScore.isHasInvoice());
       }
 
