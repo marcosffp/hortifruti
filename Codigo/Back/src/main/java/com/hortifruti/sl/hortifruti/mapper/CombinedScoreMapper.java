@@ -24,7 +24,7 @@ public interface CombinedScoreMapper {
   @Mapping(target = "status", source = "status")
   @Mapping(target = "hasBillet", source = "hasBillet")
   @Mapping(target = "hasInvoice", source = "hasInvoice")
-  @Mapping(target = "number", source = "number")
+  @Mapping(target = "yourNumber", source = "yourNumber")
   CombinedScoreResponse toResponse(CombinedScore combinedScore);
 
   @Mapping(target = "id", ignore = true) // ID não deve ser alterado

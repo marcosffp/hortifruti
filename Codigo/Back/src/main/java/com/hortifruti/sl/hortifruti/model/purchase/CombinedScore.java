@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+
+
 import lombok.*;
 
 @Entity
@@ -42,8 +44,11 @@ public class CombinedScore {
   @Column(name = "has_invoice", nullable = false)
   private boolean hasInvoice;
 
-  @Column(name = "number", nullable = true)
-  private String number;
+  @Column(name = "our_number", nullable = true)
+  private String ourNumber_sicoob;
+
+  @Column(name = "your_number", nullable = true)
+  private String yourNumber;
 
   @OneToMany(mappedBy = "combinedScore", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<GroupedProduct> groupedProducts;

@@ -13,5 +13,5 @@ public record CombinedScoreResponse(
     Status status, // Novo campo
     boolean hasBillet, // Novo campo
     boolean hasInvoice, // Novo campo
-    String number // Novo campo
+    String yourNumber // Novo campo
     ) {}
