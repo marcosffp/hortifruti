@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,44 +63,56 @@ public class BilletService {
    * @return Resposta HTTP contendo o PDF do boleto emitido
    * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
-  private ResponseEntity<byte[]> issueBillet(BilletRequestSimplified boleto) throws IOException {
+  private ResponseEntity<Map<String, Object>> issueBillet(BilletRequestSimplified boleto) throws IOException {
     try {
-      // Cria o objeto BoletoRequest completo
-      BilletRequest boletoCompleto = billetFactory.createCompleteBoletoRequest(boleto);
-      ObjectMapper mapper = new ObjectMapper();
-      JsonNode boletoJson = mapper.valueToTree(boletoCompleto);
+        // Cria o objeto BoletoRequest completo
+        BilletRequest boletoCompleto = billetFactory.createCompleteBoletoRequest(boleto);
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode boletoJson = mapper.valueToTree(boletoCompleto);
 
-      // Faz a requisição para emitir o boleto
-      JsonNode resposta = httpClient.post(BASE_URL + "boletos", boletoJson);
+        // Faz a requisição para emitir o boleto
+        JsonNode resposta = httpClient.post(BASE_URL + "boletos", boletoJson);
 
-      // Verifica se a resposta é nula ou vazia
-      if (resposta == null || resposta.isEmpty()) {
-        throw new BilletException("A resposta da API está vazia ou nula.");
-      }
+        // Verifica se a resposta é nula ou vazia
+        if (resposta == null || resposta.isEmpty()) {
+            throw new BilletException("A resposta da API está vazia ou nula.");
+        }
 
-      // Acessa o campo "resultado"
-      JsonNode resultado = resposta.path("resultado");
+        // Acessa o campo "resultado"
+        JsonNode resultado = resposta.path("resultado");
 
-      // Verifica se o campo pdfBoleto está presente e não vazio
-      if (!resultado.has("pdfBoleto")
-          || resultado.get("pdfBoleto").isNull()
-          || resultado.get("pdfBoleto").asText().trim().isEmpty()) {
-        throw new BilletException("PDF do boleto não encontrado na resposta.");
-      }
+        // Verifica se o campo pdfBoleto está presente e não vazio
+        if (!resultado.has("pdfBoleto")
+                || resultado.get("pdfBoleto").isNull()
+                || resultado.get("pdfBoleto").asText().trim().isEmpty()) {
+            throw new BilletException("PDF do boleto não encontrado na resposta.");
+        }
 
-      // Extrai o PDF do boleto em Base64
-      String pdfBase64 = resultado.get("pdfBoleto").asText();
+        // Extrai o PDF do boleto em Base64
+        String pdfBase64 = resultado.get("pdfBoleto").asText();
 
-      // Converte o PDF Base64 para bytes e prepara a resposta
-      return pdfCreate.createResponsePdf(pdfBase64, "BOL-" + boletoCompleto.seuNumero() + ".pdf");
+        // Extrai os valores de nossoNumero e seuNumero
+        String nossoNumero = resultado.path("nossoNumero").asText();
+        String seuNumero = resultado.path("seuNumero").asText();
+
+        // Converte o PDF Base64 para bytes e prepara a resposta
+        byte[] pdfBytes = pdfCreate.convertBase64ToBytes(pdfBase64);
+
+        // Cria um mapa para incluir o PDF e os valores adicionais
+        Map<String, Object> responseMap = new HashMap<>();
+        responseMap.put("pdf", pdfBytes);
+        responseMap.put("nossoNumero", nossoNumero);
+        responseMap.put("seuNumero", seuNumero);
+
+        return ResponseEntity.ok(responseMap);
 
     } catch (HttpClientErrorException e) {
-      throw new BilletException(
-          "Erro na requisição para emitir o boleto: " + e.getResponseBodyAsString(), e);
+        throw new BilletException(
+                "Erro na requisição para emitir o boleto: " + e.getResponseBodyAsString(), e);
     } catch (IOException e) {
-      throw new BilletException("Erro ao processar a resposta da API ao emitir o boleto.", e);
+        throw new BilletException("Erro ao processar a resposta da API ao emitir o boleto.", e);
     } catch (Exception e) {
-      throw new BilletException("Erro inesperado ao emitir o boleto.", e);
+        throw new BilletException("Erro inesperado ao emitir o boleto.", e);
     }
   }
 
@@ -275,6 +289,7 @@ public class BilletService {
    * Gera um boleto para um CombinedScore específico e retorna o PDF para download.
    *
    * @param combinedScoreId ID do CombinedScore
+   * @param number Número identificador do boleto
    * @return Resposta HTTP contendo o PDF do boleto gerado
    * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
@@ -304,14 +319,31 @@ public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number
             billetFactory.createBilletRequest(combinedScore, combinedScoreId, pagador, number);
 
         // Emite o boleto através da API
-        ResponseEntity<byte[]> billetResponse = issueBillet(billetRequest);
+        ResponseEntity<Map<String, Object>> billetResponse = issueBillet(billetRequest);
+
+        // Extrai os valores retornados pela API
+        Map<String, Object> responseBody = billetResponse.getBody();
+        if (responseBody == null) {
+            throw new CombinedScoreException("Erro ao processar a resposta da API: corpo vazio.");
+        }
+
+        byte[] pdfBytes = (byte[]) responseBody.get("pdf");
+        String nossoNumero = (String) responseBody.get("nossoNumero");
+        String seuNumero = (String) responseBody.get("seuNumero");
 
         // Atualiza o status do agrupamento para indicar que o boleto foi gerado
         combinedScore.setHasBillet(true);
-        combinedScore.setNumber(number);
+        combinedScore.setOurNumber_sicoob(nossoNumero);
+        combinedScore.setYourNumber(seuNumero);
         combinedScoreRepository.save(combinedScore);
 
-        return billetResponse;
+        // Configura os headers para retornar o PDF como arquivo binário
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "BOL-" + combinedScore.getYourNumber() + ".pdf");
+
+        // Retorna o PDF como resposta binária
+        return ResponseEntity.ok().headers(headers).body(pdfBytes);
     } catch (Exception e) {
         throw new CombinedScoreException("Erro ao gerar o boleto: " + e.getMessage(), e);
     }
@@ -349,7 +381,7 @@ public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number
           // Verifica se o boleto do CombinedScore está presente na lista retornada
           boolean billetExists =
               updatedBillets.stream()
-                  .anyMatch(billet -> billet.seuNumero().equals(combinedScore.getNumber()));
+                  .anyMatch(billet -> billet.seuNumero().equals(combinedScore.getYourNumber()));
 
           // Se o boleto não estiver presente, considera como pago
           if (!billetExists) {
@@ -480,7 +512,7 @@ public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number
                         "CombinedScore com ID " + combinedScoreId + " não encontrado."));
 
     // Verifica se o CombinedScore possui um número de boleto associado
-    String number = combinedScore.getNumber();
+    String number = combinedScore.getOurNumber_sicoob();
     if (number == null || number.isBlank()) {
       throw new BilletException("Nenhum boleto associado ao CombinedScore com ID " + combinedScoreId);
     }
@@ -489,7 +521,7 @@ public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number
       // Monta o endpoint para buscar o boleto específico
       String endpoint =
           String.format(
-              BASE_URL + "boletos?numeroCliente=%d&seuNumero=%s",
+              BASE_URL + "boletos?numeroCliente=%d&nossoNumero=%s",
               clientNumber,
               number);
 

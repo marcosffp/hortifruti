@@ -42,4 +42,29 @@ public class PdfCreate {
       throw new BilletException("Erro inesperado ao criar a resposta do PDF.", e);
     }
   }
+
+    /**
+   * Decodifica uma string Base64 contendo um PDF e retorna os bytes.
+   *
+   * @param pdfBase64 String Base64 contendo o PDF
+   * @return Array de bytes do PDF
+   * @throws BilletException Se o PDF em Base64 for inválido ou ocorrer algum erro na decodificação
+   */
+  public byte[] convertBase64ToBytes(String pdfBase64) {
+    try {
+      // Verifica se o Base64 está vazio ou nulo
+      if (pdfBase64 == null || pdfBase64.trim().isEmpty()) {
+        throw new BilletException("O conteúdo do PDF em Base64 está vazio ou nulo.");
+      }
+
+      // Decodifica o Base64 para bytes
+      return Base64.getDecoder().decode(pdfBase64);
+
+    } catch (IllegalArgumentException e) {
+      throw new BilletException(
+          "Erro ao decodificar o PDF em Base64. O conteúdo pode estar corrompido ou inválido.", e);
+    } catch (Exception e) {
+      throw new BilletException("Erro inesperado ao decodificar o PDF.", e);
+    }
+  }
 }
