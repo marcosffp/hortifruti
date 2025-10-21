@@ -5,6 +5,7 @@ import com.hortifruti.sl.hortifruti.dto.purchase.UpdateInvoiceProduct;
 import com.hortifruti.sl.hortifruti.exception.PurchaseException;
 import com.hortifruti.sl.hortifruti.mapper.InvoiceProductMapper;
 import com.hortifruti.sl.hortifruti.model.purchase.InvoiceProduct;
+import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
 import com.hortifruti.sl.hortifruti.repository.purchase.InvoiceProductRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ public class InvoiceProductService {
 
   private final InvoiceProductRepository repository;
   private final InvoiceProductMapper mapper;
+  private final PurchaseService purchaseService;
 
   public InvoiceProductResponse updateInvoiceProduct(Long id, UpdateInvoiceProduct dto) {
     InvoiceProduct invoiceProduct =
@@ -27,6 +29,7 @@ public class InvoiceProductService {
     invoiceProduct.setUnitType(dto.unitType());
 
     InvoiceProduct updated = repository.save(invoiceProduct);
+    purchaseService.recalculateTotal(updated.getPurchase().getId());
 
     return mapper.toResponse(updated);
   }
@@ -35,6 +38,8 @@ public class InvoiceProductService {
     if (!repository.existsById(id)) {
       throw new PurchaseException("Produto não encontrado");
     }
+    Purchase purchase = repository.findById(id).get().getPurchase();
     repository.deleteById(id);
+    purchaseService.recalculateTotal(purchase.getId());
   }
 }

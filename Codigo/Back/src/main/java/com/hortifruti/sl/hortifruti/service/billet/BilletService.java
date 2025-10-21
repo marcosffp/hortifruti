@@ -28,6 +28,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @Service
 @RequiredArgsConstructor
@@ -147,7 +152,6 @@ public class BilletService {
                 boletoNode.path("dataVencimento").asText(),
                 boletoNode.path("seuNumero").asText(),
                 boletoNode.path("situacaoBoleto").asText(),
-                boletoNode.path("nossoNumero").asText(),
                 boletoNode.path("valor").decimalValue());
         boletos.add(boleto);
       }
@@ -370,4 +374,156 @@ public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number
     return remainingPendingScores;
   }
 
+  /**
+   * Busca boletos com filtros opcionais (nome do cliente, período, status) e paginação.
+   *
+   * @param name Nome do cliente (opcional).
+   * @param startDate Data inicial do período (opcional).
+   * @param endDate Data final do período (opcional).
+   * @param status Status do boleto (opcional).
+   * @param page Número da página.
+   * @param size Tamanho da página.
+   * @return Página contendo a lista de boletos filtrados.
+   * @throws IOException Se houver erro na comunicação com a API.
+   */
+  public Page<BilletResponse> searchBillets(
+      String name, String startDate, String endDate, String status, int page, int size)
+      throws IOException {
+    try {
+      // Monta os parâmetros da consulta
+      StringBuilder endpoint = new StringBuilder(BASE_URL + "boletos?");
+      endpoint.append("numeroCliente=").append(clientNumber);
+
+      if (name != null && !name.isBlank()) {
+        endpoint.append("&nome=").append(name);
+      }
+      if (status != null && !status.isBlank()) {
+        endpoint.append("&situacao=").append(status);
+      }
+
+      // Faz a requisição para a API
+      ResponseEntity<JsonNode> response = httpClient.getWithResponse(endpoint.toString());
+
+      // Verifica se a resposta é válida
+      JsonNode resposta = response.getBody();
+      if (resposta == null || resposta.isEmpty()) {
+        return Page.empty();
+      }
+
+      // Acessa o campo "resultado" que contém a lista de boletos
+      JsonNode resultado = resposta.path("resultado");
+      if (!resultado.isArray()) {
+        throw new BilletException("Resposta inválida da API: campo 'resultado' não é uma lista.");
+      }
+
+      // Mapeia os dados para uma lista de BilletResponse
+      List<BilletResponse> boletos = new ArrayList<>();
+      for (JsonNode boletoNode : resultado) {
+        BilletResponse boleto =
+            new BilletResponse(
+                boletoNode.path("pagador").path("nome").asText(),
+                boletoNode.path("dataEmissao").asText(),
+                boletoNode.path("dataVencimento").asText(),
+                boletoNode.path("seuNumero").asText(),
+                boletoNode.path("situacaoBoleto").asText(),
+                boletoNode.path("valor").decimalValue());
+        boletos.add(boleto);
+      }
+
+      // Filtra os boletos pela data de vencimento, se os parâmetros forem fornecidos
+      if (startDate != null && !startDate.isBlank()) {
+        LocalDate start = LocalDate.parse(startDate);
+        boletos =
+            boletos.stream()
+                .filter(b -> LocalDate.parse(b.dataVencimento()).isAfter(start) || LocalDate.parse(b.dataVencimento()).isEqual(start))
+                .toList();
+      }
+      if (endDate != null && !endDate.isBlank()) {
+        LocalDate end = LocalDate.parse(endDate);
+        boletos =
+            boletos.stream()
+                .filter(b -> LocalDate.parse(b.dataVencimento()).isBefore(end) || LocalDate.parse(b.dataVencimento()).isEqual(end))
+                .toList();
+      }
+
+      // Implementa a paginação manualmente
+      Pageable pageable = PageRequest.of(page, size, Sort.by("dataVencimento").descending());
+      int start = Math.min((int) pageable.getOffset(), boletos.size());
+      int end = Math.min((start + pageable.getPageSize()), boletos.size());
+      return new PageImpl<>(boletos.subList(start, end), pageable, boletos.size());
+
+    } catch (HttpClientErrorException e) {
+      throw new BilletException(
+          "Erro na requisição para buscar boletos: " + e.getResponseBodyAsString(), e);
+    } catch (IOException e) {
+      throw new BilletException("Erro ao processar a resposta da API ao buscar boletos.", e);
+    } catch (Exception e) {
+      throw new BilletException("Erro inesperado ao buscar boletos.", e);
+    }
+  }
+
+  /**
+   * Lista o boleto específico associado a um CombinedScore.
+   *
+   * @param combinedScoreId ID do CombinedScore
+   * @return Detalhes do boleto associado
+   * @throws IOException Se houver erro na comunicação ou no processamento da resposta
+   */
+  public BilletResponse getBilletByCombinedScore(long combinedScoreId) throws IOException {
+    // Busca o CombinedScore pelo ID
+    CombinedScore combinedScore =
+        combinedScoreRepository
+            .findById(combinedScoreId)
+            .orElseThrow(
+                () ->
+                    new BilletException(
+                        "CombinedScore com ID " + combinedScoreId + " não encontrado."));
+
+    // Verifica se o CombinedScore possui um número de boleto associado
+    String number = combinedScore.getNumber();
+    if (number == null || number.isBlank()) {
+      throw new BilletException("Nenhum boleto associado ao CombinedScore com ID " + combinedScoreId);
+    }
+
+    try {
+      // Monta o endpoint para buscar o boleto específico
+      String endpoint =
+          String.format(
+              BASE_URL + "boletos?numeroCliente=%d&seuNumero=%s",
+              clientNumber,
+              number);
+
+      // Faz a requisição para obter o boleto
+      ResponseEntity<JsonNode> response = httpClient.getWithResponse(endpoint);
+
+      // Verifica se a resposta é válida
+      JsonNode resposta = response.getBody();
+      if (resposta == null || resposta.isEmpty()) {
+        throw new BilletException("Nenhum boleto encontrado para o número: " + number);
+      }
+
+      // Acessa o campo "resultado" que contém os detalhes do boleto
+      JsonNode resultado = resposta.path("resultado");
+      if (!resultado.isObject()) {
+        throw new BilletException("Resposta inválida da API: campo 'resultado' não é um objeto.");
+      }
+
+      // Mapeia os dados para um objeto BilletResponse
+      return new BilletResponse(
+          resultado.path("pagador").path("nome").asText(),
+          resultado.path("dataEmissao").asText(),
+          resultado.path("dataVencimento").asText(),
+          resultado.path("seuNumero").asText(),
+          resultado.path("situacaoBoleto").asText(),
+          resultado.path("valor").decimalValue());
+
+    } catch (HttpClientErrorException e) {
+      throw new BilletException(
+          "Erro na requisição para buscar o boleto: " + e.getResponseBodyAsString(), e);
+    } catch (IOException e) {
+      throw new BilletException("Erro ao processar a resposta da API ao buscar o boleto.", e);
+    } catch (Exception e) {
+      throw new BilletException("Erro inesperado ao buscar o boleto.", e);
+    }
+  }
 }

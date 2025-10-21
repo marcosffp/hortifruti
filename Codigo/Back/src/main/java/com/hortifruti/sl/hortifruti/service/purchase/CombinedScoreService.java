@@ -243,4 +243,23 @@ public class CombinedScoreService {
 
     combinedScoreRepository.save(combinedScore);
   }
+
+  @Transactional
+  public void recalculateTotal(Long combinedScoreId) {
+    // Busca o CombinedScore pelo ID
+    CombinedScore combinedScore = combinedScoreRepository
+        .findById(combinedScoreId)
+        .orElseThrow(() -> new CombinedScoreException("Agrupamento com o ID " + combinedScoreId + " não encontrado."));
+
+    // Recalcula o total somando os valores dos produtos agrupados
+    BigDecimal newTotal = combinedScore.getGroupedProducts().stream()
+        .map(GroupedProduct::getTotalValue)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    // Atualiza o valor total no CombinedScore
+    combinedScore.setTotalValue(newTotal);
+
+    // Salva o CombinedScore atualizado no banco de dados
+    combinedScoreRepository.save(combinedScore);
+  }
 }
