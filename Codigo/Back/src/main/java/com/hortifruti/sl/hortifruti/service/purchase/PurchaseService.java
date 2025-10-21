@@ -9,6 +9,7 @@ import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -73,5 +74,24 @@ public class PurchaseService {
         .sorted((p1, p2) -> p1.getName().compareToIgnoreCase(p2.getName())) // Ordena pelo nome
         .map(invoiceProductMapper::toResponse)
         .toList();
+  }
+
+  @Transactional
+  public void recalculateTotal(Long purchaseId) {
+    // Busca a compra pelo ID
+    Purchase purchase = purchaseRepository
+        .findById(purchaseId)
+        .orElseThrow(() -> new PurchaseException("Compra não encontrada com o ID: " + purchaseId));
+
+    // Recalcula o total somando os valores dos produtos associados
+    BigDecimal newTotal = purchase.getInvoiceProducts().stream()
+        .map(invoiceProduct -> invoiceProduct.getPrice().multiply(BigDecimal.valueOf(invoiceProduct.getQuantity())))
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    // Atualiza o total da compra
+    purchase.setTotal(newTotal);
+
+    // Salva a compra atualizada no banco de dados
+    purchaseRepository.save(purchase);
   }
 }

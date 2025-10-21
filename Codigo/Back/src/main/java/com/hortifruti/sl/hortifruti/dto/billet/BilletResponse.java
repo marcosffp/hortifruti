@@ -8,5 +8,4 @@ public record BilletResponse(
     String dataVencimento,
     String seuNumero,
     String situacaoBoleto,
-    String nossoNumero,
     BigDecimal valor) {}

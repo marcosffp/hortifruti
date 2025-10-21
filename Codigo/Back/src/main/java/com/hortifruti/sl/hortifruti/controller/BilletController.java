@@ -120,4 +120,51 @@ public class BilletController {
       return errorJson;
     }
   }
+
+  /**
+   * Lista boletos com filtros opcionais (nome do cliente, período, status) e paginação.
+   *
+   * @param name Nome do cliente (opcional).
+   * @param startDate Data inicial do período (opcional).
+   * @param endDate Data final do período (opcional).
+   * @param status Status do boleto (opcional).
+   * @param page Número da página (opcional, padrão: 0).
+   * @param size Tamanho da página (opcional, padrão: 10).
+   * @return Lista paginada de boletos.
+   */
+  @GetMapping("/search")
+  public ResponseEntity<?> searchBillets(
+      @RequestParam(required = false) String name,
+      @RequestParam(required = false) String startDate,
+      @RequestParam(required = false) String endDate,
+      @RequestParam(required = false) String status,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "15") int size) {
+    try {
+      return ResponseEntity.ok(
+          billetService.searchBillets(name, startDate, endDate, status, page, size));
+    } catch (Exception e) {
+      e.printStackTrace();
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body("Erro ao buscar boletos: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Lista o boleto associado a um CombinedScore específico.
+   *
+   * @param combinedScoreId ID do CombinedScore
+   * @return Detalhes do boleto associado
+   */
+  @GetMapping("/billets/{combinedScoreId}")
+  public ResponseEntity<BilletResponse> getBilletCombinedScore(@PathVariable long combinedScoreId) {
+    try {
+      BilletResponse billet = billetService.getBilletByCombinedScore(combinedScoreId);
+      return ResponseEntity.ok(billet);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(null); // Return a default error response
+    }
+  }
 }
