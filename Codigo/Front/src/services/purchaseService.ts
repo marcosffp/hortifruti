@@ -1,5 +1,5 @@
 import { GroupedProductRequest } from "@/types/groupedType";
-import { PurchaseResponse } from "@/types/purchaseType";
+import { InvoiceProductType, PurchaseResponse } from "@/types/purchaseType";
 import { getAuthHeadersForFormData, getAuthHeaders } from "@/utils/httpUtils";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -73,5 +73,22 @@ export const purchaseService = {
 
     const data = await response.json();
     return { message: data.message };
+  },
+
+  async fetchInvoiceProducts(purchaseId: number): Promise<InvoiceProductType[]> {
+    const response = await fetch(
+      `${API_BASE_URL}/purchases/${purchaseId}/products`,
+      { headers: getAuthHeaders() }
+    );
+    if (!response.ok) throw new Error("Erro ao buscar produtos da compra");
+    return await response.json();
+  },
+
+  async deleteInvoiceProduct(productId: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/invoice-products/${productId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Erro ao deletar produto");
   }
 };

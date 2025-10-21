@@ -4,7 +4,6 @@ import com.hortifruti.sl.hortifruti.exception.PurchaseException;
 import com.hortifruti.sl.hortifruti.model.purchase.GroupedProduct;
 import com.hortifruti.sl.hortifruti.model.purchase.InvoiceProduct;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
-import com.hortifruti.sl.hortifruti.repository.purchase.ProductGrouperRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -17,7 +16,6 @@ import org.springframework.stereotype.Component;
 @Component
 @AllArgsConstructor
 public class ProductGrouperService {
-  private final ProductGrouperRepository productGrouperRepository;
 
   public List<GroupedProduct> groupProducts(List<Purchase> purchases, boolean isFixedPrice) {
     if (isFixedPrice) {
@@ -93,18 +91,14 @@ public class ProductGrouperService {
     // Calcula o valor total
     BigDecimal totalValue = price.multiply(BigDecimal.valueOf(totalQuantity));
 
-    // Cria e retorna o GroupedProduct
-    GroupedProduct groupedProduct =
-        GroupedProduct.builder()
-            .code(firstProduct.getCode())
-            .name(firstProduct.getName())
-            .price(price)
-            .quantity(totalQuantity)
-            .totalValue(totalValue)
-            .build();
-
-    // Salva o GroupedProduct no repositório (se necessário)
-    return productGrouperRepository.save(groupedProduct);
+    // Cria e retorna o GroupedProduct (transient - não persiste aqui)
+    return GroupedProduct.builder()
+        .code(firstProduct.getCode())
+        .name(firstProduct.getName())
+        .price(price)
+        .quantity(totalQuantity)
+        .totalValue(totalValue)
+        .build();
   }
 
   private GroupedProduct createGroupedProductForVariablePrice(
@@ -143,17 +137,13 @@ public class ProductGrouperService {
       throw new PurchaseException("Erro ao calcular preço médio ponderado: " + e.getMessage(), e);
     }
 
-    // Cria e retorna o GroupedProduct
-    GroupedProduct groupedProduct =
-        GroupedProduct.builder()
-            .code(firstProduct.getCode())
-            .name(firstProduct.getName())
-            .price(weightedAvgPrice)
-            .quantity(totalQuantity)
-            .totalValue(totalValue)
-            .build();
-
-    // Salva o GroupedProduct no repositório (se necessário)
-    return productGrouperRepository.save(groupedProduct);
+    // Cria e retorna o GroupedProduct (transient - não persiste aqui)
+    return GroupedProduct.builder()
+        .code(firstProduct.getCode())
+        .name(firstProduct.getName())
+        .price(weightedAvgPrice)
+        .quantity(totalQuantity)
+        .totalValue(totalValue)
+        .build();
   }
 }

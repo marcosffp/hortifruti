@@ -23,6 +23,25 @@ export const billetService = {
     }
   },
 
+  async fetchBilletPdf(combinedScoreId: number): Promise<Blob> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/billet/pdf/${combinedScoreId}`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar PDF do boleto: ${response.status}`);
+      }
+
+      const result = await response.blob();
+      return result;
+    } catch (error) {
+      console.error("Falha ao buscar PDF do boleto:", error);
+      throw error;
+    }
+  },
+
   async getClientBillets(clientId: number): Promise<BilletResponse[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/billet/billets/${clientId}`, {
