@@ -28,4 +28,9 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
       @Param("clientId") Long clientId, Pageable pageable);
 
   List<Purchase> findByIdIn(@Param("ids") List<Long> ids);
+
+  Page<Purchase> findByPurchaseDateBetweenOrderByPurchaseDateDesc(
+      @Param("startDate") LocalDateTime startDate,
+      @Param("endDate") LocalDateTime endDate,
+      Pageable pageable);
 }
