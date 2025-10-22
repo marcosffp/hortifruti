@@ -30,6 +30,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -255,56 +256,60 @@ public class BilletService {
    * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    * @throws BilletException Se houver erro específico da API de boletos
    */
-  public ResponseEntity<String> cancelBillet(Long idCombinedScore)
-      throws IOException, BilletException {
+  public ResponseEntity<String> cancelBillet(Long idCombinedScore) throws IOException, BilletException {
     CombinedScore combinedScore =
         combinedScoreRepository
-            .findById(idCombinedScore)
+            .findById(idCombinedScore) // Corrigido para usar findById
             .orElseThrow(
                 () ->
                     new CombinedScoreException(
                         "Agrupamento com o ID " + idCombinedScore + " não encontrado."));
-    if (combinedScore.isHasBillet() == false) {
-      throw new CombinedScoreException("Agrupamento não possui boleto associado.");
+    if (!combinedScore.isHasBillet()) {
+        throw new CombinedScoreException("Agrupamento não possui boleto associado.");
     }
+
     try {
-      // Monta o objeto de requisição para a baixa do boleto
-      Map<String, Object> requestBody = new HashMap<>();
-      requestBody.put("numeroCliente", clientNumber);
-      requestBody.put("codigoModalidade", MODALITY_CODE);
-      String nossoNumero = combinedScore.getOurNumber_sicoob();
+        // Monta o objeto de requisição para a baixa do boleto
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("numeroCliente", clientNumber);
+        requestBody.put("codigoModalidade", MODALITY_CODE);
+        String nossoNumero = combinedScore.getOurNumber_sicoob();
 
-      // Monta o endpoint com o número do boleto
-      String endpoint = String.format(BASE_URL + "boletos/%s/baixar", nossoNumero);
+        // Monta o endpoint com o número do boleto
+        String endpoint = String.format(BASE_URL + "boletos/%s/baixar", nossoNumero);
 
-      // Faz a requisição POST para realizar a baixa do boleto
-      httpClient.post(endpoint, requestBody);
+        // Faz a requisição POST para realizar a baixa do boleto
+        JsonNode response = httpClient.postCancel(endpoint, requestBody);
 
-      // Atualiza o status do CombinedScore após o cancelamento do boleto
-      combinedScoreService.updateStatusAfterBilletCancellation(nossoNumero);
+        // Verifica se a resposta é null (indicando sucesso com 204 NO_CONTENT)
+        if (response == null) {
+            combinedScoreService.updateStatusAfterBilletCancellation(combinedScore.getYourNumber());
+            return ResponseEntity.noContent().build();
+        }
 
-      // Se chegou até aqui, a operação foi bem-sucedida (código 204)
-      return ResponseEntity.noContent().build();
+        // Caso contrário, trata a resposta normalmente
+        return ResponseEntity.ok("Boleto baixado com sucesso.");
 
     } catch (HttpClientErrorException.BadRequest e) {
-      // Extrai a mensagem detalhada de erro para códigos 400
-      String errorBody = e.getResponseBodyAsString();
+        String errorBody = e.getResponseBodyAsString();
 
-      // Se o erro contém "Título em processo de baixa/liquidação", trata como sucesso
-      if (errorBody.contains("Título em processo de baixa/liquidação")) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-            .body("O boleto já está em processo de cancelamento ou já foi liquidado.");
-      }
+        // Se o erro contém "Título em processo de baixa/liquidação", trata como sucesso
+        if (errorBody.contains("Título em processo de baixa/liquidação")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body("O boleto já está em processo de cancelamento ou já foi liquidado.");
+        }
 
-      throw new BilletException("Erro na requisição para baixar o boleto: " + errorBody);
+        throw new BilletException("Erro na requisição para baixar o boleto: " + errorBody);
     } catch (HttpClientErrorException e) {
-      // Para outros erros HTTP do cliente
-      throw new BilletException(
-          "Erro na requisição para baixar o boleto: " + e.getResponseBodyAsString());
+        throw new BilletException(
+            "Erro na requisição para baixar o boleto: " + e.getResponseBodyAsString());
+    } catch (HttpServerErrorException e) {
+        // Trata erros 500 Internal Server Error
+        throw new BilletException("Erro interno do servidor ao baixar o boleto: " + e.getMessage());
     } catch (IOException e) {
-      throw new BilletException("Erro de comunicação ao baixar o boleto: " + e.getMessage());
+        throw new BilletException("Erro de comunicação ao baixar o boleto: " + e.getMessage());
     } catch (Exception e) {
-      throw new BilletException("Erro inesperado ao baixar o boleto: " + e.getMessage());
+        throw new BilletException("Erro inesperado ao baixar o boleto: " + e.getMessage());
     }
   }
 
@@ -448,6 +453,7 @@ public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number
       // Monta os parâmetros da consulta
       StringBuilder endpoint = new StringBuilder(BASE_URL + "boletos?");
       endpoint.append("numeroCliente=").append(clientNumber);
+      endpoint.append("&codigoModalidade=").append(MODALITY_CODE); // Adiciona o código da modalidade
 
       if (name != null && !name.isBlank()) {
         endpoint.append("&nome=").append(name);
@@ -455,6 +461,9 @@ public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number
       if (status != null && !status.isBlank()) {
         endpoint.append("&situacao=").append(status);
       }
+
+      // Log da URL gerada
+      System.out.println("URL gerada para requisição: " + endpoint.toString());
 
       // Faz a requisição para a API
       ResponseEntity<JsonNode> response = httpClient.getWithResponse(endpoint.toString());
@@ -483,22 +492,6 @@ public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number
                 boletoNode.path("situacaoBoleto").asText(),
                 boletoNode.path("valor").decimalValue());
         boletos.add(boleto);
-      }
-
-      // Filtra os boletos pela data de vencimento, se os parâmetros forem fornecidos
-      if (startDate != null && !startDate.isBlank()) {
-        LocalDate start = LocalDate.parse(startDate);
-        boletos =
-            boletos.stream()
-                .filter(b -> LocalDate.parse(b.dataVencimento()).isAfter(start) || LocalDate.parse(b.dataVencimento()).isEqual(start))
-                .toList();
-      }
-      if (endDate != null && !endDate.isBlank()) {
-        LocalDate end = LocalDate.parse(endDate);
-        boletos =
-            boletos.stream()
-                .filter(b -> LocalDate.parse(b.dataVencimento()).isBefore(end) || LocalDate.parse(b.dataVencimento()).isEqual(end))
-                .toList();
       }
 
       // Implementa a paginação manualmente
@@ -535,18 +528,24 @@ public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number
                         "CombinedScore com ID " + combinedScoreId + " não encontrado."));
 
     // Verifica se o CombinedScore possui um número de boleto associado
-    String number = combinedScore.getOurNumber_sicoob();
-    if (number == null || number.isBlank()) {
+    String nossoNumero = combinedScore.getOurNumber_sicoob();
+    if (nossoNumero == null || nossoNumero.isBlank()) {
       throw new BilletException("Nenhum boleto associado ao CombinedScore com ID " + combinedScoreId);
+    }
+
+    // Valida o número do cliente
+    if (clientNumber == null || clientNumber <= 0) {
+      throw new BilletException("Número do cliente (numeroCliente) está ausente ou inválido.");
     }
 
     try {
       // Monta o endpoint para buscar o boleto específico
       String endpoint =
           String.format(
-              BASE_URL + "boletos?numeroCliente=%d&nossoNumero=%s",
+              BASE_URL + "boletos?numeroCliente=%d&codigoModalidade=%d&nossoNumero=%s",
               clientNumber,
-              number);
+              MODALITY_CODE,
+              nossoNumero);
 
       // Faz a requisição para obter o boleto
       ResponseEntity<JsonNode> response = httpClient.getWithResponse(endpoint);
@@ -554,7 +553,7 @@ public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number
       // Verifica se a resposta é válida
       JsonNode resposta = response.getBody();
       if (resposta == null || resposta.isEmpty()) {
-        throw new BilletException("Nenhum boleto encontrado para o número: " + number);
+        throw new BilletException("Nenhum boleto encontrado para o número: " + nossoNumero);
       }
 
       // Acessa o campo "resultado" que contém os detalhes do boleto

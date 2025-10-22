@@ -76,53 +76,64 @@ public class BilletFactory {
    * @return Objeto Pagador
    */
   public Pagador createPagadorFromClient(Client client) {
-    // Exemplo de address recebido do front:
-    // "Rua X, 123, apto 2, Bairro Y, Cidade Z - UF, CEP: 12345-678"
+    // Exemplo de address recebido do banco de dados:
+    // "Sítio Boa Vista,Santa Luzia,33040-257,MG,Rua Quartzolit, 70"
     String address = client.getAddress();
 
-    // Separar rua, número, complemento, bairro, cidade/UF, CEP
-    String[] addressParts = address.split(",");
-    if (addressParts.length < 5) {
-      throw new BilletException("O endereço do cliente está incompleto ou mal formatado.");
+    try {
+      // Divide o endereço em partes
+      String[] addressParts = address.split(",");
+      if (addressParts.length < 6) {
+        throw new BilletException("O endereço do cliente está incompleto. Formato esperado: 'Sítio, Cidade, CEP, UF, Rua, Número'");
+      }
+
+      // Extrai as informações com base nas posições fixas
+      String rua = addressParts[4].trim(); // Rua está na 5ª posição
+      String numero = addressParts[5].trim(); // Número está na 6ª posição
+      String bairro = addressParts[0].trim(); // Bairro está na 1ª posição
+      String cidade = addressParts[1].trim(); // Cidade está na 2ª posição
+      String cep = addressParts[2].trim(); // CEP está na 3ª posição
+      String uf = addressParts[3].trim(); // UF está na 4ª posição
+
+      // Remove "CEP:" e caracteres não numéricos do CEP, se necessário
+      cep = cep.replaceAll("[^0-9]", "");
+
+      // Validações básicas
+      if (rua.isEmpty()) {
+        throw new BilletException("Rua não pode estar vazia no endereço do cliente.");
+      }
+      if (numero.isEmpty()) {
+        throw new BilletException("Número não pode estar vazio no endereço do cliente.");
+      }
+      if (bairro.isEmpty()) {
+        throw new BilletException("Bairro não pode estar vazio no endereço do cliente.");
+      }
+      if (cidade.isEmpty()) {
+        throw new BilletException("Cidade não pode estar vazia no endereço do cliente.");
+      }
+      if (uf.isEmpty()) {
+        throw new BilletException("UF não pode estar vazia no endereço do cliente.");
+      }
+      if (cep.length() != 8) {
+        throw new BilletException("CEP deve conter exatamente 8 dígitos numéricos.");
+      }
+
+      // Monta endereço completo para o campo "endereco"
+      String enderecoCompleto = rua + ", " + numero;
+
+      return new Pagador(
+          client.getDocument().replaceAll("[^0-9]", ""), // Remove formatação do CPF/CNPJ
+          client.getClientName(),
+          enderecoCompleto, // Rua + número
+          bairro,
+          cidade,
+          cep,
+          uf);
+
+    } catch (Exception e) {
+      throw new BilletException(
+          "Erro ao processar endereço do cliente: " + e.getMessage() + 
+          ". Endereço recebido: '" + address + "'", e);
     }
-
-    String rua = addressParts[0].trim();
-    String numero = addressParts[1].trim();
-    String complemento = "";
-
-    // Verifica se há complemento (ex: "apto 2")
-    if (addressParts.length == 6) {
-      complemento = addressParts[2].trim();
-    }
-
-    String bairro = addressParts[addressParts.length - 3].trim();
-    String cidadeUf = addressParts[addressParts.length - 2].trim();
-    String cep = addressParts[addressParts.length - 1].trim();
-
-    // Extrai cidade e UF
-    String cidade = cidadeUf;
-    String uf = "";
-    if (cidadeUf.contains("-")) {
-      String[] cidadeUfParts = cidadeUf.split("-");
-      cidade = cidadeUfParts[0].trim();
-      uf = cidadeUfParts[1].trim();
-    }
-
-    // Extrai CEP se vier como "CEP: 12345-678"
-    if (cep.startsWith("CEP:")) {
-      cep = cep.replace("CEP:", "").trim().replaceAll("[^0-9]", "");
-    }
-
-    // Monta rua completa
-    String ruaCompleta = rua + ", " + numero + (complemento.isEmpty() ? "" : ", " + complemento);
-
-    return new Pagador(
-        client.getDocument().replaceAll("[^0-9]", ""),
-        client.getClientName(),
-        ruaCompleta, // Rua + número + complemento
-        bairro,
-        cidade,
-        cep,
-        uf);
   }
 }
