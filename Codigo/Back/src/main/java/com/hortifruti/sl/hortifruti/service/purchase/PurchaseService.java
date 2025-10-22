@@ -10,9 +10,11 @@ import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -94,4 +96,42 @@ public class PurchaseService {
     // Salva a compra atualizada no banco de dados
     purchaseRepository.save(purchase);
   }
+
+  @Transactional(readOnly = true)
+  public Page<PurchaseResponse> getPurchasesByDateRange(
+      LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+    // Busca as compras no repositório dentro do intervalo de datas
+    Page<Purchase> purchases = purchaseRepository.findByPurchaseDateBetweenOrderByPurchaseDateDesc(startDate, endDate, pageable);
+
+    // Mapeia as compras para PurchaseResponse
+    return purchases.map(purchase -> new PurchaseResponse(
+        purchase.getId(),
+        purchase.getPurchaseDate(),
+        purchase.getTotal(),
+        purchase.getUpdatedAt()
+    ));
+  }
+
+  @Transactional(readOnly = true)
+  public Page<PurchaseResponse> getPurchasesByDateRange(String startDate, String endDate, int page, int size) {
+    // Converte as datas recebidas como String para LocalDateTime
+    LocalDateTime start = LocalDateTime.parse(startDate);
+    LocalDateTime end = LocalDateTime.parse(endDate);
+
+    // Configura a paginação
+    Pageable pageable = PageRequest.of(page, size);
+
+    // Busca as compras no repositório dentro do intervalo de datas
+    Page<Purchase> purchases = purchaseRepository.findByPurchaseDateBetweenOrderByPurchaseDateDesc(start, end, pageable);
+
+    // Mapeia as compras para PurchaseResponse
+    return purchases.map(purchase -> new PurchaseResponse(
+        purchase.getId(),
+        purchase.getPurchaseDate(),
+        purchase.getTotal(),
+        purchase.getUpdatedAt()
+    ));
+  }
+
+
 }
