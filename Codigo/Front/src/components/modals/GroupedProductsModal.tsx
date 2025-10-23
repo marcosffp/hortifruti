@@ -113,16 +113,6 @@ export default function GroupedProductsModal({
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-300">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-          >
-            Fechar
-          </button>
-        </div>
       </div>
     </div>
   );

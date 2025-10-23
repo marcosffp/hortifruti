@@ -23,7 +23,8 @@ export const billetService = {
     }
   },
 
-  async fetchBilletPdf(combinedScoreId: number): Promise<Blob> {
+  // Renomeado de fetchBilletPdf para fetchBilletInfo - agora retorna JSON
+  async fetchBilletInfo(combinedScoreId: number): Promise<BilletResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/billet/${combinedScoreId}`, {
         method: "GET",
@@ -31,13 +32,13 @@ export const billetService = {
       });
 
       if (!response.ok) {
-        throw new Error(`Erro ao buscar PDF do boleto: ${response.status}`);
+        throw new Error(`Erro ao buscar informações do boleto: ${response.status}`);
       }
 
-      const result = await response.blob();
+      const result: BilletResponse = await response.json();
       return result;
     } catch (error) {
-      console.error("Falha ao buscar PDF do boleto:", error);
+      console.error("Falha ao buscar informações do boleto:", error);
       throw error;
     }
   },
@@ -61,9 +62,9 @@ export const billetService = {
     }
   },
 
-  async issueCopy(yourNumber: string, ourNumber: string): Promise<Blob> {
+  async issueCopy(combinedScoreId: number): Promise<Blob> {
     try {
-      const response = await fetch(`${API_BASE_URL}/billet/issue-copy/${ourNumber}/${yourNumber}`, {
+      const response = await fetch(`${API_BASE_URL}/billet/issue-copy/${combinedScoreId}`, {
         method: "GET",
         headers: getAuthHeaders(),
       });
@@ -80,9 +81,9 @@ export const billetService = {
     }
   },
 
-  async cancelBillet(ourNumber: string): Promise<string> {
+  async cancelBillet(combinedScoreId: number): Promise<string> {
     try {
-      const response = await fetch(`${API_BASE_URL}/billet/cancel/${ourNumber}`, {
+      const response = await fetch(`${API_BASE_URL}/billet/cancel/${combinedScoreId}`, {
         method: "POST",
         headers: getAuthHeaders(),
       });

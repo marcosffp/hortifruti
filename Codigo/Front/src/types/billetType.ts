@@ -4,6 +4,5 @@ export interface BilletResponse {
     dataVencimento: string;
     seuNumero: string;
     situacaoBoleto: string;
-    nossoNumero: string;
     valor: number;
 }

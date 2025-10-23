@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Trash, Eye } from "lucide-react";
+import { Trash, Eye, Plus, X } from "lucide-react";
 import { purchaseService } from "@/services/purchaseService";
 import { PurchaseType } from "@/types/purchaseType";
 import InvoiceProductsModal from "@/components/modals/InvoiceProductsModal";
@@ -11,17 +11,17 @@ import { showError, showSuccess } from "@/services/notificationService";
 interface PurchaseFilesTableProps {
     clientId?: number;
     refreshKey?: number;
-    startDate?: string;
-    endDate?: string;
+    onGroupingCreated?: () => void;
 }
 
-export default function PurchaseFilesTable({ clientId, refreshKey }: PurchaseFilesTableProps) {
+export default function PurchaseFilesTable({ clientId, refreshKey, onGroupingCreated }: PurchaseFilesTableProps) {
     const [purchases, setPurchases] = useState<PurchaseType[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [selectedPurchase, setSelectedPurchase] = useState<PurchaseType | null>(null);
     const [showModal, setShowModal] = useState(false);
+    const [showGroupingModal, setShowGroupingModal] = useState(false);
     const [groupBy, setGroupBy] = useState<'week' | 'month' | 'custom'>('custom');
     const [creatingGrouping, setCreatingGrouping] = useState(false);
     const [startDate, setStartDate] = useState(() => {
@@ -78,7 +78,6 @@ export default function PurchaseFilesTable({ clientId, refreshKey }: PurchaseFil
             setStartDate(start);
             setEndDate(end);
         }
-        // Se for custom, não altera nada
     }, [groupBy]);
 
     const fetchPurchases = async () => {
@@ -110,7 +109,7 @@ export default function PurchaseFilesTable({ clientId, refreshKey }: PurchaseFil
         return () => {
             if (debounceTimer.current) clearTimeout(debounceTimer.current);
         };
-    }, [clientId, page, refreshKey, startDate, endDate]);
+    }, [clientId, page, refreshKey]);
 
     const handleDelete = async (purchaseId: number) => {
         if (!confirm("Tem certeza que deseja deletar este arquivo de compra?")) return;
@@ -148,19 +147,21 @@ export default function PurchaseFilesTable({ clientId, refreshKey }: PurchaseFil
 
         setCreatingGrouping(true);
         try {
-            const response = await combinedScoreService.createCombinedScore({
+            await combinedScoreService.createCombinedScore({
                 clientId,
                 startDate,
                 endDate,
             });
             showSuccess("Agrupamento criado com sucesso! Veja na aba 'Produtos Agrupados'");
+            setShowGroupingModal(false);
+            onGroupingCreated?.();
         } catch (error: any) {
             showError(error.message || "Erro ao criar agrupamento");
             console.error(error);
         } finally {
             setCreatingGrouping(false);
         }
-    }
+    };
 
     const formatDate = (dateString: string) => {
         try {
@@ -183,65 +184,6 @@ export default function PurchaseFilesTable({ clientId, refreshKey }: PurchaseFil
         }).format(value);
     };
 
-    // Filtro de datas
-    const renderDateFilter = () => (
-        <div className="mb-4 p-4 bg-white">
-            <div className="flex flex-wrap *:flex-grow items-end gap-6">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Tipo de Agrupamento
-                    </label>
-                    <select
-                        className="px-3 w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                        value={groupBy}
-                        onChange={(e) => setGroupBy(e.target.value as 'week' | 'month' | 'custom')}
-                    >
-                        <option value="custom">Intervalo Personalizado</option>
-                        <option value="week">Semanal</option>
-                        <option value="month">Mensal</option>
-                    </select>
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Data Inicial
-                    </label>
-                    <input
-                        type="date"
-                        value={startDate}
-                        disabled={groupBy !== 'custom'}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className={`px-3 w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${groupBy !== 'custom' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Data Final
-                    </label>
-                    <input
-                        type="date"
-                        value={endDate}
-                        disabled={groupBy !== 'custom'}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        className={`px-3 w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${groupBy !== 'custom' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                    />
-                </div>
-                <div>
-                    <button
-                        onClick={handleConfirmGrouping}
-                        disabled={loading || purchases.length === 0 || creatingGrouping || !clientId}
-                        className={`px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors ${
-                            (loading || purchases.length === 0 || creatingGrouping || !clientId) 
-                            ? 'opacity-50 cursor-not-allowed' 
-                            : ''
-                        }`}
-                    >
-                        {creatingGrouping ? "Criando..." : "Confirmar Agrupamento"}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-
     if (!clientId) {
         return (
             <div className="text-center py-12 text-gray-500">
@@ -252,7 +194,21 @@ export default function PurchaseFilesTable({ clientId, refreshKey }: PurchaseFil
 
     return (
         <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Arquivos de Compra</h2>
+            {/* Header com título e botão */}
+            <div className="flex justify-between items-center">
+                <h2 className="text-lg font-semibold">Arquivos de Compra</h2>
+                <button
+                    onClick={() => setShowGroupingModal(true)}
+                    disabled={!clientId || purchases.length === 0}
+                    className={`flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors ${
+                        (!clientId || purchases.length === 0) ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                >
+                    <Plus className="w-4 h-4" />
+                    Criar Agrupamento
+                </button>
+            </div>
+
             {/* Loading skeleton */}
             {loading ? (
                 <div className="space-y-2">
@@ -261,16 +217,12 @@ export default function PurchaseFilesTable({ clientId, refreshKey }: PurchaseFil
                     ))}
                 </div>
             ) : purchases.length === 0 ? (
-                <>
-                    {renderDateFilter()}
-                    <div className="text-center py-12 text-gray-500">
-                        <p>Nenhum arquivo de compra encontrado</p>
-                    </div>
-                </>
+                <div className="text-center py-12 text-gray-500">
+                    <p>Nenhum arquivo de compra encontrado</p>
+                </div>
             ) : (
                 <>
                     {/* Tabela */}
-                    {renderDateFilter()}
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
                             <thead>
@@ -297,14 +249,14 @@ export default function PurchaseFilesTable({ clientId, refreshKey }: PurchaseFil
                                                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                     title="Ver produtos"
                                                 >
-                                                    <Eye/>
+                                                    <Eye className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(purchase.id)}
                                                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                     title="Deletar"
                                                 >
-                                                    <Trash/>
+                                                    <Trash className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         </td>
@@ -337,6 +289,103 @@ export default function PurchaseFilesTable({ clientId, refreshKey }: PurchaseFil
                         </div>
                     )}
                 </>
+            )}
+
+            {/* Modal de Criar Agrupamento */}
+            {showGroupingModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+                        {/* Header */}
+                        <div className="flex justify-between items-center p-6 border-b border-gray-300">
+                            <h3 className="text-xl font-semibold">Criar Agrupamento por Período</h3>
+                            <button
+                                onClick={() => setShowGroupingModal(false)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Tipo de Agrupamento
+                                </label>
+                                <select
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    value={groupBy}
+                                    onChange={(e) => setGroupBy(e.target.value as 'week' | 'month' | 'custom')}
+                                >
+                                    <option value="custom">Intervalo Personalizado</option>
+                                    <option value="week">Semanal (Última Semana)</option>
+                                    <option value="month">Mensal (Mês Passado)</option>
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Data Inicial
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={startDate}
+                                        disabled={groupBy !== 'custom'}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                                            groupBy !== 'custom' ? 'bg-gray-100 cursor-not-allowed' : ''
+                                        }`}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Data Final
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={endDate}
+                                        disabled={groupBy !== 'custom'}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                                            groupBy !== 'custom' ? 'bg-gray-100 cursor-not-allowed' : ''
+                                        }`}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Info sobre o período selecionado */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p className="text-sm text-blue-800">
+                                    <strong>Período selecionado:</strong> {new Date(startDate.split('-').join('/')).toLocaleDateString('pt-BR')} até {new Date(endDate.split('-').join('/')).toLocaleDateString('pt-BR')}
+                                </p>
+                                <p className="text-xs text-blue-600 mt-1">
+                                    Todos os arquivos de compra dentro deste período serão agrupados.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex justify-end gap-3 p-6 border-t border-gray-300">
+                            <button
+                                onClick={() => setShowGroupingModal(false)}
+                                disabled={creatingGrouping}
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleConfirmGrouping}
+                                disabled={creatingGrouping || !clientId}
+                                className={`px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors ${
+                                    (creatingGrouping || !clientId) ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
+                            >
+                                {creatingGrouping ? "Criando..." : "Confirmar Agrupamento"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Modal de produtos */}

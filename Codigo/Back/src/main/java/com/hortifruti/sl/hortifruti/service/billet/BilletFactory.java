@@ -83,20 +83,38 @@ public class BilletFactory {
     try {
       // Divide o endereço em partes
       String[] addressParts = address.split(",");
-      if (addressParts.length < 6) {
-        throw new BilletException("O endereço do cliente está incompleto. Formato esperado: 'Sítio, Cidade, CEP, UF, Rua, Número'");
+      if (addressParts.length < 5) {
+        throw new BilletException(
+            "O endereço do cliente está incompleto. Formato esperado: 'Rua, Numero, Complemento"
+                + " (opcional), Bairro, Cidade - UF, CEP: XXXXX-XXX'");
       }
 
-      // Extrai as informações com base nas posições fixas
-      String rua = addressParts[4].trim(); // Rua está na 5ª posição
-      String numero = addressParts[5].trim(); // Número está na 6ª posição
-      String bairro = addressParts[0].trim(); // Bairro está na 1ª posição
-      String cidade = addressParts[1].trim(); // Cidade está na 2ª posição
-      String cep = addressParts[2].trim(); // CEP está na 3ª posição
-      String uf = addressParts[3].trim(); // UF está na 4ª posição
+      String rua = addressParts[0].trim();
+      String numero = addressParts[1].trim();
+      String complemento = "";
 
-      // Remove "CEP:" e caracteres não numéricos do CEP, se necessário
-      cep = cep.replaceAll("[^0-9]", "");
+      // Verifica se há complemento (ex: "apto 2")
+      if (addressParts.length == 6) {
+        complemento = addressParts[2].trim();
+      }
+
+      String bairro = addressParts[addressParts.length - 3].trim();
+      String cidadeUf = addressParts[addressParts.length - 2].trim();
+      String cep = addressParts[addressParts.length - 1].trim();
+
+      // Extrai cidade e UF
+      String cidade = cidadeUf;
+      String uf = "";
+      if (cidadeUf.contains("-")) {
+        String[] cidadeUfParts = cidadeUf.split("-");
+        cidade = cidadeUfParts[0].trim();
+        uf = cidadeUfParts[1].trim();
+      }
+
+      // Extrai CEP se vier como "CEP: 12345-678"
+      if (cep.startsWith("CEP:")) {
+        cep = cep.replace("CEP:", "").trim().replaceAll("[^0-9]", "");
+      }
 
       // Validações básicas
       if (rua.isEmpty()) {
@@ -119,12 +137,12 @@ public class BilletFactory {
       }
 
       // Monta endereço completo para o campo "endereco"
-      String enderecoCompleto = rua + ", " + numero;
+      String enderecoCompleto = rua + ", " + numero + (complemento.isEmpty() ? "" : ", " + complemento);
 
       return new Pagador(
           client.getDocument().replaceAll("[^0-9]", ""), // Remove formatação do CPF/CNPJ
           client.getClientName(),
-          enderecoCompleto, // Rua + número
+          enderecoCompleto, // Rua + número + complemento
           bairro,
           cidade,
           cep,
@@ -132,8 +150,12 @@ public class BilletFactory {
 
     } catch (Exception e) {
       throw new BilletException(
-          "Erro ao processar endereço do cliente: " + e.getMessage() + 
-          ". Endereço recebido: '" + address + "'", e);
+          "Erro ao processar endereço do cliente: "
+              + e.getMessage()
+              + ". Endereço recebido: '"
+              + address
+              + "'",
+          e);
     }
   }
 }
