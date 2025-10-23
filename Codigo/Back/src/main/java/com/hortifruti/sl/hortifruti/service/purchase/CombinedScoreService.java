@@ -221,6 +221,7 @@ public class CombinedScoreService {
     } else {
       combinedScore.setStatus(Status.CANCELADO);
     }
+    combinedScore.setHasBillet(false);
 
     combinedScoreRepository.save(combinedScore);
   }
@@ -240,6 +241,7 @@ public class CombinedScoreService {
     } else {
       combinedScore.setStatus(Status.CANCELADO);
     }
+    combinedScore.setHasInvoice(false);
 
     combinedScoreRepository.save(combinedScore);
   }

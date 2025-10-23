@@ -28,4 +28,7 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
       @Param("clientId") Long clientId, @Param("currentDate") LocalDate currentDate);
 
   Optional<CombinedScore> findByYourNumber(String yourNumber);
+
+  @Query("SELECT cs FROM CombinedScore cs WHERE cs.status = 'PENDENTE' AND cs.dueDate <= :date")
+  List<CombinedScore> findOverduePendingScores(@Param("date") LocalDate date);
 }
