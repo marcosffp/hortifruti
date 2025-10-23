@@ -125,7 +125,7 @@ public class BilletService {
    * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
   public List<BilletResponse> listBilletByPayer(long clientId) throws IOException {
-    String numeroCpfCnpj = getClientById(clientId).getDocument();
+    String numeroCpfCnpj = getClientById(clientId).getDocument().replaceAll("[^\\d]", "");
     try {
       // Monta o endpoint para a requisição
       String endpoint =
@@ -331,7 +331,7 @@ public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number
                 () ->
                     new CombinedScoreException(
                         "Agrupamento com o ID " + combinedScoreId + " não encontrado."));
-
+    
     // Verifica se o boleto já foi gerado
     if (combinedScore.isHasBillet()) {
         throw new CombinedScoreException("O boleto para este agrupamento já foi gerado.");
@@ -358,7 +358,7 @@ public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number
         byte[] pdfBytes = (byte[]) responseBody.get("pdf");
         String nossoNumero = (String) responseBody.get("nossoNumero");
         String seuNumero = (String) responseBody.get("seuNumero");
-
+        System.out.println("PIX:" + responseBody.get("qrCode"));
         // Atualiza o status do agrupamento para indicar que o boleto foi gerado
         combinedScore.setHasBillet(true);
         combinedScore.setOurNumber_sicoob(nossoNumero);
