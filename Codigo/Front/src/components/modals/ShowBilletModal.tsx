@@ -1,18 +1,21 @@
 "use client";
 
+import { useBillet } from "@/hooks/useBillet";
+import { showSuccess, showError } from "@/services/notificationService";
 import { X, Download, Printer } from "lucide-react";
 import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
 
 interface ShowBilletModalProps {
     isOpen: boolean;
     onClose: () => void;
     billetData: Blob;
-    scoreNumber?: string;
+    scoreNumber?: string | number | null;
+    clientNumber?: string | null;
 }
 
-export default function ShowBilletModal({ isOpen, onClose, billetData, scoreNumber }: ShowBilletModalProps) {
+export default function ShowBilletModal({ isOpen, onClose, billetData, scoreNumber, clientNumber }: ShowBilletModalProps) {
     const [pdfUrl, setPdfUrl] = useState<string>("");
+    const { downloadBillet } = useBillet();
 
     useEffect(() => {
         if (billetData && isOpen) {
@@ -28,18 +31,12 @@ export default function ShowBilletModal({ isOpen, onClose, billetData, scoreNumb
     }, [billetData, isOpen]);
 
     const handleDownload = () => {
-        try {
-            const link = document.createElement("a");
-            link.href = pdfUrl;
-            link.download = `boleto-${scoreNumber || "agrupamento"}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            toast.success("Boleto baixado com sucesso!");
-        } catch (error) {
-            toast.error("Erro ao baixar o boleto");
+        downloadBillet(billetData, Number(scoreNumber), clientNumber || "unknown").then(() => {
+            showSuccess("Boleto baixado com sucesso");
+        }).catch((error) => {
+            showError("Erro ao baixar o boleto");
             console.error(error);
-        }
+        });
     };
 
     const handlePrint = () => {
@@ -51,7 +48,7 @@ export default function ShowBilletModal({ isOpen, onClose, billetData, scoreNumb
                 };
             }
         } catch (error) {
-            toast.error("Erro ao imprimir o boleto");
+            showError("Erro ao imprimir o boleto");
             console.error(error);
         }
     };

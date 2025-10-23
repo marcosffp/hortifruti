@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FileText, Eye, Trash2, CheckCircle, XCircle, Calendar } from "lucide-react";
+import { FileText, Eye, Trash2, CheckCircle, XCircle, Calendar, Info } from "lucide-react";
 import { combinedScoreService } from "@/services/combinedScoreService";
 import { billetService } from "@/services/billetService";
 import { CombinedScoreType } from "@/types/combinedScoreType";
+import { BilletResponse } from "@/types/billetType";
 import GroupedProductsModal from "@/components/modals/GroupedProductsModal";
 import ShowBilletModal from "@/components/modals/ShowBilletModal";
+import ShowBilletDataModal from "@/components/modals/ShowBilletDataModal";
 import { useBillet } from "@/hooks/useBillet";
 import ClientNumberModal from "../modals/ClientNumberModal";
 import { showError, showInfo, showSuccess } from "@/services/notificationService";
@@ -16,18 +18,24 @@ interface CombinedScoresCardsProps {
     refreshKey?: number;
 }
 
+interface ScoreWithBilletInfo extends CombinedScoreType {
+    billetInfo?: BilletResponse | null;
+}
+
 export default function CombinedScoresCards({ clientId, refreshKey }: CombinedScoresCardsProps) {
-    const [scores, setScores] = useState<CombinedScoreType[]>([]);
+    const [scores, setScores] = useState<ScoreWithBilletInfo[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
-    const [selectedScore, setSelectedScore] = useState<CombinedScoreType | null>(null);
+    const [selectedScore, setSelectedScore] = useState<ScoreWithBilletInfo | null>(null);
+    const [clientNumber, setClientNumber] = useState<string | null>(null);
     const [showModalProducts, setShowModalProducts] = useState(false);
     const [clientNumberModal, setClientNumberModal] = useState({ state: false, groupId: -1 });
     const [showBilletModal, setShowBilletModal] = useState(false);
+    const [showBilletDataModal, setShowBilletDataModal] = useState(false);
     const [billetPdf, setBilletPdf] = useState<Blob | null>(null);
 
-    const { generateBillet, downloadBillet } = useBillet();
+    const { generateBillet, getBilletInfo } = useBillet();
 
     const fetchScores = async () => {
         if (!clientId) {
@@ -38,8 +46,44 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
         setLoading(true);
         try {
             const data = await combinedScoreService.fetchCombinedScores(clientId, page, 10);
-            console.log(data);
-            setScores(data.content);
+
+            // Para cada score que tem boleto, busca as informações do boleto
+            const scoresWithBilletInfo = await Promise.all(
+                data.content.map(async (score) => {
+                    if (score.hasBillet) {
+                        try {
+                            const billetInfo = await getBilletInfo(score.id);
+
+                            // Atualiza o status do score baseado no status do boleto
+                            if (billetInfo) {
+                                const billetStatus = billetInfo.situacaoBoleto.toLowerCase();
+                                if (billetStatus.includes("liquidado") || billetStatus.includes("pago")) {
+                                    score.status = "PAID";
+                                } else if (billetStatus.includes("cancelado") || billetStatus.includes("baixado")) {
+                                    score.status = "CANCELLED";
+                                } else if (billetStatus.includes("aberto") || billetStatus.includes("pendente")) {
+                                    // Verifica se está vencido
+                                    const vencimento = new Date(billetInfo.dataVencimento);
+                                    const hoje = new Date();
+                                    if (vencimento < hoje) {
+                                        score.status = "OVERDUE";
+                                    } else {
+                                        score.status = "PENDING";
+                                    }
+                                }
+                            }
+
+                            return { ...score, billetInfo };
+                        } catch (error) {
+                            console.error(`Erro ao buscar info do boleto ${score.id}:`, error);
+                            return { ...score, billetInfo: null };
+                        }
+                    }
+                    return { ...score, billetInfo: null };
+                })
+            );
+
+            setScores(scoresWithBilletInfo);
             setTotalPages(data.totalPages);
         } catch (error) {
             showError("Erro ao carregar agrupamentos");
@@ -66,7 +110,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
         }
     };
 
-    const handleTogglePayment = async (score: CombinedScoreType) => {
+    const handleTogglePayment = async (score: ScoreWithBilletInfo) => {
         try {
             if (score.status === "PAID") {
                 await combinedScoreService.cancelPayment(score.id);
@@ -82,37 +126,50 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
         }
     };
 
-    const handleViewProducts = (score: CombinedScoreType) => {
+    const handleViewProducts = (score: ScoreWithBilletInfo) => {
         setSelectedScore(score);
         setShowModalProducts(true);
     };
 
     const handleGenerateBillet = async (scoreId: number, clientNumber: string) => {
         try {
+            const score = scores.find(s => s.id === scoreId);
+            if (!score) {
+                showError("Agrupamento não encontrado");
+                return;
+            }
+
             const pdfBlob = await generateBillet(scoreId, clientNumber);
-            // Abre o modal com o PDF
+
+            setSelectedScore(score);
+            setClientNumber(clientNumber);
+
             setBilletPdf(pdfBlob);
             setShowBilletModal(true);
+
             showSuccess("Boleto gerado com sucesso!");
+
+            fetchScores();
         } catch (error) {
             showError("Erro ao gerar boleto");
             console.error(error);
         }
     };
 
-    const handleShowBillet = async (score: CombinedScoreType) => {
+    const handleShowBillet = async (score: ScoreWithBilletInfo) => {
         try {
-            showInfo("Buscando boleto...");
             setSelectedScore(score);
 
-            // Busca o PDF do boleto via API
-            const pdfBlob = await billetService.fetchBilletPdf(score.id);
-
-            // Abre o modal com o PDF
-            setBilletPdf(pdfBlob);
-            setShowBilletModal(true);
-
-            showSuccess("Boleto carregado com sucesso!");
+            // Se já tem as informações do boleto, abre o modal de dados
+            if (score.billetInfo) {
+                setShowBilletDataModal(true);
+            } else {
+                showInfo("Buscando boleto...");
+                const pdfBlob = await billetService.issueCopy(score.id);
+                setBilletPdf(pdfBlob);
+                setShowBilletModal(true);
+                showSuccess("Boleto carregado com sucesso!");
+            }
         } catch (error) {
             showError("Erro ao buscar boleto");
             console.error(error);
@@ -122,8 +179,6 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
     const formatDate = (dateString: string | null) => {
         if (!dateString) return "Não definida";
         try {
-            // Parse manual para evitar conversão UTC
-            // Formato esperado: "YYYY-MM-DD" ou "YYYY-MM-DDTHH:mm:ss"
             const datePart = dateString.split('T')[0];
             const [year, month, day] = datePart.split('-');
             return `${day}/${month}/${year}`;
@@ -167,6 +222,13 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
             default:
                 return status;
         }
+    };
+
+    // Verifica se o boleto está em aberto (não permite deletar)
+    const isBilletOpen = (score: ScoreWithBilletInfo): boolean => {
+        if (!score.billetInfo) return false;
+        const status = score.billetInfo.situacaoBoleto.toLowerCase();
+        return status.includes("aberto") || status.includes("pendente");
     };
 
     if (!clientId) {
@@ -265,8 +327,8 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                                 onClick={() => handleShowBillet(score)}
                                                 className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-xs"
                                             >
-                                                <FileText className="w-3 h-3" />
-                                                Consultar Boleto
+                                                <Info className="w-3 h-3" />
+                                                Ver Boleto
                                             </button>
                                         ) : (
                                             <button
@@ -303,8 +365,8 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                             <button
                                                 onClick={() => handleTogglePayment(score)}
                                                 className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg transition-colors text-xs ${score.status === "PAID"
-                                                    ? "bg-yellow-600 text-white hover:bg-yellow-700"
-                                                    : "bg-green-600 text-white hover:bg-green-700"
+                                                        ? "bg-yellow-600 text-white hover:bg-yellow-700"
+                                                        : "bg-green-600 text-white hover:bg-green-700"
                                                     }`}
                                             >
                                                 {score.status === "PAID" ? (
@@ -320,14 +382,17 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                                 )}
                                             </button>
                                         )}
-                                        <button
-                                            onClick={() => handleDelete(score.id, score.number)}
-                                            className={`flex items-center justify-center gap-1 px-2 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs ${!score.hasBillet ? "" : "col-span-2"
-                                                }`}
-                                        >
-                                            <Trash2 className="w-3 h-3" />
-                                            Deletar
-                                        </button>
+                                        {/* Esconde botão deletar se boleto estiver em aberto */}
+                                        {!isBilletOpen(score) && (
+                                            <button
+                                                onClick={() => handleDelete(score.id, score.number)}
+                                                className={`flex items-center justify-center gap-1 px-2 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs ${!score.hasBillet ? "" : "col-span-2"
+                                                    }`}
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                                Deletar
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -379,16 +444,37 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                         setShowBilletModal(false);
                         setBilletPdf(null);
                         setSelectedScore(null);
+                        setClientNumber(null);
                     }}
                     billetData={billetPdf}
-                    scoreNumber={selectedScore.number}
+                    scoreNumber={selectedScore.number || selectedScore.id}
+                    clientNumber={clientNumber}
+                />
+            )}
+
+            {showBilletDataModal && selectedScore?.billetInfo && (
+                <ShowBilletDataModal
+                    isOpen={showBilletDataModal}
+                    onClose={() => {
+                        setShowBilletDataModal(false);
+                        setSelectedScore(null);
+                    }}
+                    billetData={selectedScore.billetInfo}
+                    combinedScoreId={selectedScore.id}
+                    clientNumber={selectedScore.number || selectedScore.billetInfo?.seuNumero || null}
+                    onBilletCancelled={() => {
+                        fetchScores(); // Recarrega os dados após cancelamento
+                    }}
                 />
             )}
 
             <ClientNumberModal
                 open={clientNumberModal.state}
                 onClose={() => setClientNumberModal({ state: false, groupId: -1 })}
-                onConfirm={(number) => { setClientNumberModal({ state: false, groupId: -1 }); handleGenerateBillet(clientNumberModal.groupId, number); }}
+                onConfirm={(number) => {
+                    setClientNumberModal({ state: false, groupId: -1 });
+                    handleGenerateBillet(clientNumberModal.groupId, number);
+                }}
             />
         </div>
     );
