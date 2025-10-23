@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Trash2 } from "lucide-react";
+import { X, Trash2, Edit, Check } from "lucide-react";
 import { toast } from "react-toastify";
 import { purchaseService } from "@/services/purchaseService";
 import { InvoiceProductType } from "@/types/purchaseType";
@@ -21,6 +21,10 @@ export default function InvoiceProductsModal({
   const [products, setProducts] = useState<InvoiceProductType[]>([]);
   const [loading, setLoading] = useState(false);
   const [confirmDeleteModal, setConfirmDeleteModal] = useState({ state: false, productId: -1 });
+
+  // ADICIONADOS: estados para edição inline
+  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<Partial<InvoiceProductType>>({});
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -48,6 +52,54 @@ export default function InvoiceProductsModal({
     } catch (error) {
       toast.error("Erro ao deletar produto");
       console.error(error);
+    }
+  };
+
+  // Funções de edição
+  const startEdit = (product: InvoiceProductType) => {
+    setEditingProductId(product.id);
+    setEditForm({
+      code: product.code,
+      name: product.name,
+      price: product.price,
+      quantity: product.quantity,
+      unitType: product.unitType,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingProductId(null);
+    setEditForm({});
+  };
+
+  const handleEditChange = (field: keyof InvoiceProductType, value: string | number) => {
+    setEditForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const saveEdit = async () => {
+    if (editingProductId == null) return;
+    try {
+      setLoading(true);
+      const payload = {
+        code: editForm.code,
+        name: editForm.name,
+        price: typeof editForm.price === "string" ? parseFloat(editForm.price) : editForm.price,
+        quantity:
+          typeof editForm.quantity === "string" ? parseInt(editForm.quantity as string, 10) : editForm.quantity,
+        unitType: editForm.unitType,
+      };
+      const updated = await purchaseService.updateInvoiceProduct(editingProductId, payload);
+      // atualizar lista local sem refetch completo
+      setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      toast.success("Produto atualizado com sucesso");
+      setEditingProductId(null);
+      setEditForm({});
+      onUpdate();
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao atualizar produto");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -105,15 +157,100 @@ export default function InvoiceProductsModal({
                 <tbody>
                   {products.map((product) => (
                     <tr key={product.id} className="border-b border-gray-300 hover:bg-gray-50">
-                      <td className="p-3">{product.code}</td>
-                      <td className="p-3">{product.name}</td>
-                      <td className="p-3 text-right">{product.quantity}</td>
-                      <td className="p-3 text-right">{product.unitType}</td>
-                      <td className="p-3 text-right">{formatCurrency(product.price)}</td>
+                      <td className="p-3">
+                        {editingProductId === product.id ? (
+                          <input
+                            value={editForm.code ?? ""}
+                            onChange={(e) => handleEditChange("code" as any, e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            disabled={loading}
+                          />
+                        ) : (
+                          product.code
+                        )}
+                      </td>
+                      <td className="p-3">
+                        {editingProductId === product.id ? (
+                          <input
+                            value={editForm.name ?? ""}
+                            onChange={(e) => handleEditChange("name" as any, e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            disabled={loading}
+                          />
+                        ) : (
+                          product.name
+                        )}
+                      </td>
+                      <td className="p-3 text-right">
+                        {editingProductId === product.id ? (
+                          <input
+                            type="number"
+                            value={editForm.quantity ?? ""}
+                            onChange={(e) => handleEditChange("quantity" as any, e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            disabled={loading}
+                          />
+                        ) : (
+                          product.quantity
+                        )}
+                      </td>
+                      <td className="p-3 text-right">
+                        {editingProductId === product.id ? (
+                          <input
+                            value={editForm.unitType ?? ""}
+                            onChange={(e) => handleEditChange("unitType" as any, e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            disabled={loading}
+                          />
+                        ) : (
+                          product.unitType
+                        )}
+                      </td>
+                      <td className="p-3 text-right">
+                        {editingProductId === product.id ? (
+                          <input
+                            type="text"
+                            value={formatCurrency(editForm.price ?? 0)}
+                            onChange={(e) => handleEditChange("price" as any, e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            disabled={loading}
+                          />
+                        ) : (
+                          formatCurrency(product.price)
+                        )}
+                      </td>
                       <td className="p-3 text-right font-semibold">
                         {formatCurrency(calculateTotal(product.price, product.quantity))}
                       </td>
-                      <td className="p-3 text-center">
+                      <td className="p-3 flex items-center justify-center gap-2">
+                        {editingProductId === product.id ? (
+                          <div className="flex items-center justify-cente">
+                            <button
+                              onClick={saveEdit}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              title="Salvar"
+                              disabled={loading}
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={cancelEdit}
+                              className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                              title="Cancelar"
+                              disabled={loading}
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => startEdit(product)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Editar"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
                           onClick={() => setConfirmDeleteModal({ state: true, productId: product.id })}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"

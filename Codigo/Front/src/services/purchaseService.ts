@@ -1,5 +1,5 @@
 import { GroupedProductRequest } from "@/types/groupedType";
-import { InvoiceProductType, PurchaseResponse } from "@/types/purchaseType";
+import { InvoiceProductType, InvoiceProductUpdate, PurchaseResponse } from "@/types/purchaseType";
 import { getAuthHeadersForFormData, getAuthHeaders } from "@/utils/httpUtils";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -81,6 +81,27 @@ export const purchaseService = {
       { headers: getAuthHeaders() }
     );
     if (!response.ok) throw new Error("Erro ao buscar produtos da compra");
+    return await response.json();
+  },
+
+  // ADICIONADO: implementação para atualizar um invoice product via API (PUT /invoice-products/{id})
+  async updateInvoiceProduct(
+    id: number,
+    update: InvoiceProductUpdate
+  ): Promise<InvoiceProductType> {
+    const headers = { ...(getAuthHeaders() || {}), "Content-Type": "application/json" };
+    const response = await fetch(`${API_BASE_URL}/invoice-products/${id}`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(update),
+    });
+
+    if (!response.ok) {
+      // tentativa de obter mensagem de erro do backend
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.error || `Erro ao atualizar produto (status ${response.status})`);
+    }
+
     return await response.json();
   },
 

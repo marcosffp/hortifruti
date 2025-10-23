@@ -31,3 +31,11 @@ export interface InvoiceProductType {
   quantity: number;
   unitType: string;
 }
+
+export interface InvoiceProductUpdate {
+  code?: string;
+  name?: string;
+  price?: number;
+  quantity?: number;
+  unitType?: string;
+}
