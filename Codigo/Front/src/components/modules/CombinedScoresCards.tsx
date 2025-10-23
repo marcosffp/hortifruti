@@ -161,14 +161,11 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
             setSelectedScore(score);
 
             // Se já tem as informações do boleto, abre o modal de dados
+            showInfo("Buscando boleto...");
             if (score.billetInfo) {
                 setShowBilletDataModal(true);
             } else {
-                showInfo("Buscando boleto...");
-                const pdfBlob = await billetService.issueCopy(score.id);
-                setBilletPdf(pdfBlob);
-                setShowBilletModal(true);
-                showSuccess("Boleto carregado com sucesso!");
+                setClientNumberModal({ state: true, groupId: score.id }); // Abre modal para inserir número do cliente
             }
         } catch (error) {
             showError("Erro ao buscar boleto");
@@ -196,14 +193,13 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case "PAID":
+            case "PAGO":
                 return "bg-green-100 text-green-800";
-            case "PENDING":
+            case "PENDENTE":
                 return "bg-yellow-100 text-yellow-800";
-            case "OVERDUE":
+            case "BAIXADO":
+            case "CANCELADO":
                 return "bg-red-100 text-red-800";
-            case "CANCELLED":
-                return "bg-gray-100 text-gray-800";
             default:
                 return "bg-blue-100 text-blue-800";
         }
