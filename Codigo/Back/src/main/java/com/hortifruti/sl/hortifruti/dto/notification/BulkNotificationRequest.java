@@ -10,5 +10,4 @@ public record BulkNotificationRequest(
     String destinationType, // "clientes" ou "contabilidade"
     String customMessage,
     BigDecimal dueDate,
-    BigDecimal billetValue
-) {}
+    BigDecimal billetValue) {}

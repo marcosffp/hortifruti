@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import SkeletonTableLoading from "@/components/ui/SkeletonTableLoading";
-import { useGroupedProducts } from "@/hooks/useGroupedProducts";
-import { GroupedScoreResponse, GroupedScoreType } from "@/types/groupedType";
-import { BadgeCheck, FileBadge, Trash } from "lucide-react";
+import { CombinedScoreType } from "@/types/combinedScoreType";
+import { BadgeCheck, FileBadge, Trash, Plus } from "lucide-react";
 import { showError, showSuccess } from "@/services/notificationService";
 import ClientNumberModal from "@/components/modals/ClientNumberModal";
 import { useBillet } from "@/hooks/useBillet";
+import { combinedScoreService } from "@/services/combinedScoreService";
+import { toast } from "react-toastify";
 
 interface GroupedProductsTableProps {
   clientId: number | undefined;
@@ -13,19 +14,23 @@ interface GroupedProductsTableProps {
 }
 
 export default function GroupedProductsTable({ clientId, refreshKey }: GroupedProductsTableProps) {
-  const [grouped, setGrouped] = useState<GroupedScoreType[]>([]);
+  const [grouped, setGrouped] = useState<CombinedScoreType[]>([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [clientNumberModal, setClientNumberModal] = useState({ state: false, groupId: -1 });
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [creatingGrouping, setCreatingGrouping] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const { isLoading, error, fetchGroupedProducts, confirmPayment, cancelGrouping } = useGroupedProducts();
   const { generateBillet } = useBillet();
 
-  // Labels das colunas (sem clientId)
+  // Labels das colunas
   const columnLabels: Record<string, string> = {
-    id: "ID",
+    number: "Número",
     totalValue: "Valor Total",
-    paid: "Pago",
+    status: "Status",
     dueDate: "Data de Vencimento",
     confirmedAt: "Confirmado Em",
     actions: "Ações",
@@ -35,12 +40,17 @@ export default function GroupedProductsTable({ clientId, refreshKey }: GroupedPr
     if (!clientId) return;
 
     const loadData = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
-        const result: GroupedScoreResponse = await fetchGroupedProducts(clientId, page);
+        const result = await combinedScoreService.fetchCombinedScores(clientId, page, 10);
         setGrouped(result.content || []);
         setTotalPages(result.totalPages || 1);
-      } catch (err) {
+      } catch (err: any) {
+        setError(err.message || "Erro ao buscar agrupamentos");
         console.error(err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -48,29 +58,33 @@ export default function GroupedProductsTable({ clientId, refreshKey }: GroupedPr
   }, [clientId, refreshKey, page]);
 
   const handlePaymentConfirmation = async (groupId: number) => {
-    confirmPayment(groupId)
-      .then((res) => {
-        setGrouped((prev) =>
-          prev.map((item) =>
-            item.id === groupId ? { ...item, paid: true } : item
-          )
-        );
-        showSuccess(res);
-      })
-      .catch((err) => {
-        showError(err.message);
-      });
+    setIsLoading(true);
+    try {
+      const res = await combinedScoreService.confirmPayment(groupId);
+      setGrouped((prev) =>
+        prev.map((item) =>
+          item.id === groupId ? { ...item, status: "PAID" } : item
+        )
+      );
+      showSuccess(res);
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const handleCancelGrouping = async (groupId: number) => {
-    cancelGrouping(groupId)
-      .then((res) => {
-        setGrouped((prev) => prev.filter((item) => item.id !== groupId));
-        showSuccess(res);
-      })
-      .catch((err) => {
-        showError(err.message);
-      });
+    setIsLoading(true);
+    try {
+      const res = await combinedScoreService.cancelGrouping(groupId);
+      setGrouped((prev) => prev.filter((item) => item.id !== groupId));
+      showSuccess(res);
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const handleGenerateBillet = async (groupId: number, clientNumber: string) => {
@@ -155,7 +169,7 @@ export default function GroupedProductsTable({ clientId, refreshKey }: GroupedPr
                   );
                 }
 
-                let value = row[col as keyof GroupedScoreType];
+                let value = row[col as keyof CombinedScoreType];
 
                 switch (col) {
                   case "totalValue":
@@ -169,7 +183,7 @@ export default function GroupedProductsTable({ clientId, refreshKey }: GroupedPr
                       return (
                         <td key={col} className="px-4 py-2 border-b border-gray-100">
                           <span className="inline-block px-2 py-1 rounded-2xl border border-gray-300 bg-gray-100 text-gray-500 text-xs">
-                            Indisponível
+                            Não definida
                           </span>
                         </td>
                       );
@@ -182,18 +196,24 @@ export default function GroupedProductsTable({ clientId, refreshKey }: GroupedPr
                       value = new Date(value as string).toLocaleString("pt-BR");
                     }
                     break;
-                  case "paid":
+                  case "status":
+                    const statusColors: Record<string, string> = {
+                      PAID: "border-green-300 bg-green-100 text-green-700",
+                      PENDING: "border-yellow-300 bg-yellow-100 text-yellow-700",
+                      OVERDUE: "border-red-300 bg-red-100 text-red-700",
+                      CANCELLED: "border-gray-300 bg-gray-100 text-gray-700",
+                    };
+                    const statusLabels: Record<string, string> = {
+                      PAID: "Pago",
+                      PENDING: "Pendente",
+                      OVERDUE: "Vencido",
+                      CANCELLED: "Cancelado",
+                    };
                     return (
                       <td key={col} className="px-4 py-2 border-b border-gray-100">
-                        {value ? (
-                          <span className="inline-block px-2 py-1 rounded-2xl border border-green-300 bg-green-100 text-green-700 text-xs">
-                            Pago
-                          </span>
-                        ) : (
-                          <span className="inline-block px-2 py-1 rounded-2xl border border-red-300 bg-red-100 text-red-700 text-xs">
-                            Em aberto
-                          </span>
-                        )}
+                        <span className={`inline-block px-2 py-1 rounded-2xl border text-xs ${statusColors[value as string] || "border-gray-300 bg-gray-100 text-gray-500"}`}>
+                          {statusLabels[value as string] || value}
+                        </span>
                       </td>
                     );
                   default:
