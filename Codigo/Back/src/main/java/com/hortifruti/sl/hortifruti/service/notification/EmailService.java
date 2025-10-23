@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.service.notification;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -10,14 +11,12 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class EmailService {
 
   private final JavaMailSender mailSender;
-  
+
   @Value("${spring.mail.username}")
   private String fromEmail;
 
@@ -50,8 +49,8 @@ public class EmailService {
     }
   }
 
-  public boolean sendEmailWithAttachments(String to, String subject, String text, 
-                                         List<byte[]> attachments, List<String> fileNames) {
+  public boolean sendEmailWithAttachments(
+      String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
     try {
       MimeMessage mimeMessage = mailSender.createMimeMessage();
       MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -88,8 +87,8 @@ public class EmailService {
     }
   }
 
-  public boolean sendEmailWithSingleAttachment(String to, String subject, String text, 
-                                              byte[] attachment, String fileName) {
+  public boolean sendEmailWithSingleAttachment(
+      String to, String subject, String text, byte[] attachment, String fileName) {
     return sendEmailWithAttachments(to, subject, text, List.of(attachment), List.of(fileName));
   }
 }

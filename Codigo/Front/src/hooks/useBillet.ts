@@ -1,5 +1,8 @@
+"use client";
+
 import { useState } from "react";
 import { billetService } from "@/services/billetService";
+import { BilletResponse } from "@/types/billetType";
 
 export function useBillet() {
     const [isLoading, setIsLoading] = useState(false);
@@ -9,7 +12,7 @@ export function useBillet() {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `boleto_${number}_${combinedScoreId}.pdf`);
+        link.setAttribute('download', `BOL-${number}_${combinedScoreId}.pdf`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -21,11 +24,25 @@ export function useBillet() {
         setError(null);
         try {
             const blob = await billetService.generateBillet(combinedScoreId, number);
-            await downloadBillet(blob, combinedScoreId, number);
-            return "Boleto gerado com sucesso";
+            downloadBillet(blob, combinedScoreId, number);
+            return blob;
         } catch (err: any) {
             setError(err.message || "Erro ao gerar boleto");
             throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const getBilletInfo = async (combinedScoreId: number): Promise<BilletResponse | null> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const result = await billetService.fetchBilletInfo(combinedScoreId);
+            return result;
+        } catch (err: any) {
+            setError(err.message || "Erro ao buscar informações do boleto");
+            return null;
         } finally {
             setIsLoading(false);
         }
@@ -45,11 +62,11 @@ export function useBillet() {
         }
     };
 
-    const issueCopy = async (yourNumber: string, ourNumber: string) => {
+    const issueCopy = async (combinedScoreId: number): Promise<Blob> => {
         setIsLoading(true);
         setError(null);
         try {
-            const result = await billetService.issueCopy(yourNumber, ourNumber);
+            const result = await billetService.issueCopy(combinedScoreId);
             return result;
         } catch (err: any) {
             setError(err.message || "Erro ao emitir 2ª via do boleto");
@@ -59,11 +76,11 @@ export function useBillet() {
         }
     };
 
-    const cancelBillet = async (ourNumber: string) => {
+    const cancelBillet = async (combinedScoreId: number) => {
         setIsLoading(true);
         setError(null);
         try {
-            const result = await billetService.cancelBillet(ourNumber);
+            const result = await billetService.cancelBillet(combinedScoreId);
             return result;
         } catch (err: any) {
             setError(err.message || "Erro ao cancelar boleto");
@@ -73,5 +90,14 @@ export function useBillet() {
         }
     };
 
-    return { generateBillet, getClientBillets, issueCopy, cancelBillet, isLoading, error };
+    return { 
+        downloadBillet, 
+        generateBillet, 
+        getBilletInfo, 
+        getClientBillets, 
+        issueCopy, 
+        cancelBillet, 
+        isLoading, 
+        error 
+    };
 }

@@ -6,5 +6,4 @@ public record MonthlyStatementsRequest(
     int month,
     int year,
     NotificationChannel channel, // EMAIL, WHATSAPP, BOTH
-    String customMessage
-) {}
+    String customMessage) {}

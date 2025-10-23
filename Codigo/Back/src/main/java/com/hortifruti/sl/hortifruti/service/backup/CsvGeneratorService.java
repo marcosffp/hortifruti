@@ -2,7 +2,19 @@ package com.hortifruti.sl.hortifruti.service.backup;
 
 import com.hortifruti.sl.hortifruti.exception.BackupException;
 import com.hortifruti.sl.hortifruti.model.*;
+import com.hortifruti.sl.hortifruti.model.finance.Statement;
+import com.hortifruti.sl.hortifruti.model.finance.Transaction;
+import com.hortifruti.sl.hortifruti.model.purchase.Client;
+import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
+import com.hortifruti.sl.hortifruti.model.purchase.InvoiceProduct;
+import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
 import com.hortifruti.sl.hortifruti.repository.*;
+import com.hortifruti.sl.hortifruti.repository.finance.StatementRepository;
+import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
+import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
+import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
+import com.hortifruti.sl.hortifruti.repository.purchase.InvoiceProductRepository;
+import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -190,9 +202,11 @@ public class CsvGeneratorService {
                 "Cliente ID",
                 "Confirmado Em",
                 "Data de Vencimento",
-                "Atualizado Em",
                 "Valor Total",
-                "Pago")
+                "Status",
+                "Possui Boleto",
+                "Número do Boleto",
+                "Possui Nota Fiscal")
             .build();
 
     try (FileWriter fileWriter = new FileWriter(filePath.toFile());
@@ -205,7 +219,10 @@ public class CsvGeneratorService {
             combinedScore.getConfirmedAt(),
             combinedScore.getDueDate(),
             combinedScore.getTotalValue(),
-            combinedScore.isPaid());
+            combinedScore.getStatus(),
+            combinedScore.isHasBillet(),
+            combinedScore.getYourNumber(),
+            combinedScore.isHasInvoice());
       }
 
       csvPrinter.flush();

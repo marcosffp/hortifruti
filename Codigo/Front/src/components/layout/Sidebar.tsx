@@ -73,7 +73,7 @@ const menu: MenuItem[] = [
   {
     label: "Módulo Notificações",
     icon: Bell,
-    href: "/comercio/notificacoes",
+    href: "/notificacoes",
     roles: ["MANAGER", "EMPLOYEE"],
   },
   {

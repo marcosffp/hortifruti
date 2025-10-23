@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.controller;
 
-import com.hortifruti.sl.hortifruti.dto.sicoob.BilletResponse;
+import com.hortifruti.sl.hortifruti.dto.billet.BilletResponse;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import com.hortifruti.sl.hortifruti.service.billet.BilletService;
 import java.io.IOException;
@@ -27,7 +27,7 @@ public class BilletController {
   public ResponseEntity<byte[]> generateBillet(@PathVariable Long combinedScoreId, String number)
       throws IOException {
     try {
-      return billetService.generateBilletForCombinedScore(combinedScoreId, number);
+      return billetService.generateBillet(combinedScoreId, number);
     } catch (Exception e) {
       e.printStackTrace();
       return ResponseEntity.badRequest()
@@ -41,7 +41,7 @@ public class BilletController {
    * @param clientId ID do cliente (CPF ou CNPJ).
    * @return Lista de boletos do pagador.
    */
-  @GetMapping("/billets/{clientId}")
+  @GetMapping("/client/{clientId}")
   public ResponseEntity<List<BilletResponse>> listBilletByPayer(@PathVariable long clientId) {
     try {
       List<BilletResponse> billets = billetService.listBilletByPayer(clientId);
@@ -55,15 +55,13 @@ public class BilletController {
   /**
    * Emite a segunda via de um boleto e retorna o PDF.
    *
-   * @param ourNumber Número identificador do boleto no Sisbr.
-   * @param yourNumber Número identificador do boleto no sistema do cliente.
+   * @param  idCombinedScore ID do CombinedScore associado ao boleto.
    * @return PDF do boleto emitido.
    */
-  @GetMapping("/issue-copy/{ourNumber}/{yourNumber}")
-  public ResponseEntity<byte[]> issueCopy(
-      @PathVariable String ourNumber, @PathVariable String yourNumber) {
+  @GetMapping("/issue-copy/{idCombinedScore}")
+  public ResponseEntity<byte[]> issueCopy(@PathVariable Long idCombinedScore) {
     try {
-      return billetService.issueCopy(ourNumber, yourNumber);
+      return billetService.issueCopy(idCombinedScore);
     } catch (Exception e) {
       e.printStackTrace();
       return ResponseEntity.badRequest().body(null);
@@ -73,13 +71,13 @@ public class BilletController {
   /**
    * Realiza a baixa (cancelamento) de um boleto.
    *
-   * @param ourNumber Número identificador do boleto no Sisbr.
+   * @param idCombinedScore ID do CombinedScore associado ao boleto.
    * @return Resposta indicando o sucesso ou falha da operação.
    */
-  @PostMapping("/cancel/{ourNumber}")
-  public ResponseEntity<String> cancelBillet(@PathVariable String ourNumber) {
+  @PostMapping("/cancel/{idCombinedScore}")
+  public ResponseEntity<String> cancelBillet(@PathVariable Long idCombinedScore) {
     try {
-      ResponseEntity<String> response = billetService.cancelBillet(ourNumber);
+      ResponseEntity<String> response = billetService.cancelBillet(idCombinedScore);
       return ResponseEntity.status(response.getStatusCode()).body("Boleto cancelado com sucesso");
     } catch (BilletException e) {
       e.printStackTrace();
@@ -120,6 +118,53 @@ public class BilletController {
       return errorJson;
     } catch (Exception e) {
       return errorJson;
+    }
+  }
+
+  /**
+   * Lista boletos com filtros opcionais (nome do cliente, período, status) e paginação.
+   *
+   * @param name Nome do cliente (opcional).
+   * @param startDate Data inicial do período (opcional).
+   * @param endDate Data final do período (opcional).
+   * @param status Status do boleto (opcional).
+   * @param page Número da página (opcional, padrão: 0).
+   * @param size Tamanho da página (opcional, padrão: 10).
+   * @return Lista paginada de boletos.
+   */
+  @GetMapping("/search")
+  public ResponseEntity<?> searchBillets(
+      @RequestParam(required = false) String name,
+      @RequestParam(required = false) String startDate,
+      @RequestParam(required = false) String endDate,
+      @RequestParam(required = false) String status,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "15") int size) {
+    try {
+      return ResponseEntity.ok(
+          billetService.searchBillets(name, startDate, endDate, status, page, size));
+    } catch (Exception e) {
+      e.printStackTrace();
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body("Erro ao buscar boletos: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Lista o boleto associado a um CombinedScore específico.
+   *
+   * @param combinedScoreId ID do CombinedScore
+   * @return Detalhes do boleto associado
+   */
+  @GetMapping("/{combinedScoreId}")
+  public ResponseEntity<BilletResponse> getBilletCombinedScore(@PathVariable long combinedScoreId) {
+    try {
+      BilletResponse billet = billetService.getBilletByCombinedScore(combinedScoreId);
+      return ResponseEntity.ok(billet);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(null); // Return a default error response
     }
   }
 }
