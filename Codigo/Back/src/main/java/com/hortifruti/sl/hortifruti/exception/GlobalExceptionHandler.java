@@ -210,4 +210,13 @@ public class GlobalExceptionHandler {
     response.put("message", ex.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
+
+
+  @ExceptionHandler(InvoiceException.class)
+  public ResponseEntity<Map<String, String>> handleInvoiceException(InvoiceException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro de Fatura");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
 }

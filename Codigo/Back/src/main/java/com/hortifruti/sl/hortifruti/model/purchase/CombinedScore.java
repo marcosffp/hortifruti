@@ -48,6 +48,9 @@ public class CombinedScore {
   @Column(name = "your_number", nullable = true)
   private String yourNumber;
 
+  @Column(name = "invoice_ref", nullable = true)
+  private String invoiceRef;
+
   @OneToMany(mappedBy = "combinedScore", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<GroupedProduct> groupedProducts;
 
