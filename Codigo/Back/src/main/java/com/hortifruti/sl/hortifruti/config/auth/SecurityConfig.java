@@ -39,8 +39,8 @@ public class SecurityConfig {
                         "/auth",
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
-                        "/billet/**",
                         "/backup/**",
+                        "/api/invoices/**",
                         "/api/scheduler/**") // Adicionamos a permissão para os endpoints do
                     // scheduler
                     .permitAll()

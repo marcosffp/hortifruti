@@ -52,6 +52,12 @@ public class Client {
   @Column(nullable = false)
   private boolean variablePrice;
 
+  @Column(nullable = true)
+  private String stateRegistration;
+
+  @Column(nullable = true)
+  private Integer stateIndicator;
+
   @Column(nullable = false)
   private LocalDateTime updatedAt;
 

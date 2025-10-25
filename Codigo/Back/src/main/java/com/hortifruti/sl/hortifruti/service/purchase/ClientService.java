@@ -56,6 +56,9 @@ public class ClientService {
     existingClient.setPhoneNumber(clientRequest.phoneNumber());
     existingClient.setAddress(clientRequest.address());
     existingClient.setDocument(clientRequest.document());
+    existingClient.setVariablePrice(clientRequest.variablePrice());
+    existingClient.setStateRegistration(clientRequest.stateRegistration());
+    existingClient.setStateIndicator(clientRequest.stateIndicator());
 
     Client updatedClient = clientRepository.save(existingClient);
     return clientMapper.toClientResponse(updatedClient);
@@ -114,7 +117,7 @@ public class ClientService {
             })
         .filter(
             response ->
-                response.lastPurchaseDate() != null) // Filtra clientes sem data de última compra
+                response.lastPurchaseDate() != null) 
         .toList();
   }
 
