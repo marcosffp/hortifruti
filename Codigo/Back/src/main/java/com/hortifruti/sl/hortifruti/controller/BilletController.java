@@ -55,7 +55,7 @@ public class BilletController {
   /**
    * Emite a segunda via de um boleto e retorna o PDF.
    *
-   * @param  idCombinedScore ID do CombinedScore associado ao boleto.
+   * @param idCombinedScore ID do CombinedScore associado ao boleto.
    * @return PDF do boleto emitido.
    */
   @GetMapping("/issue-copy/{idCombinedScore}")

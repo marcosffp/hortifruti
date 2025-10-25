@@ -9,13 +9,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.HttpStatus;
 
 @Component
 @RequiredArgsConstructor
@@ -62,28 +62,27 @@ public class BilletHttpClient {
     }
   }
 
-
   public JsonNode postCancel(String endpoint, Object body) throws IOException {
     try {
-        HttpHeaders headers = createHeaders();
-        HttpEntity<Object> entity = new HttpEntity<>(body, headers);
+      HttpHeaders headers = createHeaders();
+      HttpEntity<Object> entity = new HttpEntity<>(body, headers);
 
-        ResponseEntity<String> response =
-            restTemplate.postForEntity(apiUrl + endpoint, entity, String.class);
+      ResponseEntity<String> response =
+          restTemplate.postForEntity(apiUrl + endpoint, entity, String.class);
 
-        // Verifica se o status é 204 NO_CONTENT
-        if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
-            return null; // Retorna null para indicar que não há conteúdo
-        }
+      // Verifica se o status é 204 NO_CONTENT
+      if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
+        return null; // Retorna null para indicar que não há conteúdo
+      }
 
-        return processResponse(response);
+      return processResponse(response);
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
-        throw new BilletException(
-            "Erro ao realizar requisição POST: " + ex.getResponseBodyAsString(), ex);
+      throw new BilletException(
+          "Erro ao realizar requisição POST: " + ex.getResponseBodyAsString(), ex);
     } catch (Exception ex) {
-        throw new BilletException("Erro inesperado ao realizar requisição POST.", ex);
+      throw new BilletException("Erro inesperado ao realizar requisição POST.", ex);
     }
-}
+  }
 
   public ResponseEntity<String> put(String endpoint, Object body) throws IOException {
     try {
