@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.model.finance;
 
 import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -49,7 +50,7 @@ public class Statement {
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
 
-  @OneToMany(mappedBy = "statement")
+  @OneToMany(mappedBy = "statement", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Transaction> transactions;
 
   @PrePersist

@@ -137,7 +137,8 @@ public class BilletFactory {
       }
 
       // Monta endereço completo para o campo "endereco"
-      String enderecoCompleto = rua + ", " + numero + (complemento.isEmpty() ? "" : ", " + complemento);
+      String enderecoCompleto =
+          rua + ", " + numero + (complemento.isEmpty() ? "" : ", " + complemento);
 
       return new Pagador(
           client.getDocument().replaceAll("[^0-9]", ""), // Remove formatação do CPF/CNPJ

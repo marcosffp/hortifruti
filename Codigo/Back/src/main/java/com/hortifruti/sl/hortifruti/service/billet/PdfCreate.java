@@ -43,7 +43,7 @@ public class PdfCreate {
     }
   }
 
-    /**
+  /**
    * Decodifica uma string Base64 contendo um PDF e retorna os bytes.
    *
    * @param pdfBase64 String Base64 contendo o PDF
