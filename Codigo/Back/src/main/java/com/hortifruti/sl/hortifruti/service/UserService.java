@@ -33,7 +33,6 @@ public class UserService {
       throw new UserException("Usuário não encontrado");
     }
 
-    // Só atualizar senha se uma nova senha foi fornecida (não vazia)
     if (userRequest.password() != null && !userRequest.password().trim().isEmpty()) {
       String password = userRequest.password().trim();
       if (password.length() < 4 || password.length() > 20) {
@@ -53,9 +52,7 @@ public class UserService {
       throw new UserException("Usuário não encontrado");
     }
 
-    // Atualizar username se fornecido e diferente do atual
     if (userRequest.username() != null && !userRequest.username().trim().isEmpty()) {
-      // Verificar se o novo username já existe (mas não é do próprio usuário)
       User existingUser = userRepository.findByUsername(userRequest.username());
       if (existingUser != null && !existingUser.getId().equals(id)) {
         throw new UserException("Este nome já está sendo usado por outro usuário");
@@ -63,7 +60,6 @@ public class UserService {
       user.setUsername(userRequest.username());
     }
 
-    // Update password only if a new non-empty password is provided
     if (userRequest.password() != null) {
       String trimmedPassword = userRequest.password().trim();
       if (!trimmedPassword.isEmpty()) {
@@ -74,7 +70,6 @@ public class UserService {
       }
     }
 
-    // Atualizar role
     if (userRequest.role() != null) {
       user.setRole(userRequest.role());
     }

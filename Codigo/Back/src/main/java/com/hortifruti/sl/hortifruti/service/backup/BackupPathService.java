@@ -16,8 +16,7 @@ public class BackupPathService {
   private static final String BACKUP_FOLDER_NAME = "backups";
 
   /**
-   * Calcula e cria o caminho correto para o backup no Google Drive com base no tipo de entidade e
-   * período.
+   * Calcula e cria o caminho correto para o backup no Google Drive com base no tipo de entidade e período.
    *
    * @param entityName Nome da entidade (ex.: "Statement", "Purchase").
    * @param startDate Data inicial do período.
@@ -25,25 +24,18 @@ public class BackupPathService {
    * @return O ID da pasta de backup no Google Drive.
    */
   public String getOrCreateBackupPath(String entityName, LocalDate startDate, LocalDate endDate) {
-    log.info(
-        "Iniciando cálculo do caminho de backup para a entidade: {} no período: {} a {}",
-        entityName,
-        startDate,
-        endDate);
+    log.info("Iniciando cálculo do caminho de backup para a entidade: {} no período: {} a {}", entityName, startDate, endDate);
     try {
       // Formatar o período no formato "2025-06_to_2025-09"
-      String period =
-          startDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-              + "_to_"
-              + endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+      String period = startDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + "_to_" +
+                      endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
       log.debug("Período formatado: {}", period);
 
       // Obter ou criar a pasta principal de backups
       log.info("Verificando existência da pasta principal de backups: {}", BACKUP_FOLDER_NAME);
       String backupFolderId = googleDriveService.getFolderId(BACKUP_FOLDER_NAME);
       if (backupFolderId == null) {
-        log.info(
-            "Pasta principal de backups não encontrada. Criando pasta: {}", BACKUP_FOLDER_NAME);
+        log.info("Pasta principal de backups não encontrada. Criando pasta: {}", BACKUP_FOLDER_NAME);
         backupFolderId = googleDriveService.createFolder(BACKUP_FOLDER_NAME, null);
         log.info("Pasta principal de backups criada com sucesso. ID: {}", backupFolderId);
       } else {
@@ -89,15 +81,9 @@ public class BackupPathService {
       log.info("Caminho de backup calculado com sucesso. ID final da pasta: {}", entityFolderId);
       return entityFolderId;
     } catch (Exception e) {
-      log.error(
-          "Erro ao calcular ou criar o caminho de backup no Google Drive para a entidade: {}. Erro: {}",
-          entityName,
-          e.getMessage(),
-          e);
+      log.error("Erro ao calcular ou criar o caminho de backup no Google Drive para a entidade: {}. Erro: {}", entityName, e.getMessage(), e);
       throw new BackupException(
-          "Erro ao calcular ou criar o caminho de backup no Google Drive para a entidade: "
-              + entityName,
-          e);
+          "Erro ao calcular ou criar o caminho de backup no Google Drive para a entidade: " + entityName, e);
     }
   }
 }

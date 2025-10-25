@@ -59,7 +59,6 @@ public class DashboardService {
         .map(
             transaction -> {
               BigDecimal amount = transaction.getAmount();
-              // garante que custos (DEBITO) não fiquem negativos
               if (transaction.getTransactionType() == TransactionType.DEBITO) {
                 amount = amount.abs();
               }
@@ -89,7 +88,7 @@ public class DashboardService {
     BigDecimal totalCost = calculateTotalCost(startDate, endDate);
 
     if (totalRevenue.compareTo(BigDecimal.ZERO) == 0) {
-      return BigDecimal.ZERO; // Evita divisão por zero
+      return BigDecimal.ZERO; 
     }
 
     return calculatePercentage(totalRevenue.subtract(totalCost), totalRevenue);

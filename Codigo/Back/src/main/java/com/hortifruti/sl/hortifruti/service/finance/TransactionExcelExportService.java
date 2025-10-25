@@ -55,12 +55,10 @@ public class TransactionExcelExportService {
       workbook.write(excelOut);
       byte[] excelBytes = excelOut.toByteArray();
 
-      // Nome do arquivo Excel
       String currentMonth =
           LocalDate.now().getMonth().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pt-BR"));
       String excelFileName = "Planilha-Hortifruti-Santa-Luzia-" + currentMonth + ".xlsx";
 
-      // Configurar o cabeçalho da resposta
       HttpHeaders headers = new HttpHeaders();
       headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + excelFileName);
       excelData.put(excelFileName, excelBytes);
@@ -157,8 +155,8 @@ public class TransactionExcelExportService {
   }
 
   private void adjustColumnWidths(Sheet sheet) {
-    sheet.setColumnWidth(3, 256 * 70); // Ajusta "Histórico" para 70 caracteres
-    sheet.setColumnWidth(6, 256 * 15); // Ajusta "R$ Valor" para 15 caracteres
+    sheet.setColumnWidth(3, 256 * 70); 
+    sheet.setColumnWidth(6, 256 * 15); 
 
     for (int i = 0; i < 9; i++) {
       if (i != 3 && i != 6) {

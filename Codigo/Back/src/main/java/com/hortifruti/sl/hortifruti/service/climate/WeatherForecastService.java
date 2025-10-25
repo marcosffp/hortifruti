@@ -11,11 +11,10 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-@Slf4j
+
 @Service
 @RequiredArgsConstructor
 public class WeatherForecastService {
@@ -30,23 +29,19 @@ public class WeatherForecastService {
 
   @SuppressWarnings("unchecked")
   private WeatherForecastDTO processWeatherData(Map<String, Object> rawData) {
-    // Extrair informações da cidade
     Map<String, Object> city = (Map<String, Object>) rawData.get("city");
     String cityName = (String) city.get("name");
     String country = (String) city.get("country");
 
-    // Extrair lista de previsões e agrupar por data
     List<Map<String, Object>> forecastList = (List<Map<String, Object>>) rawData.get("list");
 
-    // Agrupar previsões por data
     Map<LocalDate, List<Map<String, Object>>> groupedByDate =
         forecastList.stream().collect(Collectors.groupingBy(this::extractDate));
 
-    // Processar cada dia
     List<DailyForecastDTO> dailyForecasts =
         groupedByDate.entrySet().stream()
             .sorted(Map.Entry.comparingByKey())
-            .limit(5) // Garantir apenas 5 dias
+            .limit(5) 
             .map(entry -> processDailyForecast(entry.getKey(), entry.getValue()))
             .collect(Collectors.toList());
 
@@ -55,7 +50,6 @@ public class WeatherForecastService {
 
   @SuppressWarnings("unchecked")
   private DailyForecastDTO processDailyForecast(LocalDate date, List<Map<String, Object>> dayData) {
-    // Calcular temperaturas min/max/média
     List<Double> temps =
         dayData.stream()
             .map(
@@ -65,7 +59,6 @@ public class WeatherForecastService {
                 })
             .collect(Collectors.toList());
 
-    // Calcular sensação térmica média
     List<Double> feelsLike =
         dayData.stream()
             .map(
@@ -80,7 +73,6 @@ public class WeatherForecastService {
     double avgTemp = temps.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
     double avgFeelsLike = feelsLike.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
 
-    // Calcular umidade média
     double avgHumidity =
         dayData.stream()
             .mapToDouble(
@@ -91,10 +83,8 @@ public class WeatherForecastService {
             .average()
             .orElse(0.0);
 
-    // Calcular chuva total do dia
     double totalRainfall = dayData.stream().mapToDouble(this::extractRainfall).sum();
 
-    // Calcular velocidade média do vento
     double avgWindSpeed =
         dayData.stream()
             .mapToDouble(
@@ -105,7 +95,6 @@ public class WeatherForecastService {
             .average()
             .orElse(0.0);
 
-    // Pegar descrição do tempo mais frequente
     Map<String, Long> weatherDescriptions =
         dayData.stream()
             .collect(
@@ -123,7 +112,6 @@ public class WeatherForecastService {
             .map(Map.Entry::getKey)
             .orElse("Não disponível");
 
-    // Pegar ícone mais frequente
     String mainIcon =
         dayData.stream()
             .collect(
@@ -142,12 +130,12 @@ public class WeatherForecastService {
 
     return new DailyForecastDTO(
         date,
-        Math.round(minTemp * 10.0) / 10.0, // Arredondar para 1 casa decimal
+        Math.round(minTemp * 10.0) / 10.0, 
         Math.round(maxTemp * 10.0) / 10.0,
         Math.round(avgTemp * 10.0) / 10.0,
-        Math.round(avgFeelsLike * 10.0) / 10.0, // NOVO: Sensação térmica média
+        Math.round(avgFeelsLike * 10.0) / 10.0,
         Math.round(avgHumidity * 10.0) / 10.0,
-        Math.round(totalRainfall * 100.0) / 100.0, // Arredondar para 2 casas decimais
+        Math.round(totalRainfall * 100.0) / 100.0,
         Math.round(avgWindSpeed * 10.0) / 10.0,
         mainDescription,
         mainIcon);

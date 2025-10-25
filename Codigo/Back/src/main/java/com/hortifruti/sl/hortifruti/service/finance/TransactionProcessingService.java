@@ -37,11 +37,9 @@ public class TransactionProcessingService {
   @Async
   public void processFileAsync(MultipartFile file, Statement statement) {
     try {
-      // Para o Sicoob, processar o arquivo de forma síncrona para evitar o problema
       if (statement.getBank() == Bank.SICOOB) {
         importStatement(file, statement);
       } else {
-        // Para outros bancos, continuar com o processamento assíncrono
         importStatement(file, statement);
       }
     } catch (Exception e) {
@@ -87,24 +85,19 @@ public class TransactionProcessingService {
 
   /** Atualiza uma transação existente. */
   public TransactionResponse updateTransaction(Long id, TransactionRequest transactionRequest) {
-    // Busca a transação existente no banco de dados
     Transaction existingTransaction =
         transactionRepository
             .findById(id)
             .orElseThrow(
                 () -> new TransactionException("Transação não encontrada com o ID: " + id));
 
-    // Atualiza os campos da transação existente diretamente do request
     transactionMapper.updateTransactionFromRequest(existingTransaction, transactionRequest);
 
-    // Salva a transação atualizada no banco de dados
     Transaction savedTransaction = transactionRepository.save(existingTransaction);
 
-    // Retorna a resposta mapeada
     return transactionMapper.toResponse(savedTransaction);
   }
 
-  /** Exclui uma transação pelo ID. */
   public void deleteTransaction(Long id) {
     if (!transactionRepository.existsById(id)) {
       throw new TransactionException("Transação não encontrada com o ID: " + id);
@@ -120,10 +113,8 @@ public class TransactionProcessingService {
       String search, String type, String category, int page, int size) {
     Pageable pageable = PageRequest.of(page, size, Sort.by("transactionDate").descending());
 
-    // Cria uma especificação para filtrar as transações no banco de dados
     Specification<Transaction> spec = Specification.allOf();
 
-    // Adiciona filtro de busca por texto (no histórico ou categoria)
     if (search != null && !search.isEmpty()) {
       String searchPattern = "%" + search.toLowerCase() + "%";
       spec =
@@ -136,7 +127,6 @@ public class TransactionProcessingService {
                           criteriaBuilder.lower(root.get("category")), searchPattern)));
     }
 
-    // Adiciona filtro por tipo de transação
     if (type != null && !type.isEmpty()) {
       try {
         TransactionType transactionType = TransactionType.valueOf(type.toUpperCase());
@@ -145,11 +135,10 @@ public class TransactionProcessingService {
                 (root, query, criteriaBuilder) ->
                     criteriaBuilder.equal(root.get("transactionType"), transactionType));
       } catch (IllegalArgumentException e) {
-        // Ignora se o tipo for inválido
+        throw new TransactionException("Tipo de transação inválido: " + type, e);
       }
     }
 
-    // Adiciona filtro por categoria
     if (category != null && !category.isEmpty()) {
       spec =
           spec.and(
@@ -158,10 +147,8 @@ public class TransactionProcessingService {
                       criteriaBuilder.lower(root.get("category")), category.toLowerCase()));
     }
 
-    // Busca as transações filtradas e paginadas diretamente do repositório
     Page<Transaction> transactionsPage = transactionRepository.findAll(spec, pageable);
 
-    // Mapeia as entidades para DTOs
     return transactionsPage.map(transactionMapper::toResponse);
   }
 
