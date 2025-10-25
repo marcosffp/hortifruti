@@ -1,6 +1,5 @@
 package com.hortifruti.sl.hortifruti.controller;
 
-import com.hortifruti.sl.hortifruti.service.backup.BackupService;
 import com.hortifruti.sl.hortifruti.service.scheduler.ApiTokenService;
 import com.hortifruti.sl.hortifruti.service.scheduler.CombinedScoreSchedulerService;
 import com.hortifruti.sl.hortifruti.service.scheduler.DatabaseStorageSchedulerService;
@@ -19,7 +18,6 @@ public class SchedulerController {
 
   private final CombinedScoreSchedulerService combinedScoreSchedulerService;
   private final DatabaseStorageSchedulerService databaseStorageSchedulerService;
-  private final BackupService backupService;
   private final ApiTokenService apiTokenService;
 
   /**

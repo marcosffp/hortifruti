@@ -7,4 +7,7 @@ public record ClientResponse(
     String phoneNumber,
     String address,
     String document,
-    boolean variablePrice) {}
+    boolean variablePrice,
+    String stateRegistration, 
+    String stateIndicator
+) {}
