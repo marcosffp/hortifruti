@@ -25,8 +25,10 @@ import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class GoogleDriveService {
@@ -43,12 +45,17 @@ public class GoogleDriveService {
    * @return Um cliente Drive autorizado.
    */
   private Drive getDriveService() {
+    log.info("Iniciando criação do cliente autorizado do Google Drive.");
     try {
       final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-      return new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-          .setApplicationName(APPLICATION_NAME)
-          .build();
+      Drive drive =
+          new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+              .setApplicationName(APPLICATION_NAME)
+              .build();
+      log.info("Cliente autorizado do Google Drive criado com sucesso.");
+      return drive;
     } catch (IOException | GeneralSecurityException e) {
+      log.error("Erro ao criar o cliente do Google Drive.", e);
       throw new BackupException("Erro ao criar o cliente do Google Drive.", e);
     }
   }
@@ -60,11 +67,13 @@ public class GoogleDriveService {
    * @return Uma instância de Credential autorizada.
    */
   private Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) {
+    log.info("Iniciando criação de credenciais de autorização.");
     try {
       base64FileDecoder.decodeGoogleDriveCredentials();
       java.io.File credentialsFile = base64FileDecoder.getGoogleDriveCredentialsFile();
       if (!credentialsFile.exists()) {
-        throw new BackupException("Arquivo de credenciais não encontrado: ");
+        log.error("Arquivo de credenciais não encontrado.");
+        throw new BackupException("Arquivo de credenciais não encontrado.");
       }
 
       GoogleClientSecrets clientSecrets =
@@ -79,11 +88,71 @@ public class GoogleDriveService {
                   new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
               .setAccessType("offline")
               .build();
+
       LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
+      log.info("Credenciais de autorização criadas com sucesso.");
       return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
+    } catch (com.google.api.client.auth.oauth2.TokenResponseException e) {
+      log.error("Erro de autenticação no Google Drive.", e);
+      handleTokenException(e, HTTP_TRANSPORT);
     } catch (IOException e) {
+      log.error("Erro ao carregar as credenciais do Google Drive.", e);
       throw new BackupException("Erro ao carregar as credenciais do Google Drive.", e);
     }
+    return null;
+  }
+
+  private void handleTokenException(
+      com.google.api.client.auth.oauth2.TokenResponseException e, NetHttpTransport HTTP_TRANSPORT) {
+    if (e.getDetails() != null && "invalid_grant".equals(e.getDetails().getError())) {
+      log.error(
+          "Token expirado ou revogado. Excluindo diretório de tokens e tentando novamente...");
+      java.io.File tokensDir = new java.io.File(TOKENS_DIRECTORY_PATH);
+      if (tokensDir.exists()) {
+        deleteDirectory(tokensDir);
+        log.info("Diretório de tokens excluído com sucesso.");
+      }
+      try {
+        GoogleAuthorizationCodeFlow flow =
+            new GoogleAuthorizationCodeFlow.Builder(
+                    HTTP_TRANSPORT,
+                    JSON_FACTORY,
+                    GoogleClientSecrets.load(
+                        JSON_FACTORY,
+                        new InputStreamReader(
+                            new FileInputStream(base64FileDecoder.getGoogleDriveCredentialsFile()),
+                            StandardCharsets.UTF_8)),
+                    SCOPES)
+                .setDataStoreFactory(
+                    new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
+                .setAccessType("offline")
+                .build();
+
+        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
+        log.info("Credenciais recriadas com sucesso após token expirado.");
+        new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
+      } catch (IOException retryException) {
+        log.error("Erro ao recriar credenciais após token expirado.", retryException);
+        throw new BackupException(
+            "Erro ao recriar credenciais após token expirado.", retryException);
+      }
+    }
+    throw new BackupException("Erro de autenticação no Google Drive.", e);
+  }
+
+  // Método auxiliar para excluir diretório recursivamente
+  private void deleteDirectory(java.io.File directory) {
+    log.info("Excluindo diretório: {}", directory.getAbsolutePath());
+    if (directory.isDirectory()) {
+      java.io.File[] files = directory.listFiles();
+      if (files != null) {
+        for (java.io.File file : files) {
+          deleteDirectory(file);
+        }
+      }
+    }
+    directory.delete();
+    log.info("Diretório excluído: {}", directory.getAbsolutePath());
   }
 
   /**
@@ -94,6 +163,7 @@ public class GoogleDriveService {
    * @return O ID da pasta no Google Drive, ou null se não encontrada.
    */
   protected String getFolderId(String folderName, String parentFolderId) {
+    log.info("Verificando existência da pasta '{}' no Google Drive.", folderName);
     try {
       Drive service = getDriveService();
       String query =
@@ -117,10 +187,13 @@ public class GoogleDriveService {
 
       List<File> files = result.getFiles();
       if (!files.isEmpty()) {
+        log.info("Pasta encontrada. ID: {}", files.get(0).getId());
         return files.get(0).getId();
       }
+      log.info("Pasta '{}' não encontrada.", folderName);
       return null;
     } catch (IOException e) {
+      log.error("Erro ao verificar pasta no Google Drive.", e);
       throw new BackupException("Erro ao verificar pasta no Google Drive.", e);
     }
   }
@@ -148,9 +221,9 @@ public class GoogleDriveService {
    * @return O ID do arquivo criado no Drive.
    */
   protected String uploadFile(String filePath, String fileName, String folderId) {
+    log.info("Iniciando upload do arquivo '{}' para a pasta '{}'.", fileName, folderId);
     try {
       Drive service = getDriveService();
-
       File fileMetadata = new File();
       fileMetadata.setName(fileName);
       if (folderId != null && !folderId.isEmpty()) {
@@ -161,9 +234,10 @@ public class GoogleDriveService {
       FileContent mediaContent = new FileContent("text/csv", filecontent);
 
       File file = service.files().create(fileMetadata, mediaContent).setFields("id").execute();
-
+      log.info("Upload concluído. ID do arquivo no Google Drive: {}", file.getId());
       return file.getId();
     } catch (IOException e) {
+      log.error("Erro ao fazer upload do arquivo.", e);
       throw new BackupException("Erro ao fazer upload do arquivo para o Google Drive.", e);
     }
   }
@@ -176,9 +250,9 @@ public class GoogleDriveService {
    * @return O ID da pasta criada.
    */
   protected String createFolder(String folderName, String parentFolderId) {
+    log.info("Criando pasta '{}' no Google Drive.", folderName);
     try {
       Drive service = getDriveService();
-
       File fileMetadata = new File();
       fileMetadata.setName(folderName);
       fileMetadata.setMimeType("application/vnd.google-apps.folder");
@@ -188,10 +262,67 @@ public class GoogleDriveService {
       }
 
       File folder = service.files().create(fileMetadata).setFields("id").execute();
-
+      log.info("Pasta '{}' criada com sucesso. ID: {}", folderName, folder.getId());
       return folder.getId();
     } catch (IOException e) {
+      log.error("Erro ao criar a pasta no Google Drive.", e);
       throw new BackupException("Erro ao criar a pasta no Google Drive.", e);
+    }
+  }
+
+  /**
+   * Verifica se as credenciais estão disponíveis para uso.
+   *
+   * @return true se as credenciais estiverem disponíveis, caso contrário, false.
+   */
+  public boolean areCredentialsAvailable() {
+    log.info("Verificando se as credenciais estão disponíveis.");
+    java.io.File tokensDir = new java.io.File(TOKENS_DIRECTORY_PATH);
+    boolean available =
+        tokensDir.exists()
+            && tokensDir.isDirectory()
+            && tokensDir.listFiles() != null
+            && tokensDir.listFiles().length > 0;
+    log.info("Credenciais disponíveis: {}", available);
+    return available;
+  }
+
+  /**
+   * Obtém a URL de autorização para o Google Drive.
+   *
+   * @return A URL de autorização.
+   */
+  public String getAuthorizationUrl() {
+    log.info("Obtendo URL de autorização para o Google Drive.");
+    try {
+      base64FileDecoder.decodeGoogleDriveCredentials();
+      java.io.File credentialsFile = base64FileDecoder.getGoogleDriveCredentialsFile();
+      if (!credentialsFile.exists()) {
+        log.error("Arquivo de credenciais não encontrado.");
+        throw new BackupException("Arquivo de credenciais não encontrado.");
+      }
+
+      final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+      GoogleClientSecrets clientSecrets =
+          GoogleClientSecrets.load(
+              JSON_FACTORY,
+              new InputStreamReader(new FileInputStream(credentialsFile), StandardCharsets.UTF_8));
+
+      GoogleAuthorizationCodeFlow flow =
+          new GoogleAuthorizationCodeFlow.Builder(
+                  HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
+              .setDataStoreFactory(
+                  new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
+              .setAccessType("offline")
+              .build();
+
+      LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
+      String url = flow.newAuthorizationUrl().setRedirectUri(receiver.getRedirectUri()).build();
+      log.info("URL de autorização gerada com sucesso: {}", url);
+      return url;
+    } catch (Exception e) {
+      log.error("Erro ao gerar o link de autorização do Google Drive.", e);
+      throw new BackupException("Erro ao gerar o link de autorização do Google Drive.", e);
     }
   }
 }

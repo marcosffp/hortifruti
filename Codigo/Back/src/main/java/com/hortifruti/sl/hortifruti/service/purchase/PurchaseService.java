@@ -81,14 +81,21 @@ public class PurchaseService {
   @Transactional
   public void recalculateTotal(Long purchaseId) {
     // Busca a compra pelo ID
-    Purchase purchase = purchaseRepository
-        .findById(purchaseId)
-        .orElseThrow(() -> new PurchaseException("Compra não encontrada com o ID: " + purchaseId));
+    Purchase purchase =
+        purchaseRepository
+            .findById(purchaseId)
+            .orElseThrow(
+                () -> new PurchaseException("Compra não encontrada com o ID: " + purchaseId));
 
     // Recalcula o total somando os valores dos produtos associados
-    BigDecimal newTotal = purchase.getInvoiceProducts().stream()
-        .map(invoiceProduct -> invoiceProduct.getPrice().multiply(BigDecimal.valueOf(invoiceProduct.getQuantity())))
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal newTotal =
+        purchase.getInvoiceProducts().stream()
+            .map(
+                invoiceProduct ->
+                    invoiceProduct
+                        .getPrice()
+                        .multiply(BigDecimal.valueOf(invoiceProduct.getQuantity())))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     // Atualiza o total da compra
     purchase.setTotal(newTotal);
@@ -101,19 +108,23 @@ public class PurchaseService {
   public Page<PurchaseResponse> getPurchasesByDateRange(
       LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
     // Busca as compras no repositório dentro do intervalo de datas
-    Page<Purchase> purchases = purchaseRepository.findByPurchaseDateBetweenOrderByPurchaseDateDesc(startDate, endDate, pageable);
+    Page<Purchase> purchases =
+        purchaseRepository.findByPurchaseDateBetweenOrderByPurchaseDateDesc(
+            startDate, endDate, pageable);
 
     // Mapeia as compras para PurchaseResponse
-    return purchases.map(purchase -> new PurchaseResponse(
-        purchase.getId(),
-        purchase.getPurchaseDate(),
-        purchase.getTotal(),
-        purchase.getUpdatedAt()
-    ));
+    return purchases.map(
+        purchase ->
+            new PurchaseResponse(
+                purchase.getId(),
+                purchase.getPurchaseDate(),
+                purchase.getTotal(),
+                purchase.getUpdatedAt()));
   }
 
   @Transactional(readOnly = true)
-  public Page<PurchaseResponse> getPurchasesByDateRange(String startDate, String endDate, int page, int size) {
+  public Page<PurchaseResponse> getPurchasesByDateRange(
+      String startDate, String endDate, int page, int size) {
     // Converte as datas recebidas como String para LocalDateTime
     LocalDateTime start = LocalDateTime.parse(startDate);
     LocalDateTime end = LocalDateTime.parse(endDate);
@@ -122,16 +133,16 @@ public class PurchaseService {
     Pageable pageable = PageRequest.of(page, size);
 
     // Busca as compras no repositório dentro do intervalo de datas
-    Page<Purchase> purchases = purchaseRepository.findByPurchaseDateBetweenOrderByPurchaseDateDesc(start, end, pageable);
+    Page<Purchase> purchases =
+        purchaseRepository.findByPurchaseDateBetweenOrderByPurchaseDateDesc(start, end, pageable);
 
     // Mapeia as compras para PurchaseResponse
-    return purchases.map(purchase -> new PurchaseResponse(
-        purchase.getId(),
-        purchase.getPurchaseDate(),
-        purchase.getTotal(),
-        purchase.getUpdatedAt()
-    ));
+    return purchases.map(
+        purchase ->
+            new PurchaseResponse(
+                purchase.getId(),
+                purchase.getPurchaseDate(),
+                purchase.getTotal(),
+                purchase.getUpdatedAt()));
   }
-
-
 }
