@@ -7,6 +7,9 @@ import java.util.Base64;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.hortifruti.sl.hortifruti.exception.BackupException;
+import com.hortifruti.sl.hortifruti.exception.BilletException;
+
 @Component
 public class Base64FileDecoder {
 
@@ -30,18 +33,12 @@ public class Base64FileDecoder {
    */
   public File decodeGoogleDriveCredentials() throws IOException {
     if (googleDriveCredentials == null || googleDriveCredentials.isEmpty()) {
-      System.err.println(
-          "[ERROR] A propriedade 'google.drive.credentials' está vazia ou não foi configurada.");
-      throw new IllegalArgumentException(
+      throw new BackupException(
           "A propriedade 'google.drive.credentials' está vazia ou não foi configurada.");
     }
-    System.out.println(
-        "[DEBUG] Decodificando credenciais do Google Drive para o diretório: "
-            + googleTempDirectory);
+
     String outputPath = googleTempDirectory + "/drive_credentials.json";
     File decodedFile = decodeBase64ToFile(googleDriveCredentials, outputPath);
-    System.out.println(
-        "[DEBUG] Arquivo de credenciais decodificado: " + decodedFile.getAbsolutePath());
     return decodedFile;
   }
 
@@ -53,18 +50,15 @@ public class Base64FileDecoder {
    */
   public File decodePfx() throws IOException {
     if (pfx == null || pfx.isEmpty()) {
-      throw new IllegalArgumentException(
+      throw new BilletException(
           "A propriedade 'document.pfx' está vazia ou não foi configurada.");
     }
-    System.out.println("[DEBUG] Decodificando PFX para o diretório: " + pfxTempDirectory);
     String outputPath = pfxTempDirectory + "/HORTIFRUTISANTALUZIALTDA275409060001552025.pfx";
     File decodedFile = decodeBase64ToFile(pfx, outputPath);
     if (decodedFile == null) {
-      throw new IOException("Falha ao decodificar o arquivo PFX.");
+      throw new BilletException("Falha ao decodificar o arquivo PFX.");
     }
     if (decodedFile.exists()) {
-      System.out.println(
-          "[DEBUG] Arquivo PFX decodificado com sucesso: " + decodedFile.getAbsolutePath());
     } else {
       System.err.println("[ERROR] Falha ao decodificar o arquivo PFX.");
     }

@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-/** Cliente para a API do OpenWeather Responsável por buscar dados de previsão do tempo */
 @Component
 public class OpenWeatherClient {
   private static final Logger logger = LoggerFactory.getLogger(OpenWeatherClient.class);
@@ -41,7 +40,6 @@ public class OpenWeatherClient {
     // Codificar a cidade para URL de forma mais explícita
     String encodedCity = city.replace(" ", "+");
 
-    // Construir a URL de forma mais simples, evitando possíveis problemas de codificação
     String url =
         forecastUrl
             + "?q="
@@ -53,33 +51,24 @@ public class OpenWeatherClient {
             + "&lang="
             + lang;
 
-    // Log completo da URL para diagnóstico (exceto a chave API)
-    String urlLog = url.replace(apiKey, "API_KEY_HIDDEN");
-    logger.info("Chamando API OpenWeather URL: {}", urlLog);
 
     try {
-      // Configuração básica para a requisição HTTP
       RestTemplate restTemplate = new RestTemplate();
 
-      // Configurar timeout mais longo
       SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-      factory.setConnectTimeout(30000); // 30 segundos
+      factory.setConnectTimeout(30000); 
       factory.setReadTimeout(30000);
       restTemplate.setRequestFactory(factory);
 
-      // Fazer requisição direta, método mais simples
       Map<String, Object> response = restTemplate.getForObject(url, Map.class);
 
       if (response != null) {
-        logger.info("Resposta recebida da API OpenWeather com sucesso: {}", response.get("cod"));
         return response;
       } else {
-        logger.error("Resposta nula da API OpenWeather");
         throw new WeatherApiException("Resposta nula da API OpenWeather");
       }
     } catch (RestClientException e) {
       logger.error("Erro ao chamar a API OpenWeather: {}", e.getMessage(), e);
-      // Captura o corpo da resposta de erro, se disponível
       String errorDetails = "";
       if (e.getMessage() != null) {
         logger.error("Erro detalhado: {}", e.getMessage());

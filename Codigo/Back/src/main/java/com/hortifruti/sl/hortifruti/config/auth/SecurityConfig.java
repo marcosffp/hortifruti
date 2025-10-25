@@ -40,9 +40,8 @@ public class SecurityConfig {
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/backup/**",
-                        "/api/invoices/**",
-                        "/api/scheduler/**") // Adicionamos a permissão para os endpoints do
-                    // scheduler
+                        "/invoices/**",
+                        "/api/scheduler/**") 
                     .permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.GET, "/clients/**")
                     .permitAll()

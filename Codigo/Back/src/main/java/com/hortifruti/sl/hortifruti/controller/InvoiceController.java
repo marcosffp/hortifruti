@@ -14,7 +14,7 @@ import org.springframework.core.io.Resource;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/invoices")
+@RequestMapping("/invoices")
 @RequiredArgsConstructor
 public class InvoiceController {
 

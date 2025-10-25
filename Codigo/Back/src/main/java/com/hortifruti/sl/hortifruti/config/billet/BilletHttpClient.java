@@ -70,9 +70,8 @@ public class BilletHttpClient {
       ResponseEntity<String> response =
           restTemplate.postForEntity(apiUrl + endpoint, entity, String.class);
 
-      // Verifica se o status é 204 NO_CONTENT
       if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
-        return null; // Retorna null para indicar que não há conteúdo
+        return null; 
       }
 
       return processResponse(response);
