@@ -10,4 +10,8 @@ public record ClientRequest(
     @Email(message = "Email deve ser válido") String email,
     @NotBlank(message = "Telefone é obrigatório") String phoneNumber,
     @NotBlank(message = "Documento é obrigatório") String document,
-    @NotBlank(message = "Endereço é obrigatório") String address) {}
+    @NotBlank(message = "Endereço é obrigatório") String address,
+    String stateRegistration,
+    Integer stateIndicator   
+) {}
+    

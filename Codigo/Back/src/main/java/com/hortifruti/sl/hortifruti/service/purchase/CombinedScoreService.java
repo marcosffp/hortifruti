@@ -202,14 +202,14 @@ public class CombinedScoreService {
   }
 
   @Transactional
-  public void updateStatusAfterInvoiceCancellation(String invoiceNumber) {
+  public void updateStatusAfterInvoiceCancellation(String ref) {
     CombinedScore combinedScore =
         combinedScoreRepository
-            .findByYourNumber(invoiceNumber)
+            .findByInvoiceRef(ref)
             .orElseThrow(
                 () ->
                     new CombinedScoreException(
-                        "CombinedScore com o número " + invoiceNumber + " não encontrado."));
+                        "CombinedScore com o identificação " + ref + " não encontrado."));
 
     if (combinedScore.isHasBillet()) {
       combinedScore.setStatus(Status.CANCELADO_NOTA_FISCAL);
