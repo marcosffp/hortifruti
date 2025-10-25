@@ -61,11 +61,11 @@ public class BilletFactory {
   public BilletRequestSimplified createBilletRequest(
       CombinedScore combinedScore, Long combinedScoreId, Pagador pagador, String number) {
     return new BilletRequestSimplified(
-        combinedScore.getConfirmedAt().toString(), // Data de emissão
-        number, // Seu número (identificador do boleto)
-        combinedScore.getTotalValue(), // Valor total
-        combinedScore.getDueDate().toString(), // Data de vencimento
-        pagador // Pagador
+        combinedScore.getConfirmedAt().toString(), 
+        number, 
+        combinedScore.getTotalValue(), 
+        combinedScore.getDueDate().toString(), 
+        pagador 
         );
   }
 
@@ -76,12 +76,9 @@ public class BilletFactory {
    * @return Objeto Pagador
    */
   public Pagador createPagadorFromClient(Client client) {
-    // Exemplo de address recebido do banco de dados:
-    // "Sítio Boa Vista,Santa Luzia,33040-257,MG,Rua Quartzolit, 70"
     String address = client.getAddress();
 
     try {
-      // Divide o endereço em partes
       String[] addressParts = address.split(",");
       if (addressParts.length < 5) {
         throw new BilletException(
@@ -93,7 +90,6 @@ public class BilletFactory {
       String numero = addressParts[1].trim();
       String complemento = "";
 
-      // Verifica se há complemento (ex: "apto 2")
       if (addressParts.length == 6) {
         complemento = addressParts[2].trim();
       }
@@ -102,7 +98,6 @@ public class BilletFactory {
       String cidadeUf = addressParts[addressParts.length - 2].trim();
       String cep = addressParts[addressParts.length - 1].trim();
 
-      // Extrai cidade e UF
       String cidade = cidadeUf;
       String uf = "";
       if (cidadeUf.contains("-")) {
@@ -111,12 +106,10 @@ public class BilletFactory {
         uf = cidadeUfParts[1].trim();
       }
 
-      // Extrai CEP se vier como "CEP: 12345-678"
       if (cep.startsWith("CEP:")) {
         cep = cep.replace("CEP:", "").trim().replaceAll("[^0-9]", "");
       }
 
-      // Validações básicas
       if (rua.isEmpty()) {
         throw new BilletException("Rua não pode estar vazia no endereço do cliente.");
       }
@@ -136,14 +129,13 @@ public class BilletFactory {
         throw new BilletException("CEP deve conter exatamente 8 dígitos numéricos.");
       }
 
-      // Monta endereço completo para o campo "endereco"
       String enderecoCompleto =
           rua + ", " + numero + (complemento.isEmpty() ? "" : ", " + complemento);
 
       return new Pagador(
-          client.getDocument().replaceAll("[^0-9]", ""), // Remove formatação do CPF/CNPJ
+          client.getDocument().replaceAll("[^0-9]", ""), 
           client.getClientName(),
-          enderecoCompleto, // Rua + número + complemento
+          enderecoCompleto, 
           bairro,
           cidade,
           cep,

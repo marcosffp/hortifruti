@@ -19,20 +19,16 @@ public class PdfCreate {
    */
   public ResponseEntity<byte[]> createResponsePdf(String pdfBase64, String nomeArquivo) {
     try {
-      // Verifica se o Base64 está vazio ou nulo
       if (pdfBase64 == null || pdfBase64.trim().isEmpty()) {
         throw new BilletException("O conteúdo do PDF em Base64 está vazio ou nulo.");
       }
 
-      // Decodifica o Base64 para bytes
       byte[] pdfBytes = Base64.getDecoder().decode(pdfBase64);
 
-      // Configura os headers para retornar o PDF
       HttpHeaders headers = new HttpHeaders();
       headers.setContentType(MediaType.APPLICATION_PDF);
       headers.setContentDispositionFormData("attachment", nomeArquivo);
 
-      // Retorna o PDF como resposta
       return ResponseEntity.ok().headers(headers).body(pdfBytes);
 
     } catch (IllegalArgumentException e) {
@@ -52,12 +48,10 @@ public class PdfCreate {
    */
   public byte[] convertBase64ToBytes(String pdfBase64) {
     try {
-      // Verifica se o Base64 está vazio ou nulo
       if (pdfBase64 == null || pdfBase64.trim().isEmpty()) {
         throw new BilletException("O conteúdo do PDF em Base64 está vazio ou nulo.");
       }
 
-      // Decodifica o Base64 para bytes
       return Base64.getDecoder().decode(pdfBase64);
 
     } catch (IllegalArgumentException e) {
