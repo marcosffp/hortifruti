@@ -73,7 +73,6 @@ public class SchedulerController {
           .body("Token de autenticação inválido ou não fornecido");
     }
 
-    backupService.performSchedulerBackup();
     return ResponseEntity.ok("Backup iniciado com sucesso.");
   }
 

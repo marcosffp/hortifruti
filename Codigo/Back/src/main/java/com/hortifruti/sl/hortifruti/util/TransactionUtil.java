@@ -79,14 +79,6 @@ public class TransactionUtil {
     // Fiscal
     map.put("singular", Category.FISCAL);
     map.put("next", Category.FISCAL);
-
-    /*
-     * // Fornecedor
-     * map.put("mercado", Category.FORNECEDOR);
-     *
-     * map.put("pix", Category.VENDAS_PIX);
-     */
-
     return map;
   }
 
@@ -110,28 +102,23 @@ public class TransactionUtil {
 
   public static List<Transaction> filterNewTransactions(
       List<Transaction> transactions, TransactionRepository transactionRepository) {
-    // Extrai os hashes das transações fornecidas
     List<String> hashes =
         transactions.stream()
-            .map(Transaction::getHash) // Usa o hash já gerado na entidade
+            .map(Transaction::getHash) 
             .collect(Collectors.toList());
 
-    // Consulta os hashes existentes no banco
     Set<String> existingHashes = transactionRepository.findHashes(new HashSet<>(hashes));
 
-    // Filtra as transações que ainda não existem no banco, mantendo a ordem original
     return transactions.stream()
-        .filter(tx -> !existingHashes.contains(tx.getHash())) // Usa o hash diretamente
+        .filter(tx -> !existingHashes.contains(tx.getHash())) 
         .collect(Collectors.toList());
   }
 
   public static Category determineCategory(String historyLower, String balanceType) {
-    // Verifica explicitamente "Recebimento Fornecedor"
     if (historyLower.contains("recebimento fornecedor")) {
       return Category.VENDAS_CARTAO;
     }
 
-    // Aplica a lógica padrão com base nas palavras-chave
     return initCategoryKeywords().entrySet().stream()
         .filter(entry -> historyLower.contains(entry.getKey()))
         .map(Map.Entry::getValue)

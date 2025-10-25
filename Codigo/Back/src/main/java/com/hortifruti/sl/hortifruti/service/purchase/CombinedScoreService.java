@@ -14,7 +14,7 @@ import com.hortifruti.sl.hortifruti.model.purchase.GroupedProduct;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
-import com.hortifruti.sl.hortifruti.repository.purchase.ProductGrouperRepository;
+import com.hortifruti.sl.hortifruti.repository.purchase.GroupedProductRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -33,8 +33,8 @@ public class CombinedScoreService {
   private final CombinedScoreMapper combinedScoreMapper;
   private final ClientRepository clientRepository;
   private final PurchaseRepository purchaseRepository;
-  private final ProductGrouperService productGrouper;
-  private final ProductGrouperRepository productGrouperRepository;
+  private final GroupedProductService productGrouper;
+  private final GroupedProductRepository productGrouperRepository;
 
   public void cancelGrouping(Long id) {
     if (!combinedScoreRepository.existsById(id)) {
@@ -73,20 +73,11 @@ public class CombinedScoreService {
 
   @Transactional
   public void createCombinedScore(CombinedScoreRequest request) {
-    // Validação de parâmetros obrigatórios
-    if (request.clientId() == null) {
-      throw new ClientException("ID do cliente não fornecido.");
-    }
-
-    if (request.startDate() == null || request.endDate() == null) {
-      throw new PurchaseException("Período de consulta inválido: datas não podem ser nulas.");
-    }
 
     if (request.endDate().isBefore(request.startDate())) {
       throw new PurchaseException("Data final não pode ser anterior à data inicial.");
     }
 
-    // Busca do cliente
     Client client =
         clientRepository
             .findById(request.clientId())
@@ -95,44 +86,35 @@ public class CombinedScoreService {
                     new ClientException(
                         "Cliente com ID " + request.clientId() + " não encontrado."));
 
-    // Busca das compras no período especificado
     List<Purchase> purchases =
         purchaseRepository.findByClientIdAndPurchaseDateBetween(
             request.clientId(), request.startDate(), request.endDate());
 
-    // Retorno vazio se não houver compras
     if (purchases.isEmpty()) {
       throw new PurchaseException(
           "Nenhuma compra encontrada para o cliente no período especificado.");
     }
 
-    // Agrupamento de produtos
     List<GroupedProduct> groupedProducts =
         productGrouper.groupProducts(purchases, client.isVariablePrice());
 
-    // Cálculo do valor total
     BigDecimal totalValue =
         groupedProducts.stream()
             .map(GroupedProduct::getTotalValue)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    // Criação do CombinedScore
     CombinedScore combinedScore =
         CombinedScore.builder().clientId(request.clientId()).totalValue(totalValue).build();
 
-    // Salva o CombinedScore e pega a entidade salva com ID (com flush para garantir o ID)
     CombinedScore savedCombinedScore = combinedScoreRepository.saveAndFlush(combinedScore);
 
-    // Associação dos produtos agrupados ao CombinedScore salvo
     groupedProducts.forEach(product -> product.setCombinedScore(savedCombinedScore));
 
-    // Salva os produtos agrupados em lote
     productGrouperRepository.saveAll(groupedProducts);
   }
 
   @Transactional
   public void confirmPayment(Long id) {
-    // Verifica se o agrupamento existe
     CombinedScore combinedScore =
         combinedScoreRepository
             .findById(id)
@@ -140,7 +122,6 @@ public class CombinedScoreService {
                 () ->
                     new CombinedScoreException("Agrupamento com o ID " + id + " não encontrado."));
 
-    // Verifica se o agrupamento possui boleto
     if (combinedScore.isHasBillet()) {
       throw new CombinedScoreException(
           "Não é possível confirmar o pagamento de um agrupamento com boleto.");
@@ -150,14 +131,12 @@ public class CombinedScoreService {
       throw new CombinedScoreException("O pagamento deste agrupamento já foi confirmado.");
     }
 
-    // Atualiza o status para pago
     combinedScore.setStatus(Status.PAGO);
     combinedScoreRepository.save(combinedScore);
   }
 
   @Transactional
   public void cancelPayment(Long id) {
-    // Verifica se o agrupamento existe
     CombinedScore combinedScore =
         combinedScoreRepository
             .findById(id)
@@ -165,19 +144,16 @@ public class CombinedScoreService {
                 () ->
                     new CombinedScoreException("Agrupamento com o ID " + id + " não encontrado."));
 
-    // Verifica se o agrupamento já está cancelado
     if (combinedScore.getStatus() == Status.CANCELADO) {
       throw new CombinedScoreException("O pagamento deste agrupamento já foi cancelado.");
     }
 
-    // Verifica as condições para cancelamento
     if (combinedScore.isHasBillet() || combinedScore.isHasInvoice()) {
       throw new CombinedScoreException(
           "Não é possível cancelar o pagamento enquanto o boleto ou a nota fiscal não forem"
               + " resolvidos.");
     }
 
-    // Atualiza o status para cancelado
     combinedScore.setStatus(Status.CANCELADO);
     combinedScoreRepository.save(combinedScore);
   }
@@ -192,9 +168,8 @@ public class CombinedScoreService {
                     new CombinedScoreException(
                         "Agrupamento com o ID " + combinedScoreId + " não encontrado."));
 
-    // Converte para DTO e ordena alfabeticamente pelo nome
     return combinedScore.getGroupedProducts().stream()
-        .sorted(Comparator.comparing(GroupedProduct::getName)) // Ordena pelo nome
+        .sorted(Comparator.comparing(GroupedProduct::getName))
         .map(
             product ->
                 new GroupedProductResponse(
@@ -248,7 +223,6 @@ public class CombinedScoreService {
 
   @Transactional
   public void recalculateTotal(Long combinedScoreId) {
-    // Busca o CombinedScore pelo ID
     CombinedScore combinedScore =
         combinedScoreRepository
             .findById(combinedScoreId)
@@ -257,16 +231,13 @@ public class CombinedScoreService {
                     new CombinedScoreException(
                         "Agrupamento com o ID " + combinedScoreId + " não encontrado."));
 
-    // Recalcula o total somando os valores dos produtos agrupados
     BigDecimal newTotal =
         combinedScore.getGroupedProducts().stream()
             .map(GroupedProduct::getTotalValue)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    // Atualiza o valor total no CombinedScore
     combinedScore.setTotalValue(newTotal);
 
-    // Salva o CombinedScore atualizado no banco de dados
     combinedScoreRepository.save(combinedScore);
   }
 }

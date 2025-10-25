@@ -48,10 +48,9 @@ public class GoogleDriveService {
     log.info("Iniciando criação do cliente autorizado do Google Drive.");
     try {
       final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-      Drive drive =
-          new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-              .setApplicationName(APPLICATION_NAME)
-              .build();
+      Drive drive = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+          .setApplicationName(APPLICATION_NAME)
+          .build();
       log.info("Cliente autorizado do Google Drive criado com sucesso.");
       return drive;
     } catch (IOException | GeneralSecurityException e) {
@@ -102,11 +101,9 @@ public class GoogleDriveService {
     return null;
   }
 
-  private void handleTokenException(
-      com.google.api.client.auth.oauth2.TokenResponseException e, NetHttpTransport HTTP_TRANSPORT) {
+  private void handleTokenException(com.google.api.client.auth.oauth2.TokenResponseException e, NetHttpTransport HTTP_TRANSPORT) {
     if (e.getDetails() != null && "invalid_grant".equals(e.getDetails().getError())) {
-      log.error(
-          "Token expirado ou revogado. Excluindo diretório de tokens e tentando novamente...");
+      log.error("Token expirado ou revogado. Excluindo diretório de tokens e tentando novamente...");
       java.io.File tokensDir = new java.io.File(TOKENS_DIRECTORY_PATH);
       if (tokensDir.exists()) {
         deleteDirectory(tokensDir);
@@ -115,16 +112,11 @@ public class GoogleDriveService {
       try {
         GoogleAuthorizationCodeFlow flow =
             new GoogleAuthorizationCodeFlow.Builder(
-                    HTTP_TRANSPORT,
-                    JSON_FACTORY,
-                    GoogleClientSecrets.load(
-                        JSON_FACTORY,
-                        new InputStreamReader(
-                            new FileInputStream(base64FileDecoder.getGoogleDriveCredentialsFile()),
-                            StandardCharsets.UTF_8)),
+                    HTTP_TRANSPORT, JSON_FACTORY,
+                    GoogleClientSecrets.load(JSON_FACTORY,
+                        new InputStreamReader(new FileInputStream(base64FileDecoder.getGoogleDriveCredentialsFile()), StandardCharsets.UTF_8)),
                     SCOPES)
-                .setDataStoreFactory(
-                    new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
+                .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
                 .setAccessType("offline")
                 .build();
 
@@ -133,8 +125,7 @@ public class GoogleDriveService {
         new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
       } catch (IOException retryException) {
         log.error("Erro ao recriar credenciais após token expirado.", retryException);
-        throw new BackupException(
-            "Erro ao recriar credenciais após token expirado.", retryException);
+        throw new BackupException("Erro ao recriar credenciais após token expirado.", retryException);
       }
     }
     throw new BackupException("Erro de autenticação no Google Drive.", e);
@@ -278,11 +269,7 @@ public class GoogleDriveService {
   public boolean areCredentialsAvailable() {
     log.info("Verificando se as credenciais estão disponíveis.");
     java.io.File tokensDir = new java.io.File(TOKENS_DIRECTORY_PATH);
-    boolean available =
-        tokensDir.exists()
-            && tokensDir.isDirectory()
-            && tokensDir.listFiles() != null
-            && tokensDir.listFiles().length > 0;
+    boolean available = tokensDir.exists() && tokensDir.isDirectory() && tokensDir.listFiles() != null && tokensDir.listFiles().length > 0;
     log.info("Credenciais disponíveis: {}", available);
     return available;
   }

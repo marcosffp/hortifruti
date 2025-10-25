@@ -1,55 +1,143 @@
 package com.hortifruti.sl.hortifruti.service.purchase;
 
-import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductResponse;
-import com.hortifruti.sl.hortifruti.dto.purchase.UpdateGroupedProduct;
-import com.hortifruti.sl.hortifruti.exception.CombinedScoreException;
-import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
-import com.hortifruti.sl.hortifruti.model.purchase.GroupedProduct;
-import com.hortifruti.sl.hortifruti.repository.purchase.ProductGrouperRepository;
 import java.math.BigDecimal;
-import lombok.AllArgsConstructor;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
+
+import com.hortifruti.sl.hortifruti.exception.PurchaseException;
+import com.hortifruti.sl.hortifruti.model.purchase.GroupedProduct;
+import com.hortifruti.sl.hortifruti.model.purchase.InvoiceProduct;
+import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
+
+import lombok.AllArgsConstructor;
 
 @Service
 @AllArgsConstructor
 public class GroupedProductService {
 
-  private final ProductGrouperRepository repository;
-  private final CombinedScoreService combinedScoreService;
 
-  /** Atualiza um produto agrupado pelo ID. */
-  public GroupedProductResponse updateGroupedProduct(Long id, UpdateGroupedProduct dto) {
-    GroupedProduct groupedProduct =
-        repository
-            .findById(id)
-            .orElseThrow(
-                () ->
-                    new CombinedScoreException(
-                        "Produto agrupado com o ID " + id + " não encontrado."));
-
-    groupedProduct.setName(dto.name());
-    groupedProduct.setPrice(dto.price());
-    groupedProduct.setQuantity(dto.quantity());
-    groupedProduct.setTotalValue(dto.price().multiply(BigDecimal.valueOf(dto.quantity())));
-
-    GroupedProduct updatedProduct = repository.save(groupedProduct);
-    combinedScoreService.recalculateTotal(updatedProduct.getCombinedScore().getId());
-
-    return new GroupedProductResponse(
-        updatedProduct.getCode(),
-        updatedProduct.getName(),
-        updatedProduct.getPrice(),
-        updatedProduct.getQuantity(),
-        updatedProduct.getTotalValue());
+  public List<GroupedProduct> groupProducts(List<Purchase> purchases, boolean isFixedPrice) {
+    if (isFixedPrice) {
+      return groupProductsWithFixedPrice(purchases);
+    } else {
+      return groupProductsWithVariablePrice(purchases);
+    }
   }
 
-  /** Deleta um produto agrupado pelo ID. */
-  public void deleteGroupedProduct(Long id) {
-    if (!repository.existsById(id)) {
-      throw new CombinedScoreException("Produto agrupado com o ID " + id + " não encontrado.");
+  private List<GroupedProduct> groupProductsWithFixedPrice(List<Purchase> purchases) {
+    if (purchases == null || purchases.isEmpty()) {
+      return new ArrayList<>();
     }
-    CombinedScore combinedScore = repository.findById(id).get().getCombinedScore();
-    repository.deleteById(id);
-    combinedScoreService.recalculateTotal(combinedScore.getId());
+
+    try {
+      return new ArrayList<>(
+          purchases.stream()
+              .flatMap(purchase -> purchase.getInvoiceProducts().stream())
+              .collect(
+                  Collectors.groupingBy(
+                      product -> product.getCode() + "-" + product.getName(),
+                      Collectors.collectingAndThen(
+                          Collectors.toList(), this::createGroupedProductForFixedPrice)))
+              .values());
+    } catch (Exception e) {
+      throw new PurchaseException("Erro ao agrupar produtos com preço fixo: " + e.getMessage(), e);
+    }
+  }
+
+  private List<GroupedProduct> groupProductsWithVariablePrice(List<Purchase> purchases) {
+    if (purchases == null || purchases.isEmpty()) {
+      return new ArrayList<>();
+    }
+
+    try {
+      Map<String, List<InvoiceProduct>> groupedByCodeAndName =
+          purchases.stream()
+              .flatMap(purchase -> purchase.getInvoiceProducts().stream())
+              .collect(Collectors.groupingBy(product -> extractProductKey(product)));
+
+      return groupedByCodeAndName.entrySet().stream()
+          .map(entry -> createGroupedProductForVariablePrice(entry.getKey(), entry.getValue()))
+          .collect(Collectors.toList());
+    } catch (Exception e) {
+      throw new PurchaseException(
+          "Erro ao agrupar produtos com preço variável: " + e.getMessage(), e);
+    }
+  }
+
+  private String extractProductKey(InvoiceProduct product) {
+    try {
+      return product.getCode().split("-")[0] + "-" + product.getName();
+    } catch (Exception e) {
+      throw new PurchaseException("Formato de código de produto inválido: " + product.getCode(), e);
+    }
+  }
+
+  private GroupedProduct createGroupedProductForFixedPrice(List<InvoiceProduct> productList) {
+    if (productList == null || productList.isEmpty()) {
+      throw new PurchaseException(
+          "Lista de produtos vazia ao tentar agrupar produtos com preço fixo");
+    }
+
+    InvoiceProduct firstProduct = productList.get(0);
+
+    int totalQuantity = productList.stream().mapToInt(InvoiceProduct::getQuantity).sum();
+
+    BigDecimal price = firstProduct.getPrice();
+
+    BigDecimal totalValue = price.multiply(BigDecimal.valueOf(totalQuantity));
+
+    return GroupedProduct.builder()
+        .code(firstProduct.getCode())
+        .name(firstProduct.getName())
+        .price(price)
+        .quantity(totalQuantity)
+        .totalValue(totalValue)
+        .build();
+  }
+
+  private GroupedProduct createGroupedProductForVariablePrice(
+      String key, List<InvoiceProduct> productList) {
+    if (productList == null || productList.isEmpty()) {
+      throw new PurchaseException(
+          "Lista de produtos vazia ao tentar agrupar produtos com preço variável");
+    }
+
+    BigDecimal totalValue = BigDecimal.ZERO;
+    BigDecimal totalQuantityDecimal = BigDecimal.ZERO;
+    int totalQuantity = 0;
+
+    InvoiceProduct firstProduct = productList.get(0);
+
+    for (InvoiceProduct product : productList) {
+      int quantity = product.getQuantity();
+      totalQuantity += quantity;
+
+      BigDecimal quantityBD = BigDecimal.valueOf(quantity);
+      totalQuantityDecimal = totalQuantityDecimal.add(quantityBD);
+      totalValue = totalValue.add(product.getPrice().multiply(quantityBD));
+    }
+
+    BigDecimal weightedAvgPrice;
+    try {
+      weightedAvgPrice =
+          totalQuantityDecimal.compareTo(BigDecimal.ZERO) == 0
+              ? BigDecimal.ZERO
+              : totalValue.divide(totalQuantityDecimal, 4, RoundingMode.HALF_EVEN);
+    } catch (ArithmeticException e) {
+      throw new PurchaseException("Erro ao calcular preço médio ponderado: " + e.getMessage(), e);
+    }
+
+    return GroupedProduct.builder()
+        .code(firstProduct.getCode())
+        .name(firstProduct.getName())
+        .price(weightedAvgPrice)
+        .quantity(totalQuantity)
+        .totalValue(totalValue)
+        .build();
   }
 }

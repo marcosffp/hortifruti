@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.finance;
 
+import com.hortifruti.sl.hortifruti.exception.TransactionException;
 import com.hortifruti.sl.hortifruti.mapper.TransactionMapper;
 import com.hortifruti.sl.hortifruti.model.enumeration.Category;
 import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
@@ -36,21 +37,17 @@ public class TransactionBBService {
     String text = PdfUtil.extractPdfText(file);
     List<Transaction> transactions = parseBancoBrasil(text, statement);
 
-    // Primeiro filtrar as transações novas
     List<Transaction> newTransactions =
         TransactionUtil.filterNewTransactions(transactions, transactionRepository);
 
-    // Verificar se há transações para salvar
     if (newTransactions.isEmpty()) {
       return new ArrayList<>();
     }
 
-    // Tentar salvar em lote primeiro, se falhar, salvar individualmente
     try {
       List<Transaction> savedTransactions = transactionRepository.saveAll(newTransactions);
       return savedTransactions;
     } catch (DataIntegrityViolationException e) {
-      // Se houver erro de duplicata, salvar uma por uma e ignorar duplicatas
       return saveTransactionsIndividually(newTransactions);
     }
   }
@@ -60,20 +57,14 @@ public class TransactionBBService {
 
     for (Transaction transaction : transactions) {
       try {
-        // Verificar se já existe uma transação com o mesmo hash
         if (transactionRepository.existsByHash(transaction.getHash())) {
-          System.out.println("Transação duplicada ignorada (hash): " + transaction.getHash());
           continue;
         }
 
         Transaction saved = transactionRepository.save(transaction);
         savedTransactions.add(saved);
-      } catch (DataIntegrityViolationException duplicateException) {
-        // Ignora transações duplicadas e continua com a próxima
-        System.out.println("Transação duplicada ignorada durante save: " + transaction.getHash());
       } catch (Exception e) {
-        // Log outros erros mas continua processando
-        System.err.println("Erro ao salvar transação: " + e.getMessage());
+        throw new TransactionException("Erro ao salvar transação: " + e.getMessage());
       }
     }
 
@@ -92,10 +83,9 @@ public class TransactionBBService {
         String description = matcher.group(5).trim();
         String nextLineDescription = "";
 
-        // Verifica se a próxima linha contém informações adicionais relevantes
         if (i + 1 < lines.length && !TRANSACTION_PATTERN.matcher(lines[i + 1].trim()).matches()) {
-          nextLineDescription = " " + lines[i + 1].trim(); // Concatena a próxima linha
-          i++; // Avança para evitar processar a mesma linha novamente
+          nextLineDescription = " " + lines[i + 1].trim();
+          i++; 
         }
 
         Transaction transaction =
@@ -106,7 +96,6 @@ public class TransactionBBService {
                 matcher.group(7),
                 statement);
 
-        // Só adiciona se o hash foi gerado corretamente
         if (transaction.getHash() != null && !transaction.getHash().isEmpty()) {
           transactions.add(transaction);
         }
@@ -120,7 +109,6 @@ public class TransactionBBService {
                   matcher.group(9),
                   statement);
 
-          // Só adiciona se o hash foi gerado corretamente
           if (secondTransaction.getHash() != null && !secondTransaction.getHash().isEmpty()) {
             transactions.add(secondTransaction);
           }
@@ -158,7 +146,6 @@ public class TransactionBBService {
             batch,
             transactionDate.toString());
 
-    // Garantir que o hash seja gerado corretamente
     String hash =
         TransactionUtil.generateTransactionHash(
             transactionDate, document != null ? document : "", amount, history);
@@ -168,45 +155,37 @@ public class TransactionBBService {
   }
 
   private String extractDocument(String description) {
-    // Caso específico para "BB Rende Fácil"
     if (description.toLowerCase().contains("rende fácil")) {
-      // Regex para capturar número após "Rende Fácil"
       Pattern rendeFacilPattern =
           Pattern.compile("rende fácil\\s+(\\d+[.,\\d]*)", Pattern.CASE_INSENSITIVE);
       Matcher matcher = rendeFacilPattern.matcher(description);
       if (matcher.find()) {
-        return matcher.group(1).replace(",", "."); // Retorna o número com ponto decimal
+        return matcher.group(1).replace(",", "."); 
       }
-      return null; // Caso não encontre o número, retorna null
+      return null;
     }
 
-    // Regex para capturar número do documento em outros casos
     Pattern numeroDocumentoPattern = Pattern.compile("\\d{2,}(\\.\\d{3})+");
     Matcher matcher = numeroDocumentoPattern.matcher(description);
     if (matcher.find()) {
-      return matcher.group().replace(",", "."); // Retorna o número com ponto decimal
+      return matcher.group().replace(",", "."); 
     }
     return null;
   }
 
   private String extractSourceAgency(String agenciaOrigemField) {
-    // Valida e retorna a agência de origem
     return agenciaOrigemField.matches("\\d{4}") ? agenciaOrigemField : null;
   }
 
   private String extractBatch(String loteField) {
-    // Valida e retorna o lote
     return loteField.matches("\\d{5}") ? loteField : null;
   }
 
   private String cleanDescription(String description) {
-    // Caso específico para "Rende Fácil"
     if (description.toLowerCase().contains("rende fácil")) {
-      // Remove o número após "Rende Fácil"
       return description.replaceAll("rende fácil\\s+\\d+[.,\\d]*", "Rende Fácil").trim();
     }
 
-    // Remove outros números do documento
     return description.replaceAll("\\d{2,}(\\.\\d{3})+", "").trim();
   }
 }

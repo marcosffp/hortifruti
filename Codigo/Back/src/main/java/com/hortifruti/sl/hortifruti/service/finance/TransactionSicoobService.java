@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.finance;
 
+import com.hortifruti.sl.hortifruti.exception.TransactionException;
 import com.hortifruti.sl.hortifruti.mapper.TransactionMapper;
 import com.hortifruti.sl.hortifruti.model.enumeration.Category;
 import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
@@ -35,21 +36,18 @@ public class TransactionSicoobService {
     String text = PdfUtil.extractPdfText(file);
     List<Transaction> transactions = parseSicoob(text, statement);
 
-    // Primeiro filtrar as transações novas
     List<Transaction> newTransactions =
         TransactionUtil.filterNewTransactions(transactions, transactionRepository);
 
-    // Verificar se há transações para salvar
     if (newTransactions.isEmpty()) {
       return new ArrayList<>();
     }
 
-    // Tentar salvar em lote primeiro, se falhar, salvar individualmente
     try {
       List<Transaction> savedTransactions = transactionRepository.saveAll(newTransactions);
       return savedTransactions;
     } catch (DataIntegrityViolationException e) {
-      // Se houver erro de duplicata, salvar uma por uma e ignorar duplicatas
+      
       return saveTransactionsIndividually(newTransactions);
     }
   }
@@ -61,12 +59,9 @@ public class TransactionSicoobService {
       try {
         Transaction saved = transactionRepository.save(transaction);
         savedTransactions.add(saved);
-      } catch (DataIntegrityViolationException duplicateException) {
-        // Ignora transações duplicadas e continua com a próxima
-        System.out.println("Transação duplicada ignorada durante save: " + transaction.getHash());
       } catch (Exception e) {
-        // Log outros erros mas continua processando
-        System.err.println("Erro ao salvar transação: " + e.getMessage());
+        throw new TransactionException(
+            "Erro ao salvar transação: " + transaction.toString(), e);
       }
     }
 
@@ -84,24 +79,21 @@ public class TransactionSicoobService {
     for (String rawLine : lines) {
       String line = rawLine.trim();
 
-      // Ignora linhas irrelevantes
       if (line.isBlank()
           || line.contains("SALDO DO DIA")
           || line.contains("SALDO ANTERIOR")
           || line.matches(
-              "\\d{2}/\\d{2}/\\d{2}, \\d{2}:\\d{2}") // Ignora linhas com formato de data e hora
+              "\\d{2}/\\d{2}/\\d{2}, \\d{2}:\\d{2}") 
           || line.contains(
-              "Sicoob | Internet Banking")) { // Ignora linhas com "Sicoob | Internet Banking"
+              "Sicoob | Internet Banking")) {
         continue;
       }
 
-      // Detecta data
       Matcher dateMatcher = DATE_PATTERN.matcher(line);
       if (dateMatcher.find()) {
         if (currentDate != null && historyBuffer.length() > 0) {
           Transaction transaction =
               createTransaction(currentDate, document, historyBuffer.toString().trim(), statement);
-          // Só adiciona se o hash foi gerado corretamente
           if (transaction.getHash() != null && !transaction.getHash().isEmpty()) {
             transactions.add(transaction);
           }
@@ -117,13 +109,11 @@ public class TransactionSicoobService {
         continue;
       }
 
-      // Detecta valor
       Matcher valueMatcher = VALUE_PATTERN.matcher(line);
       if (valueMatcher.find() && currentDate != null) {
         Transaction transaction =
             createTransactionFromMatcher(
                 currentDate, document, historyBuffer.toString().trim(), valueMatcher, statement);
-        // Só adiciona se o hash foi gerado corretamente
         if (transaction.getHash() != null && !transaction.getHash().isEmpty()) {
           transactions.add(transaction);
         }
@@ -131,16 +121,13 @@ public class TransactionSicoobService {
         document = null;
         currentDate = null;
       } else if (currentDate != null) {
-        // Continua preenchendo histórico
         historyBuffer.append(line).append(" ");
       }
     }
 
-    // Adiciona última transação, se houver
     if (currentDate != null && historyBuffer.length() > 0) {
       Transaction transaction =
           createTransaction(currentDate, document, historyBuffer.toString().trim(), statement);
-      // Só adiciona se o hash foi gerado corretamente
       if (transaction.getHash() != null && !transaction.getHash().isEmpty()) {
         transactions.add(transaction);
       }
@@ -170,7 +157,6 @@ public class TransactionSicoobService {
             "",
             date.toString());
 
-    // Garantir que o hash seja gerado corretamente
     String hash =
         TransactionUtil.generateTransactionHash(
             date, document != null ? document : "", amount, history);
@@ -199,7 +185,6 @@ public class TransactionSicoobService {
             "",
             date.toString());
 
-    // Garantir que o hash seja gerado corretamente
     String hash =
         TransactionUtil.generateTransactionHash(
             date, document != null ? document : "", BigDecimal.ZERO, history);
@@ -209,7 +194,6 @@ public class TransactionSicoobService {
   }
 
   private String cleanDescription(String description) {
-    // Remove padrões de valores como "R$ 3,02D" ou "R$ 3,02C"
     return description.replaceAll("R\\$\\s*[\\d.,]+[DC]", "").trim();
   }
 }

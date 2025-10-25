@@ -5,14 +5,17 @@ import com.hortifruti.sl.hortifruti.dto.freight.DistanceResponse;
 import com.hortifruti.sl.hortifruti.dto.freight.FreightCalculationRequest;
 import com.hortifruti.sl.hortifruti.dto.freight.LocationRequest;
 import com.hortifruti.sl.hortifruti.exception.DistanceException;
+
+import lombok.RequiredArgsConstructor;
+
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
+@RequiredArgsConstructor
 public class DistanceMatrixService {
 
   @Value("${google.maps.api.key}")
@@ -20,7 +23,7 @@ public class DistanceMatrixService {
 
   private static final String API_URL = "https://maps.googleapis.com/maps/api/distancematrix/json";
 
-  @Autowired private FreightService freightService;
+  private final FreightService freightService;
 
   public DistanceFreightResponse calculateDistanceAndFreight(LocationRequest locationRequest) {
     DistanceResponse distanceResponse = fetchDistanceAndDuration(locationRequest);

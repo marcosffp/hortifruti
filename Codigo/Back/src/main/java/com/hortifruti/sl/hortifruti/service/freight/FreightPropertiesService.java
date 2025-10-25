@@ -5,17 +5,18 @@ import com.hortifruti.sl.hortifruti.exception.FreightException;
 import com.hortifruti.sl.hortifruti.mapper.FreightConfigMapper;
 import com.hortifruti.sl.hortifruti.model.FreightConfig;
 import com.hortifruti.sl.hortifruti.repository.FreightConfigRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.AllArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 @Service
+@AllArgsConstructor
 public class FreightPropertiesService {
 
-  @Autowired private FreightConfigRepository freightConfigRepository;
+  private final FreightConfigRepository freightConfigRepository;
+  private final FreightConfigMapper freightConfigMapper;
 
-  @Autowired private FreightConfigMapper freightConfigMapper;
-
-  // Obtém a configuração de frete
   public FreightConfigDTO getFreightConfig() {
     FreightConfig config =
         freightConfigRepository
@@ -24,7 +25,6 @@ public class FreightPropertiesService {
     return freightConfigMapper.toDTO(config);
   }
 
-  // Atualiza a configuração de frete
   public FreightConfigDTO updateFreightConfig(FreightConfigDTO dto) {
     FreightConfig existingConfig =
         freightConfigRepository
