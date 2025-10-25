@@ -5,6 +5,7 @@ import com.hortifruti.sl.hortifruti.model.enumeration.Category;
 import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -63,4 +64,14 @@ public interface TransactionRepository
       @Param("startDate") LocalDate startDate,
       @Param("endDate") LocalDate endDate,
       @Param("category") Category category);
+
+  @Query(
+      """
+      SELECT t
+      FROM Transaction t
+      WHERE t.createdAt >= :startDate
+        AND t.createdAt <= :endDate
+      """)
+  List<Transaction> findTransactionsByCreatedAtBetween(
+      @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 }

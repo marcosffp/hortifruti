@@ -33,4 +33,6 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
       @Param("startDate") LocalDateTime startDate,
       @Param("endDate") LocalDateTime endDate,
       Pageable pageable);
+
+  List<Purchase> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 }

@@ -46,4 +46,15 @@ public interface StatementRepository extends JpaRepository<Statement, Long> {
       @Param("bank") Bank bank,
       @Param("startDate") java.time.LocalDate startDate,
       @Param("endDate") java.time.LocalDate endDate);
+
+  List<Statement> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
+
+  @Query(
+      """
+        SELECT s FROM Statement s
+        LEFT JOIN FETCH s.transactions
+        WHERE s.createdAt BETWEEN :startDate AND :endDate
+    """)
+  List<Statement> findByCreatedAtBetweenWithTransactions(
+      @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 }
