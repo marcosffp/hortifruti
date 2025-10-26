@@ -103,14 +103,12 @@ public class TransactionUtil {
   public static List<Transaction> filterNewTransactions(
       List<Transaction> transactions, TransactionRepository transactionRepository) {
     List<String> hashes =
-        transactions.stream()
-            .map(Transaction::getHash) 
-            .collect(Collectors.toList());
+        transactions.stream().map(Transaction::getHash).collect(Collectors.toList());
 
     Set<String> existingHashes = transactionRepository.findHashes(new HashSet<>(hashes));
 
     return transactions.stream()
-        .filter(tx -> !existingHashes.contains(tx.getHash())) 
+        .filter(tx -> !existingHashes.contains(tx.getHash()))
         .collect(Collectors.toList());
   }
 

@@ -1,20 +1,17 @@
 package com.hortifruti.sl.hortifruti.service.billet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hortifruti.sl.hortifruti.config.billet.BilletHttpClient;
 import com.hortifruti.sl.hortifruti.dto.billet.BilletResponse;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
-
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 
 @Component
 @AllArgsConstructor
@@ -30,8 +27,7 @@ public class BilletQuery {
    *
    * @param clientId ID do cliente (CPF ou CNPJ)
    * @return Lista de boletos do pagador
-   * @throws IOException Se houver erro na comunicação ou no processamento da
-   *                     resposta
+   * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
   public List<BilletResponse> listBilletByPayer(long clientId) throws IOException {
     String numeroCpfCnpj = getClientDocument(clientId);
@@ -56,18 +52,16 @@ public class BilletQuery {
     }
   }
 
-
-
   /**
    * Consulta o boleto específico associado a um CombinedScore.
    *
    * @param combinedScoreId ID do CombinedScore
    * @return Detalhes do boleto associado
-   * @throws IOException Se houver erro na comunicação ou no processamento da
-   *                     resposta
+   * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
   public BilletResponse getBilletByCombinedScore(long combinedScoreId) throws IOException {
-    CombinedScore combinedScore = billetInfoCombinedAndClient.findCombinedScoreById(combinedScoreId);
+    CombinedScore combinedScore =
+        billetInfoCombinedAndClient.findCombinedScoreById(combinedScoreId);
     billetValidation.validateHasBillet(combinedScore);
 
     try {
@@ -80,7 +74,8 @@ public class BilletQuery {
       // Verifica se a resposta é válida
       JsonNode resposta = response.getBody();
       if (resposta == null || resposta.isEmpty()) {
-        throw new BilletException("Nenhum boleto encontrado para o número: " + combinedScore.getOurNumber_sicoob());
+        throw new BilletException(
+            "Nenhum boleto encontrado para o número: " + combinedScore.getOurNumber_sicoob());
       }
 
       // Acessa o campo "resultado" que contém os detalhes do boleto
@@ -108,11 +103,15 @@ public class BilletQuery {
   private String buildListBilletEndpoint(String numeroCpfCnpj) {
     return String.format(
         billetConstants.getBASE_URL() + "pagadores/%s/boletos?numeroCliente=%d&codigoSituacao=1",
-        numeroCpfCnpj, billetConstants.getClientNumber());
+        numeroCpfCnpj,
+        billetConstants.getClientNumber());
   }
 
   private String getClientDocument(long clientId) {
-    return billetInfoCombinedAndClient.findClientById(clientId).getDocument().replaceAll("[^\\d]", "");
+    return billetInfoCombinedAndClient
+        .findClientById(clientId)
+        .getDocument()
+        .replaceAll("[^\\d]", "");
   }
 
   private BilletResponse mapJsonToBilletResponse(JsonNode boletoNode) {
@@ -125,11 +124,10 @@ public class BilletQuery {
         boletoNode.path("valor").decimalValue());
   }
 
-
-
   private String buildBilletEndpoint(String nossoNumero) {
     return String.format(
-        billetConstants.getBASE_URL() + "boletos?numeroCliente=%d&codigoModalidade=%d&nossoNumero=%s",
+        billetConstants.getBASE_URL()
+            + "boletos?numeroCliente=%d&codigoModalidade=%d&nossoNumero=%s",
         billetConstants.getClientNumber(),
         billetConstants.getMODALITY_CODE(),
         nossoNumero);

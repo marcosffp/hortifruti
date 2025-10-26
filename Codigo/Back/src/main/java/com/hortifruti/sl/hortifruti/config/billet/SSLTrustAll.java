@@ -2,7 +2,6 @@ package com.hortifruti.sl.hortifruti.config.billet;
 
 import com.hortifruti.sl.hortifruti.config.Base64FileDecoder;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
-
 import jakarta.annotation.PostConstruct;
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,7 +29,7 @@ public class SSLTrustAll {
       System.out.println("[DEBUG] Configurando SSL para o domínio " + sicoobDomain);
 
       KeyStore keyStore = KeyStore.getInstance("PKCS12");
-      base64FileDecoder.decodePfx(); 
+      base64FileDecoder.decodePfx();
       File pfxFile = base64FileDecoder.getPfxFile();
       if (pfxFile.exists()) {
         try (FileInputStream instream = new FileInputStream(pfxFile)) {
@@ -47,7 +46,7 @@ public class SSLTrustAll {
 
       TrustManagerFactory tmf =
           TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-      tmf.init((KeyStore) null); 
+      tmf.init((KeyStore) null);
 
       SSLContext sslContext = SSLContext.getInstance("TLS");
       sslContext.init(

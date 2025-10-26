@@ -11,7 +11,7 @@ import org.mapstruct.ReportingPolicy;
 public interface ClientMapper {
 
   @Mapping(target = "id", ignore = true)
-  @Mapping(source = "stateRegistration", target = "stateRegistration") 
+  @Mapping(source = "stateRegistration", target = "stateRegistration")
   @Mapping(source = "stateIndicator", target = "stateIndicator")
   Client toClient(ClientRequest clientRequest);
 
@@ -22,7 +22,7 @@ public interface ClientMapper {
   @Mapping(source = "address", target = "address")
   @Mapping(source = "variablePrice", target = "variablePrice")
   @Mapping(source = "document", target = "document")
-  @Mapping(source = "stateRegistration", target = "stateRegistration") 
+  @Mapping(source = "stateRegistration", target = "stateRegistration")
   @Mapping(source = "stateIndicator", target = "stateIndicator")
   ClientResponse toClientResponse(Client client);
 }

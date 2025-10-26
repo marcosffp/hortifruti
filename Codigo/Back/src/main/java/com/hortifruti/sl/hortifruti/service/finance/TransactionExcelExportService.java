@@ -155,8 +155,8 @@ public class TransactionExcelExportService {
   }
 
   private void adjustColumnWidths(Sheet sheet) {
-    sheet.setColumnWidth(3, 256 * 70); 
-    sheet.setColumnWidth(6, 256 * 15); 
+    sheet.setColumnWidth(3, 256 * 70);
+    sheet.setColumnWidth(6, 256 * 15);
 
     for (int i = 0; i < 9; i++) {
       if (i != 3 && i != 6) {

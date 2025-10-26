@@ -5,9 +5,7 @@ import com.hortifruti.sl.hortifruti.dto.freight.DistanceResponse;
 import com.hortifruti.sl.hortifruti.dto.freight.FreightCalculationRequest;
 import com.hortifruti.sl.hortifruti.dto.freight.LocationRequest;
 import com.hortifruti.sl.hortifruti.exception.DistanceException;
-
 import lombok.RequiredArgsConstructor;
-
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

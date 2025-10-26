@@ -8,7 +8,7 @@ import com.hortifruti.sl.hortifruti.model.ClimateProduct;
 import com.hortifruti.sl.hortifruti.repository.ProductRepository;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;   
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -56,7 +56,6 @@ public class ProductService {
 
   @Transactional
   public ProductResponse createProduct(ProductRequest productRequest) {
-   
 
     if (productRepository.findByNameContainingIgnoreCase(productRequest.name()).stream()
         .anyMatch(p -> p.getName().equalsIgnoreCase(productRequest.name()))) {

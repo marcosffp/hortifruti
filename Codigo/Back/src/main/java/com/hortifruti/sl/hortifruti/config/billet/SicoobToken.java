@@ -67,7 +67,7 @@ public class SicoobToken {
 
       accessToken = token;
 
-      tokenExpiresAt = System.currentTimeMillis() + (55 * 60 * 1000); 
+      tokenExpiresAt = System.currentTimeMillis() + (55 * 60 * 1000);
 
       return token;
 

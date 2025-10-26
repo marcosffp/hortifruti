@@ -5,9 +5,7 @@ import com.hortifruti.sl.hortifruti.exception.FreightException;
 import com.hortifruti.sl.hortifruti.mapper.FreightConfigMapper;
 import com.hortifruti.sl.hortifruti.model.FreightConfig;
 import com.hortifruti.sl.hortifruti.repository.FreightConfigRepository;
-
 import lombok.AllArgsConstructor;
-
 import org.springframework.stereotype.Service;
 
 @Service

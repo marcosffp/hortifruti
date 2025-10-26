@@ -24,8 +24,8 @@ public class ClimateProductRecommendationService {
   private final ProductRepository productRepository;
   private final WeatherForecastService weatherForecastService;
 
-  private static final double CLIMATE_WEIGHT = 0.7; 
-  private static final double SEASONALITY_WEIGHT = 0.3; 
+  private static final double CLIMATE_WEIGHT = 0.7;
+  private static final double SEASONALITY_WEIGHT = 0.3;
 
   private static final double PEAK_SEASON_SCORE = 10.0;
   private static final double MEDIUM_SEASON_SCORE = 5.0;
@@ -65,14 +65,14 @@ public class ClimateProductRecommendationService {
         product.getId(),
         product.getName(),
         product.getTemperatureCategory(),
-        Math.round(finalScore * 100.0) / 100.0, 
+        Math.round(finalScore * 100.0) / 100.0,
         tag);
   }
 
   /** Calcula pontuação baseada no clima atual */
   private double calculateClimateScore(ClimateProduct product, TemperatureCategory currentClimate) {
     if (product.getTemperatureCategory() == currentClimate) {
-      return PERFECT_CLIMATE_SCORE; 
+      return PERFECT_CLIMATE_SCORE;
     }
 
     return calculateProximityScore(product.getTemperatureCategory(), currentClimate);
@@ -146,7 +146,6 @@ public class ClimateProductRecommendationService {
     try {
       LocalDate date = LocalDate.parse(dateString);
 
-
       WeatherForecastDTO weatherForecast = weatherForecastService.getFiveDayForecast();
 
       if (weatherForecast == null || weatherForecast.dailyForecasts().isEmpty()) {
@@ -157,13 +156,12 @@ public class ClimateProductRecommendationService {
           weatherForecast.dailyForecasts().stream()
               .filter(day -> day.date().equals(date))
               .findFirst()
-              .orElse(weatherForecast.dailyForecasts().get(0)); 
+              .orElse(weatherForecast.dailyForecasts().get(0));
 
       TemperatureCategory temperatureCategory =
           TemperatureCategory.fromTemperature(targetDay.avgFeelsLike());
 
       Month month = getMonthFromLocalDate(date);
-
 
       return generateRecommendations(temperatureCategory, month);
 
@@ -181,6 +179,6 @@ public class ClimateProductRecommendationService {
         return month;
       }
     }
-    return Month.JANEIRO; 
+    return Month.JANEIRO;
   }
 }

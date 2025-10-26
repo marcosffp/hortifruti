@@ -38,7 +38,7 @@ public class BilletSSLConfig {
   @Bean(name = "billetRestTemplate")
   public RestTemplate billetRestTemplate() {
     try {
-      base64FileDecoder.decodePfx(); 
+      base64FileDecoder.decodePfx();
       File pfxFile = base64FileDecoder.getPfxFile();
       if (!pfxFile.exists() || !pfxFile.isFile()) {
         throw new BilletException("Arquivo PFX não encontrado no caminho especificado");

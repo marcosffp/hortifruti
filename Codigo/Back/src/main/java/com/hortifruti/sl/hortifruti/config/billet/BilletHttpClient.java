@@ -71,7 +71,7 @@ public class BilletHttpClient {
           restTemplate.postForEntity(apiUrl + endpoint, entity, String.class);
 
       if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
-        return null; 
+        return null;
       }
 
       return processResponse(response);

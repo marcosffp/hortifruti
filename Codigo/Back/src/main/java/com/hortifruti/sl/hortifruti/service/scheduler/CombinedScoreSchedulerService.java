@@ -2,7 +2,6 @@ package com.hortifruti.sl.hortifruti.service.scheduler;
 
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
-import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import com.hortifruti.sl.hortifruti.service.billet.BilletService;
 import com.hortifruti.sl.hortifruti.service.notification.EmailService;
 import com.hortifruti.sl.hortifruti.service.notification.EmailTemplateService;
@@ -20,8 +19,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class CombinedScoreSchedulerService {
-
-  @Autowired private CombinedScoreRepository combinedScoreRepository;
 
   @Autowired private ClientRepository clientRepository;
 
@@ -65,7 +62,7 @@ public class CombinedScoreSchedulerService {
       // 00:00:00"
       LocalDate startOfToday = LocalDate.now();
       List<CombinedScore> overdueScores =
-          combinedScoreRepository.findOverdueUnpaidScores(startOfToday);
+          billetService.syncAndFindOverdueUnpaidScores(startOfToday);
 
       log.info("Encontrados {} CombinedScores vencidos", overdueScores.size());
 
