@@ -1,25 +1,21 @@
 package com.hortifruti.sl.hortifruti.service.purchase;
 
+import com.hortifruti.sl.hortifruti.exception.PurchaseException;
+import com.hortifruti.sl.hortifruti.model.purchase.GroupedProduct;
+import com.hortifruti.sl.hortifruti.model.purchase.InvoiceProduct;
+import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
-
-import com.hortifruti.sl.hortifruti.exception.PurchaseException;
-import com.hortifruti.sl.hortifruti.model.purchase.GroupedProduct;
-import com.hortifruti.sl.hortifruti.model.purchase.InvoiceProduct;
-import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
-
 import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @Service
 @AllArgsConstructor
 public class GroupedProductService {
-
 
   public List<GroupedProduct> groupProducts(List<Purchase> purchases, boolean isFixedPrice) {
     if (isFixedPrice) {

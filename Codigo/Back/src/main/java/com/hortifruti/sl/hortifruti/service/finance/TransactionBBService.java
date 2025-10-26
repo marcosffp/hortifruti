@@ -85,7 +85,7 @@ public class TransactionBBService {
 
         if (i + 1 < lines.length && !TRANSACTION_PATTERN.matcher(lines[i + 1].trim()).matches()) {
           nextLineDescription = " " + lines[i + 1].trim();
-          i++; 
+          i++;
         }
 
         Transaction transaction =
@@ -160,7 +160,7 @@ public class TransactionBBService {
           Pattern.compile("rende fácil\\s+(\\d+[.,\\d]*)", Pattern.CASE_INSENSITIVE);
       Matcher matcher = rendeFacilPattern.matcher(description);
       if (matcher.find()) {
-        return matcher.group(1).replace(",", "."); 
+        return matcher.group(1).replace(",", ".");
       }
       return null;
     }
@@ -168,7 +168,7 @@ public class TransactionBBService {
     Pattern numeroDocumentoPattern = Pattern.compile("\\d{2,}(\\.\\d{3})+");
     Matcher matcher = numeroDocumentoPattern.matcher(description);
     if (matcher.find()) {
-      return matcher.group().replace(",", "."); 
+      return matcher.group().replace(",", ".");
     }
     return null;
   }

@@ -8,6 +8,5 @@ public record ClientResponse(
     String address,
     String document,
     boolean variablePrice,
-    String stateRegistration, 
-    String stateIndicator
-) {}
+    String stateRegistration,
+    String stateIndicator) {}

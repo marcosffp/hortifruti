@@ -4,7 +4,6 @@ import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -30,7 +29,7 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
 
   Optional<CombinedScore> findByYourNumber(String yourNumber);
 
-Optional<CombinedScore> findByInvoiceRef(String invoiceRef);
+  Optional<CombinedScore> findByInvoiceRef(String invoiceRef);
 
   @Query("SELECT cs FROM CombinedScore cs WHERE cs.status = 'PENDENTE' AND cs.dueDate <= :date")
   List<CombinedScore> findOverduePendingScores(@Param("date") LocalDate date);

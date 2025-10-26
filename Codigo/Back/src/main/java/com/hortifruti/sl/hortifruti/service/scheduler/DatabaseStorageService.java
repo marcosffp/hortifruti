@@ -5,7 +5,6 @@ import com.hortifruti.sl.hortifruti.service.notification.NotificationCoordinator
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +27,6 @@ public class DatabaseStorageService {
 
   private static final BigDecimal MAX_STORAGE_MB = new BigDecimal("5120"); // 5GB
   private static final BigDecimal THRESHOLD_PERCENTAGE = new BigDecimal("80"); // 80%
-  private static final BigDecimal TARGET_PERCENTAGE = new BigDecimal("50"); // 50%
 
   public BigDecimal getDatabaseSizeInMB() {
     String query =
@@ -54,8 +52,6 @@ public class DatabaseStorageService {
     BigDecimal currentSize = getDatabaseSizeInMB();
     BigDecimal thresholdSize =
         MAX_STORAGE_MB.multiply(THRESHOLD_PERCENTAGE).divide(new BigDecimal("100"));
-    BigDecimal targetSize =
-        MAX_STORAGE_MB.multiply(TARGET_PERCENTAGE).divide(new BigDecimal("100"));
 
     if (currentSize.compareTo(thresholdSize) >= 0) {
       log.warn(
@@ -63,9 +59,6 @@ public class DatabaseStorageService {
 
       // Enviar notificação para a gerência
       sendNotificationToManagement(currentSize);
-
-      // Remover dados antigos até atingir o tamanho alvo
-      cleanOldData(targetSize);
     }
   }
 
@@ -103,53 +96,25 @@ public class DatabaseStorageService {
     }
   }
 
-  private void cleanOldData(BigDecimal targetSize) {
-    log.info("Iniciando limpeza de dados antigos para reduzir o tamanho do banco de dados...");
-
-    // Data limite para remoção (4 meses atrás)
-    LocalDateTime cutoffDate = LocalDateTime.now().minusMonths(4);
-
-    // Remover transações e statements antigos
-    int deletedTransactions =
-        entityManager
-            .createQuery("DELETE FROM Transaction t WHERE t.createdAt < :cutoffDate")
-            .setParameter("cutoffDate", cutoffDate)
-            .executeUpdate();
-
-    int deletedStatements =
-        entityManager
-            .createQuery("DELETE FROM Statement s WHERE s.createdAt < :cutoffDate")
-            .setParameter("cutoffDate", cutoffDate)
-            .executeUpdate();
-
-    // Remover purchases e invoiceProducts antigos
-    int deletedInvoiceProducts =
-        entityManager
-            .createQuery("DELETE FROM InvoiceProduct ip WHERE ip.createdAt < :cutoffDate")
-            .setParameter("cutoffDate", cutoffDate)
-            .executeUpdate();
-
-    int deletedPurchases =
-        entityManager
-            .createQuery("DELETE FROM Purchase p WHERE p.purchaseDate < :cutoffDate")
-            .setParameter("cutoffDate", cutoffDate)
-            .executeUpdate();
-
-    log.info(
-        "Limpeza concluída: {} transações, {} statements, {} produtos de fatura, {} compras removidos.",
-        deletedTransactions,
-        deletedStatements,
-        deletedInvoiceProducts,
-        deletedPurchases);
-
-    // Verificar tamanho do banco após a limpeza
-    BigDecimal newSize = getDatabaseSizeInMB();
-    log.info("Tamanho do banco de dados após limpeza: {} MB", newSize);
-  }
-
   /** Método para teste manual do email de alerta de armazenamento */
   public void sendTestStorageNotification(BigDecimal simulatedSize) {
     log.info("Enviando email de teste de armazenamento com tamanho simulado: {} MB", simulatedSize);
     sendNotificationToManagement(simulatedSize);
+  }
+
+  public void checkDatabaseStorage() {
+    BigDecimal currentSize = getDatabaseSizeInMB();
+    BigDecimal thresholdSize =
+        MAX_STORAGE_MB.multiply(THRESHOLD_PERCENTAGE).divide(new BigDecimal("100"));
+
+    if (currentSize.compareTo(thresholdSize) >= 0) {
+      log.warn(
+          "Banco de dados atingiu {} MB, excedendo o limite de {} MB", currentSize, thresholdSize);
+
+      // Enviar notificação para a gerência
+      sendNotificationToManagement(currentSize);
+    } else {
+      log.info("Banco de dados dentro do limite configurado. Nenhuma ação necessária.");
+    }
   }
 }

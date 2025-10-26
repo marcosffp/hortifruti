@@ -115,9 +115,7 @@ public class ClientService {
                   lastPurchase.map(Purchase::getPurchaseDate).orElse(null),
                   lastPurchase.map(Purchase::getTotal).orElse(null));
             })
-        .filter(
-            response ->
-                response.lastPurchaseDate() != null) 
+        .filter(response -> response.lastPurchaseDate() != null)
         .toList();
   }
 

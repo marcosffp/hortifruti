@@ -1,14 +1,13 @@
 package com.hortifruti.sl.hortifruti.config;
 
+import com.hortifruti.sl.hortifruti.exception.BackupException;
+import com.hortifruti.sl.hortifruti.exception.BilletException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Base64;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import com.hortifruti.sl.hortifruti.exception.BackupException;
-import com.hortifruti.sl.hortifruti.exception.BilletException;
 
 @Component
 public class Base64FileDecoder {
@@ -50,8 +49,7 @@ public class Base64FileDecoder {
    */
   public File decodePfx() throws IOException {
     if (pfx == null || pfx.isEmpty()) {
-      throw new BilletException(
-          "A propriedade 'document.pfx' está vazia ou não foi configurada.");
+      throw new BilletException("A propriedade 'document.pfx' está vazia ou não foi configurada.");
     }
     String outputPath = pfxTempDirectory + "/HORTIFRUTISANTALUZIALTDA275409060001552025.pfx";
     File decodedFile = decodeBase64ToFile(pfx, outputPath);

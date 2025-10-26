@@ -51,12 +51,11 @@ public class OpenWeatherClient {
             + "&lang="
             + lang;
 
-
     try {
       RestTemplate restTemplate = new RestTemplate();
 
       SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-      factory.setConnectTimeout(30000); 
+      factory.setConnectTimeout(30000);
       factory.setReadTimeout(30000);
       restTemplate.setRequestFactory(factory);
 

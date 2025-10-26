@@ -47,7 +47,7 @@ public class TransactionSicoobService {
       List<Transaction> savedTransactions = transactionRepository.saveAll(newTransactions);
       return savedTransactions;
     } catch (DataIntegrityViolationException e) {
-      
+
       return saveTransactionsIndividually(newTransactions);
     }
   }
@@ -60,8 +60,7 @@ public class TransactionSicoobService {
         Transaction saved = transactionRepository.save(transaction);
         savedTransactions.add(saved);
       } catch (Exception e) {
-        throw new TransactionException(
-            "Erro ao salvar transação: " + transaction.toString(), e);
+        throw new TransactionException("Erro ao salvar transação: " + transaction.toString(), e);
       }
     }
 
@@ -82,10 +81,8 @@ public class TransactionSicoobService {
       if (line.isBlank()
           || line.contains("SALDO DO DIA")
           || line.contains("SALDO ANTERIOR")
-          || line.matches(
-              "\\d{2}/\\d{2}/\\d{2}, \\d{2}:\\d{2}") 
-          || line.contains(
-              "Sicoob | Internet Banking")) {
+          || line.matches("\\d{2}/\\d{2}/\\d{2}, \\d{2}:\\d{2}")
+          || line.contains("Sicoob | Internet Banking")) {
         continue;
       }
 

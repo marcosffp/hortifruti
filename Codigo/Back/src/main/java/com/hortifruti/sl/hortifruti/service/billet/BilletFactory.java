@@ -61,12 +61,11 @@ public class BilletFactory {
   public BilletRequestSimplified createBilletRequest(
       CombinedScore combinedScore, Long combinedScoreId, Pagador pagador, String number) {
     return new BilletRequestSimplified(
-        combinedScore.getConfirmedAt().toString(), 
-        number, 
-        combinedScore.getTotalValue(), 
-        combinedScore.getDueDate().toString(), 
-        pagador 
-        );
+        combinedScore.getConfirmedAt().toString(),
+        number,
+        combinedScore.getTotalValue(),
+        combinedScore.getDueDate().toString(),
+        pagador);
   }
 
   /**
@@ -133,9 +132,9 @@ public class BilletFactory {
           rua + ", " + numero + (complemento.isEmpty() ? "" : ", " + complemento);
 
       return new Pagador(
-          client.getDocument().replaceAll("[^0-9]", ""), 
+          client.getDocument().replaceAll("[^0-9]", ""),
           client.getClientName(),
-          enderecoCompleto, 
+          enderecoCompleto,
           bairro,
           cidade,
           cep,

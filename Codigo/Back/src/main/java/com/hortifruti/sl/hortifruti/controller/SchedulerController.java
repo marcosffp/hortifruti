@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/scheduler")
+@RequestMapping("/scheduler")
 @RequiredArgsConstructor
 public class SchedulerController {
 
@@ -55,23 +55,6 @@ public class SchedulerController {
     databaseStorageSchedulerService.scheduledDatabaseCheck();
     return ResponseEntity.ok(
         "Verificação de armazenamento do banco de dados iniciada com sucesso.");
-  }
-
-  /**
-   * Endpoint para executar o backup. Requer token de autenticação específico para APIs
-   * programáticas.
-   */
-  @PostMapping("/perform-backup")
-  public ResponseEntity<String> performBackup(
-      @RequestHeader(value = "Authorization", required = false) String authHeader) {
-
-    // Validação do token
-    if (!isValidToken(authHeader)) {
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body("Token de autenticação inválido ou não fornecido");
-    }
-
-    return ResponseEntity.ok("Backup iniciado com sucesso.");
   }
 
   /**

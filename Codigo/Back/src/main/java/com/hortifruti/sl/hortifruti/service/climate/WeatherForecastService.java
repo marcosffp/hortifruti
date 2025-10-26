@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-
 @Service
 @RequiredArgsConstructor
 public class WeatherForecastService {
@@ -41,7 +40,7 @@ public class WeatherForecastService {
     List<DailyForecastDTO> dailyForecasts =
         groupedByDate.entrySet().stream()
             .sorted(Map.Entry.comparingByKey())
-            .limit(5) 
+            .limit(5)
             .map(entry -> processDailyForecast(entry.getKey(), entry.getValue()))
             .collect(Collectors.toList());
 
@@ -130,7 +129,7 @@ public class WeatherForecastService {
 
     return new DailyForecastDTO(
         date,
-        Math.round(minTemp * 10.0) / 10.0, 
+        Math.round(minTemp * 10.0) / 10.0,
         Math.round(maxTemp * 10.0) / 10.0,
         Math.round(avgTemp * 10.0) / 10.0,
         Math.round(avgFeelsLike * 10.0) / 10.0,

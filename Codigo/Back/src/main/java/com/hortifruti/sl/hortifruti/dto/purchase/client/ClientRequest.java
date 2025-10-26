@@ -12,6 +12,4 @@ public record ClientRequest(
     @NotBlank(message = "Documento é obrigatório") String document,
     @NotBlank(message = "Endereço é obrigatório") String address,
     String stateRegistration,
-    Integer stateIndicator   
-) {}
-    
+    Integer stateIndicator) {}

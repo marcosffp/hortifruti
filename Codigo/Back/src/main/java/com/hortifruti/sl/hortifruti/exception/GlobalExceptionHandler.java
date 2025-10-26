@@ -211,7 +211,6 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
-
   @ExceptionHandler(InvoiceException.class)
   public ResponseEntity<Map<String, String>> handleInvoiceException(InvoiceException ex) {
     Map<String, String> response = new HashMap<>();
