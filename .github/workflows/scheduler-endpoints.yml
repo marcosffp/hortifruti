@@ -4,7 +4,6 @@ on:
   schedule:
     - cron: '0 0 */3 * *' # check-overdue a cada 3 dias
     - cron: '0 0 * * *'   # check-database-storage diariamente
-    - cron: '0 0 */15 * *' # perform-backup a cada 15 dias
   workflow_dispatch:
 
 jobs:
@@ -32,7 +31,7 @@ jobs:
       - name: Call "check-overdue" endpoint
         if: github.event.schedule == '0 0 */3 * *' || github.event_name == 'workflow_dispatch'
         run: |
-          curl -X POST "${{ secrets.API_BASE_URL }}/api/scheduler/check-overdue" \
+          curl -X POST "${{ secrets.API_BASE_URL }}/scheduler/check-overdue" \
           -H "Authorization: Bearer ${{ secrets.API_TOKEN }}" \
           -H "Content-Type: application/json" \
           --max-time 120 \
@@ -42,19 +41,9 @@ jobs:
       - name: Call "check-database-storage" endpoint
         if: github.event.schedule == '0 0 * * *' || github.event_name == 'workflow_dispatch'
         run: |
-          curl -X POST "${{ secrets.API_BASE_URL }}/api/scheduler/check-database-storage" \
+          curl -X POST "${{ secrets.API_BASE_URL }}/scheduler/check-database-storage" \
           -H "Authorization: Bearer ${{ secrets.API_TOKEN }}" \
           -H "Content-Type: application/json" \
           --max-time 120 \
           --retry 2
           echo "✅ Check-database-storage concluído!"
-
-      - name: Trigger Backup
-        if: github.event.schedule == '0 0 */15 * *' || github.event_name == 'workflow_dispatch'
-        run: |
-          curl -X POST "${{ secrets.API_BASE_URL }}/api/scheduler/perform-backup" \
-          -H "Authorization: Bearer ${{ secrets.API_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          --max-time 300 \
-          --retry 2
-          echo "✅ Backup concluído!"
