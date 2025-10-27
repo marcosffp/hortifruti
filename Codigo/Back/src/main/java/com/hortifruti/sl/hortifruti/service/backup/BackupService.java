@@ -74,6 +74,14 @@ public class BackupService {
       log.info("Entidades removidas com sucesso do banco de dados.");
 
       return new BackupResponse("Backup para o período " + startDate + " a " + endDate + " concluído com sucesso.");
+    } catch (BackupException e) {
+      // Re-lançar exceções de autorização para serem tratadas no método handleBackupRequestWithAuthLink
+      if (e.getMessage() != null && e.getMessage().startsWith("AUTHORIZATION_REQUIRED:")) {
+        throw e;
+      }
+      log.error("Erro ao executar o backup: {}", e.getMessage(), e);
+      throw new BackupException(
+          "Erro ao executar o backup para o período: " + startDate + " a " + endDate, e);
     } catch (Exception e) {
       log.error("Erro ao executar o backup: {}", e.getMessage(), e);
       throw new BackupException(
@@ -129,19 +137,9 @@ public class BackupService {
   public BackupResponse handleBackupRequestWithAuthLink(String startDate, String endDate) {
     log.info("Recebendo solicitação de backup com startDate: {} e endDate: {}", startDate, endDate);
     try {
-      // Verificar se as credenciais estão disponíveis
-      if (!googleDriveService.areCredentialsAvailable()) {
-        log.info("Credenciais do Google Drive não disponíveis. Gerando link de autenticação...");
-        String authLink = googleDriveService.getAuthorizationUrl();
-        log.info("Link de autenticação gerado: {}", authLink);
-        return new BackupResponse(authLink);
-      }
-
-      // Continuar com o backup se as credenciais estiverem disponíveis
       if (startDate != null && endDate != null) {
         log.info("Tentando converter startDate e endDate para LocalDateTime...");
 
-        // Ajusta o formato das datas para evitar duplicação
         String formattedStartDate = startDate.contains("T") ? startDate : startDate + "T00:00:00";
         String formattedEndDate = endDate.contains("T") ? endDate : endDate + "T23:59:59";
 
@@ -159,6 +157,15 @@ public class BackupService {
             startDate,
             endDate);
       }
+    } catch (BackupException e) {
+      // Verificar se é uma exceção de autorização necessária
+      if (e.getMessage() != null && e.getMessage().startsWith("AUTHORIZATION_REQUIRED:")) {
+        String authUrl = e.getMessage().substring("AUTHORIZATION_REQUIRED:".length());
+        log.info("Autorização necessária. Retornando URL: {}", authUrl);
+        return new BackupResponse(authUrl);
+      }
+      log.error("Erro ao processar a solicitação de backup: {}", e.getMessage(), e);
+      throw e;
     } catch (Exception e) {
       log.error("Erro ao processar a solicitação de backup: {}", e.getMessage(), e);
       throw new BackupException("Erro ao processar a solicitação de backup: " + e.getMessage(), e);
