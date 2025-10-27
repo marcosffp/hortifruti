@@ -2,6 +2,9 @@ package com.hortifruti.sl.hortifruti.controller;
 
 import com.hortifruti.sl.hortifruti.service.backup.BackupService;
 import lombok.RequiredArgsConstructor;
+
+import java.math.BigDecimal;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,5 +27,16 @@ public class BackupController {
       @RequestParam(required = false) String startDate,
       @RequestParam(required = false) String endDate) {
     return ResponseEntity.ok(backupService.handleBackupRequestWithAuthLink(startDate, endDate));
+  }
+
+  /**
+   * Endpoint para obter o tamanho atual do banco de dados.
+   *
+   * @return Tamanho do banco de dados em MB.
+   */
+  @GetMapping("/storage")
+  public ResponseEntity<String> getDatabaseStorage() {
+    BigDecimal databaseSize = backupService.getDatabaseSizeInMB();
+    return ResponseEntity.ok("O tamanho atual do banco de dados é: " + databaseSize + " MB");
   }
 }
