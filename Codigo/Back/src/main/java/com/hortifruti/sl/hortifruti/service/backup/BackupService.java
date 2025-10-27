@@ -1,6 +1,5 @@
 package com.hortifruti.sl.hortifruti.service.backup;
 
-import com.hortifruti.sl.hortifruti.dto.BackupLinkResponse;
 import com.hortifruti.sl.hortifruti.dto.BackupResponse;
 import com.hortifruti.sl.hortifruti.exception.BackupException;
 import com.hortifruti.sl.hortifruti.service.scheduler.DatabaseStorageService;
@@ -11,7 +10,6 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 

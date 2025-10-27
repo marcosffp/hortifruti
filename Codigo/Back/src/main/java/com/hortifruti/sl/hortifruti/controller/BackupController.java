@@ -36,8 +36,8 @@ public class BackupController {
    * @return Tamanho do banco de dados em MB.
    */
   @GetMapping("/storage")
-  public ResponseEntity<String> getDatabaseStorage() {
+  public ResponseEntity<BackupResponse> getDatabaseStorage() {
     BigDecimal databaseSize = backupService.getDatabaseSizeInMB();
-    return ResponseEntity.ok("O tamanho atual do banco de dados é: " + databaseSize + " MB");
+    return ResponseEntity.ok(new BackupResponse( databaseSize + " MB"));
   }
 }
