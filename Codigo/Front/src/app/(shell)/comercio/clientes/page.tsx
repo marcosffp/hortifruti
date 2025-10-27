@@ -140,7 +140,7 @@ export default function ClientesPage() {
           </div>
 
           {/* Barra de pesquisa e botão novo cliente */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between flex-wrap gap-3 items-center mb-6">
             <div className="flex items-center gap-4">
               <div className="relative w-full max-w-md">
                 <input
