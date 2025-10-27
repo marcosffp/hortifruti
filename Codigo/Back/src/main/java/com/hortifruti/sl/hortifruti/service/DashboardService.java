@@ -57,6 +57,9 @@ public class DashboardService {
     // Divisória 7: Produtos em alta
     dashboardData.put("Produtos em Alta", getTopSellingProducts(startDate, endDate));
 
+    // Divisória 8: Top 10 produtos por quantidade
+    dashboardData.put("Top10ProdutosPorQuantidade", getTopProductsByQuantity(startDate, endDate));
+
     return dashboardData;
   }
 
@@ -283,4 +286,46 @@ public class DashboardService {
     // Limit to top 10 products
     return ranking.stream().limit(10).collect(Collectors.toList());
   }
+
+  /**
+ * Retorna os top 10 produtos com mais saída de quantidade em um período.
+ */
+public List<Map<String, Object>> getTopProductsByQuantity(LocalDate startDate, LocalDate endDate) {
+    // Busca todos os CombinedScores dentro do intervalo de datas
+    List<CombinedScore> combinedScores = combinedScoreRepository
+        .findAllByOrderByConfirmedAtDesc(Pageable.unpaged()).stream()
+        .filter(cs -> !cs.getDueDate().isBefore(startDate) && !cs.getDueDate().isAfter(endDate))
+        .collect(Collectors.toList());
+
+    // Extrai todos os GroupedProducts dos CombinedScores
+    List<GroupedProduct> groupedProducts = combinedScores.stream()
+        .flatMap(cs -> cs.getGroupedProducts().stream())
+        .collect(Collectors.toList());
+
+    // Agrupa os produtos por código e soma as quantidades
+    Map<String, Map<String, Object>> productData = groupedProducts.stream()
+        .collect(Collectors.groupingBy(
+            GroupedProduct::getCode,
+            Collectors.collectingAndThen(
+                Collectors.toList(),
+                products -> {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("Nome", products.get(0).getName());
+                    data.put(
+                        "QuantidadeTotal",
+                        products.stream()
+                            .map(GroupedProduct::getQuantity)
+                            .reduce(0, Integer::sum));
+                    return data;
+                }
+            )
+        ));
+
+    // Converte para uma lista e ordena pelos produtos com maior quantidade
+    List<Map<String, Object>> ranking = new ArrayList<>(productData.values());
+    ranking.sort((p1, p2) -> ((Integer) p2.get("QuantidadeTotal")).compareTo((Integer) p1.get("QuantidadeTotal")));
+
+    // Retorna os top 10 produtos
+    return ranking.stream().limit(10).collect(Collectors.toList());
+}
 }
