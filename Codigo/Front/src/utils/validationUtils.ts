@@ -249,3 +249,70 @@ export function validarArquivos(selectedFiles: File[]): File[] | string {
 
   return validFiles;
 };
+
+/**
+ * Formata Inscrição Estadual de Minas Gerais
+ * Formato: XXX.XXX.XXX.XXXX (13 dígitos)
+ */
+export function formatarIEMinasGerais(value: string): string {
+  // Remove tudo que não é dígito
+  const numbers = value.replace(/\D/g, "");
+  
+  // Limita a 13 dígitos
+  const limited = numbers.slice(0, 13);
+  
+  // Aplica a máscara XXX.XXX.XXX.XXXX
+  if (limited.length <= 3) {
+    return limited;
+  } else if (limited.length <= 6) {
+    return `${limited.slice(0, 3)}.${limited.slice(3)}`;
+  } else if (limited.length <= 9) {
+    return `${limited.slice(0, 3)}.${limited.slice(3, 6)}.${limited.slice(6)}`;
+  } else {
+    return `${limited.slice(0, 3)}.${limited.slice(3, 6)}.${limited.slice(6, 9)}.${limited.slice(9)}`;
+  }
+}
+
+/**
+ * Valida Inscrição Estadual de Minas Gerais
+ * Formato esperado: XXX.XXX.XXX.XXXX (13 dígitos)
+ */
+export function validarIEMinasGerais(ie: string): boolean {
+  // Remove pontos e espaços
+  const numbers = ie.replace(/\D/g, "");
+  
+  // Deve ter exatamente 13 dígitos
+  if (numbers.length !== 13) {
+    return false;
+  }
+  
+  // Validação do dígito verificador (algoritmo de MG)
+  try {
+    // IE de MG: AAABBBCCCD001P
+    // Onde D é o dígito verificador
+    const ieArray = numbers.split('').map(Number);
+    
+    // Pesos para o cálculo: 1,2,1,2,1,2,1,2,1,2,1,2
+    const pesos1 = [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2];
+    
+    // Multiplica cada dígito pelo peso correspondente
+    let soma = 0;
+    for (let i = 0; i < 12; i++) {
+      let produto = ieArray[i] * pesos1[i];
+      // Se o produto for >= 10, soma os dígitos
+      if (produto >= 10) {
+        produto = Math.floor(produto / 10) + (produto % 10);
+      }
+      soma += produto;
+    }
+    
+    // Calcula o dígito verificador
+    let digito = 10 - (soma % 10);
+    if (digito === 10) digito = 0;
+    
+    // Verifica se o dígito calculado é igual ao informado
+    return digito === ieArray[12];
+  } catch {
+    return false;
+  }
+}
