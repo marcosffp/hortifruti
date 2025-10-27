@@ -15,6 +15,8 @@ export interface ClientResponse {
     phoneNumber: string;
     address: string;
     email: string;
+    stateRegistration: string | null;
+    stateIndicator: number | null;
 }
 
 export interface ClientSelectionInfo {

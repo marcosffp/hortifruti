@@ -2,6 +2,12 @@ import { getAuthHeaders } from "@/utils/httpUtils";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
+export interface TopProduct {
+  Nome: string;
+  QuantidadeTotal: number;
+  ValorTotal: number;
+}
+
 export interface DashboardData {
   Totais: {
     TotalReceita: number;
@@ -26,9 +32,13 @@ export interface DashboardData {
   };
   RankingCategoriasGastos: Array<{
     Categoria: string;
-    Valor: number;
     Rank: number;
+    Valor: number;
   }>;
+  "Fluxo de Vendas": {
+    [week: string]: number;
+  };
+  "Produtos em Alta": TopProduct[];
 }
 
 export const dashboardService = {
