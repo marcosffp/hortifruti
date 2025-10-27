@@ -273,6 +273,8 @@ export default function ClientForm({
       return;
     }
 
+    formData.stateRegistration = formData.stateRegistration.replace(/\D/g, "");
+
     await onSubmit(formData);
   };
 
