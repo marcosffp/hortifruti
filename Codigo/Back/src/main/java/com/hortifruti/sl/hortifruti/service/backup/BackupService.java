@@ -1,5 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.backup;
 
+import com.hortifruti.sl.hortifruti.dto.BackupLinkResponse;
+import com.hortifruti.sl.hortifruti.dto.BackupResponse;
 import com.hortifruti.sl.hortifruti.exception.BackupException;
 import com.hortifruti.sl.hortifruti.service.scheduler.DatabaseStorageService;
 import java.io.IOException;
@@ -31,7 +33,7 @@ public class BackupService {
    * @param endDate Data final do período.
    * @return Mensagem de sucesso ou erro.
    */
-  public String performBackupForPeriod(LocalDateTime startDate, LocalDateTime endDate) {
+  public BackupResponse performBackupForPeriod(LocalDateTime startDate, LocalDateTime endDate) {
     log.info("Iniciando backup para o período: {} a {}", startDate, endDate);
     try {
       // Gerar arquivos CSV
@@ -73,7 +75,7 @@ public class BackupService {
       entityCleanupService.cleanupEntitiesForPeriod(startDate, endDate);
       log.info("Entidades removidas com sucesso do banco de dados.");
 
-      return "Backup para o período " + startDate + " a " + endDate + " concluído com sucesso.";
+      return new BackupResponse("Backup para o período " + startDate + " a " + endDate + " concluído com sucesso.");
     } catch (Exception e) {
       log.error("Erro ao executar o backup: {}", e.getMessage(), e);
       throw new BackupException(
@@ -88,7 +90,7 @@ public class BackupService {
    * @param endDate Data final do período.
    * @return Mensagem de sucesso ou erro.
    */
-  public String handleBackupRequest(String startDate, String endDate) {
+  public BackupResponse handleBackupRequest(String startDate, String endDate) {
     log.info("Recebendo solicitação de backup com startDate: {} e endDate: {}", startDate, endDate);
     try {
       if (startDate != null && endDate != null) {
@@ -116,7 +118,7 @@ public class BackupService {
       log.error("Erro ao processar a solicitação de backup: {}", e.getMessage(), e);
       throw new BackupException("Erro ao processar a solicitação de backup: " + e.getMessage(), e);
     }
-    return "Backup não realizado: parâmetros inválidos ou erro desconhecido.";
+    return new BackupResponse("Backup não realizado: parâmetros inválidos ou erro desconhecido.");
   }
 
   /**
@@ -126,7 +128,7 @@ public class BackupService {
    * @param endDate Data final do período.
    * @return Mensagem de sucesso ou erro.
    */
-  public String handleBackupRequestWithAuthLink(String startDate, String endDate) {
+  public BackupResponse handleBackupRequestWithAuthLink(String startDate, String endDate) {
     log.info("Recebendo solicitação de backup com startDate: {} e endDate: {}", startDate, endDate);
     try {
       // Verificar se as credenciais estão disponíveis
@@ -134,8 +136,7 @@ public class BackupService {
         log.info("Credenciais do Google Drive não disponíveis. Gerando link de autenticação...");
         String authLink = googleDriveService.getAuthorizationUrl();
         log.info("Link de autenticação gerado: {}", authLink);
-        return "As credenciais do Google Drive não estão configuradas. Autorize o acesso usando o link: "
-            + authLink;
+        return new BackupResponse(authLink);
       }
 
       // Continuar com o backup se as credenciais estiverem disponíveis
@@ -164,7 +165,7 @@ public class BackupService {
       log.error("Erro ao processar a solicitação de backup: {}", e.getMessage(), e);
       throw new BackupException("Erro ao processar a solicitação de backup: " + e.getMessage(), e);
     }
-    return "Backup não realizado: parâmetros inválidos ou erro desconhecido.";
+    return new BackupResponse("Backup não realizado: parâmetros inválidos ou erro desconhecido.");
   }
 
   // Novo método para obter o tamanho do banco de dados
