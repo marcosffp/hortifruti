@@ -1,3 +1,5 @@
+
+
 package com.hortifruti.sl.hortifruti.service.backup;
 
 import com.hortifruti.sl.hortifruti.exception.BackupException;
@@ -88,6 +90,21 @@ public class BackupPathService {
 
       log.info("Caminho de backup calculado com sucesso. ID final da pasta: {}", entityFolderId);
       return entityFolderId;
+    } catch (BackupException e) {
+      // Re-lançar exceções de autorização sem encapsular
+      if (e.getMessage() != null && e.getMessage().startsWith("AUTHORIZATION_REQUIRED:")) {
+        log.info("Propagando exceção de autorização necessária.");
+        throw e;
+      }
+      log.error(
+          "Erro ao calcular ou criar o caminho de backup no Google Drive para a entidade: {}. Erro: {}",
+          entityName,
+          e.getMessage(),
+          e);
+      throw new BackupException(
+          "Erro ao calcular ou criar o caminho de backup no Google Drive para a entidade: "
+              + entityName,
+          e);
     } catch (Exception e) {
       log.error(
           "Erro ao calcular ou criar o caminho de backup no Google Drive para a entidade: {}. Erro: {}",

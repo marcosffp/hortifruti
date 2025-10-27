@@ -66,7 +66,7 @@ public class GoogleDriveService {
    * @param HTTP_TRANSPORT O transporte de rede HTTP.
    * @return Uma instância de Credential autorizada.
    */
-  private Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) {
+  private Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
     log.info("Iniciando criação de credenciais de autorização.");
     try {
       base64FileDecoder.decodeGoogleDriveCredentials();
@@ -90,8 +90,22 @@ public class GoogleDriveService {
               .build();
 
       LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
-      log.info("Credenciais de autorização criadas com sucesso.");
-      return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
+      
+      // Verificar se já existe uma credencial válida
+      Credential credential = flow.loadCredential("user");
+      if (credential != null && credential.getRefreshToken() != null) {
+        log.info("Credenciais existentes encontradas e carregadas.");
+        return credential;
+      }
+      
+      // Se não existir credencial, gerar a URL e lançar exceção com a URL
+      String authorizationUrl = flow.newAuthorizationUrl()
+          .setRedirectUri(receiver.getRedirectUri())
+          .build();
+      
+      log.info("URL de autorização gerada: {}", authorizationUrl);
+      throw new BackupException("AUTHORIZATION_REQUIRED:" + authorizationUrl);
+      
     } catch (com.google.api.client.auth.oauth2.TokenResponseException e) {
       log.error("Erro de autenticação no Google Drive.", e);
       handleTokenException(e, HTTP_TRANSPORT);
