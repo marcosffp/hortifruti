@@ -1,12 +1,15 @@
 package com.hortifruti.sl.hortifruti.service.backup;
 
 import com.hortifruti.sl.hortifruti.exception.BackupException;
+import com.hortifruti.sl.hortifruti.service.scheduler.DatabaseStorageService;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +22,7 @@ public class BackupService {
   private final GoogleDriveService googleDriveService;
   private final BackupPathService backupPathService;
   private final EntityCleanupService entityCleanupService;
+  private final DatabaseStorageService databaseStorageService;
 
   /**
    * Realiza o backup completo para um período especificado.
@@ -161,5 +165,10 @@ public class BackupService {
       throw new BackupException("Erro ao processar a solicitação de backup: " + e.getMessage(), e);
     }
     return "Backup não realizado: parâmetros inválidos ou erro desconhecido.";
+  }
+
+  // Novo método para obter o tamanho do banco de dados
+  public BigDecimal getDatabaseSizeInMB() {
+    return databaseStorageService.getDatabaseSizeInMB();
   }
 }
