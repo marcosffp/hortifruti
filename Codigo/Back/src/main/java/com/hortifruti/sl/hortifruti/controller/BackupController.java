@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.controller;
 
+import com.hortifruti.sl.hortifruti.dto.BackupResponse;
 import com.hortifruti.sl.hortifruti.service.backup.BackupService;
 import lombok.RequiredArgsConstructor;
 
@@ -23,7 +24,7 @@ public class BackupController {
    * @return Mensagem de sucesso ou erro.
    */
   @PostMapping
-  public ResponseEntity<String> performBackup(
+  public ResponseEntity<BackupResponse> performBackup(
       @RequestParam(required = false) String startDate,
       @RequestParam(required = false) String endDate) {
     return ResponseEntity.ok(backupService.handleBackupRequestWithAuthLink(startDate, endDate));
