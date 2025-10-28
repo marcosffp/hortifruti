@@ -33,9 +33,6 @@ public class BulkNotificationService {
   @Value("${accounting.email}")
   private String accountingEmail;
 
-  @Value("${accounting.whatsapp}")
-  private String accountingWhatsapp;
-
   /** Envia notificações em massa para múltiplos destinatários */
   public BulkNotificationResponse sendBulkNotifications(
       List<MultipartFile> files,
@@ -109,7 +106,6 @@ public class BulkNotificationService {
               NotificationResponse response =
                   notificationCoordinator.sendNotification(
                       accountingEmail,
-                      accountingWhatsapp,
                       channel,
                       subject,
                       emailBody,
