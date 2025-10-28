@@ -182,14 +182,7 @@ public class ChatbotService {
                 }
                 i++;
             }
-
-            messageBuilder.append("\n\nComo pagar:\n");
-            messageBuilder.append("- Acesse nosso site para gerar a segunda via\n");
-            messageBuilder.append("- Use o código de barras no seu banco\n");
-            messageBuilder.append("- Pague no PIX usando o QR Code\n\n");
-            messageBuilder.append("Precisa de ajuda? Entre em contato:\n");
-            messageBuilder.append("(31) 3641-2244");
-
+            
             whatsAppService.sendTextMessage(phoneNumber, messageBuilder.toString());
 
             List<byte[]> pdfs = new ArrayList<>();
