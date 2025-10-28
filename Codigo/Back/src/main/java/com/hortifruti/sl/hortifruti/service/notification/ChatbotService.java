@@ -28,9 +28,21 @@ public class ChatbotService {
     public void processIncomingMessage(Map<String, Object> payload) {
         try {
             // Extrair informações da mensagem
-            String phoneNumber = extractPhoneNumber(payload);
-            String messageBody = extractMessageBody(payload);
-            String messageType = extractMessageType(payload);
+            Object dataObj = payload.get("data");
+            if (!(dataObj instanceof Map)) {
+                log.warn("Payload sem campo 'data' válido");
+                return;
+            }
+            Map<String, Object> data = (Map<String, Object>) dataObj;
+            String from = (String) data.getOrDefault("from", "");
+            // Ignorar mensagens de grupo
+            if (!from.endsWith("@c.us")) {
+                log.info("Mensagem ignorada (não é privada): from={}", from);
+                return;
+            }
+            String phoneNumber = extractPhoneFromJid(from);
+            String messageBody = extractMessageBodyUltraMsg(data);
+            String messageType = extractMessageTypeUltraMsg(data);
 
             log.info("Processando mensagem - Telefone: {}, Tipo: {}, Mensagem: {}", 
                     phoneNumber, messageType, messageBody);
@@ -57,8 +69,9 @@ public class ChatbotService {
 
         try {
             // Se o cliente enviar um documento (CPF ou CNPJ)
-            if (normalizedMessage.matches("\\d{11}") || normalizedMessage.matches("\\d{14}")) {
-                handleBilletRequestByDocument(phoneNumber, normalizedMessage);
+            String onlyDigits = message.replaceAll("[^0-9]", "");
+            if (onlyDigits.length() == 11 || onlyDigits.length() == 14) {
+                handleBilletRequestByDocument(phoneNumber, onlyDigits);
                 return;
             }
 
@@ -123,30 +136,33 @@ public class ChatbotService {
             Client client = clientOpt.get();
             log.info("Cliente encontrado por documento: {} (ID: {})", client.getClientName(), client.getId());
 
-            // Buscar boletos em aberto
-            List<BilletResponse> openBillets = billetService.listBilletByPayer(client.getId());
+            // Buscar boletos vencidos e pendentes desse cliente
+            List<com.hortifruti.sl.hortifruti.model.purchase.CombinedScore> allOverdue = billetService.syncAndFindOverdueUnpaidScores(java.time.LocalDate.now());
+            List<com.hortifruti.sl.hortifruti.model.purchase.CombinedScore> clientOverdue = allOverdue.stream()
+                .filter(cs -> cs.getClientId() == client.getId())
+                .toList();
 
-            if (openBillets.isEmpty()) {
+            if (clientOverdue.isEmpty()) {
                 String message = String.format("Olá, %s!\n\n" +
-                        "Boa notícia! Você não possui boletos em aberto no momento.\n\n" +
+                        "Boa notícia! Você não possui boletos vencidos e pendentes no momento.\n\n" +
                         "Se tiver alguma dúvida, entre em contato conosco:\n" +
                         "(31) 3641-2244", client.getClientName());
                 whatsAppService.sendTextMessage(phoneNumber, message);
                 return;
             }
 
-            // Montar mensagem com os boletos
+            // Montar mensagem com os boletos vencidos
             StringBuilder messageBuilder = new StringBuilder();
             messageBuilder.append(String.format("Olá, %s!\n\n", client.getClientName()));
-            messageBuilder.append(String.format("Você possui %d boleto(s) em aberto:\n\n", openBillets.size()));
+            messageBuilder.append(String.format("Você possui %d boleto(s) vencido(s) e pendente(s):\n\n", clientOverdue.size()));
 
-            for (int i = 0; i < openBillets.size(); i++) {
-                BilletResponse billet = openBillets.get(i);
-                messageBuilder.append(String.format("Boleto %d:\n", i + 1));
-                messageBuilder.append(String.format("Valor: R$ %.2f\n", billet.valor()));
-                messageBuilder.append(String.format("Vencimento: %s\n", formatDate(billet.dataVencimento())));
-                messageBuilder.append(String.format("Número: %s\n", billet.seuNumero()));
-                if (i < openBillets.size() - 1) {
+            int i = 1;
+            for (com.hortifruti.sl.hortifruti.model.purchase.CombinedScore cs : clientOverdue) {
+                messageBuilder.append(String.format("Boleto %d:\n", i++));
+                messageBuilder.append(String.format("Valor: R$ %.2f\n", cs.getTotalValue()));
+                messageBuilder.append(String.format("Vencimento: %s\n", formatDate(cs.getDueDate().toString())));
+                messageBuilder.append(String.format("Número: %s\n", cs.getYourNumber() != null ? cs.getYourNumber() : "-"));
+                if (i <= clientOverdue.size()) {
                     messageBuilder.append("────────────────\n\n");
                 }
             }
@@ -278,25 +294,32 @@ public class ChatbotService {
     //     }
     // }
 
+    // ...existing code...
+
     /**
-     * Extrai número de telefone do payload
+     * Extrai apenas o número do JID do WhatsApp (ex: 559999999999@c.us)
      */
-    private String extractPhoneNumber(Map<String, Object> payload) {
-        return (String) payload.getOrDefault("from", "");
+    private String extractPhoneFromJid(String jid) {
+        if (jid == null) return "";
+        int at = jid.indexOf("@");
+        if (at > 0) {
+            return jid.substring(0, at);
+        }
+        return jid;
     }
 
     /**
-     * Extrai corpo da mensagem do payload
+     * Extrai corpo da mensagem do payload UltraMsg (campo 'body' dentro de 'data')
      */
-    private String extractMessageBody(Map<String, Object> payload) {
-        return (String) payload.getOrDefault("body", "");
+    private String extractMessageBodyUltraMsg(Map<String, Object> data) {
+        return (String) data.getOrDefault("body", "");
     }
 
     /**
-     * Extrai tipo da mensagem do payload
+     * Extrai tipo da mensagem do payload UltraMsg (campo 'type' dentro de 'data')
      */
-    private String extractMessageType(Map<String, Object> payload) {
-        return (String) payload.getOrDefault("type", "chat");
+    private String extractMessageTypeUltraMsg(Map<String, Object> data) {
+        return (String) data.getOrDefault("type", "chat");
     }
 
     /**
