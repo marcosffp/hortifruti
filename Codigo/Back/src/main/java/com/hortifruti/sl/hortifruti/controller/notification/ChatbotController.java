@@ -17,6 +17,13 @@ import com.hortifruti.sl.hortifruti.service.notification.ChatbotService;
 
 import java.util.Map;
 
+/**
+ * Controller responsável pelos endpoints do chatbot WhatsApp.
+ * 
+ * Gerencia a comunicação entre a API UltraMsg e o sistema interno,
+ * recebendo mensagens através de webhooks e fornecendo endpoints
+ * de teste e debug para desenvolvimento.
+ */
 @RestController 
 @RequestMapping("/chatbot")
 @RequiredArgsConstructor
@@ -27,8 +34,14 @@ public class ChatbotController {
     private final ChatbotService chatbotService;
 
     /**
-     * Webhook para receber mensagens do WhatsApp via UltraMsg
-     * Endpoint que a UltraMsg chamará quando uma nova mensagem chegar
+     * Webhook principal para receber mensagens do WhatsApp via UltraMsg.
+     * 
+     * Este endpoint é chamado automaticamente pela UltraMsg quando uma
+     * nova mensagem é enviada por um cliente no WhatsApp.
+     * 
+     * @param payload Dados da mensagem recebida contendo informações como
+     *                remetente, conteúdo, tipo e timestamp
+     * @return ResponseEntity com status da operação
      */
     @PostMapping("/webhook")
     @Operation(
@@ -60,17 +73,8 @@ public class ChatbotController {
         )
         @RequestBody Map<String, Object> payload) {
         try {
-            // ⚠️ LOGS TEMPORÁRIOS PARA DEBUG - REMOVER DEPOIS ⚠️
-            System.out.println("🔥 WEBHOOK CHAMADO! Payload completo: " + payload);
-            System.out.println("🔥 Headers recebidos - verificar User-Agent, etc.");
-            
-            log.info("Webhook recebido: {}", payload);
-            
-            // Processar a mensagem recebida
             chatbotService.processIncomingMessage(payload);
-            
             return ResponseEntity.ok("Message processed successfully");
-            
         } catch (Exception e) {
             log.error("Erro ao processar webhook do WhatsApp: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body("Error processing message");
@@ -78,7 +82,13 @@ public class ChatbotController {
     }
 
     /**
-     * Endpoint de verificação do webhook (se necessário para configuração)
+     * Endpoint de verificação do webhook para configuração inicial.
+     * 
+     * Utilizado para validar e confirmar a configuração do webhook
+     * na plataforma UltraMsg.
+     * 
+     * @param hub_challenge Token de desafio enviado pela plataforma
+     * @return ResponseEntity com o token de verificação ou status ativo
      */
     @GetMapping("/webhook")
     @Operation(
@@ -98,7 +108,14 @@ public class ChatbotController {
     }
 
     /**
-     * Endpoint para testar o chatbot manualmente (desenvolvimento)
+     * Endpoint para teste manual do chatbot em ambiente de desenvolvimento.
+     * 
+     * Permite simular o envio de mensagens sem depender da integração
+     * com o WhatsApp, facilitando testes e debug.
+     * 
+     * @param phoneNumber Número do WhatsApp do cliente (formato: DDD+número)
+     * @param message Conteúdo da mensagem a ser testada
+     * @return ResponseEntity com resultado do processamento
      */
     @PostMapping("/test")
     @Operation(
@@ -115,9 +132,6 @@ public class ChatbotController {
         @Parameter(description = "Mensagem a ser testada", required = true, example = "quero meus boletos")
         @RequestParam String message) {
         try {
-            log.info("Teste do chatbot - Telefone: {}, Mensagem: {}", phoneNumber, message);
-            
-            // Simular mensagem recebida para teste
             Map<String, Object> testPayload = Map.of(
                 "from", phoneNumber,
                 "body", message,
@@ -127,7 +141,6 @@ public class ChatbotController {
             chatbotService.processIncomingMessage(testPayload);
             
             return ResponseEntity.ok("Test message processed successfully");
-            
         } catch (Exception e) {
             log.error("Erro ao testar chatbot: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body("Error in test: " + e.getMessage());
@@ -135,7 +148,14 @@ public class ChatbotController {
     }
 
     /**
-     * Endpoint para testar o chatbot com payload JSON completo
+     * Endpoint para teste do chatbot usando payload JSON completo.
+     * 
+     * Permite testar o chatbot com um payload JSON estruturado
+     * similar ao que seria enviado pela UltraMsg, possibilitando
+     * testes mais realistas e completos.
+     * 
+     * @param testPayload JSON contendo dados simulados da mensagem
+     * @return ResponseEntity com resultado do processamento
      */
     @PostMapping("/test-json")
     @Operation(
@@ -189,40 +209,12 @@ public class ChatbotController {
             )
         )
         @RequestBody Map<String, Object> testPayload) {
-        
         try {
-            log.info("Teste JSON do chatbot - Payload: {}", testPayload);
-            
             chatbotService.processIncomingMessage(testPayload);
-            
             return ResponseEntity.ok("Test JSON processed successfully");
-            
         } catch (Exception e) {
             log.error("Erro ao testar chatbot com JSON: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body("Error in JSON test: " + e.getMessage());
         }
-    }
-
-    /**
-     * Endpoint de debug para verificar conectividade e configuração
-     */
-    @GetMapping("/debug")
-    @Operation(
-        summary = "Debug do chatbot",
-        description = "Endpoint para verificar se o chatbot está funcionando e acessível"
-    )
-    public ResponseEntity<Map<String, Object>> debug() {
-        Map<String, Object> info = new java.util.HashMap<>();
-        info.put("status", "🟢 ATIVO");
-        info.put("timestamp", System.currentTimeMillis());
-        info.put("webhookUrl", "/chatbot/webhook");
-        info.put("testUrl", "/chatbot/test");
-        info.put("swaggerUrl", "/swagger-ui/index.html");
-        info.put("message", "Chatbot está funcionando! ✅");
-        
-        log.info("🔍 Debug acessado: {}", info);
-        System.out.println("🔍 DEBUG CHAMADO: " + info);
-        
-        return ResponseEntity.ok(info);
     }
 }
