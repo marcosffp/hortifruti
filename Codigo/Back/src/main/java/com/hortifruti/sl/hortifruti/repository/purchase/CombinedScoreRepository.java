@@ -12,6 +12,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Long> {
 
+    /** Busca todos os CombinedScores pendentes com boleto para um cliente */
+    @Query("SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = 'PENDENTE' AND cs.hasBillet = true")
+    List<CombinedScore> findAllPendingWithBilletByClient(@Param("clientId") Long clientId);
+
   Page<CombinedScore> findByClientIdOrderByConfirmedAtDesc(Long clientId, Pageable pageable);
 
   Page<CombinedScore> findAllByOrderByConfirmedAtDesc(Pageable pageable);
