@@ -8,6 +8,11 @@ export interface TopProduct {
   ValorTotal: number;
 }
 
+export interface TopProductByQuantity {
+  Nome: string;
+  QuantidadeTotal: number;
+}
+
 export interface DashboardData {
   Totais: {
     TotalReceita: number;
@@ -39,6 +44,7 @@ export interface DashboardData {
     [week: string]: number;
   };
   "Produtos em Alta": TopProduct[];
+  "Top10ProdutosPorQuantidade": TopProductByQuantity[];
 }
 
 export const dashboardService = {
