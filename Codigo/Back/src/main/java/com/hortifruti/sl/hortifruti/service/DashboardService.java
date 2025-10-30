@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
@@ -24,6 +25,7 @@ public class DashboardService {
   private final TransactionRepository transactionRepository;
   private final CombinedScoreRepository combinedScoreRepository;
 
+  @Transactional(readOnly = true)
   /** Método principal público que retorna um objeto com todas as informações do dashboard. */
   public Map<String, Object> getDashboardData(
       LocalDate startDate, LocalDate endDate, Month month, int year) {
@@ -204,21 +206,32 @@ public class DashboardService {
     return ranking;
   }
 
+  /**
+   * Retorna o fluxo de vendas agrupado por semana.
+   * Utiliza a data de CONFIRMAÇÃO (confirmedAt) ao invés de vencimento (dueDate).
+   */
   public Map<String, Object> getCombinedScoreData(LocalDate startDate, LocalDate endDate) {
     Map<String, Object> combinedScoreData = new HashMap<>();
 
-    // Fetch CombinedScores within the date range
+    // Fetch CombinedScores dentro do intervalo de CONFIRMAÇÃO (não vencimento)
     List<CombinedScore> combinedScores =
         combinedScoreRepository.findAllByOrderByConfirmedAtDesc(Pageable.unpaged()).stream()
-            .filter(cs -> !cs.getDueDate().isBefore(startDate) && !cs.getDueDate().isAfter(endDate))
+            .filter(cs -> {
+                if (cs.getConfirmedAt() == null) {
+                  return false;
+                }
+                LocalDate confirmedDate = cs.getConfirmedAt();
+                return !confirmedDate.isBefore(startDate) && !confirmedDate.isAfter(endDate);
+            })
             .collect(Collectors.toList());
 
-    // Group by week
+    // Group by week baseado na data de CONFIRMAÇÃO
     Map<Integer, BigDecimal> weeklyScores =
         combinedScores.stream()
+            .filter(cs -> cs.getConfirmedAt() != null)
             .collect(
                 Collectors.groupingBy(
-                    cs -> cs.getDueDate().get(ChronoField.ALIGNED_WEEK_OF_YEAR),
+                    cs -> cs.getConfirmedAt().get(ChronoField.ALIGNED_WEEK_OF_YEAR),
                     Collectors.reducing(
                         BigDecimal.ZERO, CombinedScore::getTotalValue, BigDecimal::add)));
 
@@ -231,11 +244,21 @@ public class DashboardService {
     return combinedScoreData;
   }
 
+  /**
+   * Retorna os top 10 produtos em alta (ordenados por quantidade e valor).
+   * Utiliza a data de CONFIRMAÇÃO (confirmedAt) ao invés de vencimento (dueDate).
+   */
   public List<Map<String, Object>> getTopSellingProducts(LocalDate startDate, LocalDate endDate) {
-    // Fetch all CombinedScores within the date range
+    // Fetch all CombinedScores dentro do intervalo de CONFIRMAÇÃO
     List<CombinedScore> combinedScores =
         combinedScoreRepository.findAllByOrderByConfirmedAtDesc(Pageable.unpaged()).stream()
-            .filter(cs -> !cs.getDueDate().isBefore(startDate) && !cs.getDueDate().isAfter(endDate))
+            .filter(cs -> {
+                if (cs.getConfirmedAt() == null) {
+                  return false;
+                }
+                LocalDate confirmedDate = cs.getConfirmedAt();
+                return !confirmedDate.isBefore(startDate) && !confirmedDate.isAfter(endDate);
+            })
             .collect(Collectors.toList());
 
     // Extract all GroupedProducts from the CombinedScores
@@ -288,13 +311,20 @@ public class DashboardService {
   }
 
   /**
- * Retorna os top 10 produtos com mais saída de quantidade em um período.
- */
-public List<Map<String, Object>> getTopProductsByQuantity(LocalDate startDate, LocalDate endDate) {
-    // Busca todos os CombinedScores dentro do intervalo de datas
+   * Retorna os top 10 produtos com mais saída de quantidade em um período.
+   * Utiliza a data de CONFIRMAÇÃO (confirmedAt) ao invés de vencimento (dueDate).
+   */
+  public List<Map<String, Object>> getTopProductsByQuantity(LocalDate startDate, LocalDate endDate) {
+    // Busca todos os CombinedScores dentro do intervalo de CONFIRMAÇÃO
     List<CombinedScore> combinedScores = combinedScoreRepository
         .findAllByOrderByConfirmedAtDesc(Pageable.unpaged()).stream()
-        .filter(cs -> !cs.getDueDate().isBefore(startDate) && !cs.getDueDate().isAfter(endDate))
+        .filter(cs -> {
+            if (cs.getConfirmedAt() == null) {
+              return false;
+            }
+            LocalDate confirmedDate = cs.getConfirmedAt();
+            return !confirmedDate.isBefore(startDate) && !confirmedDate.isAfter(endDate);
+        })
         .collect(Collectors.toList());
 
     // Extrai todos os GroupedProducts dos CombinedScores
@@ -327,5 +357,5 @@ public List<Map<String, Object>> getTopProductsByQuantity(LocalDate startDate, L
 
     // Retorna os top 10 produtos
     return ranking.stream().limit(10).collect(Collectors.toList());
-}
+  }
 }
