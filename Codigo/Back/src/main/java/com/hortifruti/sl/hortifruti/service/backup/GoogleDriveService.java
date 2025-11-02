@@ -24,20 +24,24 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class GoogleDriveService {
 
   private static final String APPLICATION_NAME = "Hortifruti SL Backup";
   private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
-  private static final String TOKENS_DIRECTORY_PATH = "tokens";
+  private static final String TOKENS_DIRECTORY_PATH = "temp/google/tokens";
   private static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE);
   private final Base64FileDecoder base64FileDecoder;
+
+  @Value("${google.redirect.uri}")
+  private String redirectUri;
 
   /**
    * Cria um cliente autorizado do Google Drive.
@@ -89,23 +93,51 @@ public class GoogleDriveService {
               .setAccessType("offline")
               .build();
 
-      LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
-      
-      // Verificar se já existe uma credencial válida
-      Credential credential = flow.loadCredential("user");
-      if (credential != null && credential.getRefreshToken() != null) {
-        log.info("Credenciais existentes encontradas e carregadas.");
-        return credential;
+      log.info("Verificando se já existe uma credencial válida...");
+
+      // Verificar se o diretório de tokens existe
+      java.io.File tokensDir = new java.io.File(TOKENS_DIRECTORY_PATH);
+      if (!tokensDir.exists()) {
+        log.info("Diretório de tokens não existe. Criando: {}", TOKENS_DIRECTORY_PATH);
+        tokensDir.mkdirs();
       }
-      
-      // Se não existir credencial, gerar a URL e lançar exceção com a URL
-      String authorizationUrl = flow.newAuthorizationUrl()
-          .setRedirectUri(receiver.getRedirectUri())
-          .build();
-      
+
+      Credential credential = flow.loadCredential("user");
+      if (credential != null) {
+        log.info("Credencial encontrada. Verificando validade do token...");
+        log.info("Access Token presente: {}", credential.getAccessToken() != null);
+        log.info("Refresh Token presente: {}", credential.getRefreshToken() != null);
+
+        // Verificar se o token de acesso está válido
+        if (credential.getAccessToken() != null) {
+          // Verificar se o token não expirou
+          if (credential.getExpiresInSeconds() == null || credential.getExpiresInSeconds() > 60) {
+            log.info("Token válido encontrado. Reutilizando credencial existente.");
+            return credential;
+          } else {
+            log.info("Token expirado. Tentando renovar...");
+            if (credential.getRefreshToken() != null && credential.refreshToken()) {
+              log.info("Token renovado com sucesso.");
+              return credential;
+            } else {
+              log.warn(
+                  "Não foi possível renovar o token. Refresh token: {}",
+                  credential.getRefreshToken() != null ? "Presente" : "Ausente");
+            }
+          }
+        }
+      } else {
+        log.info("Nenhuma credencial encontrada no armazenamento.");
+      }
+
+      log.warn("Nenhuma credencial válida encontrada. Será necessário autenticar novamente.");
+
+      // Se não existir credencial válida, gerar a URL e lançar exceção com a URL
+      String authorizationUrl = flow.newAuthorizationUrl().setRedirectUri(redirectUri).build();
+
       log.info("URL de autorização gerada: {}", authorizationUrl);
       throw new BackupException("AUTHORIZATION_REQUIRED:" + authorizationUrl);
-      
+
     } catch (com.google.api.client.auth.oauth2.TokenResponseException e) {
       log.error("Erro de autenticação no Google Drive.", e);
       handleTokenException(e, HTTP_TRANSPORT);
@@ -291,14 +323,53 @@ public class GoogleDriveService {
    */
   public boolean areCredentialsAvailable() {
     log.info("Verificando se as credenciais estão disponíveis.");
-    java.io.File tokensDir = new java.io.File(TOKENS_DIRECTORY_PATH);
-    boolean available =
-        tokensDir.exists()
-            && tokensDir.isDirectory()
-            && tokensDir.listFiles() != null
-            && tokensDir.listFiles().length > 0;
-    log.info("Credenciais disponíveis: {}", available);
-    return available;
+    try {
+      java.io.File tokensDir = new java.io.File(TOKENS_DIRECTORY_PATH);
+      if (!tokensDir.exists() || !tokensDir.isDirectory()) {
+        log.info("Diretório de tokens não existe ou não é um diretório.");
+        return false;
+      }
+
+      java.io.File[] files = tokensDir.listFiles();
+      if (files == null || files.length == 0) {
+        log.info("Nenhum arquivo de token encontrado no diretório.");
+        return false;
+      }
+
+      // Tentar carregar as credenciais para verificar se são válidas
+      base64FileDecoder.decodeGoogleDriveCredentials();
+      java.io.File credentialsFile = base64FileDecoder.getGoogleDriveCredentialsFile();
+      if (!credentialsFile.exists()) {
+        log.info("Arquivo de credenciais do Google não encontrado.");
+        return false;
+      }
+
+      final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+      GoogleClientSecrets clientSecrets =
+          GoogleClientSecrets.load(
+              JSON_FACTORY,
+              new InputStreamReader(new FileInputStream(credentialsFile), StandardCharsets.UTF_8));
+
+      GoogleAuthorizationCodeFlow flow =
+          new GoogleAuthorizationCodeFlow.Builder(
+                  HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
+              .setDataStoreFactory(
+                  new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
+              .setAccessType("offline")
+              .build();
+
+      Credential credential = flow.loadCredential("user");
+      boolean available =
+          credential != null
+              && (credential.getAccessToken() != null || credential.getRefreshToken() != null);
+
+      log.info("Credenciais disponíveis: {}", available);
+      return available;
+
+    } catch (Exception e) {
+      log.error("Erro ao verificar disponibilidade das credenciais: {}", e.getMessage());
+      return false;
+    }
   }
 
   /**
@@ -337,6 +408,48 @@ public class GoogleDriveService {
     } catch (Exception e) {
       log.error("Erro ao gerar o link de autorização do Google Drive.", e);
       throw new BackupException("Erro ao gerar o link de autorização do Google Drive.", e);
+    }
+  }
+
+  /**
+   * Lida com o callback de autorização do Google.
+   *
+   * @param authorizationCode Código de autorização recebido do Google.
+   */
+  public void handleOAuth2Callback(String authorizationCode) {
+    log.info("Recebendo código de autorização do Google: {}", authorizationCode);
+    try {
+      final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+      base64FileDecoder.decodeGoogleDriveCredentials();
+      java.io.File credentialsFile = base64FileDecoder.getGoogleDriveCredentialsFile();
+
+      GoogleClientSecrets clientSecrets =
+          GoogleClientSecrets.load(
+              JSON_FACTORY,
+              new InputStreamReader(new FileInputStream(credentialsFile), StandardCharsets.UTF_8));
+
+      GoogleAuthorizationCodeFlow flow =
+          new GoogleAuthorizationCodeFlow.Builder(
+                  HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
+              .setDataStoreFactory(
+                  new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
+              .setAccessType("offline")
+              .build();
+
+      // Corrigir: Usar o flow para trocar o código por um token e salvar as credenciais
+      com.google.api.client.auth.oauth2.TokenResponse response =
+          flow.newTokenRequest(authorizationCode).setRedirectUri(redirectUri).execute();
+
+      // Salvar as credenciais usando o flow
+      Credential credential = flow.createAndStoreCredential(response, "user");
+
+      log.info("Token de autorização recebido e armazenado com sucesso.");
+      log.info("Access Token: {}", credential.getAccessToken() != null ? "Presente" : "Ausente");
+      log.info("Refresh Token: {}", credential.getRefreshToken() != null ? "Presente" : "Ausente");
+
+    } catch (Exception e) {
+      log.error("Erro ao processar o callback de autorização.", e);
+      throw new BackupException("Erro ao processar o callback de autorização.", e);
     }
   }
 }

@@ -10,13 +10,11 @@ import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
-@Slf4j
 public class EntityCleanupService {
 
   private final PurchaseRepository purchaseRepository;
@@ -33,23 +31,16 @@ public class EntityCleanupService {
   @Transactional
   public void cleanupEntitiesForPeriod(LocalDateTime startDate, LocalDateTime endDate) {
     try {
-      log.info("Iniciando limpeza de entidades para o período: {} a {}", startDate, endDate);
 
-      log.info("Iniciando limpeza dos produtos de fatura");
       cleanupInvoiceProducts(startDate, endDate);
 
-      log.info("Iniciando limpeza das compras");
       cleanupPurchases(startDate, endDate);
 
-      log.info("Iniciando limpeza das transações");
       cleanupTransactions(startDate, endDate);
 
-      log.info("Iniciando limpeza dos extratos");
       cleanupStatements(startDate, endDate);
 
-      log.info("Limpeza de entidades concluída com sucesso.");
     } catch (Exception e) {
-      log.error("Erro durante a limpeza de entidades: {}", e.getMessage(), e);
       throw new BackupException("Erro ao remover entidades do banco de dados.", e);
     }
   }
@@ -58,9 +49,7 @@ public class EntityCleanupService {
     try {
       List<Purchase> purchases = purchaseRepository.findByCreatedAtBetween(startDate, endDate);
       purchaseRepository.deleteAll(purchases);
-      log.info("Compras removidas para o período: {} a {}", startDate, endDate);
     } catch (Exception e) {
-      log.error("Erro ao remover compras: {}", e.getMessage(), e);
       throw new BackupException("Erro ao remover compras.", e);
     }
   }
@@ -69,10 +58,7 @@ public class EntityCleanupService {
     try {
 
       invoiceProductRepository.deleteByCreatedAtBetween(startDate, endDate);
-      log.info(
-          "Produtos de fatura removidos: {} registros para o período: {} a {}", startDate, endDate);
     } catch (Exception e) {
-      log.error("Erro ao remover produtos de fatura: {}", e.getMessage(), e);
       throw new BackupException("Erro ao remover produtos de fatura.", e);
     }
   }
@@ -83,13 +69,8 @@ public class EntityCleanupService {
           transactionRepository.findTransactionsByCreatedAtBetween(startDate, endDate);
 
       transactionRepository.deleteAll(transactions);
-      log.info(
-          "Transações removidas: {} registros para o período: {} a {}",
-          transactions.size(),
-          startDate,
-          endDate);
+
     } catch (Exception e) {
-      log.error("Erro ao remover transações: {}", e.getMessage(), e);
       throw new BackupException("Erro ao remover transações.", e);
     }
   }
@@ -100,13 +81,7 @@ public class EntityCleanupService {
           statementRepository.findByCreatedAtBetweenWithTransactions(startDate, endDate);
 
       statementRepository.deleteAll(statements);
-      log.info(
-          "Extratos removidos: {} registros para o período: {} a {}",
-          statements.size(),
-          startDate,
-          endDate);
     } catch (Exception e) {
-      log.error("Erro ao remover extratos: {}", e.getMessage(), e);
       throw new BackupException("Erro ao remover extratos.", e);
     }
   }
