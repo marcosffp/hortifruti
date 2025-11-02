@@ -17,12 +17,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.springframework.stereotype.Service;
 
-@Slf4j
 @Service
 @AllArgsConstructor
 public class CsvGeneratorService {
@@ -40,9 +38,7 @@ public class CsvGeneratorService {
    * @return Lista de caminhos dos arquivos CSV gerados.
    */
   public List<String> generateCSVsForPeriod(LocalDateTime startDate, LocalDateTime endDate) {
-    log.info("Iniciando geração de arquivos CSV para o período: {} a {}", startDate, endDate);
     String tempDir = System.getProperty("java.io.tmpdir");
-    log.debug("Diretório temporário para os arquivos CSV: {}", tempDir);
 
     List<String> csvFiles = new ArrayList<>();
     try {
@@ -51,24 +47,19 @@ public class CsvGeneratorService {
       csvFiles.add(generateTransactionsCSV(startDate, endDate, tempDir));
       csvFiles.add(generateStatementsCSV(startDate, endDate, tempDir));
     } catch (Exception e) {
-      log.error("Erro durante a geração de arquivos CSV: {}", e.getMessage(), e);
       throw new BackupException("Erro ao gerar arquivos CSV para o período especificado.", e);
     }
 
-    log.info("Arquivos CSV gerados com sucesso: {}", csvFiles);
     return csvFiles;
   }
 
   private String generatePurchasesCSV(
       LocalDateTime startDate, LocalDateTime endDate, String tempDir) {
-    log.info("Gerando CSV de compras para o período: {} a {}", startDate, endDate);
     Path filePath =
         Paths.get(
             tempDir, "compras_" + startDate.toLocalDate() + "_a_" + endDate.toLocalDate() + ".csv");
-    log.debug("Caminho do arquivo CSV de compras: {}", filePath);
 
     List<Purchase> purchases = purchaseRepository.findByCreatedAtBetween(startDate, endDate);
-    log.info("Compras encontradas: {}", purchases.size());
 
     CSVFormat csvFormat =
         CSVFormat.DEFAULT
@@ -81,7 +72,6 @@ public class CsvGeneratorService {
         CSVPrinter csvPrinter = new CSVPrinter(fileWriter, csvFormat)) {
 
       for (Purchase purchase : purchases) {
-        log.debug("Escrevendo compra no CSV: {}", purchase);
         csvPrinter.printRecord(
             purchase.getId(),
             purchase.getClient().getId(),
@@ -92,17 +82,14 @@ public class CsvGeneratorService {
       }
 
       csvPrinter.flush();
-      log.info("CSV de compras gerado com sucesso: {}", filePath);
       return filePath.toString();
     } catch (IOException e) {
-      log.error("Erro ao gerar o arquivo CSV de compras: {}", e.getMessage(), e);
       throw new BackupException("Erro ao gerar o arquivo CSV de compras.", e);
     }
   }
 
   private String generateInvoiceProductsCSV(
       LocalDateTime startDate, LocalDateTime endDate, String tempDir) {
-    log.info("Gerando CSV de produtos da fatura para o período: {} a {}", startDate, endDate);
     Path filePath =
         Paths.get(
             tempDir,
@@ -111,11 +98,8 @@ public class CsvGeneratorService {
                 + "_a_"
                 + endDate.toLocalDate()
                 + ".csv");
-    log.debug("Caminho do arquivo CSV de produtos da fatura: {}", filePath);
 
-    List<InvoiceProduct> invoiceProducts =
-        invoiceProductRepository.findAll(); // Ajustar se necessário para filtrar por data
-    log.info("Produtos da fatura encontrados: {}", invoiceProducts.size());
+    List<InvoiceProduct> invoiceProducts = invoiceProductRepository.findAll();
 
     CSVFormat csvFormat =
         CSVFormat.DEFAULT
@@ -136,7 +120,6 @@ public class CsvGeneratorService {
         CSVPrinter csvPrinter = new CSVPrinter(fileWriter, csvFormat)) {
 
       for (InvoiceProduct product : invoiceProducts) {
-        log.debug("Escrevendo produto da fatura no CSV: {}", product);
         csvPrinter.printRecord(
             product.getId(),
             product.getCode(),
@@ -150,26 +133,21 @@ public class CsvGeneratorService {
       }
 
       csvPrinter.flush();
-      log.info("CSV de produtos da fatura gerado com sucesso: {}", filePath);
       return filePath.toString();
     } catch (IOException e) {
-      log.error("Erro ao gerar o arquivo CSV de produtos da fatura: {}", e.getMessage(), e);
       throw new BackupException("Erro ao gerar o arquivo CSV de produtos da fatura.", e);
     }
   }
 
   private String generateTransactionsCSV(
       LocalDateTime startDate, LocalDateTime endDate, String tempDir) {
-    log.info("Gerando CSV de transações para o período: {} a {}", startDate, endDate);
     Path filePath =
         Paths.get(
             tempDir,
             "transacoes_" + startDate.toLocalDate() + "_a_" + endDate.toLocalDate() + ".csv");
-    log.debug("Caminho do arquivo CSV de transações: {}", filePath);
 
     List<Transaction> transactions =
         transactionRepository.findTransactionsByCreatedAtBetween(startDate, endDate);
-    log.info("Transações encontradas: {}", transactions.size());
 
     CSVFormat csvFormat =
         CSVFormat.DEFAULT
@@ -194,7 +172,6 @@ public class CsvGeneratorService {
         CSVPrinter csvPrinter = new CSVPrinter(fileWriter, csvFormat)) {
 
       for (Transaction transaction : transactions) {
-        log.debug("Escrevendo transação no CSV: {}", transaction);
         csvPrinter.printRecord(
             transaction.getId(),
             transaction.getTransactionDate(),
@@ -212,25 +189,20 @@ public class CsvGeneratorService {
       }
 
       csvPrinter.flush();
-      log.info("CSV de transações gerado com sucesso: {}", filePath);
       return filePath.toString();
     } catch (IOException e) {
-      log.error("Erro ao gerar o arquivo CSV de transações: {}", e.getMessage(), e);
       throw new BackupException("Erro ao gerar o arquivo CSV de transações.", e);
     }
   }
 
   private String generateStatementsCSV(
       LocalDateTime startDate, LocalDateTime endDate, String tempDir) {
-    log.info("Gerando CSV de extratos para o período: {} a {}", startDate, endDate);
     Path filePath =
         Paths.get(
             tempDir,
             "extratos_" + startDate.toLocalDate() + "_a_" + endDate.toLocalDate() + ".csv");
-    log.debug("Caminho do arquivo CSV de extratos: {}", filePath);
 
     List<Statement> statements = statementRepository.findByCreatedAtBetween(startDate, endDate);
-    log.info("Extratos encontrados: {}", statements.size());
 
     CSVFormat csvFormat =
         CSVFormat.DEFAULT
@@ -242,7 +214,6 @@ public class CsvGeneratorService {
         CSVPrinter csvPrinter = new CSVPrinter(fileWriter, csvFormat)) {
 
       for (Statement statement : statements) {
-        log.debug("Escrevendo extrato no CSV: {}", statement);
         csvPrinter.printRecord(
             statement.getId(),
             statement.getName(),
@@ -252,10 +223,8 @@ public class CsvGeneratorService {
       }
 
       csvPrinter.flush();
-      log.info("CSV de extratos gerado com sucesso: {}", filePath);
       return filePath.toString();
     } catch (IOException e) {
-      log.error("Erro ao gerar o arquivo CSV de extratos: {}", e.getMessage(), e);
       throw new BackupException("Erro ao gerar o arquivo CSV de extratos.", e);
     }
   }
