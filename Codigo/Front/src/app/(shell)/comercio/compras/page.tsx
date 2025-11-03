@@ -1,6 +1,5 @@
 'use client';
 
-import GroupedProductsTable from "@/components/modules/tables/GroupedProductsTable";
 import ClientSelector from "@/components/modules/ClientSelector";
 import ClientSummaryCards from "@/components/modules/ClientSummaryCards";
 import EnhancedUploadNotes from "@/components/modules/EnhancedUploadNotes";
