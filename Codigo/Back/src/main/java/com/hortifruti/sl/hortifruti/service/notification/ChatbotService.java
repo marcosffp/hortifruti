@@ -1,18 +1,19 @@
 package com.hortifruti.sl.hortifruti.service.notification;
 
-import com.hortifruti.sl.hortifruti.dto.billet.BilletResponse;
+import com.hortifruti.sl.hortifruti.model.chatbot.ChatSession;
+import com.hortifruti.sl.hortifruti.model.chatbot.SessionContext;
+import com.hortifruti.sl.hortifruti.model.chatbot.SessionStatus;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.service.billet.BilletService;
-import com.hortifruti.sl.hortifruti.service.notification.WhatsAppService;
+import com.hortifruti.sl.hortifruti.service.chatbot.ChatSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,12 +34,16 @@ public class ChatbotService {
     private final WhatsAppService whatsAppService;
     private final BilletService billetService;
     private final ClientRepository clientRepository;
+    private final ChatSessionService chatSessionService;
 
-    /**
-     * Processa mensagens recebidas através do webhook do WhatsApp.
+        /**
+     * Processa mensagens recebidas do webhook do WhatsApp.
      * 
      * Extrai informações do payload, valida se é uma mensagem privada válida
      * e encaminha para processamento de comandos.
+     * 
+     * Detecta automaticamente mensagens manuais enviadas por atendentes
+     * e pausa o bot por 1 hora para evitar conflitos.
      * 
      * @param payload Dados recebidos do webhook contendo informações da mensagem
      */
@@ -64,6 +69,23 @@ public class ChatbotService {
                 return;
             }
 
+            // Detecta se a mensagem foi enviada manualmente (não é do cliente)
+            // Mensagens do bot têm o campo "fromMe" = true no payload do UltraMsg
+            boolean isFromMe = detectIfMessageIsFromBot(data);
+            
+            if (isFromMe) {
+                // Mensagem enviada manualmente pelo atendente via WhatsApp
+                log.info("Mensagem manual detectada para {}. Pausando bot por 1 hora e mudando status para PAUSED.", phoneNumber);
+                chatSessionService.pauseBotForPhone(phoneNumber, 1);
+                
+                // Muda o status da sessão para PAUSED (atendimento humano em andamento)
+                ChatSession session = chatSessionService.getOrCreateSession(phoneNumber);
+                chatSessionService.updateSessionStatus(session.getId(), SessionStatus.PAUSED);
+                
+                return; // Não processa como comando
+            }
+
+            // Mensagem do cliente - processa normalmente
             processCommand(phoneNumber, messageBody);
 
         } catch (Exception e) {
@@ -74,59 +96,149 @@ public class ChatbotService {
     /**
      * Processa comandos do chatbot baseado na mensagem recebida.
      * 
-     * Identifica o tipo de comando através de palavras-chave e encaminha
-     * para o handler apropriado. Suporta:
+     * Gerencia o fluxo completo da conversa através de sessões, incluindo:
+     * - Menu de opções
      * - Consulta de boletos por CPF/CNPJ
-     * - Solicitação de ajuda
-     * - Saudações
+     * - Encaminhamento para atendimento humano
      * 
      * @param phoneNumber Número de telefone do remetente
      * @param message Conteúdo da mensagem enviada
      */
     private void processCommand(String phoneNumber, String message) {
-        String normalizedMessage = message.toLowerCase().trim();
-
         try {
-            String onlyDigits = message.replaceAll("[^0-9]", "");
-            if (onlyDigits.length() == 11 || onlyDigits.length() == 14) {
-                handleBilletRequestByDocument(phoneNumber, onlyDigits);
+            // 1. Verificar se o bot está pausado para este número
+            if (chatSessionService.isBotPausedForPhone(phoneNumber)) {
+                log.info("Bot pausado para telefone {}. Mensagem ignorada.", phoneNumber);
                 return;
             }
 
-            if (normalizedMessage.contains("boleto") || 
-                normalizedMessage.contains("cobrança") ||
-                normalizedMessage.contains("cobranca") ||
-                normalizedMessage.contains("fatura") ||
-                normalizedMessage.contains("conta") ||
-                normalizedMessage.contains("pagamento")) {
-                String msg = "Para consultar seus boletos, por favor, envie seu CPF (apenas números) ou CNPJ.";
-                whatsAppService.sendTextMessage(phoneNumber, msg);
+            // 2. Verificar comandos globais (funcionam em qualquer estado)
+            String normalized = message.toLowerCase().trim();
+            if (normalized.equals("menu") || normalized.equals("recomeçar") || 
+                normalized.equals("recomecar")) {
+                // Reseta a sessão e volta ao menu principal
+                ChatSession session = chatSessionService.getOrCreateSession(phoneNumber);
+                chatSessionService.updateSessionStatus(session.getId(), SessionStatus.MENU);
+                chatSessionService.setSessionContext(session.getId(), null); // Limpa contexto
+                sendMainMenu(phoneNumber);
+                log.info("Cliente {} solicitou voltar ao menu principal", phoneNumber);
                 return;
             }
 
-            if (normalizedMessage.contains("ajuda") || 
-                normalizedMessage.contains("help") ||
-                normalizedMessage.contains("menu") ||
-                normalizedMessage.contains("comandos")) {
-                handleHelpRequest(phoneNumber);
-                return;
-            }
+            // 3. Obter ou criar sessão
+            ChatSession session = chatSessionService.getOrCreateSession(phoneNumber);
 
-            if (normalizedMessage.contains("oi") || 
-                normalizedMessage.contains("olá") ||
-                normalizedMessage.contains("ola") ||
-                normalizedMessage.contains("bom dia") ||
-                normalizedMessage.contains("boa tarde") ||
-                normalizedMessage.contains("boa noite")) {
-                handleGreeting(phoneNumber);
-                return;
+            // 4. Processar baseado no status da sessão
+            switch (session.getStatus()) {
+                case MENU:
+                    handleMenuSelection(session, phoneNumber, message);
+                    break;
+                    
+                case AWAITING_DOCUMENT:
+                    handleDocumentInput(session, phoneNumber, message);
+                    break;
+                    
+                case AWAITING_HUMAN:
+                    // Cliente já está aguardando atendimento
+                    log.info("Cliente {} aguardando atendimento humano.", phoneNumber);
+                    break;
+                    
+                case PAUSED:
+                    // Bot pausado - atendimento humano em andamento
+                    // Não responde para não atrapalhar o atendente
+                    log.info("Bot pausado para {}. Atendimento humano em andamento.", phoneNumber);
+                    break;
+                    
+                case CLOSED:
+                    // Sessão fechada, cria nova e mostra menu
+                    session = chatSessionService.createNewSession(phoneNumber);
+                    sendMainMenu(phoneNumber);
+                    break;
+                    
+                default:
+                    handleUnknownCommand(phoneNumber);
             }
-
-            handleUnknownCommand(phoneNumber);
 
         } catch (Exception e) {
             log.error("Erro ao processar comando para {}: {}", phoneNumber, e.getMessage(), e);
             sendErrorMessage(phoneNumber);
+        }
+    }
+
+    /**
+     * Processa a seleção do menu principal
+     */
+    private void handleMenuSelection(ChatSession session, String phoneNumber, String message) {
+        String normalized = message.toLowerCase().trim();
+        
+        // Opção 1: Boleto
+        if (normalized.equals("1") || normalized.contains("boleto")) {
+            chatSessionService.setSessionContext(session.getId(), SessionContext.BOLETO);
+            chatSessionService.updateSessionStatus(session.getId(), SessionStatus.AWAITING_DOCUMENT);
+            String msg = "Para consultar seus boletos, por favor, envie seu CPF *(apenas números)* ou CNPJ.\n\n" +
+                    " Digite MENU para voltar ao início";
+            whatsAppService.sendTextMessage(phoneNumber, msg);
+            return;
+        }
+        
+        // Opção 2: Pedido
+        if (normalized.equals("2") || normalized.contains("pedido")) {
+            chatSessionService.setSessionContext(session.getId(), SessionContext.PEDIDO);
+            chatSessionService.updateSessionStatus(session.getId(), SessionStatus.AWAITING_HUMAN);
+            String msg = "📋 *Fazer Pedido*\n\n" +
+                    "Por favor, envie a lista de produtos que deseja:\n" +
+                    "Nossa equipe vai receber seu pedido e responder em breve com disponibilidade e valores.\n\n" +
+                    "Horário de atendimento: \n"+
+                    "• Segunda a Sábado, 7h às 20h.\n"+
+                    "• Domingo, das 7h às 12h";
+            whatsAppService.sendTextMessage(phoneNumber, msg);
+            return;
+        }
+        
+        // Opção 3: Outro assunto
+        if (normalized.equals("3") || normalized.contains("outro")) {
+            chatSessionService.setSessionContext(session.getId(), SessionContext.OUTRO);
+            chatSessionService.updateSessionStatus(session.getId(), SessionStatus.AWAITING_HUMAN);
+            String msg = "💬 *Falar com Atendimento*\n\n" +
+                    "Por favor, descreva seu assunto ou dúvida:\n" +
+                    "Nossa equipe vai receber sua mensagem e responder em breve.\n\n" +
+                   "Horário de atendimento: \n"+
+                    "• Segunda a Sábado, 7h às 20h.\n"+
+                    "• Domingo, das 7h às 12h";
+            whatsAppService.sendTextMessage(phoneNumber, msg);
+            return;
+        }
+        
+        // Opção não reconhecida, reenvia menu
+        sendMainMenu(phoneNumber);
+    }
+
+    /**
+     * Envia o menu principal
+     */
+    private void sendMainMenu(String phoneNumber) {
+        String menu = "Olá! Bem-vindo ao Hortifruti SL!\n\n" +
+                "Como posso te ajudar hoje? Digite o número da opção:\n\n" +
+                "*1* Boleto - Consultar boletos em aberto\n" +
+                "*2* Pedido - Dúvidas sobre pedidos\n" +
+                "*3* Outro assunto - Falar com atendimento\n\n" +
+                "Digite o número da opção desejada (1, 2 ou 3)\n\n" +
+                "A qualquer momento, digite MENU para voltar aqui";
+        whatsAppService.sendTextMessage(phoneNumber, menu);
+    }
+
+    /**
+     * Processa entrada de documento (CPF/CNPJ)
+     */
+    private void handleDocumentInput(ChatSession session, String phoneNumber, String message) {
+        String onlyDigits = message.replaceAll("[^0-9]", "");
+        
+        if (onlyDigits.length() == 11 || onlyDigits.length() == 14) {
+            handleBilletRequestByDocument(session, phoneNumber, onlyDigits);
+        } else {
+            String msg = "Documento inválido. Por favor, envie um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.\n\n" +
+                    "Exemplo: 12345678900 ou 12345678000190";
+            whatsAppService.sendTextMessage(phoneNumber, msg);
         }
     }
 
@@ -137,10 +249,11 @@ public class ChatbotService {
      * pendentes com boleto emitido e envia uma mensagem com o resumo seguida
      * dos PDFs dos boletos.
      * 
+     * @param session Sessão de chat ativa
      * @param phoneNumber Número de telefone do cliente
      * @param document CPF ou CNPJ do cliente (apenas dígitos)
      */
-    private void handleBilletRequestByDocument(String phoneNumber, String document) {
+    private void handleBilletRequestByDocument(ChatSession session, String phoneNumber, String document) {
         try {
             Optional<Client> clientOpt = clientRepository.findByDocument(document);
             if (clientOpt.isEmpty()) {
@@ -210,52 +323,16 @@ public class ChatbotService {
                 whatsAppService.sendMultipleDocuments(phoneNumber, "Segue seus boletos em aberto.", pdfs, fileNames);
             }
 
+            // Associar cliente à sessão
+            chatSessionService.associateClient(session.getId(), client.getId());
+            
+            // Deleta a sessão após enviar os boletos (limpa o banco)
+            chatSessionService.closeSession(session.getId(), "COMPLETED");
+
         } catch (Exception e) {
-            log.error("Erro ao processar solicitação de boletos por documento para {}: {}", 
-                phoneNumber, e.getMessage(), e);
+            log.error("Erro ao processar solicitação de boletos para {}: {}", phoneNumber, e.getMessage(), e);
             sendErrorMessage(phoneNumber);
         }
-    }
-
-    /**
-     * Envia mensagem com lista de comandos disponíveis e instruções de uso.
-     * 
-     * @param phoneNumber Número de telefone do destinatário
-     */
-    private void handleHelpRequest(String phoneNumber) {
-        String message = "Hortifruti SL - Assistente Virtual\n\n" +
-                "Olá! Eu posso te ajudar com:\n\n" +
-                "Boletos e Cobranças\n" +
-                "- Digite: 'boletos', 'cobrança' ou 'fatura'\n" +
-                "- Vou mostrar seus boletos em aberto\n\n" +
-                "Contato Direto\n" +
-                "- Telefone: (31) 3641-2244\n" +
-                "- Horário: Segunda a Sexta, 8h às 18h\n\n" +
-                "Dicas:\n" +
-                "- Use palavras simples\n" +
-                "- Uma solicitação por vez\n\n" +
-                "Como posso te ajudar hoje?";
-        
-        whatsAppService.sendTextMessage(phoneNumber, message);
-    }
-
-    /**
-     * Envia mensagem de boas-vindas com opções disponíveis.
-     * 
-     * @param phoneNumber Número de telefone do destinatário
-     */
-    private void handleGreeting(String phoneNumber) {
-        String message = "Olá! Bem-vindo ao Hortifruti SL!\n\n" +
-                "Sou seu assistente virtual e estou aqui para ajudar!\n\n" +
-                "O que posso fazer por você:\n" +
-                "- Consultar seus boletos em aberto\n" +
-                "- Fornecer informações de contato\n" +
-                "- Tirar dúvidas básicas\n\n" +
-                "Digite 'boletos' para ver suas cobranças\n" +
-                "Digite 'ajuda' para ver todos os comandos\n\n" +
-                "Como posso te ajudar?";
-        
-        whatsAppService.sendTextMessage(phoneNumber, message);
     }
 
     /**
@@ -325,5 +402,43 @@ public class ChatbotService {
      */
     private String extractMessageTypeUltraMsg(Map<String, Object> data) {
         return (String) data.getOrDefault("type", "chat");
+    }
+
+    /**
+     * Detecta se a mensagem foi enviada pelo próprio bot/atendente ou pelo cliente.
+     * 
+     * No payload do UltraMsg, mensagens enviadas pelo número conectado
+     * (bot ou atendente manual) têm o campo "fromMe" = true.
+     * Mensagens recebidas de clientes têm "fromMe" = false ou ausente.
+     * 
+     * @param data Mapa de dados contendo informações da mensagem
+     * @return true se a mensagem foi enviada pelo bot/atendente, false se foi do cliente
+     */
+    private boolean detectIfMessageIsFromBot(Map<String, Object> data) {
+        // Verifica o campo "fromMe" do payload
+        Object fromMeObj = data.get("fromMe");
+        
+        if (fromMeObj instanceof Boolean) {
+            return (Boolean) fromMeObj;
+        }
+        
+        if (fromMeObj instanceof String) {
+            String fromMeStr = (String) fromMeObj;
+            return "true".equalsIgnoreCase(fromMeStr) || "1".equals(fromMeStr);
+        }
+        
+        // Verifica também o campo alternativo "from_me" (alguns webhooks usam snake_case)
+        Object fromMe2Obj = data.get("from_me");
+        if (fromMe2Obj instanceof Boolean) {
+            return (Boolean) fromMe2Obj;
+        }
+        
+        if (fromMe2Obj instanceof String) {
+            String fromMe2Str = (String) fromMe2Obj;
+            return "true".equalsIgnoreCase(fromMe2Str) || "1".equals(fromMe2Str);
+        }
+        
+        // Por padrão, assume que é mensagem do cliente
+        return false;
     }
 }
