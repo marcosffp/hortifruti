@@ -31,22 +31,12 @@ public class InvoiceController {
 
   @GetMapping("/{ref}/danfe")
   public ResponseEntity<Resource> downloadDanfe(@PathVariable String ref) {
-    try {
-      return invoiceService.downloadDanfe(ref);
-    } catch (Exception e) {
-      log.error("Erro ao fazer download do DANFE para ref {}: {}", ref, e.getMessage(), e);
-      return ResponseEntity.internalServerError().build();
-    }
+    return invoiceService.downloadDanfe(ref);
   }
 
   @GetMapping("/{ref}/xml/download")
   public ResponseEntity<Resource> downloadXml(@PathVariable String ref) {
-    try {
-      return invoiceService.downloadXml(ref);
-    } catch (Exception e) {
-      log.error("Erro ao fazer download do XML para ref {}: {}", ref, e.getMessage(), e);
-      return ResponseEntity.internalServerError().build();
-    }
+    return invoiceService.downloadXml(ref);
   }
 
   @DeleteMapping("/{ref}/cancel")
