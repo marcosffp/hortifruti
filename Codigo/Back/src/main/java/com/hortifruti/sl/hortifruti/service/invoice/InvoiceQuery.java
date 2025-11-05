@@ -76,4 +76,14 @@ public class InvoiceQuery {
         invoiceSimplif.numero(),
         ref);
   }
+
+  @Transactional
+  public void printRawInvoiceJson(String ref) {
+    try {
+      String response = fetchInvoiceData(ref);
+      System.out.println(response);
+    } catch (Exception e) {
+      throw new InvoiceException("Erro ao consultar a nota fiscal com referência: " + ref, e);
+    }
+  }
 }

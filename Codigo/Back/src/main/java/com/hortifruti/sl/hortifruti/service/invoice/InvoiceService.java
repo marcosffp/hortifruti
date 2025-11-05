@@ -50,4 +50,9 @@ public class InvoiceService {
   public String cancelInvoice(String ref, String justificativa) {
     return invoiceCancelService.cancelInvoice(ref, justificativa);
   }
+
+  @Transactional
+  public void printRawInvoiceJson(String ref) {
+    invoiceQueryService.printRawInvoiceJson(ref);
+  }
 }
