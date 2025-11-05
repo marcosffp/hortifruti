@@ -41,6 +41,10 @@ public class DatabaseStorageService {
     return BigDecimal.ZERO;
   }
 
+  public BigDecimal getMaxStorageInMB() {
+    return MAX_STORAGE_MB;
+  }
+
   public boolean isDatabaseOverThreshold() {
     BigDecimal currentSize = getDatabaseSizeInMB();
     BigDecimal thresholdSize =
