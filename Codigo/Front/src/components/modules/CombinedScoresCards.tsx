@@ -6,10 +6,14 @@ import { combinedScoreService } from "@/services/combinedScoreService";
 import { billetService } from "@/services/billetService";
 import { CombinedScoreType } from "@/types/combinedScoreType";
 import { BilletResponse } from "@/types/billetType";
+import { InvoiceResponseGet } from "@/types/invoiceType";
 import GroupedProductsModal from "@/components/modals/GroupedProductsModal";
 import ShowBilletModal from "@/components/modals/ShowBilletModal";
 import ShowBilletDataModal from "@/components/modals/ShowBilletDataModal";
+import ShowInvoiceModal from "@/components/modals/ShowInvoiceModal";
+import ShowInvoiceDataModal from "@/components/modals/ShowInvoiceDataModal";
 import { useBillet } from "@/hooks/useBillet";
+import { useInvoice } from "@/hooks/useInvoice";
 import ClientNumberModal from "../modals/ClientNumberModal";
 import { showError, showInfo, showSuccess } from "@/services/notificationService";
 
@@ -20,6 +24,8 @@ interface CombinedScoresCardsProps {
 
 interface ScoreWithBilletInfo extends CombinedScoreType {
     billetInfo?: BilletResponse | null;
+    invoiceInfo?: InvoiceResponseGet | null;
+    invoiceRef?: string | null;
 }
 
 export default function CombinedScoresCards({ clientId, refreshKey }: CombinedScoresCardsProps) {
@@ -34,8 +40,12 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
     const [showBilletModal, setShowBilletModal] = useState(false);
     const [showBilletDataModal, setShowBilletDataModal] = useState(false);
     const [billetPdf, setBilletPdf] = useState<Blob | null>(null);
+    const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+    const [showInvoiceDataModal, setShowInvoiceDataModal] = useState(false);
+    const [invoicePdf, setInvoicePdf] = useState<Blob | null>(null);
 
     const { generateBillet, getBilletInfo } = useBillet();
+    const { generateInvoice, getInvoiceInfo, getDanfe } = useInvoice();
 
     const fetchScores = async () => {
         if (!clientId) {
@@ -47,12 +57,16 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
         try {
             const data = await combinedScoreService.fetchCombinedScores(clientId, page, 10);
 
-            // Para cada score que tem boleto, busca as informações do boleto
-            const scoresWithBilletInfo = await Promise.all(
+            // Para cada score que tem boleto ou nota fiscal, busca as informações
+            const scoresWithInfo = await Promise.all(
                 data.content.map(async (score) => {
+                    let billetInfo = null;
+                    let invoiceInfo = null;
+
+                    // Busca informações do boleto se existir
                     if (score.hasBillet) {
                         try {
-                            const billetInfo = await getBilletInfo(score.id);
+                            billetInfo = await getBilletInfo(score.id);
 
                             // Atualiza o status do score baseado no status do boleto
                             if (billetInfo) {
@@ -72,18 +86,30 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                     }
                                 }
                             }
-
-                            return { ...score, billetInfo };
                         } catch (error) {
                             console.error(`Erro ao buscar info do boleto ${score.id}:`, error);
-                            return { ...score, billetInfo: null };
                         }
                     }
-                    return { ...score, billetInfo: null };
+
+                    // Busca informações da nota fiscal se existir e tiver referência
+                    if (score.hasInvoice && score.invoiceRef) {
+                        try {
+                            invoiceInfo = await getInvoiceInfo(score.invoiceRef);
+                        } catch (error) {
+                            console.error(`Erro ao buscar info da nota fiscal ${score.id}:`, error);
+                        }
+                    }
+
+                    return { 
+                        ...score, 
+                        billetInfo, 
+                        invoiceInfo,
+                        invoiceRef: score.invoiceRef 
+                    };
                 })
             );
 
-            setScores(scoresWithBilletInfo);
+            setScores(scoresWithInfo);
             setTotalPages(data.totalPages);
         } catch (error) {
             showError("Erro ao carregar agrupamentos");
@@ -169,6 +195,77 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
             }
         } catch (error) {
             showError("Erro ao buscar boleto");
+            console.error(error);
+        }
+    };
+
+    const handleGenerateInvoice = async (scoreId: number) => {
+        try {
+            const score = scores.find(s => s.id === scoreId);
+            if (!score) {
+                showError("Agrupamento não encontrado");
+                return;
+            }
+
+            showInfo("Gerando nota fiscal... Isso pode levar alguns segundos.");
+            const response = await generateInvoice(scoreId);
+
+            if (response.ref) {
+                try {
+                    // Buscar o DANFE para exibir
+                    const danfeBlob = await getDanfe(response.ref);
+                    
+                    setSelectedScore({ ...score, invoiceRef: response.ref });
+                    setInvoicePdf(danfeBlob);
+                    setShowInvoiceModal(true);
+
+                    showSuccess("Nota fiscal gerada com sucesso!");
+                    fetchScores();
+                } catch (danfeError: any) {
+                    // Nota fiscal foi criada, mas DANFE ainda não está disponível
+                    console.log("DANFE ainda não disponível:", danfeError);
+                    
+                    // Atualiza a lista para mostrar o botão "Ver NF"
+                    fetchScores();
+                    
+                    // Mostra mensagem amigável
+                    showInfo("Nota fiscal gerada! O documento está sendo processado e estará disponível em alguns instantes. Clique em 'Ver NF' para visualizar.");
+                }
+            }
+        } catch (error: any) {
+            // Erro na criação da nota fiscal
+            showError(error?.response?.data?.message || "Erro ao gerar nota fiscal");
+            console.error(error);
+        }
+    };
+
+    const handleShowInvoice = async (score: ScoreWithBilletInfo) => {
+        try {
+            setSelectedScore(score);
+
+            // Se já tem a referência e info da invoice
+            if (score.invoiceRef && score.invoiceInfo) {
+                setShowInvoiceDataModal(true);
+            } else if (score.invoiceRef) {
+                // Tem a referência mas não tem a info, busca novamente
+                showInfo("Buscando nota fiscal...");
+                try {
+                    const invoiceInfo = await getInvoiceInfo(score.invoiceRef);
+                    if (invoiceInfo) {
+                        setSelectedScore({ ...score, invoiceInfo });
+                        setShowInvoiceDataModal(true);
+                    } else {
+                        showError("Não foi possível buscar as informações da nota fiscal");
+                    }
+                } catch (error) {
+                    showError("Erro ao buscar informações da nota fiscal");
+                    console.error(error);
+                }
+            } else {
+                showError("Referência da nota fiscal não encontrada");
+            }
+        } catch (error) {
+            showError("Erro ao buscar nota fiscal");
             console.error(error);
         }
     };
@@ -338,16 +435,16 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
 
                                         {score.hasInvoice ? (
                                             <button
-                                                onClick={() => showInfo("Funcionalidade de consultar NF em desenvolvimento")}
-                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-xs"
+                                                onClick={() => handleShowInvoice(score)}
+                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs"
                                             >
-                                                <FileText className="w-3 h-3" />
-                                                Consultar NF
+                                                <Info className="w-3 h-3" />
+                                                Ver NF
                                             </button>
                                         ) : (
                                             <button
-                                                onClick={() => showInfo("Funcionalidade de gerar NF em desenvolvimento")}
-                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs"
+                                                onClick={() => handleGenerateInvoice(score.id)}
+                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs"
                                             >
                                                 <FileText className="w-3 h-3" />
                                                 Gerar NF
@@ -472,6 +569,35 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                     handleGenerateBillet(clientNumberModal.groupId, number);
                 }}
             />
+
+            {/* Modal de Nota Fiscal */}
+            {showInvoiceModal && invoicePdf && selectedScore && (
+                <ShowInvoiceModal
+                    isOpen={showInvoiceModal}
+                    onClose={() => {
+                        setShowInvoiceModal(false);
+                        setInvoicePdf(null);
+                        setSelectedScore(null);
+                    }}
+                    invoiceData={invoicePdf}
+                    scoreNumber={selectedScore.number || selectedScore.id}
+                    ref={selectedScore.invoiceRef || ""}
+                />
+            )}
+
+            {showInvoiceDataModal && selectedScore?.invoiceInfo && (
+                <ShowInvoiceDataModal
+                    isOpen={showInvoiceDataModal}
+                    onClose={() => {
+                        setShowInvoiceDataModal(false);
+                        setSelectedScore(null);
+                    }}
+                    invoiceData={selectedScore.invoiceInfo}
+                    onInvoiceCancelled={() => {
+                        fetchScores(); // Recarrega os dados após cancelamento
+                    }}
+                />
+            )}
         </div>
     );
 }

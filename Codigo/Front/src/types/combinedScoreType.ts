@@ -8,6 +8,7 @@ export interface CombinedScoreType {
   hasBillet: boolean;
   hasInvoice: boolean;
   number: string;
+  invoiceRef?: string | null;
 }
 
 export interface CombinedScoreResponse {

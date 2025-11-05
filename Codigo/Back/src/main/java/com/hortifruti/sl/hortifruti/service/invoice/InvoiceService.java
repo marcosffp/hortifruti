@@ -2,7 +2,6 @@ package com.hortifruti.sl.hortifruti.service.invoice;
 
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
-import com.hortifruti.sl.hortifruti.exception.InvoiceException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -30,20 +29,12 @@ public class InvoiceService {
 
   @Transactional
   public ResponseEntity<Resource> downloadDanfe(String ref) {
-    try {
-      return danfeXmlService.downloadDanfe(ref);
-    } catch (Exception e) {
-      throw new InvoiceException("Erro ao fazer download do DANFE", e);
-    }
+    return danfeXmlService.downloadDanfe(ref);
   }
 
   @Transactional
   public ResponseEntity<Resource> downloadXml(String ref) {
-    try {
-      return danfeXmlService.downloadXml(ref);
-    } catch (Exception e) {
-      throw new InvoiceException("Erro ao fazer download do XML", e);
-    }
+    return danfeXmlService.downloadXml(ref);
   }
 
   @Transactional
