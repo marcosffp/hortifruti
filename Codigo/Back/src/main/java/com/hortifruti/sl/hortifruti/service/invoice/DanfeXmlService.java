@@ -6,6 +6,10 @@ import com.hortifruti.sl.hortifruti.config.FocusNfeApiClient;
 import com.hortifruti.sl.hortifruti.exception.InvoiceException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -103,5 +107,21 @@ public class DanfeXmlService {
   protected ResponseEntity<Resource> downloadXml(String ref) {
     String xmlPath = getXmlPath(ref);
     return downloadFileStream(ref, xmlPath, MediaType.APPLICATION_XML, "nota-fiscal");
+  }
+
+  @Transactional
+  public List<String> getXmlPathsForPeriod(List<String> refs) {
+    return refs.stream()
+        .map(ref -> {
+            try {
+                return getXmlPath(ref);
+            } catch (InvoiceException e) {
+                System.err.println("Erro ao buscar caminho XML para referência: " + ref);
+                e.printStackTrace();
+                return null; // Ignorar erros
+            }
+        })
+        .filter(path -> path != null) // Remover nulos
+        .collect(Collectors.toList());
   }
 }

@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.service.invoice;
 
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
+import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceTaxDetails;
 import com.hortifruti.sl.hortifruti.exception.InvoiceException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +53,8 @@ public class InvoiceService {
   }
 
   @Transactional
-  public void printRawInvoiceJson(String ref) {
-    invoiceQueryService.printRawInvoiceJson(ref);
+  public InvoiceTaxDetails printRawInvoiceJson(String ref) {
+    return invoiceQueryService.printRawInvoiceJson(ref);
   }
+
 }
