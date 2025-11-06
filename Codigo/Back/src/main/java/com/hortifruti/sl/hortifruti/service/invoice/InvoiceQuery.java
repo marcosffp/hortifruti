@@ -8,6 +8,7 @@ import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseSimplif;
 import com.hortifruti.sl.hortifruti.exception.InvoiceException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
+import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Component;
 public class InvoiceQuery {
   private final FocusNfeApiClient focusNfeApiClient;
   private final ClientRepository clientRepository;
+  private final CombinedScoreRepository combinedScoreRepository;
 
   private final int COMPLETE = 1;
 
@@ -84,60 +86,43 @@ public class InvoiceQuery {
   /**
    * Lista todas as referências (refs) de notas fiscais para um CPF/CNPJ
    * 
+   * IMPORTANTE: Busca as refs no BANCO DE DADOS local, não na API Focus NFe
+   * (A API Focus NFe não possui endpoint para listar NFes por destinatário)
+   * 
    * @param cpfCnpj CPF ou CNPJ do cliente (apenas números)
-   * @return Lista de referências das notas fiscais autorizadas
+   * @return Lista de referências das notas fiscais emitidas para o cliente
    */
   @Transactional
   protected List<String> listInvoiceRefsByDocument(String cpfCnpj) {
     List<String> refs = new ArrayList<>();
     try {
       log.info("========================================");
-      log.info("InvoiceQuery - Buscando notas fiscais na API Focus NFe");
+      log.info("InvoiceQuery - Buscando notas fiscais NO BANCO DE DADOS");
       log.info("CPF/CNPJ: {}", cpfCnpj);
       
-      String response = focusNfeApiClient.listInvoicesByDocument(cpfCnpj);
+      // 1. Buscar o cliente pelo CPF/CNPJ
+      Client client = clientRepository.findByDocument(cpfCnpj).orElse(null);
       
-      log.info("Response recebida do FocusNfeApiClient");
-      log.info("Response é null? {}", response == null);
-      log.info("Response length: {}", response != null ? response.length() : 0);
-      
-      if (response == null || response.trim().isEmpty()) {
-        log.warn("⚠️ API Focus NFe retornou resposta vazia");
+      if (client == null) {
+        log.warn("⚠️ Cliente não encontrado para o documento: {}", cpfCnpj);
+        log.info("========================================");
         return refs;
       }
       
-      ObjectMapper objectMapper = new ObjectMapper();
-      JsonNode rootNode = objectMapper.readTree(response);
+      log.info("✓ Cliente encontrado: {} (ID: {})", client.getClientName(), client.getId());
       
-      log.info("JSON parseado - é array? {}", rootNode.isArray());
-      log.info("JSON parseado - é objeto? {}", rootNode.isObject());
-      log.info("JSON parseado - tipo: {}", rootNode.getNodeType());
+      // 2. Buscar todas as refs de notas fiscais deste cliente no banco
+      refs = combinedScoreRepository.findAllInvoiceRefsByClientId(client.getId());
       
-      // A resposta da API Focus NFe retorna um array de notas
-      if (rootNode.isArray()) {
-        log.info("Array de notas encontrado - tamanho: {}", rootNode.size());
-        
-        for (JsonNode invoiceNode : rootNode) {
-          String status = invoiceNode.path("status").asText();
-          String ref = invoiceNode.path("ref").asText();
-          
-          log.debug("  Nota encontrada - Ref: {}, Status: {}", ref, status);
-          
-          // Apenas notas autorizadas
-          if ("autorizado".equalsIgnoreCase(status) && ref != null && !ref.isEmpty()) {
-            refs.add(ref);
-            log.info("  ✓ Nota autorizada adicionada - Ref: {}", ref);
-          } else {
-            log.debug("  ✗ Nota ignorada - Status: {} | Ref válida? {}", status, ref != null && !ref.isEmpty());
-          }
+      log.info("Total de notas fiscais emitidas encontradas no banco: {}", refs.size());
+      
+      if (!refs.isEmpty()) {
+        log.info("Refs encontradas:");
+        for (int i = 0; i < refs.size(); i++) {
+          log.info("  [{}] {}", i + 1, refs.get(i));
         }
-      } else if (rootNode.isObject()) {
-        log.warn("⚠️ Resposta é um objeto, não um array. Conteúdo: {}", response);
-      } else {
-        log.warn("⚠️ Resposta em formato inesperado: {}", response);
       }
       
-      log.info("Total de notas fiscais autorizadas encontradas: {}", refs.size());
       log.info("========================================");
       return refs;
     } catch (Exception e) {
