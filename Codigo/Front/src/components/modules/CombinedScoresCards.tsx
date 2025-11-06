@@ -397,7 +397,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                     {/* Botão Ver Produtos */}
                                     <button
                                         onClick={() => handleViewProducts(score)}
-                                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm cursor-pointer"
                                     >
                                         <Eye className="w-4 h-4" />
                                         Ver Produtos
@@ -408,7 +408,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                         {score.hasBillet ? (
                                             <button
                                                 onClick={() => handleShowBillet(score)}
-                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs"
+                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs cursor-pointer"
                                             >
                                                 <Info className="w-3 h-3" />
                                                 Ver Boleto
@@ -416,7 +416,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                         ) : (
                                             <button
                                                 onClick={() => setClientNumberModal({ state: true, groupId: score.id })}
-                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs"
+                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs cursor-pointer"
                                             >
                                                 <FileText className="w-3 h-3" />
                                                 Gerar Boleto
@@ -426,7 +426,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                         {score.hasInvoice ? (
                                             <button
                                                 onClick={() => handleShowInvoice(score)}
-                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs"
+                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs cursor-pointer"
                                             >
                                                 <Info className="w-3 h-3" />
                                                 Ver NF
@@ -434,7 +434,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                         ) : (
                                             <button
                                                 onClick={() => handleGenerateInvoice(score.id)}
-                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs"
+                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs cursor-pointer"
                                             >
                                                 <FileText className="w-3 h-3" />
                                                 Gerar NF
@@ -447,7 +447,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                         {!score.hasBillet && (
                                             <button
                                                 onClick={() => handleTogglePayment(score)}
-                                                className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg transition-colors text-xs ${score.status === "PAGO"
+                                                className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg transition-colors text-xs cursor-pointer ${score.status === "PAGO"
                                                         ? "hidden"
                                                         : "bg-green-600 text-white hover:bg-green-700"
                                                     } ${score.hasInvoice ? "col-span-2 w-full" : ""}`}
@@ -460,7 +460,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                         {!isBilletOpen(score) && !score.hasInvoice && (
                                             <button
                                                 onClick={() => handleDelete(score.id, score.number)}
-                                                className={`flex items-center justify-center gap-1 px-2 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs ${(score.status === "PAGO" || score.status === "PAID") ? "col-span-2 w-full" : ""}`}
+                                                className={`flex items-center justify-center gap-1 px-2 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs cursor-pointer ${(score.status === "PAGO" || score.status === "PAID") ? "col-span-2 w-full" : ""}`}
                                             >
                                                 <Trash2 className="w-3 h-3" />
                                                 Deletar
