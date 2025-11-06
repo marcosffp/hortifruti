@@ -6,13 +6,11 @@ import com.hortifruti.sl.hortifruti.service.climate.WeatherForecastService;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/weather")
 @RequiredArgsConstructor
@@ -31,15 +29,11 @@ public class WeatherForecastController {
       })
   public ResponseEntity<WeatherForecastDTO> getFiveDayForecast() {
     try {
-      log.info("Solicitando previsão do tempo para 5 dias");
       WeatherForecastDTO forecast = weatherForecastService.getFiveDayForecast();
-      log.info("Previsão obtida com sucesso para cidade: {}", forecast.city());
       return ResponseEntity.ok(forecast);
     } catch (WeatherApiException e) {
-      log.error("Erro ao obter previsão do tempo: {}", e.getMessage(), e);
       return ResponseEntity.internalServerError().build();
     } catch (Exception e) {
-      log.error("Erro interno ao processar previsão do tempo: {}", e.getMessage(), e);
       return ResponseEntity.internalServerError().build();
     }
   }

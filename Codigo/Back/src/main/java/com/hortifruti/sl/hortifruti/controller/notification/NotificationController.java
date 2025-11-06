@@ -18,14 +18,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
@@ -127,8 +125,6 @@ public class NotificationController {
       })
   public ResponseEntity<Map<String, Object>> testDatabaseStorageAlert() {
     try {
-      log.info("Solicitação de teste de email de alerta de armazenamento recebida");
-
       // Obter tamanho real atual do banco de dados
       BigDecimal currentSizeMB = databaseStorageService.getDatabaseSizeInMB();
 
@@ -151,14 +147,9 @@ public class NotificationController {
       response.put("maxSize", maxSize + " MB");
       response.put("isOverThreshold", databaseStorageService.isDatabaseOverThreshold());
 
-      log.info(
-          "Email de teste enviado - Tamanho atual: {} MB ({}%)", currentSizeMB, storagePercentage);
-
       return ResponseEntity.ok(response);
 
     } catch (Exception e) {
-      log.error("Erro ao enviar email de teste de alerta de armazenamento", e);
-
       Map<String, Object> errorResponse = new HashMap<>();
       errorResponse.put("success", false);
       errorResponse.put("message", "Erro ao enviar email de teste: " + e.getMessage());
@@ -181,8 +172,6 @@ public class NotificationController {
       })
   public ResponseEntity<Map<String, Object>> checkOverdueScores() {
     try {
-      log.info("Solicitação de verificação manual de boletos vencidos recebida");
-
       List<CombinedScore> overdueScores = schedulerService.manualOverdueCheck();
 
       Map<String, Object> response = new HashMap<>();
@@ -206,14 +195,9 @@ public class NotificationController {
                   })
               .toList());
 
-      log.info(
-          "Verificação manual concluída. Encontrados {} boletos vencidos", overdueScores.size());
-
       return ResponseEntity.ok(response);
 
     } catch (Exception e) {
-      log.error("Erro ao executar verificação manual de boletos vencidos", e);
-
       Map<String, Object> errorResponse = new HashMap<>();
       errorResponse.put("success", false);
       errorResponse.put("message", "Erro ao executar verificação: " + e.getMessage());
@@ -236,12 +220,6 @@ public class NotificationController {
       @RequestParam("destinationType") String destinationType,
       @RequestParam(value = "customMessage", required = false) String customMessage) {
     try {
-      log.info(
-          "Recebendo requisição de notificação em massa: {} arquivo(s), {} destinatário(s), canais: {}",
-          files.size(),
-          clientIds != null ? clientIds.size() : 0,
-          channels);
-
       BulkNotificationResponse response =
           bulkNotificationService.sendBulkNotifications(
               files, clientIds, channels, destinationType, customMessage);
@@ -249,11 +227,9 @@ public class NotificationController {
       return ResponseEntity.ok(response);
 
     } catch (IllegalArgumentException e) {
-      log.error("Erro de validação", e);
       return ResponseEntity.badRequest()
           .body(BulkNotificationResponse.failure(e.getMessage(), List.of()));
     } catch (Exception e) {
-      log.error("Erro ao processar notificações em massa", e);
       return ResponseEntity.status(500)
           .body(
               BulkNotificationResponse.failure(
