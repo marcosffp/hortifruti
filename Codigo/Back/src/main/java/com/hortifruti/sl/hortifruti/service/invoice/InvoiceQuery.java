@@ -85,7 +85,7 @@ public class InvoiceQuery {
 
 
 @Transactional
-public void printRawInvoiceJson(String ref) {
+public InvoiceTaxDetails printRawInvoiceJson(String ref) {
   try {
     String response = fetchInvoiceData(ref);
     ObjectMapper mapper = new ObjectMapper();
@@ -98,6 +98,7 @@ public void printRawInvoiceJson(String ref) {
     System.out.println();
     System.out.println();
     System.out.println();
+    return dto;
 
   } catch (Exception e) {
     throw new InvoiceException("Erro ao consultar a nota fiscal com referência: " + ref, e);

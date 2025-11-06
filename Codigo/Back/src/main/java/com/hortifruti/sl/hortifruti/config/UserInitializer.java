@@ -1,5 +1,8 @@
 package com.hortifruti.sl.hortifruti.config;
 
+import com.hortifruti.sl.hortifruti.dto.invoice.IcmsSalesReport;
+import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceSummaryDetails;
+import com.hortifruti.sl.hortifruti.dto.invoice.SalesSummaryDetails;
 import com.hortifruti.sl.hortifruti.model.ClimateProduct;
 import com.hortifruti.sl.hortifruti.model.FreightConfig;
 import com.hortifruti.sl.hortifruti.model.User;
@@ -15,10 +18,13 @@ import com.hortifruti.sl.hortifruti.repository.UserRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import com.hortifruti.sl.hortifruti.service.invoice.InvoiceService;
+import com.hortifruti.sl.hortifruti.service.invoice.ReportTaxService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -38,17 +44,57 @@ public class UserInitializer implements CommandLineRunner {
   private final FreightConfigRepository freightConfigRepository;
   private final ClientRepository clientRepository;
   private final CombinedScoreRepository combinedScoreRepository;
-  private final InvoiceService invoiceService;
-  private final Base64FileDecoder base64FileDecoder; // Adicionado para salvar o cliente
+  private final Base64FileDecoder base64FileDecoder; 
+  private final ReportTaxService reportTaxService;
 
   @Override
   public void run(String... args) throws Exception {
     decodeBase64Files(); // Decodifica os arquivos Base64 primeiro
-    invoiceService.printRawInvoiceJson("719ad504-116a-46e7-ab4f-7735c13b1034");
     initializeUsers();
     initializeFreightConfig();
     initializeClients(); // Inicializa os clientes
     inicializarCombinedScores(); // Inicializa os CombinedScores
+    printReportData(); // Gera e exibe os relatórios
+  }
+
+    // Método para exibir os relatórios com o período de um mês até hoje
+  private void printReportData() {
+    LocalDate startDate = LocalDate.now().minusMonths(1); // Um mês atrás
+    LocalDate endDate = LocalDate.now(); // Hoje
+
+    log.info("Gerando relatórios para o período de {} até {}", startDate, endDate);
+
+    try {
+      // Gerar e exibir o relatório de ICMS
+      IcmsSalesReport icmsReport = reportTaxService.generateIcmsSalesReport(startDate, endDate);
+      System.out.println("Relatório de ICMS:");
+      System.out.println(icmsReport);
+
+      // Gerar e exibir os detalhes do resumo de notas fiscais
+      List<InvoiceSummaryDetails> invoiceSummaries =
+          reportTaxService.generateInvoiceSummaryDetails(startDate, endDate);
+      System.out.println("Resumo de Notas Fiscais:");
+      invoiceSummaries.forEach(System.out::println);
+
+      // Gerar e exibir os totais de liquidação bancária
+      Map<String, BigDecimal> totalLiquidacaoBancaria =
+          reportTaxService.generateBankSettlementTotals(startDate, endDate);
+      System.out.println("Total de Liquidação Bancária: " + totalLiquidacaoBancaria);
+
+      // Gerar e exibir os detalhes do resumo de vendas
+      List<SalesSummaryDetails> salesSummaries =
+          reportTaxService.generateSalesSummaryDetails(startDate, endDate);
+      System.out.println("Resumo de Vendas:");
+      salesSummaries.forEach(System.out::println);
+
+      // Gerar e exibir a lista de arquivos XML
+      List<String> xmlFileList = reportTaxService.generateXmlFileList(startDate, endDate);
+      System.out.println("Lista de Arquivos XML:");
+      xmlFileList.forEach(System.out::println);
+
+    } catch (Exception e) {
+      log.error("Erro ao gerar relatórios: ", e);
+    }
   }
 
   // Decodifica os arquivos Base64 necessários
