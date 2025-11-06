@@ -12,11 +12,15 @@ import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class InvoiceQuery {
   private final FocusNfeApiClient focusNfeApiClient;
   private final ClientRepository clientRepository;
@@ -75,5 +79,44 @@ public class InvoiceQuery {
         invoiceSimplif.dataEmissao().toString(),
         invoiceSimplif.numero(),
         ref);
+  }
+
+  /**
+   * Lista todas as referências (refs) de notas fiscais para um CPF/CNPJ
+   * 
+   * @param cpfCnpj CPF ou CNPJ do cliente (apenas números)
+   * @return Lista de referências das notas fiscais autorizadas
+   */
+  @Transactional
+  protected List<String> listInvoiceRefsByDocument(String cpfCnpj) {
+    List<String> refs = new ArrayList<>();
+    try {
+      log.info("Buscando notas fiscais na API Focus NFe para CPF/CNPJ: {}", cpfCnpj);
+      String response = focusNfeApiClient.listInvoicesByDocument(cpfCnpj);
+      
+      ObjectMapper objectMapper = new ObjectMapper();
+      JsonNode rootNode = objectMapper.readTree(response);
+      
+      // A resposta da API Focus NFe retorna um array de notas
+      if (rootNode.isArray()) {
+        for (JsonNode invoiceNode : rootNode) {
+          String status = invoiceNode.path("status").asText();
+          String ref = invoiceNode.path("ref").asText();
+          
+          // Apenas notas autorizadas
+          if ("autorizado".equalsIgnoreCase(status) && ref != null && !ref.isEmpty()) {
+            refs.add(ref);
+            log.debug("Nota fiscal autorizada encontrada - Ref: {}, Status: {}", ref, status);
+          }
+        }
+      }
+      
+      log.info("Total de notas fiscais autorizadas encontradas para {}: {}", cpfCnpj, refs.size());
+      return refs;
+    } catch (Exception e) {
+      log.error("Erro ao listar notas fiscais por CPF/CNPJ {}: {}", cpfCnpj, e.getMessage(), e);
+      // Retorna lista vazia em vez de lançar exceção para não quebrar o fluxo
+      return refs;
+    }
   }
 }

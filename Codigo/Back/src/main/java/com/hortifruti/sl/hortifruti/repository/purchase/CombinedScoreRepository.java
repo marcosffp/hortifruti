@@ -16,6 +16,10 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
     @Query("SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = 'PENDENTE' AND cs.hasBillet = true")
     List<CombinedScore> findAllPendingWithBilletByClient(@Param("clientId") Long clientId);
 
+    /** Busca todos os CombinedScores pendentes (com ou sem documentos) para um cliente */
+    @Query("SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = 'PENDENTE' ORDER BY cs.dueDate ASC")
+    List<CombinedScore> findAllPendingByClient(@Param("clientId") Long clientId);
+
   Page<CombinedScore> findByClientIdOrderByConfirmedAtDesc(Long clientId, Pageable pageable);
 
   Page<CombinedScore> findAllByOrderByConfirmedAtDesc(Pageable pageable);

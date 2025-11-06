@@ -58,6 +58,29 @@ public class FocusNfeApiClient {
     }
   }
 
+  /**
+   * Lista notas fiscais por CPF/CNPJ do destinatário
+   * 
+   * @param cpfCnpj CPF ou CNPJ do destinatário (apenas números)
+   * @return JSON com a lista de notas fiscais
+   */
+  public String listInvoicesByDocument(String cpfCnpj) {
+    try {
+      // API Focus NFe: GET /v2/nfe?cnpj_destinatario=XXXXX
+      String url = focusNfeApiUrl + "/v2/nfe?cnpj_destinatario=" + cpfCnpj;
+
+      HttpHeaders headers = createHeaders();
+      HttpEntity<String> entity = new HttpEntity<>(headers);
+
+      ResponseEntity<String> response =
+          restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+
+      return response.getBody();
+    } catch (Exception e) {
+      throw new InvoiceException("Erro ao listar NFe's por CPF/CNPJ: " + cpfCnpj, e);
+    }
+  }
+
   public String cancelInvoice(String ref, String justificativa) {
     try {
       String url = focusNfeApiUrl + "/v2/nfe/" + ref;
