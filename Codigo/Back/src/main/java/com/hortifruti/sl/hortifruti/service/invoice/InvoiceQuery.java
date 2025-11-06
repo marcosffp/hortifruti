@@ -91,30 +91,61 @@ public class InvoiceQuery {
   protected List<String> listInvoiceRefsByDocument(String cpfCnpj) {
     List<String> refs = new ArrayList<>();
     try {
-      log.info("Buscando notas fiscais na API Focus NFe para CPF/CNPJ: {}", cpfCnpj);
+      log.info("========================================");
+      log.info("InvoiceQuery - Buscando notas fiscais na API Focus NFe");
+      log.info("CPF/CNPJ: {}", cpfCnpj);
+      
       String response = focusNfeApiClient.listInvoicesByDocument(cpfCnpj);
+      
+      log.info("Response recebida do FocusNfeApiClient");
+      log.info("Response é null? {}", response == null);
+      log.info("Response length: {}", response != null ? response.length() : 0);
+      
+      if (response == null || response.trim().isEmpty()) {
+        log.warn("⚠️ API Focus NFe retornou resposta vazia");
+        return refs;
+      }
       
       ObjectMapper objectMapper = new ObjectMapper();
       JsonNode rootNode = objectMapper.readTree(response);
       
+      log.info("JSON parseado - é array? {}", rootNode.isArray());
+      log.info("JSON parseado - é objeto? {}", rootNode.isObject());
+      log.info("JSON parseado - tipo: {}", rootNode.getNodeType());
+      
       // A resposta da API Focus NFe retorna um array de notas
       if (rootNode.isArray()) {
+        log.info("Array de notas encontrado - tamanho: {}", rootNode.size());
+        
         for (JsonNode invoiceNode : rootNode) {
           String status = invoiceNode.path("status").asText();
           String ref = invoiceNode.path("ref").asText();
           
+          log.debug("  Nota encontrada - Ref: {}, Status: {}", ref, status);
+          
           // Apenas notas autorizadas
           if ("autorizado".equalsIgnoreCase(status) && ref != null && !ref.isEmpty()) {
             refs.add(ref);
-            log.debug("Nota fiscal autorizada encontrada - Ref: {}, Status: {}", ref, status);
+            log.info("  ✓ Nota autorizada adicionada - Ref: {}", ref);
+          } else {
+            log.debug("  ✗ Nota ignorada - Status: {} | Ref válida? {}", status, ref != null && !ref.isEmpty());
           }
         }
+      } else if (rootNode.isObject()) {
+        log.warn("⚠️ Resposta é um objeto, não um array. Conteúdo: {}", response);
+      } else {
+        log.warn("⚠️ Resposta em formato inesperado: {}", response);
       }
       
-      log.info("Total de notas fiscais autorizadas encontradas para {}: {}", cpfCnpj, refs.size());
+      log.info("Total de notas fiscais autorizadas encontradas: {}", refs.size());
+      log.info("========================================");
       return refs;
     } catch (Exception e) {
-      log.error("Erro ao listar notas fiscais por CPF/CNPJ {}: {}", cpfCnpj, e.getMessage(), e);
+      log.error("========================================");
+      log.error("✗ ERRO ao listar notas fiscais por CPF/CNPJ: {}", cpfCnpj);
+      log.error("Tipo de erro: {}", e.getClass().getSimpleName());
+      log.error("Mensagem: {}", e.getMessage(), e);
+      log.error("========================================");
       // Retorna lista vazia em vez de lançar exceção para não quebrar o fluxo
       return refs;
     }
