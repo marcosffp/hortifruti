@@ -8,9 +8,11 @@ import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.service.billet.BilletService;
 import com.hortifruti.sl.hortifruti.service.chatbot.ChatSessionService;
+import com.hortifruti.sl.hortifruti.service.invoice.InvoiceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +37,7 @@ public class ChatbotService {
     private final BilletService billetService;
     private final ClientRepository clientRepository;
     private final ChatSessionService chatSessionService;
+    private final InvoiceService invoiceService;
 
         /**
      * Processa mensagens recebidas do webhook do WhatsApp.
@@ -219,9 +222,9 @@ public class ChatbotService {
     private void sendMainMenu(String phoneNumber) {
         String menu = "Olá! Bem-vindo ao Hortifruti SL!\n\n" +
                 "Como posso te ajudar hoje? Digite o número da opção:\n\n" +
-                "*1* Boleto - Consultar boletos em aberto\n" +
-                "*2* Pedido - Dúvidas sobre pedidos\n" +
-                "*3* Outro assunto - Falar com atendimento\n\n" +
+                "*1* - Boleto - Consultar boletos em aberto\n" +
+                "*2* - Pedido - Dúvidas sobre pedidos\n" +
+                "*3* - Outro assunto - Falar com atendimento\n\n" +
                 "Digite o número da opção desejada (1, 2 ou 3)\n\n" +
                 "A qualquer momento, digite MENU para voltar aqui";
         whatsAppService.sendTextMessage(phoneNumber, menu);
@@ -243,11 +246,16 @@ public class ChatbotService {
     }
 
     /**
-     * Busca e envia boletos pendentes de um cliente específico.
+     * Busca e envia boletos e notas fiscais pendentes de um cliente específico.
      * 
-     * Localiza o cliente pelo documento (CPF/CNPJ), busca todos os boletos
-     * pendentes com boleto emitido e envia uma mensagem com o resumo seguida
-     * dos PDFs dos boletos.
+     * Localiza o cliente pelo documento (CPF/CNPJ), busca:
+     * 1. Todos os combined scores pendentes (para boletos)
+     * 2. Todas as notas fiscais autorizadas pela API Focus NFe (usando CPF/CNPJ)
+     * 
+     * Envia:
+     * - Boletos (se houver hasBillet = true)
+     * - Notas Fiscais/DANFE (buscadas pela API usando CPF/CNPJ)
+     * - Apenas mensagem informativa se não houver arquivos
      * 
      * @param session Sessão de chat ativa
      * @param phoneNumber Número de telefone do cliente
@@ -265,72 +273,164 @@ public class ChatbotService {
             }
 
             Client client = clientOpt.get();
+            log.info("Cliente encontrado: {} (ID: {})", client.getClientName(), client.getId());
 
-            List<CombinedScore> clientOverdue = billetService.findAllPendingWithBilletByClient(client.getId());
+            // Busca TODOS os Combined Scores pendentes do cliente (para boletos)
+            List<CombinedScore> allPending = billetService.findAllPendingByClient(client.getId());
+            log.info("Total de Combined Scores pendentes encontrados: {}", allPending.size());
 
-            if (clientOverdue.isEmpty()) {
+            // Busca todas as notas fiscais pela API usando CPF/CNPJ
+            List<String> invoiceRefs = invoiceService.listInvoiceRefsByDocument(document);
+            log.info("Total de notas fiscais autorizadas encontradas na API para {}: {}", document, invoiceRefs.size());
+
+            // Se não houver cobranças pendentes e nem notas fiscais
+            if (allPending.isEmpty() && invoiceRefs.isEmpty()) {
                 String message = String.format("Olá, %s!\n\n" +
-                        "Boa notícia! Você não possui boletos vencidos e pendentes no momento.\n\n" +
+                        "Boa notícia! Você não possui cobranças pendentes nem notas fiscais no momento.\n\n" +
                         "Se tiver alguma dúvida, entre em contato conosco:\n" +
                         "(31) 3641-2244", client.getClientName());
                 whatsAppService.sendTextMessage(phoneNumber, message);
                 return;
             }
 
+            // Monta mensagem resumo
             StringBuilder messageBuilder = new StringBuilder();
             messageBuilder.append(String.format("Olá, %s!\n\n", client.getClientName()));
-            messageBuilder.append(String.format("Você possui %d boleto(s) vencido(s) e pendente(s):\n\n", clientOverdue.size()));
 
-            int i = 1;
-            for (CombinedScore cs : clientOverdue) {
-                messageBuilder.append(String.format("Boleto %d:\n", i));
-                messageBuilder.append(String.format("Valor: R$ %.2f\n", cs.getTotalValue()));
-                messageBuilder.append(String.format("Vencimento: %s\n", 
-                    cs.getDueDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))));
-                messageBuilder.append(String.format("Número: %s\n", 
-                    cs.getYourNumber() != null ? cs.getYourNumber() : "-"));
-                
-                if (i < clientOverdue.size()) {
-                    messageBuilder.append("────────────────\n\n");
+            int totalWithBillet = 0;
+            int totalWithoutBillet = 0;
+
+            if (!allPending.isEmpty()) {
+                messageBuilder.append(String.format("📋 *Cobranças Pendentes:* %d\n\n", allPending.size()));
+
+                int i = 1;
+                for (CombinedScore cs : allPending) {
+                    messageBuilder.append(String.format("*Cobrança %d:*\n", i));
+                    messageBuilder.append(String.format("Valor: R$ %.2f\n", cs.getTotalValue()));
+                    messageBuilder.append(String.format("Vencimento: %s\n", 
+                        cs.getDueDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))));
+                    
+                    if (cs.isHasBillet()) {
+                        totalWithBillet++;
+                        messageBuilder.append(String.format("✓ Boleto: %s\n", 
+                            cs.getYourNumber() != null ? cs.getYourNumber() : "Disponível"));
+                    } else {
+                        totalWithoutBillet++;
+                        messageBuilder.append("○ Boleto: Não emitido\n");
+                    }
+                    
+                    if (i < allPending.size()) {
+                        messageBuilder.append("────────────────\n\n");
+                    }
+                    i++;
                 }
-                i++;
             }
+
+            if (!invoiceRefs.isEmpty()) {
+                if (!allPending.isEmpty()) {
+                    messageBuilder.append("\n────────────────\n\n");
+                }
+                messageBuilder.append(String.format("📄 *Notas Fiscais Encontradas:* %d\n", invoiceRefs.size()));
+                messageBuilder.append("Enviando documentos...\n");
+            }
+            
+            log.info("Resumo - Boletos: {}, Sem boleto: {}, Notas Fiscais: {}", 
+                totalWithBillet, totalWithoutBillet, invoiceRefs.size());
             
             whatsAppService.sendTextMessage(phoneNumber, messageBuilder.toString());
 
-            List<byte[]> pdfs = new ArrayList<>();
+            // Listas para armazenar os documentos (boletos e notas fiscais)
+            List<byte[]> documents = new ArrayList<>();
             List<String> fileNames = new ArrayList<>();
             
-            for (CombinedScore cs : clientOverdue) {
-                try {
-                    ResponseEntity<byte[]> pdfResponse = billetService.issueCopy(cs.getId());
-                    byte[] pdf = pdfResponse.getBody();
-                    
-                    if (pdf != null && pdf.length > 0) {
-                        String fileName = "Boleto-" + 
-                            (cs.getYourNumber() != null && !cs.getYourNumber().isEmpty() 
-                                ? cs.getYourNumber() 
-                                : cs.getId()) + ".pdf";
-                        pdfs.add(pdf);
-                        fileNames.add(fileName);
+            // 1. Processar boletos dos Combined Scores
+            for (CombinedScore cs : allPending) {
+                if (cs.isHasBillet()) {
+                    try {
+                        log.info("Tentando obter boleto para CombinedScore ID: {}", cs.getId());
+                        ResponseEntity<byte[]> pdfResponse = billetService.issueCopy(cs.getId());
+                        byte[] pdf = pdfResponse.getBody();
+                        
+                        if (pdf != null && pdf.length > 0) {
+                            String fileName = "Boleto-" + 
+                                (cs.getYourNumber() != null && !cs.getYourNumber().isEmpty() 
+                                    ? cs.getYourNumber() 
+                                    : cs.getId()) + ".pdf";
+                            documents.add(pdf);
+                            fileNames.add(fileName);
+                            log.info("✓ Boleto adicionado: {} ({} bytes)", fileName, pdf.length);
+                        } else {
+                            log.warn("Boleto retornado é nulo ou vazio para CombinedScore ID: {}", cs.getId());
+                        }
+                    } catch (Exception ex) {
+                        log.error("✗ Falha ao gerar PDF do boleto para CombinedScore ID {}: {}", 
+                            cs.getId(), ex.getMessage(), ex);
                     }
-                } catch (Exception ex) {
-                    log.warn("Falha ao gerar PDF do boleto {}: {}", cs.getId(), ex.getMessage());
                 }
             }
             
-            if (!pdfs.isEmpty()) {
-                whatsAppService.sendMultipleDocuments(phoneNumber, "Segue seus boletos em aberto.", pdfs, fileNames);
+            // 2. Processar notas fiscais buscadas pela API
+            for (String ref : invoiceRefs) {
+                try {
+                    log.info("Tentando obter DANFE para invoiceRef: {}", ref);
+                    ResponseEntity<Resource> danfeResponse = invoiceService.downloadDanfe(ref);
+                    Resource resource = danfeResponse.getBody();
+                    
+                    if (resource != null) {
+                        byte[] danfePdf = resource.getContentAsByteArray();
+                        if (danfePdf != null && danfePdf.length > 0) {
+                            String fileName = "NotaFiscal-" + ref + ".pdf";
+                            documents.add(danfePdf);
+                            fileNames.add(fileName);
+                            log.info("✓ Nota Fiscal adicionada: {} ({} bytes)", fileName, danfePdf.length);
+                        } else {
+                            log.warn("DANFE retornado é nulo ou vazio para invoiceRef: {}", ref);
+                        }
+                    } else {
+                        log.warn("Resource DANFE é nulo para invoiceRef: {}", ref);
+                    }
+                } catch (Exception ex) {
+                    log.error("✗ Falha ao obter DANFE da nota fiscal para invoiceRef {}: {}", 
+                        ref, ex.getMessage(), ex);
+                }
+            }
+            
+            log.info("Total de documentos coletados: {} (Boletos + Notas Fiscais)", documents.size());
+            
+            // 3. Enviar documentos se houver algum
+            if (!documents.isEmpty()) {
+                String caption = String.format("📄 Enviando %d documento(s):", documents.size());
+                log.info("Enviando {} documentos para {}", documents.size(), phoneNumber);
+                
+                boolean sent = whatsAppService.sendMultipleDocuments(phoneNumber, caption, documents, fileNames);
+                
+                if (sent) {
+                    log.info("✓ Documentos enviados com sucesso para {}", phoneNumber);
+                } else {
+                    log.error("✗ Falha ao enviar documentos para {}", phoneNumber);
+                }
+            } else {
+                // Se não houver documentos disponíveis
+                log.warn("Nenhum documento disponível para envio");
+                String noDocumentsMessage = "⚠️ *Atenção*\n\n" +
+                        "Os documentos (boletos e/ou notas fiscais) ainda não estão disponíveis ou estão sendo processados.\n\n" +
+                        "Por favor, entre em contato conosco:\n" +
+                        "(31) 3641-2244\n\n" +
+                        "Horário de atendimento:\n" +
+                        "• Segunda a Sábado, 7h às 20h\n" +
+                        "• Domingo, 7h às 12h";
+                whatsAppService.sendTextMessage(phoneNumber, noDocumentsMessage);
             }
 
             // Associar cliente à sessão
             chatSessionService.associateClient(session.getId(), client.getId());
             
-            // Deleta a sessão após enviar os boletos (limpa o banco)
+            // Deleta a sessão após enviar os documentos (limpa o banco)
             chatSessionService.closeSession(session.getId(), "COMPLETED");
+            log.info("Sessão {} finalizada para cliente {}", session.getId(), client.getId());
 
         } catch (Exception e) {
-            log.error("Erro ao processar solicitação de boletos para {}: {}", phoneNumber, e.getMessage(), e);
+            log.error("Erro ao processar solicitação de documentos para {}: {}", phoneNumber, e.getMessage(), e);
             sendErrorMessage(phoneNumber);
         }
     }

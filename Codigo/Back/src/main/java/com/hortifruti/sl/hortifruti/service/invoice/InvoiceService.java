@@ -4,6 +4,7 @@ import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
 import com.hortifruti.sl.hortifruti.exception.InvoiceException;
 import jakarta.transaction.Transactional;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
@@ -49,5 +50,16 @@ public class InvoiceService {
   @Transactional
   public String cancelInvoice(String ref, String justificativa) {
     return invoiceCancelService.cancelInvoice(ref, justificativa);
+  }
+
+  /**
+   * Lista todas as referências de notas fiscais para um CPF/CNPJ
+   * 
+   * @param cpfCnpj CPF ou CNPJ do cliente (apenas números)
+   * @return Lista de referências das notas fiscais autorizadas
+   */
+  @Transactional
+  public List<String> listInvoiceRefsByDocument(String cpfCnpj) {
+    return invoiceQueryService.listInvoiceRefsByDocument(cpfCnpj);
   }
 }

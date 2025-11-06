@@ -30,6 +30,10 @@ public class BilletService {
     return combinedScoreRepository.findAllPendingWithBilletByClient(clientId);
   }
 
+  public List<CombinedScore> findAllPendingByClient(Long clientId) {
+    return combinedScoreRepository.findAllPendingByClient(clientId);
+  }
+
   private final CombinedScoreRepository combinedScoreRepository;
   private final BilletFactory billetFactory;
   private final BilletIssue billetIssue;
