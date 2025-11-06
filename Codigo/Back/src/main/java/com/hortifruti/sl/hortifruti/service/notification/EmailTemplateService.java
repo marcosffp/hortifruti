@@ -3,12 +3,10 @@ package com.hortifruti.sl.hortifruti.service.notification;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
-@Slf4j
 @Service
 public class EmailTemplateService {
 
@@ -24,7 +22,6 @@ public class EmailTemplateService {
       String template = loadTemplate(templateName);
       return replaceVariables(template, variables);
     } catch (IOException e) {
-      log.error("Erro ao processar template: {}", templateName, e);
       return getFallbackMessage(templateName);
     }
   }
@@ -37,14 +34,12 @@ public class EmailTemplateService {
         resourceLoader.getResource("classpath:templates/email/" + cleanTemplateName + ".html");
 
     if (cleanResource.exists()) {
-      log.debug("Usando template limpo: {}", cleanTemplateName);
       return cleanResource.getContentAsString(StandardCharsets.UTF_8);
     }
 
     // Fallback para a versão original
     Resource resource =
         resourceLoader.getResource("classpath:templates/email/" + templateName + ".html");
-    log.debug("Usando template original: {}", templateName);
     return resource.getContentAsString(StandardCharsets.UTF_8);
   }
 

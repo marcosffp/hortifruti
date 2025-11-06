@@ -12,12 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BulkNotificationService {
@@ -75,11 +73,9 @@ public class BulkNotificationService {
       }
 
     } catch (IOException e) {
-      log.error("Erro ao processar arquivos", e);
       return BulkNotificationResponse.failure(
           "Erro ao processar arquivos: " + e.getMessage(), List.of());
     } catch (Exception e) {
-      log.error("Erro inesperado ao enviar notificações", e);
       return BulkNotificationResponse.failure(
           "Erro ao enviar notificações: " + e.getMessage(), List.of());
     }
@@ -134,7 +130,6 @@ public class BulkNotificationService {
       }
 
     } catch (Exception e) {
-      log.error("Erro ao enviar para contabilidade", e);
       return BulkNotificationResponse.failure(
           "Erro ao enviar para contabilidade: " + e.getMessage(), List.of("Contabilidade"));
     }
@@ -159,7 +154,6 @@ public class BulkNotificationService {
         Optional<Client> clientOpt = clientRepository.findById(clientId);
 
         if (clientOpt.isEmpty()) {
-          log.warn("Cliente ID {} não encontrado", clientId);
           failedRecipients.add("Cliente ID: " + clientId);
           continue;
         }
@@ -169,14 +163,12 @@ public class BulkNotificationService {
         // Validar se o cliente tem os contatos necessários
         if (channel == NotificationChannel.EMAIL
             && (client.getEmail() == null || client.getEmail().isEmpty())) {
-          log.warn("Cliente {} não possui e-mail cadastrado", client.getClientName());
           failedRecipients.add(client.getClientName() + " (sem e-mail)");
           continue;
         }
 
         if (channel == NotificationChannel.WHATSAPP
             && (client.getPhoneNumber() == null || client.getPhoneNumber().isEmpty())) {
-          log.warn("Cliente {} não possui telefone cadastrado", client.getClientName());
           failedRecipients.add(client.getClientName() + " (sem telefone)");
           continue;
         }
@@ -184,8 +176,6 @@ public class BulkNotificationService {
         if (channel == NotificationChannel.BOTH) {
           if ((client.getEmail() == null || client.getEmail().isEmpty())
               && (client.getPhoneNumber() == null || client.getPhoneNumber().isEmpty())) {
-            log.warn(
-                "Cliente {} não possui e-mail nem telefone cadastrado", client.getClientName());
             failedRecipients.add(client.getClientName() + " (sem contatos)");
             continue;
           }
@@ -214,14 +204,11 @@ public class BulkNotificationService {
 
         if (response.success()) {
           successCount++;
-          log.info("Notificação enviada com sucesso para {}", client.getClientName());
         } else {
           failedRecipients.add(client.getClientName());
-          log.error("Falha ao enviar para {}: {}", client.getClientName(), response.message());
         }
 
       } catch (Exception e) {
-        log.error("Erro ao enviar notificação para cliente ID {}", clientId, e);
         failedRecipients.add("Cliente ID: " + clientId + " (erro)");
       }
     }
