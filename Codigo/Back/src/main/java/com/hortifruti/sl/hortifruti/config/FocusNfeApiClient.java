@@ -61,22 +61,42 @@ public class FocusNfeApiClient {
   /**
    * Lista notas fiscais por CPF/CNPJ do destinatário
    * 
+   * Endpoint correto da API Focus NFe para listar NFe's:
+   * GET /v2/nfes?cnpj_destinatario=XXXXX
+   * 
+   * Documentação: https://focusnfe.com.br/doc/
+   * 
    * @param cpfCnpj CPF ou CNPJ do destinatário (apenas números)
    * @return JSON com a lista de notas fiscais
    */
   public String listInvoicesByDocument(String cpfCnpj) {
     try {
-      // API Focus NFe: GET /v2/nfe?cnpj_destinatario=XXXXX
-      String url = focusNfeApiUrl + "/v2/nfe?cnpj_destinatario=" + cpfCnpj;
+      // API Focus NFe: GET /v2/nfes?cnpj_destinatario=XXXXX (com 's' no final!)
+      // O parâmetro funciona tanto para CPF quanto CNPJ
+      String url = focusNfeApiUrl + "/v2/nfes?cnpj_destinatario=" + cpfCnpj;
+      
+      System.out.println("========================================");
+      System.out.println("FocusNfeApiClient - Buscando notas fiscais");
+      System.out.println("URL: " + url);
+      System.out.println("CPF/CNPJ: " + cpfCnpj);
 
       HttpHeaders headers = createHeaders();
       HttpEntity<String> entity = new HttpEntity<>(headers);
 
       ResponseEntity<String> response =
           restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+      
+      String responseBody = response.getBody();
+      System.out.println("Status: " + response.getStatusCode());
+      System.out.println("Response Body: " + (responseBody != null ? responseBody : "NULL"));
+      System.out.println("Response Length: " + (responseBody != null ? responseBody.length() : 0));
+      System.out.println("========================================");
 
-      return response.getBody();
+      return responseBody;
     } catch (Exception e) {
+      System.err.println("ERRO ao listar NFe's por CPF/CNPJ: " + cpfCnpj);
+      System.err.println("Mensagem: " + e.getMessage());
+      e.printStackTrace();
       throw new InvoiceException("Erro ao listar NFe's por CPF/CNPJ: " + cpfCnpj, e);
     }
   }

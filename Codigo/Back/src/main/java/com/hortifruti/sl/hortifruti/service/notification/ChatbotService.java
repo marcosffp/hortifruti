@@ -273,15 +273,31 @@ public class ChatbotService {
             }
 
             Client client = clientOpt.get();
+            log.info("========================================");
             log.info("Cliente encontrado: {} (ID: {})", client.getClientName(), client.getId());
+            log.info("Documento: {}", document);
 
-            // Busca TODOS os Combined Scores pendentes do cliente (para boletos)
+            // Busca Combined Scores pendentes COM BOLETO (hasBillet = true)
+            List<CombinedScore> pendingWithBillet = billetService.findAllPendingWithBilletByClient(client.getId());
+            log.info("Combined Scores pendentes COM BOLETO: {}", pendingWithBillet.size());
+            
+            // Busca TODOS os Combined Scores pendentes (para informar ao cliente)
             List<CombinedScore> allPending = billetService.findAllPendingByClient(client.getId());
-            log.info("Total de Combined Scores pendentes encontrados: {}", allPending.size());
+            log.info("Combined Scores pendentes TOTAL: {}", allPending.size());
 
-            // Busca todas as notas fiscais pela API usando CPF/CNPJ
-            List<String> invoiceRefs = invoiceService.listInvoiceRefsByDocument(document);
-            log.info("Total de notas fiscais autorizadas encontradas na API para {}: {}", document, invoiceRefs.size());
+            // Busca todas as notas fiscais pela API Focus NFe usando CPF/CNPJ
+            log.info("Iniciando busca de notas fiscais na API Focus NFe...");
+            List<String> invoiceRefs = new ArrayList<>();
+            try {
+                invoiceRefs = invoiceService.listInvoiceRefsByDocument(document);
+                log.info("✓ Notas fiscais autorizadas encontradas: {}", invoiceRefs.size());
+                if (!invoiceRefs.isEmpty()) {
+                    log.info("Refs encontradas: {}", String.join(", ", invoiceRefs));
+                }
+            } catch (Exception ex) {
+                log.error("✗ Erro ao buscar notas fiscais na API: {}", ex.getMessage(), ex);
+            }
+            log.info("========================================");
 
             // Se não houver cobranças pendentes e nem notas fiscais
             if (allPending.isEmpty() && invoiceRefs.isEmpty()) {
@@ -297,9 +313,12 @@ public class ChatbotService {
             StringBuilder messageBuilder = new StringBuilder();
             messageBuilder.append(String.format("Olá, %s!\n\n", client.getClientName()));
 
-            int totalWithBillet = 0;
-            int totalWithoutBillet = 0;
+            // Contadores
+            int totalWithBillet = pendingWithBillet.size();
+            int totalWithoutBillet = allPending.size() - pendingWithBillet.size();
+            int totalInvoices = invoiceRefs.size();
 
+            // Informações sobre cobranças pendentes
             if (!allPending.isEmpty()) {
                 messageBuilder.append(String.format("📋 *Cobranças Pendentes:* %d\n\n", allPending.size()));
 
@@ -311,12 +330,10 @@ public class ChatbotService {
                         cs.getDueDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))));
                     
                     if (cs.isHasBillet()) {
-                        totalWithBillet++;
                         messageBuilder.append(String.format("✓ Boleto: %s\n", 
                             cs.getYourNumber() != null ? cs.getYourNumber() : "Disponível"));
                     } else {
-                        totalWithoutBillet++;
-                        messageBuilder.append("○ Boleto: Não emitido\n");
+                        messageBuilder.append("○ Boleto: Não emitido ainda\n");
                     }
                     
                     if (i < allPending.size()) {
@@ -326,16 +343,29 @@ public class ChatbotService {
                 }
             }
 
-            if (!invoiceRefs.isEmpty()) {
+            // Informações sobre notas fiscais
+            if (totalInvoices > 0) {
                 if (!allPending.isEmpty()) {
                     messageBuilder.append("\n────────────────\n\n");
                 }
-                messageBuilder.append(String.format("📄 *Notas Fiscais Encontradas:* %d\n", invoiceRefs.size()));
-                messageBuilder.append("Enviando documentos...\n");
+                messageBuilder.append(String.format("📄 *Notas Fiscais Autorizadas:* %d\n", totalInvoices));
             }
             
-            log.info("Resumo - Boletos: {}, Sem boleto: {}, Notas Fiscais: {}", 
-                totalWithBillet, totalWithoutBillet, invoiceRefs.size());
+            // Resumo de documentos disponíveis
+            messageBuilder.append("\n────────────────\n\n");
+            messageBuilder.append("📦 *Documentos Disponíveis:*\n");
+            if (totalWithBillet > 0) {
+                messageBuilder.append(String.format("✓ %d Boleto(s)\n", totalWithBillet));
+            }
+            if (totalInvoices > 0) {
+                messageBuilder.append(String.format("✓ %d Nota(s) Fiscal(is)\n", totalInvoices));
+            }
+            if (totalWithBillet == 0 && totalInvoices == 0) {
+                messageBuilder.append("⚠️ Nenhum documento disponível no momento\n");
+            }
+            
+            log.info("Resumo - Cobranças: {}, Com boleto: {}, Sem boleto: {}, Notas Fiscais: {}", 
+                allPending.size(), totalWithBillet, totalWithoutBillet, totalInvoices);
             
             whatsAppService.sendTextMessage(phoneNumber, messageBuilder.toString());
 
@@ -343,36 +373,58 @@ public class ChatbotService {
             List<byte[]> documents = new ArrayList<>();
             List<String> fileNames = new ArrayList<>();
             
-            // 1. Processar boletos dos Combined Scores
-            for (CombinedScore cs : allPending) {
-                if (cs.isHasBillet()) {
-                    try {
-                        log.info("Tentando obter boleto para CombinedScore ID: {}", cs.getId());
-                        ResponseEntity<byte[]> pdfResponse = billetService.issueCopy(cs.getId());
-                        byte[] pdf = pdfResponse.getBody();
-                        
-                        if (pdf != null && pdf.length > 0) {
-                            String fileName = "Boleto-" + 
-                                (cs.getYourNumber() != null && !cs.getYourNumber().isEmpty() 
-                                    ? cs.getYourNumber() 
-                                    : cs.getId()) + ".pdf";
-                            documents.add(pdf);
-                            fileNames.add(fileName);
-                            log.info("✓ Boleto adicionado: {} ({} bytes)", fileName, pdf.length);
-                        } else {
-                            log.warn("Boleto retornado é nulo ou vazio para CombinedScore ID: {}", cs.getId());
-                        }
-                    } catch (Exception ex) {
-                        log.error("✗ Falha ao gerar PDF do boleto para CombinedScore ID {}: {}", 
-                            cs.getId(), ex.getMessage(), ex);
-                    }
-                }
+            log.info("========================================");
+            log.info("Iniciando coleta de documentos...");
+            log.info("Combined Scores COM BOLETO a processar: {}", pendingWithBillet.size());
+            log.info("Notas Fiscais a processar: {}", invoiceRefs.size());
+            
+            // DEBUG: Listar todos os Combined Scores com boleto
+            for (int idx = 0; idx < pendingWithBillet.size(); idx++) {
+                CombinedScore cs = pendingWithBillet.get(idx);
+                log.info("  [{}] ID: {}, YourNumber: {}, HasBillet: {}", 
+                    idx + 1, cs.getId(), cs.getYourNumber(), cs.isHasBillet());
             }
             
-            // 2. Processar notas fiscais buscadas pela API
-            for (String ref : invoiceRefs) {
+            // 1. Processar APENAS boletos dos Combined Scores que têm hasBillet = true
+            log.info("Processando {} boletos...", pendingWithBillet.size());
+            int boletosAdicionados = 0;
+            for (int idx = 0; idx < pendingWithBillet.size(); idx++) {
+                CombinedScore cs = pendingWithBillet.get(idx);
                 try {
-                    log.info("Tentando obter DANFE para invoiceRef: {}", ref);
+                    log.info("  → [{}/{}] Obtendo boleto para CombinedScore ID: {} (YourNumber: {})", 
+                        idx + 1, pendingWithBillet.size(), cs.getId(), cs.getYourNumber());
+                    ResponseEntity<byte[]> pdfResponse = billetService.issueCopy(cs.getId());
+                    byte[] pdf = pdfResponse.getBody();
+                    
+                    if (pdf != null && pdf.length > 0) {
+                        String fileName = "Boleto-" + 
+                            (cs.getYourNumber() != null && !cs.getYourNumber().isEmpty() 
+                                ? cs.getYourNumber() 
+                                : cs.getId()) + ".pdf";
+                        documents.add(pdf);
+                        fileNames.add(fileName);
+                        boletosAdicionados++;
+                        log.info("    ✓ Boleto adicionado: {} ({} bytes) - Total: {}/{}", 
+                            fileName, pdf.length, boletosAdicionados, pendingWithBillet.size());
+                    } else {
+                        log.warn("    ✗ Boleto retornado é nulo ou vazio para ID: {}", cs.getId());
+                    }
+                } catch (Exception ex) {
+                    log.error("    ✗ Falha ao gerar PDF do boleto para ID {}: {}", 
+                        cs.getId(), ex.getMessage(), ex);
+                }
+            }
+            log.info("Total de boletos adicionados: {}/{}", boletosAdicionados, pendingWithBillet.size());
+            log.info("Total de boletos adicionados: {}/{}", boletosAdicionados, pendingWithBillet.size());
+            
+            // 2. Processar TODAS as notas fiscais buscadas pela API Focus NFe
+            log.info("Processando {} notas fiscais...", invoiceRefs.size());
+            int notasAdicionadas = 0;
+            for (int idx = 0; idx < invoiceRefs.size(); idx++) {
+                String ref = invoiceRefs.get(idx);
+                try {
+                    log.info("  → [{}/{}] Obtendo DANFE para invoiceRef: {}", 
+                        idx + 1, invoiceRefs.size(), ref);
                     ResponseEntity<Resource> danfeResponse = invoiceService.downloadDanfe(ref);
                     Resource resource = danfeResponse.getBody();
                     
@@ -382,43 +434,94 @@ public class ChatbotService {
                             String fileName = "NotaFiscal-" + ref + ".pdf";
                             documents.add(danfePdf);
                             fileNames.add(fileName);
-                            log.info("✓ Nota Fiscal adicionada: {} ({} bytes)", fileName, danfePdf.length);
+                            notasAdicionadas++;
+                            log.info("    ✓ Nota Fiscal adicionada: {} ({} bytes) - Total: {}/{}", 
+                                fileName, danfePdf.length, notasAdicionadas, invoiceRefs.size());
                         } else {
-                            log.warn("DANFE retornado é nulo ou vazio para invoiceRef: {}", ref);
+                            log.warn("    ✗ DANFE retornado é nulo ou vazio para ref: {}", ref);
                         }
                     } else {
-                        log.warn("Resource DANFE é nulo para invoiceRef: {}", ref);
+                        log.warn("    ✗ Resource DANFE é nulo para ref: {}", ref);
                     }
                 } catch (Exception ex) {
-                    log.error("✗ Falha ao obter DANFE da nota fiscal para invoiceRef {}: {}", 
+                    log.error("    ✗ Falha ao obter DANFE para ref {}: {}", 
                         ref, ex.getMessage(), ex);
                 }
             }
+            log.info("Total de notas fiscais adicionadas: {}/{}", notasAdicionadas, invoiceRefs.size());
+            log.info("Total de notas fiscais adicionadas: {}/{}", notasAdicionadas, invoiceRefs.size());
             
-            log.info("Total de documentos coletados: {} (Boletos + Notas Fiscais)", documents.size());
+            log.info("Coleta finalizada:");
+            log.info("  • Boletos: {}/{}", boletosAdicionados, pendingWithBillet.size());
+            log.info("  • Notas Fiscais: {}/{}", notasAdicionadas, invoiceRefs.size());
+            log.info("  • Total de documentos coletados: {}", documents.size());
+            log.info("Lista de arquivos coletados:");
+            for (int i = 0; i < fileNames.size(); i++) {
+                log.info("  [{}] {} ({} bytes)", i + 1, fileNames.get(i), documents.get(i).length);
+            }
+            log.info("========================================");
             
             // 3. Enviar documentos se houver algum
             if (!documents.isEmpty()) {
-                String caption = String.format("📄 Enviando %d documento(s):", documents.size());
-                log.info("Enviando {} documentos para {}", documents.size(), phoneNumber);
+                int totalDocs = documents.size();
+                
+                // Detalhar quais documentos serão enviados
+                int boletosCount = 0;
+                int notasCount = 0;
+                for (String name : fileNames) {
+                    if (name.startsWith("Boleto-")) boletosCount++;
+                    if (name.startsWith("NotaFiscal-")) notasCount++;
+                }
+                
+                String caption = String.format("📎 Enviando %d documento(s):\n", totalDocs);
+                if (boletosCount > 0) {
+                    caption += String.format("• %d Boleto(s)\n", boletosCount);
+                }
+                if (notasCount > 0) {
+                    caption += String.format("• %d Nota(s) Fiscal(is)\n", notasCount);
+                }
+                
+                log.info("========================================");
+                log.info("PREPARANDO ENVIO DE DOCUMENTOS");
+                log.info("Destinatário: {}", phoneNumber);
+                log.info("Total de documentos a enviar: {}", totalDocs);
+                log.info("  • Boletos: {}", boletosCount);
+                log.info("  • Notas Fiscais: {}", notasCount);
+                log.info("Documentos na lista:");
+                for (int i = 0; i < fileNames.size(); i++) {
+                    log.info("  [{}] {} ({} bytes)", i + 1, fileNames.get(i), documents.get(i).length);
+                }
+                log.info("========================================");
                 
                 boolean sent = whatsAppService.sendMultipleDocuments(phoneNumber, caption, documents, fileNames);
                 
                 if (sent) {
-                    log.info("✓ Documentos enviados com sucesso para {}", phoneNumber);
+                    log.info("✓ SUCESSO: Todos os {} documentos foram enviados com sucesso!", totalDocs);
                 } else {
-                    log.error("✗ Falha ao enviar documentos para {}", phoneNumber);
+                    log.error("✗ FALHA: Um ou mais documentos não foram enviados corretamente");
                 }
             } else {
-                // Se não houver documentos disponíveis
-                log.warn("Nenhum documento disponível para envio");
-                String noDocumentsMessage = "⚠️ *Atenção*\n\n" +
-                        "Os documentos (boletos e/ou notas fiscais) ainda não estão disponíveis ou estão sendo processados.\n\n" +
-                        "Por favor, entre em contato conosco:\n" +
-                        "(31) 3641-2244\n\n" +
+                // Se não houver documentos disponíveis para envio
+                log.warn("Nenhum documento disponível para envio (Cobranças: {}, Boletos emitidos: {}, Notas: {})", 
+                    allPending.size(), pendingWithBillet.size(), invoiceRefs.size());
+                
+                String noDocumentsMessage = "⚠️ *Documentos Pendentes*\n\n";
+                
+                if (totalWithoutBillet > 0) {
+                    noDocumentsMessage += String.format("Você possui %d cobrança(s) sem boleto emitido ainda.\n", 
+                        totalWithoutBillet);
+                }
+                
+                if (invoiceRefs.isEmpty() && !allPending.isEmpty()) {
+                    noDocumentsMessage += "As notas fiscais estão sendo processadas ou ainda não foram emitidas.\n";
+                }
+                
+                noDocumentsMessage += "\n*Entre em contato para mais informações:*\n" +
+                        "📞 (31) 3641-2244\n\n" +
                         "Horário de atendimento:\n" +
                         "• Segunda a Sábado, 7h às 20h\n" +
                         "• Domingo, 7h às 12h";
+                
                 whatsAppService.sendTextMessage(phoneNumber, noDocumentsMessage);
             }
 
