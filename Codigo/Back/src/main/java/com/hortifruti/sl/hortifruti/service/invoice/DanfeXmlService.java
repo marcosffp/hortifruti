@@ -40,7 +40,38 @@ public class DanfeXmlService {
   }
 
   private String getDanfePath(String ref) {
-    return getFilePathFromApi(ref, "caminho_danfe");
+    try {
+      System.out.println("========================================");
+      System.out.println("DanfeXmlService.getDanfePath()");
+      System.out.println("Ref: " + ref);
+      
+      String response = focusNfeApiClient.sendGetRequest(ref, COMPLETE);
+      
+      System.out.println("Response recebida:");
+      System.out.println("  É null? " + (response == null));
+      System.out.println("  Length: " + (response != null ? response.length() : 0));
+      
+      ObjectMapper objectMapper = new ObjectMapper();
+      JsonNode rootNode = objectMapper.readTree(response);
+      String filePath = rootNode.path("caminho_danfe").asText();
+      
+      System.out.println("Campo 'caminho_danfe':");
+      System.out.println("  Existe? " + rootNode.has("caminho_danfe"));
+      System.out.println("  Valor: '" + filePath + "'");
+      System.out.println("  Está vazio? " + (filePath == null || filePath.isEmpty()));
+      System.out.println("========================================");
+      
+      if (filePath == null || filePath.isEmpty()) {
+        throw new InvoiceException("Campo 'caminho_danfe' não encontrado ou vazio para ref: " + ref);
+      }
+      
+      return filePath;
+    } catch (Exception e) {
+      System.err.println("✗ ERRO em getDanfePath para ref: " + ref);
+      System.err.println("Erro: " + e.getMessage());
+      e.printStackTrace();
+      throw new InvoiceException("Erro ao obter caminho do DANFE para ref: " + ref, e);
+    }
   }
 
   private String getXmlPath(String ref) {
@@ -50,7 +81,23 @@ public class DanfeXmlService {
   private ResponseEntity<Resource> downloadFileStream(
       String ref, String fileUrl, MediaType mediaType, String filePrefix) {
     try {
+      System.out.println("========================================");
+      System.out.println("DanfeXmlService.downloadFileStream()");
+      System.out.println("Ref: " + ref);
+      System.out.println("FileUrl recebido: '" + fileUrl + "'");
+      System.out.println("FileUrl é null? " + (fileUrl == null));
+      System.out.println("FileUrl está vazio? " + (fileUrl != null && fileUrl.isEmpty()));
+      
+      if (fileUrl == null || fileUrl.trim().isEmpty()) {
+        System.err.println("✗ ERRO: fileUrl está vazio ou null!");
+        System.err.println("Não é possível fazer download sem o caminho do arquivo");
+        System.err.println("========================================");
+        return ResponseEntity.notFound().build();
+      }
+      
       String fullUrl = focusNfeApiUrl + fileUrl;
+      System.out.println("URL completa: " + fullUrl);
+      System.out.println("Iniciando download...");
 
       byte[] fileBytes =
           webClient
@@ -61,11 +108,19 @@ public class DanfeXmlService {
               .bodyToMono(byte[].class)
               .block();
 
+      System.out.println("Download concluído");
+      System.out.println("  fileBytes é null? " + (fileBytes == null));
+      System.out.println("  fileBytes length: " + (fileBytes != null ? fileBytes.length : 0));
+
       if (fileBytes == null || fileBytes.length == 0) {
+        System.err.println("✗ Arquivo vazio ou não encontrado!");
+        System.err.println("========================================");
         return ResponseEntity.notFound().build();
       }
 
       Resource resource = new ByteArrayResource(fileBytes);
+      System.out.println("✓ Resource criado com sucesso - " + fileBytes.length + " bytes");
+      System.out.println("========================================");
 
       return ResponseEntity.ok()
           .contentType(mediaType)
@@ -80,6 +135,13 @@ public class DanfeXmlService {
           .body(resource);
 
     } catch (Exception e) {
+      System.err.println("========================================");
+      System.err.println("✗ ERRO em downloadFileStream");
+      System.err.println("Ref: " + ref);
+      System.err.println("FileUrl: " + fileUrl);
+      System.err.println("Erro: " + e.getMessage());
+      e.printStackTrace();
+      System.err.println("========================================");
       throw new InvoiceException("Erro ao fazer download do arquivo", e);
     }
   }

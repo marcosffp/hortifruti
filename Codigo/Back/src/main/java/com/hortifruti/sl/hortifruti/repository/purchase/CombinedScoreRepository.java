@@ -39,6 +39,10 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
 
   Optional<CombinedScore> findByInvoiceRef(String invoiceRef);
 
+  /** Busca todas as refs de notas fiscais de um cliente específico */
+  @Query("SELECT cs.invoiceRef FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.hasInvoice = true AND cs.invoiceRef IS NOT NULL")
+  List<String> findAllInvoiceRefsByClientId(@Param("clientId") Long clientId);
+
   @Query("SELECT cs FROM CombinedScore cs WHERE cs.status = 'PENDENTE' AND cs.dueDate <= :date")
   List<CombinedScore> findOverduePendingScores(@Param("date") LocalDate date);
 }
