@@ -26,9 +26,17 @@ public class Recipient {
 
     AddressRequest addressDto = parseAddress(client.getAddress());
 
+    // Remove formatação do documento (pontos, traços, barras)
+    String documentoLimpo = client.getDocument().replaceAll("[^0-9]", "");
+    
+    // Valida se o documento está presente
+    if (documentoLimpo.isEmpty()) {
+      throw new InvoiceException("Cliente não possui CPF ou CNPJ cadastrado");
+    }
+
     return new RecipientRequest(
-        client.getDocument().length() == 14 ? client.getDocument() : null,
-        client.getDocument().length() == 11 ? client.getDocument() : null,
+        documentoLimpo.length() == 14 ? documentoLimpo : null,
+        documentoLimpo.length() == 11 ? documentoLimpo : null,
         client.getClientName(),
         null,
         client.getPhoneNumber(),

@@ -5,14 +5,12 @@ import com.hortifruti.sl.hortifruti.model.enumeration.NotificationChannel;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
  * Service de coordenação para envio de notificações Responsável por orquestrar Email e WhatsApp de
  * forma independente
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationCoordinator {
@@ -65,7 +63,6 @@ public class NotificationCoordinator {
         emailSent =
             emailService.sendEmailWithAttachments(
                 emailRecipient, subject, emailBody, attachments, fileNames);
-        log.info("Email enviado: {}", emailSent ? "SUCESSO" : "FALHA");
       }
     }
 
@@ -76,7 +73,6 @@ public class NotificationCoordinator {
         whatsappSent =
             whatsAppService.sendMultipleDocuments(
                 whatsAppRecipient, whatsappMessage, attachments, fileNames);
-        log.info("WhatsApp enviado: {}", whatsappSent ? "SUCESSO" : "FALHA");
       }
     }
 
@@ -141,10 +137,6 @@ public class NotificationCoordinator {
         return emailService.sendSimpleEmail(recipient, subject, body);
       }
     } catch (Exception e) {
-      log.error(
-          "Erro ao enviar email para: {}",
-          recipient.contains("@") ? "EMAIL_ENDERECO" : recipient,
-          e);
       return false;
     }
   }
