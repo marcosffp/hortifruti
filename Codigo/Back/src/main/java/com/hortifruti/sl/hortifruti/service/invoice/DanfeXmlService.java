@@ -5,6 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.config.FocusNfeApiClient;
 import com.hortifruti.sl.hortifruti.exception.InvoiceException;
 import jakarta.transaction.Transactional;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -193,6 +198,66 @@ public class DanfeXmlService {
               }
             })
         .filter(path -> path != null) // Remover nulos
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Baixa os arquivos XML para o disco e retorna a lista de arquivos locais.
+   *
+   * @param refs Lista de referências das notas fiscais.
+   * @return Lista de arquivos XML salvos localmente.
+   */
+  @Transactional
+  public List<File> downloadXmlFilesForPeriod(List<String> refs) {
+    Path tempDir;
+    try {
+      tempDir = Files.createTempDirectory("nf-xmls-");
+    } catch (IOException e) {
+      throw new InvoiceException("Erro ao criar diretório temporário para XMLs", e);
+    }
+
+    return refs.stream()
+        .map(
+            ref -> {
+              try {
+                String xmlPath = getXmlPath(ref);
+                String fullUrl = focusNfeApiUrl + xmlPath;
+
+                byte[] xmlBytes =
+                    webClient
+                        .get()
+                        .uri(fullUrl)
+                        .accept(MediaType.APPLICATION_XML)
+                        .retrieve()
+                        .bodyToMono(byte[].class)
+                        .timeout(java.time.Duration.ofSeconds(100))
+                        .block();
+
+                if (xmlBytes == null || xmlBytes.length == 0) {
+                  System.err.println("Arquivo XML vazio para referência: " + ref);
+                  return null;
+                }
+
+                File xmlFile = tempDir.resolve(ref + ".xml").toFile();
+                try (FileOutputStream fos = new FileOutputStream(xmlFile)) {
+                  fos.write(xmlBytes);
+                }
+
+                System.out.println(
+                    "Arquivo XML salvo: "
+                        + xmlFile.getAbsolutePath()
+                        + " (Tamanho: "
+                        + xmlFile.length()
+                        + " bytes)");
+                return xmlFile;
+
+              } catch (Exception e) {
+                System.err.println(
+                    "Erro ao baixar XML para referência: " + ref + " - " + e.getMessage());
+                return null;
+              }
+            })
+        .filter(file -> file != null && file.exists())
         .collect(Collectors.toList());
   }
 }
