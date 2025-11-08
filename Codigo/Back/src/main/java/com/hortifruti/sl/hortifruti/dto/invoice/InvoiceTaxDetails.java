@@ -14,5 +14,4 @@ public record InvoiceTaxDetails(
     @JsonProperty("icms_base_calculo") BigDecimal icmsBaseCalculo,
     @JsonProperty("icms_valor_total") BigDecimal icmsValorTotal,
     @JsonProperty("tributables") List<ItemTaxDetails> tributables,
-    @JsonProperty("ref") String ref
-) {}
+    @JsonProperty("ref") String ref) {}

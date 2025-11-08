@@ -10,7 +10,4 @@ public record InvoiceSummaryDetails(
     @JsonProperty("uf") String uf,
     @JsonProperty("valor") BigDecimal valor,
     @JsonProperty("predominante") String predominante,
-    @JsonProperty("aliquota") BigDecimal aliquota
-) {
-   
-}
+    @JsonProperty("aliquota") BigDecimal aliquota) {}

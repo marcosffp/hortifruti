@@ -9,5 +9,4 @@ public record IcmsSalesReport(
     BigDecimal totalImpostoDebitado,
     BigDecimal totalIsentasOuNaoTributadas,
     BigDecimal totalOutras,
-    Map<String, BigDecimal> valoresPorCfop
-) {}
+    Map<String, BigDecimal> valoresPorCfop) {}
