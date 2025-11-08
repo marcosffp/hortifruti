@@ -1,207 +1,154 @@
 package com.hortifruti.sl.hortifruti.service.invoice.tax;
 
-import com.hortifruti.sl.hortifruti.dto.invoice.IcmsSalesReport;
-import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceSummaryDetails;
-import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceTaxDetails;
-import com.hortifruti.sl.hortifruti.dto.invoice.ItemTaxDetails;
-import com.hortifruti.sl.hortifruti.dto.invoice.SalesSummaryDetails;
-import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
-import com.hortifruti.sl.hortifruti.service.invoice.DanfeXmlService;
-import com.hortifruti.sl.hortifruti.service.invoice.InvoiceQuery;
-import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
-import java.math.BigDecimal;
+import com.hortifruti.sl.hortifruti.service.invoice.tax.icms.IcmsReport;
+import com.hortifruti.sl.hortifruti.service.invoice.tax.nfSales.NfSalesReport;
+import com.hortifruti.sl.hortifruti.service.invoice.tax.payment.PaymentReport;
+import com.hortifruti.sl.hortifruti.service.invoice.tax.registerReport.RegisterReport;
+import com.hortifruti.sl.hortifruti.service.invoice.tax.sales.SalesReport;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
 @Service
 @AllArgsConstructor
 public class ReportTaxService {
-  private final InvoiceQuery invoiceQuery;
-  private final CombinedScoreService combinedScoreService;
-  private final DanfeXmlService danfeXmlService;
+  private final PaymentReport paymentReport;
+  private final RegisterReport registerReport;
+  private final SalesReport salesReport;
+  private final NfSalesReport nfSalesReport;
+  private final IcmsReport icmsReport;
 
-  public List<String> generateXmlFileList(LocalDate startDate, LocalDate endDate) {
-    List<CombinedScore> combinedScores = fetchCombinedScores(startDate, endDate);
-    List<String> invoiceRefs = extractInvoiceRefs(combinedScores);
+  public byte[] generateMonthly(LocalDate startDate, LocalDate endDate) {
+    try {
 
-    // Buscar os caminhos XML usando o DanfeXmlService
-    return danfeXmlService.getXmlPathsForPeriod(invoiceRefs);
+      String zipFilePath = generateMonthlyReports(startDate, endDate);
+
+      Path zipPath = Paths.get(zipFilePath);
+      byte[] zipBytes = Files.readAllBytes(zipPath);
+
+      String sanitizedFileName =
+          zipPath.getFileName().toString().replace(":", "_").replace("\\", "/");
+
+      HttpHeaders headers = new HttpHeaders();
+      headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+      headers.setContentDispositionFormData("attachment", sanitizedFileName);
+
+      return zipBytes;
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      return null;
+    }
   }
 
-  public IcmsSalesReport generateIcmsSalesReport(LocalDate startDate, LocalDate endDate) {
-    List<CombinedScore> combinedScores = fetchCombinedScores(startDate, endDate);
+  private byte[] generatePaymentReport(LocalDate startDate, LocalDate endDate) throws IOException {
+    return paymentReport.createPaymentReportPdf(startDate, endDate);
+  }
 
-    BigDecimal totalContabil = BigDecimal.ZERO;
-    BigDecimal totalBaseCalculo = BigDecimal.ZERO;
-    BigDecimal totalImpostoDebitado = BigDecimal.ZERO;
-    BigDecimal totalIsentasOuNaoTributadas = BigDecimal.ZERO;
-    BigDecimal totalOutras = BigDecimal.ZERO;
+  private byte[] generateRegisterReport(LocalDate startDate, LocalDate endDate) throws IOException {
+    return registerReport.createRegisterReportPdf(startDate, endDate);
+  }
 
-    Map<String, BigDecimal> valoresPorCfop = new HashMap<>();
+  private byte[] generateSalesReport(LocalDate startDate, LocalDate endDate) throws IOException {
+    return salesReport.createSalesReportPdf(startDate, endDate);
+  }
 
-    // Iterar sobre os CombinedScores e extrair os detalhes fiscais
-    for (CombinedScore combinedScore : combinedScores) {
-      try {
-        InvoiceTaxDetails taxDetails =
-            invoiceQuery.extractInvoiceTaxDetails(combinedScore.getInvoiceRef());
+  private String generateNfSalesZip(LocalDate startDate, LocalDate endDate) throws IOException {
+    return nfSalesReport.createNfSalesZip(startDate, endDate);
+  }
 
-        // Atualizar totais
-        totalContabil = totalContabil.add(taxDetails.valorTotal());
-        totalBaseCalculo = totalBaseCalculo.add(taxDetails.icmsBaseCalculo());
-        totalImpostoDebitado = totalImpostoDebitado.add(taxDetails.icmsValorTotal());
+  private byte[] generateIcmsReport(LocalDate startDate, LocalDate endDate) throws IOException {
+    return icmsReport.createIcmsReportPdf(null, startDate, endDate);
+  }
 
-        // Agrupar valores por CFOP
-        for (ItemTaxDetails item : taxDetails.tributables()) {
-          valoresPorCfop.merge(item.cfop(), item.valorBruto(), BigDecimal::add);
-        }
+  private String generateMonthlyReports(LocalDate startDate, LocalDate endDate) throws IOException {
+    String folderName = createMonthlyFolder(startDate);
+    Path folderPath = Path.of(folderName);
 
-        // Atualizar totais de isentas ou não tributadas e outras
-        totalIsentasOuNaoTributadas =
-            totalIsentasOuNaoTributadas.add(BigDecimal.ZERO); // Ajuste conforme necessário
-        totalOutras = totalOutras.add(taxDetails.valorProdutos());
+    generateAndSaveReports(startDate, endDate, folderPath);
+    generateAndMoveNfSalesZip(startDate, endDate, folderPath);
 
-        // Ajuste conforme necessário
-      } catch (Exception e) {
-        System.err.println("Erro ao processar CombinedScore ID: " + combinedScore.getId());
-        e.printStackTrace();
-      }
+    Path zipFilePath = compressFolder(folderPath, folderName);
+
+    return zipFilePath.toString();
+  }
+
+  private String createMonthlyFolder(LocalDate startDate) throws IOException {
+    String tempDir = System.getProperty("java.io.tmpdir");
+    String folderName = tempDir + "/MES_" + startDate.format(DateTimeFormatter.ofPattern("MM"));
+    Path folderPath = Path.of(folderName);
+
+    if (!Files.exists(folderPath)) {
+      Files.createDirectories(folderPath);
     }
 
-    // Retornar o record consolidado
-    return new IcmsSalesReport(
-        totalContabil,
-        totalBaseCalculo,
-        totalImpostoDebitado,
-        totalIsentasOuNaoTributadas,
-        totalOutras,
-        valoresPorCfop);
+    return folderName;
   }
 
-  public List<InvoiceSummaryDetails> generateInvoiceSummaryDetails(
-      LocalDate startDate, LocalDate endDate) {
-    List<CombinedScore> combinedScores = fetchCombinedScores(startDate, endDate);
-
-    // Mapear os CombinedScores para InvoiceSummaryDetails
-    return combinedScores.stream()
-        .map(
-            combinedScore -> {
-              try {
-                InvoiceTaxDetails taxDetails =
-                    invoiceQuery.extractInvoiceTaxDetails(combinedScore.getInvoiceRef());
-                return createInvoiceSummaryDetails(taxDetails);
-              } catch (Exception e) {
-                System.err.println("Erro ao processar CombinedScore ID: " + combinedScore.getId());
-                e.printStackTrace();
-                return null; // Ignorar registros com erro
-              }
-            })
-        .filter(summary -> summary != null) // Remover nulos
-        .collect(Collectors.toList());
+  private void generateAndSaveReports(LocalDate startDate, LocalDate endDate, Path folderPath)
+      throws IOException {
+    saveFile(
+        folderPath.resolve("Resumo_de_Vendas_por_Forma_de_Pagamento.pdf"),
+        generatePaymentReport(startDate, endDate));
+    saveFile(
+        folderPath.resolve("Registro_de_saida_nf.pdf"), generateRegisterReport(startDate, endDate));
+    saveFile(folderPath.resolve("Relacao_de_Vendas.pdf"), generateSalesReport(startDate, endDate));
+    saveFile(
+        folderPath.resolve("Registro_Apuracao_ICMS.pdf"), generateIcmsReport(startDate, endDate));
   }
 
-  private InvoiceSummaryDetails createInvoiceSummaryDetails(InvoiceTaxDetails taxDetails) {
-    String especie = "NF-e";
-    String serie = "1";
-    String dia = String.valueOf(taxDetails.dataEmissao().toLocalDate().getDayOfMonth());
-    String uf = "MG";
-    BigDecimal valor = taxDetails.valorTotal();
+  private void generateAndMoveNfSalesZip(LocalDate startDate, LocalDate endDate, Path folderPath)
+      throws IOException {
+    String monthName = startDate.format(DateTimeFormatter.ofPattern("MMMM", Locale.of("pt", "BR")));
+    String nfSalesZipName = capitalizeFirstLetter(monthName) + "_NFE_SAIDAS.zip";
+    String nfSalesZipPath = generateNfSalesZip(startDate, endDate);
 
-    // Determinar o CFOP predominante (80% ou mais dos itens)
-    List<ItemTaxDetails> items = taxDetails.tributables();
-    Map<String, Long> cfopCounts =
-        items.stream().collect(Collectors.groupingBy(ItemTaxDetails::cfop, Collectors.counting()));
-
-    String predominante =
-        cfopCounts.entrySet().stream()
-            .max(Map.Entry.comparingByValue())
-            .filter(entry -> entry.getValue() >= items.size() * 0.8)
-            .map(Map.Entry::getKey)
-            .orElse("Indefinido");
-
-    // Determinar a alíquota com base no CFOP predominante
-    BigDecimal aliquota =
-        switch (predominante) {
-          case "5102" -> BigDecimal.valueOf(18.00);
-          case "5405" -> BigDecimal.ZERO;
-          default -> BigDecimal.ZERO;
-        };
-
-    return new InvoiceSummaryDetails(especie, serie, dia, uf, valor, predominante, aliquota);
+    Files.move(Path.of(nfSalesZipPath), folderPath.resolve(nfSalesZipName));
   }
 
-  private SalesSummaryDetails createSalesSummaryDetails(InvoiceTaxDetails taxDetails) {
-    String numero = taxDetails.numero();
-    String mod = "55"; // Sempre será "55"
-    String data = taxDetails.dataEmissao().toLocalDate().toString();
-    String envio = taxDetails.dataEmissao().toLocalDate().toString(); // Ajuste conforme necessário
-    String cliente = "Cliente Indefinido"; // Substitua conforme necessário
-    BigDecimal subtotal = taxDetails.valorProdutos();
-    BigDecimal desconto = BigDecimal.ZERO; // Sempre será 0,00
-    BigDecimal acrescimo = BigDecimal.ZERO; // Sempre será 0,00
-    BigDecimal total = taxDetails.valorTotal();
-
-    return new SalesSummaryDetails(
-        numero, mod, data, envio, cliente, subtotal, desconto, acrescimo, total);
+  private Path compressFolder(Path folderPath, String folderName) throws IOException {
+    String zipFileName = folderName + ".zip";
+    Path zipFilePath = Path.of(zipFileName);
+    zipFolder(folderPath, zipFilePath);
+    return zipFilePath;
   }
 
-  public List<SalesSummaryDetails> generateSalesSummaryDetails(
-      LocalDate startDate, LocalDate endDate) {
-    List<CombinedScore> combinedScores = fetchCombinedScores(startDate, endDate);
-
-    // Mapear os CombinedScores para SalesSummaryDetails
-    return combinedScores.stream()
-        .map(
-            combinedScore -> {
-              try {
-                InvoiceTaxDetails taxDetails =
-                    invoiceQuery.extractInvoiceTaxDetails(combinedScore.getInvoiceRef());
-                return createSalesSummaryDetails(taxDetails);
-              } catch (Exception e) {
-                System.err.println("Erro ao processar CombinedScore ID: " + combinedScore.getId());
-                e.printStackTrace();
-                return null; // Ignorar registros com erro
-              }
-            })
-        .filter(summary -> summary != null) // Remover nulos
-        .collect(Collectors.toList());
+  private String capitalizeFirstLetter(String text) {
+    return text.substring(0, 1).toUpperCase() + text.substring(1);
   }
 
-  public Map<String, BigDecimal> generateBankSettlementTotals(
-      LocalDate startDate, LocalDate endDate) {
-    String bankSettlement = "Liquidação Bancária"; // Substitua conforme necessário
-
-    List<CombinedScore> combinedScores = fetchCombinedScores(startDate, endDate);
-
-    return combinedScores.stream()
-        .map(
-            combinedScore -> {
-              try {
-                InvoiceTaxDetails taxDetails =
-                    invoiceQuery.extractInvoiceTaxDetails(combinedScore.getInvoiceRef());
-                return taxDetails.valorTotal();
-              } catch (Exception e) {
-                System.err.println("Erro ao processar CombinedScore ID: " + combinedScore.getId());
-                e.printStackTrace();
-                return BigDecimal.ZERO;
-              }
-            })
-        .filter(
-            totalValue ->
-                totalValue != null
-                    && totalValue.compareTo(BigDecimal.ZERO) > 0) // Filtrar valores válidos
-        .collect(Collectors.toMap(key -> bankSettlement, value -> value, BigDecimal::add));
+  private void saveFile(Path filePath, byte[] content) throws IOException {
+    try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
+      fos.write(content);
+    }
   }
 
-  private List<CombinedScore> fetchCombinedScores(LocalDate startDate, LocalDate endDate) {
-    return combinedScoreService.getCombinedScoresWithInvoice(startDate, endDate);
-  }
-
-  private List<String> extractInvoiceRefs(List<CombinedScore> combinedScores) {
-    return combinedScores.stream().map(CombinedScore::getInvoiceRef).collect(Collectors.toList());
+  private void zipFolder(Path sourceFolderPath, Path zipPath) throws IOException {
+    try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipPath.toFile()))) {
+      Files.walk(sourceFolderPath)
+          .filter(path -> !Files.isDirectory(path))
+          .forEach(
+              path -> {
+                ZipEntry zipEntry = new ZipEntry(sourceFolderPath.relativize(path).toString());
+                try {
+                  zos.putNextEntry(zipEntry);
+                  Files.copy(path, zos);
+                  zos.closeEntry();
+                } catch (IOException e) {
+                  throw new RuntimeException("Erro ao compactar arquivo: " + path, e);
+                }
+              });
+    }
   }
 }
