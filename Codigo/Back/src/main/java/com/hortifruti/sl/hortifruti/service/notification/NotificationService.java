@@ -11,12 +11,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
@@ -35,8 +33,6 @@ public class NotificationService {
   public NotificationResponse sendGenericFilesToAccounting(
       List<MultipartFile> files, GenericFilesAccountingRequest request) {
     try {
-      log.info("Enviando arquivos genéricos para contabilidade");
-
       List<byte[]> fileContents = new ArrayList<>();
       List<String> fileNames = new ArrayList<>();
 
@@ -75,12 +71,10 @@ public class NotificationService {
             emailSent, emailSent ? "Email enviado com sucesso" : "Falha no envio do email");
 
       } catch (Exception e) {
-        log.error("Erro ao enviar email para contabilidade", e);
         return new NotificationResponse(false, "Erro ao enviar email: " + e.getMessage());
       }
 
     } catch (IOException e) {
-      log.error("Erro ao processar arquivos", e);
       return new NotificationResponse(false, "Erro ao processar arquivos: " + e.getMessage());
     }
   }
@@ -89,8 +83,6 @@ public class NotificationService {
   public NotificationResponse sendDocumentsToClient(
       List<MultipartFile> files, ClientDocumentsRequest request) {
     try {
-      log.info("Enviando documentos para cliente ID: {}", request.clientId());
-
       Optional<Client> clientOpt = clientRepository.findById(request.clientId());
       if (clientOpt.isEmpty()) {
         return new NotificationResponse(false, "Cliente não encontrado");
@@ -129,7 +121,6 @@ public class NotificationService {
           fileNames);
 
     } catch (IOException e) {
-      log.error("Erro ao processar arquivos do cliente", e);
       return new NotificationResponse(false, "Erro ao processar arquivos: " + e.getMessage());
     }
   }
