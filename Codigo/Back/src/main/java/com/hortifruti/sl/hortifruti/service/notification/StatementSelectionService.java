@@ -11,12 +11,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class StatementSelectionService {
 
   private final StatementRepository statementRepository;
@@ -33,28 +31,16 @@ public class StatementSelectionService {
     LocalDate startOfMonth = yearMonth.atDay(1);
     LocalDate endOfMonth = yearMonth.atEndOfMonth();
 
-    log.info("Buscando statements para o período: {} a {}", startOfMonth, endOfMonth);
-
     // Buscar para Banco do Brasil
     Optional<Statement> bbStatement =
         getBestStatementForPeriod(Bank.BANCO_DO_BRASIL, startOfMonth, endOfMonth);
-    bbStatement.ifPresent(
-        statement -> {
-          log.info("Statement BB selecionado: {} (ID: {})", statement.getName(), statement.getId());
-          bestStatements.add(statement);
-        });
+    bbStatement.ifPresent(bestStatements::add);
 
     // Buscar para Sicoob
     Optional<Statement> sicoobStatement =
         getBestStatementForPeriod(Bank.SICOOB, startOfMonth, endOfMonth);
-    sicoobStatement.ifPresent(
-        statement -> {
-          log.info(
-              "Statement Sicoob selecionado: {} (ID: {})", statement.getName(), statement.getId());
-          bestStatements.add(statement);
-        });
+    sicoobStatement.ifPresent(bestStatements::add);
 
-    log.info("Total de statements selecionados: {}", bestStatements.size());
     return bestStatements;
   }
 
@@ -72,13 +58,6 @@ public class StatementSelectionService {
 
     if (!bestCoverageStatements.isEmpty()) {
       Statement bestStatement = bestCoverageStatements.get(0);
-      int transactionsInPeriod = countTransactionsInPeriod(bestStatement, startDate, endDate);
-
-      log.info(
-          "Encontrado statement com melhor cobertura para {}: {} transações no período",
-          bank,
-          transactionsInPeriod);
-
       return Optional.of(bestStatement);
     }
 
@@ -88,32 +67,11 @@ public class StatementSelectionService {
 
     if (!statementsWithTransactions.isEmpty()) {
       Statement statement = statementsWithTransactions.get(0);
-      int transactionsInPeriod = countTransactionsInPeriod(statement, startDate, endDate);
-
-      log.info(
-          "Encontrado statement com algumas transações para {}: {} transações no período",
-          bank,
-          transactionsInPeriod);
-
       return Optional.of(statement);
     }
 
     // Etapa 3: Pegar o statement mais recente como fallback
-    Optional<Statement> recentStatement =
-        statementRepository.findTopByBankOrderByCreatedAtDesc(bank);
-
-    if (recentStatement.isPresent()) {
-      log.warn(
-          "Nenhum statement com transações no período encontrado para {}. "
-              + "Usando o mais recente como fallback: {}",
-          bank,
-          recentStatement.get().getName());
-
-      return recentStatement;
-    }
-
-    log.warn("Nenhum statement encontrado para o banco: {}", bank);
-    return Optional.empty();
+    return statementRepository.findTopByBankOrderByCreatedAtDesc(bank);
   }
 
   /** Conta quantas transações existem no período especificado */

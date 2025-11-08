@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,7 +22,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /** Controller para operações CRUD de produtos Acessível apenas para usuários com role MANAGER */
-@Slf4j
 @RestController
 @RequestMapping("/products")
 @RequiredArgsConstructor
@@ -47,7 +45,6 @@ public class ProductController {
   })
   public ResponseEntity<List<ProductResponse>> getAllProducts() {
     List<ProductResponse> products = productService.getAllProducts();
-    log.info("Retornando {} produtos", products.size());
     return ResponseEntity.ok(products);
   }
 
@@ -147,7 +144,6 @@ public class ProductController {
           ProductRequest productRequest) {
 
     ProductResponse createdProduct = productService.createProduct(productRequest);
-    log.info("Produto criado: {}", createdProduct.name());
     return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
   }
 
@@ -171,7 +167,6 @@ public class ProductController {
     }
 
     ProductResponse updatedProduct = productService.updateProduct(id, productRequest);
-    log.info("Produto atualizado: {}", updatedProduct.name());
     return ResponseEntity.ok(updatedProduct);
   }
 
@@ -193,7 +188,6 @@ public class ProductController {
     }
 
     productService.deleteProduct(id);
-    log.info("Produto removido: ID {}", id);
     return ResponseEntity.noContent().build();
   }
 
