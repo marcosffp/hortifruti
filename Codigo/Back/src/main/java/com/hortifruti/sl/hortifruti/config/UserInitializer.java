@@ -17,14 +17,11 @@ import com.hortifruti.sl.hortifruti.repository.ProductRepository;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
-import com.hortifruti.sl.hortifruti.service.invoice.InvoiceService;
-import com.hortifruti.sl.hortifruti.service.invoice.ReportTaxService;
-
+import com.hortifruti.sl.hortifruti.service.invoice.tax.ReportTaxService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -44,7 +41,7 @@ public class UserInitializer implements CommandLineRunner {
   private final FreightConfigRepository freightConfigRepository;
   private final ClientRepository clientRepository;
   private final CombinedScoreRepository combinedScoreRepository;
-  private final Base64FileDecoder base64FileDecoder; 
+  private final Base64FileDecoder base64FileDecoder;
   private final ReportTaxService reportTaxService;
 
   @Override
@@ -57,7 +54,7 @@ public class UserInitializer implements CommandLineRunner {
     printReportData(); // Gera e exibe os relatórios
   }
 
-    // Método para exibir os relatórios com o período de um mês até hoje
+  // Método para exibir os relatórios com o período de um mês até hoje
   private void printReportData() {
     LocalDate startDate = LocalDate.now().minusMonths(1); // Um mês atrás
     LocalDate endDate = LocalDate.now(); // Hoje

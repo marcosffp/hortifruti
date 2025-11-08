@@ -12,5 +12,4 @@ public record SalesSummaryDetails(
     @JsonProperty("subtotal") BigDecimal subtotal,
     @JsonProperty("desconto") BigDecimal desconto,
     @JsonProperty("acrescimo") BigDecimal acrescimo,
-    @JsonProperty("total") BigDecimal total
-) {}
+    @JsonProperty("total") BigDecimal total) {}

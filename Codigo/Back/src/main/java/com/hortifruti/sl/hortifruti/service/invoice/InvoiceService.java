@@ -2,7 +2,6 @@ package com.hortifruti.sl.hortifruti.service.invoice;
 
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
-import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceTaxDetails;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -42,10 +41,4 @@ public class InvoiceService {
   public String cancelInvoice(String ref, String justificativa) {
     return invoiceCancelService.cancelInvoice(ref, justificativa);
   }
-
-  @Transactional
-  public InvoiceTaxDetails printRawInvoiceJson(String ref) {
-    return invoiceQueryService.printRawInvoiceJson(ref);
-  }
-
 }

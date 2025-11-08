@@ -34,8 +34,8 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
   @Query("SELECT cs FROM CombinedScore cs WHERE cs.status = 'PENDENTE' AND cs.dueDate <= :date")
   List<CombinedScore> findOverduePendingScores(@Param("date") LocalDate date);
 
-  @Query("SELECT cs FROM CombinedScore cs WHERE cs.hasInvoice = true AND cs.confirmedAt BETWEEN :startDate AND :endDate")
+  @Query(
+      "SELECT cs FROM CombinedScore cs WHERE cs.hasInvoice = true AND cs.confirmedAt BETWEEN :startDate AND :endDate")
   List<CombinedScore> findByHasInvoiceTrueAndConfirmedAtBetween(
-      @Param("startDate") LocalDate startDate,
-      @Param("endDate") LocalDate endDate);
+      @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }
