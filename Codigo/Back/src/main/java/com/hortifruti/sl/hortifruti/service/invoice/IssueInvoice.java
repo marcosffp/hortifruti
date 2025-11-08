@@ -56,19 +56,19 @@ public class IssueInvoice {
     try {
       CombinedScore combinedScore = fetchCombinedScore(combinedScoreId);
       Client client = fetchClient(combinedScore.getClientId());
+      
       RecipientRequest recipient = recipientService.createRecipientRequest(client.getId());
       List<ItemRequest> items = invoiceItemService.createItems(combinedScore.getGroupedProducts());
-
       IssueInvoiceRequest request = buildInvoiceRequest(combinedScoreId, recipient, items);
-      String ref = generateRef();
+      
+      String ref = UUID.randomUUID().toString();
       String payload = invoicePayloadService.buildFocusNfePayload(request, ref);
-
       String response = focusNfeApiClient.sendRequest(ref, payload);
-      InvoiceResponse notaFiscalResponse = parseResponse(response);
+      
+      InvoiceResponse invoiceResponse = objectMapper.readValue(response, InvoiceResponse.class);
+      updateCombinedScoreStatus(combinedScore, invoiceResponse);
 
-      updateCombinedScoreStatus(combinedScore, notaFiscalResponse);
-
-      return notaFiscalResponse;
+      return invoiceResponse;
     } catch (Exception e) {
       throw new InvoiceException("Erro ao emitir nota fiscal: " + e.getMessage(), e);
     }
@@ -77,43 +77,29 @@ public class IssueInvoice {
   private CombinedScore fetchCombinedScore(Long combinedScoreId) {
     return combinedScoreRepository
         .findById(combinedScoreId)
-        .orElseThrow(() -> new IllegalArgumentException("ID da compra não encontrado"));
+        .orElseThrow(() -> new InvoiceException("ID da compra não encontrado"));
   }
 
   private Client fetchClient(Long clientId) {
     return clientRepository
         .findById(clientId)
-        .orElseThrow(() -> new IllegalArgumentException("ID do cliente não encontrado"));
+        .orElseThrow(() -> new InvoiceException("ID do cliente não encontrado"));
   }
 
   private IssueInvoiceRequest buildInvoiceRequest(
       Long combinedScoreId, RecipientRequest recipient, List<ItemRequest> items) {
-    LocalDateTime dataEmissao = LocalDateTime.now();
     return new IssueInvoiceRequest(
         combinedScoreId,
         NATUREZA_OPERACAO,
-        dataEmissao.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+        LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
         recipient,
         items,
         info);
   }
 
-  private String generateRef() {
-    return UUID.randomUUID().toString();
-  }
-
-  private InvoiceResponse parseResponse(String response) {
-    try {
-      return objectMapper.readValue(response, InvoiceResponse.class);
-    } catch (Exception e) {
-      throw new RuntimeException("Erro ao parsear resposta da Focus NFe: " + e.getMessage(), e);
-    }
-  }
-
-  private void updateCombinedScoreStatus(
-      CombinedScore combinedScore, InvoiceResponse notaFiscalResponse) {
+  private void updateCombinedScoreStatus(CombinedScore combinedScore, InvoiceResponse invoiceResponse) {
     combinedScore.setHasInvoice(true);
-    combinedScore.setInvoiceRef(notaFiscalResponse.ref());
+    combinedScore.setInvoiceRef(invoiceResponse.ref());
     combinedScoreRepository.save(combinedScore);
   }
 }

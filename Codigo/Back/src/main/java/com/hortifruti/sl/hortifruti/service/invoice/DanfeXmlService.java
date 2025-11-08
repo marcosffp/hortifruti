@@ -35,9 +35,23 @@ public class DanfeXmlService {
       String response = focusNfeApiClient.sendGetRequest(ref, COMPLETE);
       ObjectMapper objectMapper = new ObjectMapper();
       JsonNode rootNode = objectMapper.readTree(response);
+      
+      // Verifica o status da nota
+      String status = rootNode.path("status").asText();
+      if (status.contains("processando") || status.contains("pendente")) {
+        throw new InvoiceException("A nota fiscal ainda está sendo processada. Aguarde alguns instantes e tente novamente.");
+      }
+      
       String filePath = rootNode.path(jsonPath).asText();
+      
+      // Verifica se o caminho do arquivo foi retornado
+      if (filePath == null || filePath.trim().isEmpty()) {
+        throw new InvoiceException("Arquivo ainda não disponível. A nota fiscal pode estar em processamento.");
+      }
 
       return filePath;
+    } catch (InvoiceException e) {
+      throw e;
     } catch (Exception e) {
       throw new InvoiceException("Erro ao consultar arquivo com referência: " + ref, e);
     }
@@ -63,10 +77,11 @@ public class DanfeXmlService {
               .accept(MediaType.ALL)
               .retrieve()
               .bodyToMono(byte[].class)
+              .timeout(java.time.Duration.ofSeconds(100)) 
               .block();
 
       if (fileBytes == null || fileBytes.length == 0) {
-        return ResponseEntity.notFound().build();
+        throw new InvoiceException("Arquivo não disponível ou vazio. A nota fiscal pode ainda estar sendo processada.");
       }
 
       Resource resource = new ByteArrayResource(fileBytes);
@@ -83,8 +98,10 @@ public class DanfeXmlService {
                   + "\"")
           .body(resource);
 
+    } catch (org.springframework.web.reactive.function.client.WebClientRequestException e) {
+      throw new InvoiceException("Erro de conexão ao baixar arquivo. A nota fiscal pode ainda estar sendo processada. Tente novamente em alguns instantes.", e);
     } catch (Exception e) {
-      throw new InvoiceException("Erro ao fazer download do arquivo", e);
+      throw new InvoiceException("Erro ao fazer download do arquivo: " + e.getMessage(), e);
     }
   }
 
@@ -97,16 +114,66 @@ public class DanfeXmlService {
     return "";
   }
 
+  private ResponseEntity<Resource> downloadWithRetry(
+      String ref, 
+      String fileType, 
+      MediaType mediaType, 
+      String filePrefix,
+      int initialDelay) {
+    
+    // Delay inicial (usado apenas para DANFE logo após criação)
+    if (initialDelay > 0) {
+      sleep(initialDelay);
+    }
+    
+    int maxRetries = 4;
+    int retryDelay = 4000;
+    
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        String filePath = "danfe".equals(fileType) 
+            ? getDanfePath(ref) 
+            : getXmlPath(ref);
+            
+        return downloadFileStream(ref, filePath, mediaType, filePrefix);
+        
+      } catch (InvoiceException e) {
+        if (attempt == maxRetries) {
+          String errorMsg = "danfe".equals(fileType)
+              ? "DANFE ainda não disponível. A nota fiscal foi criada com sucesso mas ainda está sendo processada. Aguarde alguns instantes e clique em 'Ver NF' para visualizar."
+              : "XML ainda não disponível. Aguarde alguns instantes e tente novamente.";
+          throw new InvoiceException(errorMsg, e);
+        }
+        
+        if (e.getMessage().contains("processando") || e.getMessage().contains("não disponível")) {
+          sleep(retryDelay);
+          retryDelay += 1000;
+        } else {
+          throw e;
+        }
+      }
+    }
+    
+    throw new InvoiceException("Não foi possível baixar o " + fileType.toUpperCase() + " após " + maxRetries + " tentativas");
+  }
+
+  private void sleep(int milliseconds) {
+    try {
+      Thread.sleep(milliseconds);
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      throw new InvoiceException("Timeout ao aguardar processamento da nota fiscal", ie);
+    }
+  }
+
   @Transactional
   protected ResponseEntity<Resource> downloadDanfe(String ref) {
-    String danfePath = getDanfePath(ref);
-    return downloadFileStream(ref, danfePath, MediaType.APPLICATION_PDF, "danfe");
+    return downloadWithRetry(ref, "danfe", MediaType.APPLICATION_PDF, "danfe", 4000);
   }
 
   @Transactional
   protected ResponseEntity<Resource> downloadXml(String ref) {
-    String xmlPath = getXmlPath(ref);
-    return downloadFileStream(ref, xmlPath, MediaType.APPLICATION_XML, "nota-fiscal");
+    return downloadWithRetry(ref, "xml", MediaType.APPLICATION_XML, "nota-fiscal", 0);
   }
 
   @Transactional

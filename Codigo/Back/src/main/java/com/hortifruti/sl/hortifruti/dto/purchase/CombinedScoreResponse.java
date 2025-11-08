@@ -13,5 +13,6 @@ public record CombinedScoreResponse(
     Status status, // Novo campo
     boolean hasBillet, // Novo campo
     boolean hasInvoice, // Novo campo
-    String yourNumber // Novo campo
+    String yourNumber, // Novo campo
+    String invoiceRef // Novo campo - Referência da nota fiscal
     ) {}

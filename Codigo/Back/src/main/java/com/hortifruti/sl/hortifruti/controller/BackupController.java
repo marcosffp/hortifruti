@@ -39,7 +39,7 @@ public class BackupController {
   @GetMapping("/storage")
   public ResponseEntity<BackupResponse> getDatabaseStorage() {
     BigDecimal databaseSize = backupService.getDatabaseSizeInMB();
-    return ResponseEntity.ok(new BackupResponse(databaseSize + " MB"));
+    return ResponseEntity.ok(new BackupResponse(databaseSize + "/" + backupService.getMaxDatabaseSizeInMB() + " MB"));
   }
 
   @GetMapping("/oauth2callback")
