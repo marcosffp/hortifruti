@@ -13,11 +13,11 @@ interface ShowInvoiceDataModalProps {
     onInvoiceCancelled?: () => void;
 }
 
-export default function ShowInvoiceDataModal({ 
-    isOpen, 
-    onClose, 
+export default function ShowInvoiceDataModal({
+    isOpen,
+    onClose,
     invoiceData,
-    onInvoiceCancelled 
+    onInvoiceCancelled
 }: ShowInvoiceDataModalProps) {
     const { getDanfe, getXml, cancelInvoice, isLoading } = useInvoice();
     const [showCancelModal, setShowCancelModal] = useState(false);
@@ -130,102 +130,98 @@ export default function ShowInvoiceDataModal({
     if (!isOpen) return null;
 
     return (
-        <>
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-                    {/* Header */}
-                    <div className="flex justify-between items-center p-6 border-b border-gray-300">
-                        <h2 className="text-xl font-semibold">Informações da Nota Fiscal</h2>
-                        <button
-                            onClick={onClose}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-auto">
+                {/* Header */}
+                <div className="sticky top-0 bg-white border-b border-gray-300 p-6 flex justify-between items-center">
+                    <h2 className="text-xl font-semibold">Informações da Nota Fiscal</h2>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
 
-                    {/* Conteúdo */}
-                    <div className="flex-1 overflow-auto p-6">
-                        <div className="space-y-4">
-                            {/* Status */}
-                            <div className="flex justify-between items-center pb-4 border-b">
-                                <span className="text-gray-600 font-medium">Status:</span>
-                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(invoiceData.status)}`}>
-                                    {invoiceData.status}
-                                </span>
+                {/* Body - Card Style (igual ao boleto) */}
+                <div className="p-6">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 space-y-4">
+                        {/* Status Badge */}
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Status:</span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(invoiceData.status)}`}>
+                                {invoiceData.status}
+                            </span>
+                        </div>
+
+                        {/* Cliente / Número / Referência */}
+                        <div className="py-3 border-t border-gray-200">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-600">Cliente</span>
+                                <p className="font-semibold text-right">{invoiceData.name}</p>
                             </div>
+                        </div>
 
-                            {/* Informações */}
-                            <div className="space-y-3">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Cliente:</span>
-                                    <span className="font-semibold text-right">{invoiceData.name}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Número:</span>
-                                    <span className="font-semibold">{invoiceData.number}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Referência:</span>
-                                    <span className="font-mono text-sm">{invoiceData.reference}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Valor Total:</span>
-                                    <span className="font-semibold text-green-600">
-                                        {formatCurrency(invoiceData.totalValue)}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Data de Emissão:</span>
-                                    <span>{formatDate(invoiceData.date)}</span>
-                                </div>
+                        <div className="flex items-center gap-3 py-3 border-t border-gray-200">
+                            <FileText className="w-5 h-5 text-gray-600" />
+                            <div className="flex-1">
+                                <span className="text-sm text-gray-600">Número</span>
+                                <p className="font-semibold">{invoiceData.number}</p>
                             </div>
+                        </div>
 
-                            {/* Ações de Download */}
-                            <div className="pt-4 border-t space-y-3">
-                                <h3 className="font-semibold text-gray-700 mb-2">Downloads</h3>
-                                <button
-                                    onClick={handleDownloadDanfe}
-                                    disabled={isLoading}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <FileText className="w-5 h-5" />
-                                    Baixar DANFE (PDF)
-                                </button>
-                                <button
-                                    onClick={handleDownloadXml}
-                                    disabled={isLoading}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <Download className="w-5 h-5" />
-                                    Baixar XML
-                                </button>
+                        <div className="flex items-center gap-3 py-3 border-t border-gray-200">
+                            <span className="text-sm text-gray-600">Referência</span>
+                            <div className="flex-1 text-right">
+                                <p className="font-mono text-sm">{invoiceData.reference}</p>
                             </div>
+                        </div>
 
-                            {/* Cancelamento */}
-                            {canCancelInvoice() && (
-                                <div className="pt-4 border-t">
-                                    <button
-                                        onClick={() => setShowCancelModal(true)}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                                    >
-                                        <AlertTriangle className="w-5 h-5" />
-                                        Cancelar Nota Fiscal
-                                    </button>
-                                </div>
-                            )}
+                        {/* Valor */}
+                        <div className="flex items-center gap-3 py-3 border-t border-gray-200">
+                            <div className="flex-1">
+                                <span className="text-sm text-gray-600">Valor Total</span>
+                                <p className="font-semibold text-lg text-green-600">{formatCurrency(invoiceData.totalValue)}</p>
+                            </div>
+                        </div>
+
+                        {/* Data de Emissão */}
+                        <div className="flex items-center gap-3 py-3 border-t border-gray-200">
+                            <div>
+                                <span className="text-sm text-gray-600">Data de Emissão</span>
+                                <p className="font-semibold">{formatDate(invoiceData.date)}</p>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    {/* Footer */}
-                    <div className="flex justify-end gap-3 p-6 border-t border-gray-300">
+                {/* Footer com botões de ação */}
+                <div className="sticky bottom-0 bg-white border-t border-gray-300 p-6 flex justify-end gap-3">
+                    <button
+                        onClick={handleDownloadDanfe}
+                        disabled={isLoading}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >                                                   
+                        <FileText className="w-4 h-4" />
+                        {isLoading ? "Baixando..." : "Baixar DANFE (PDF)"}
+                    </button>
+                    <button
+                        onClick={handleDownloadXml}
+                        disabled={isLoading}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                        <Download className="w-4 h-4" />
+                        Baixar XML
+                    </button>
+                    {canCancelInvoice() && (
                         <button
-                            onClick={onClose}
-                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                            onClick={() => setShowCancelModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors cursor-pointer"
                         >
-                            Fechar
+                            <AlertTriangle className="w-4 h-4" />
+                            Cancelar Nota Fiscal
                         </button>
-                    </div>
+                    )}
                 </div>
             </div>
 
@@ -240,7 +236,7 @@ export default function ShowInvoiceDataModal({
                                 </div>
                                 <h3 className="text-lg font-semibold">Cancelar Nota Fiscal</h3>
                             </div>
-                            
+
                             <p className="text-gray-600 mb-4">
                                 Para cancelar a nota fiscal, é necessário informar uma justificativa com no mínimo 15 caracteres.
                             </p>
@@ -284,6 +280,6 @@ export default function ShowInvoiceDataModal({
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 }
