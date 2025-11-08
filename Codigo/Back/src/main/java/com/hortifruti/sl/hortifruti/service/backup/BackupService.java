@@ -131,4 +131,8 @@ public class BackupService {
   public BigDecimal getDatabaseSizeInMB() {
     return databaseStorageService.getDatabaseSizeInMB();
   }
+
+  public BigDecimal getMaxDatabaseSizeInMB() {
+    return databaseStorageService.getMaxStorageInMB();
+  }
 }
