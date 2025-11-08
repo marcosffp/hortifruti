@@ -28,7 +28,7 @@ public class Recipient {
 
     // Remove formatação do documento (pontos, traços, barras)
     String documentoLimpo = client.getDocument().replaceAll("[^0-9]", "");
-    
+
     // Valida se o documento está presente
     if (documentoLimpo.isEmpty()) {
       throw new InvoiceException("Cliente não possui CPF ou CNPJ cadastrado");
