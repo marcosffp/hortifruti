@@ -6,7 +6,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,12 +15,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class SecurityFilter extends OncePerRequestFilter {
 
   private final TokenConfiguration tokenConfiguration;
-
   private final UserRepository userRepository;
+
+  @Value("${api.token.scheduler}")
+  private String schedulerStaticKey;
 
   @Override
   protected void doFilterInternal(
@@ -27,6 +30,12 @@ public class SecurityFilter extends OncePerRequestFilter {
       throws ServletException, IOException {
     try {
       String token = recoverToken(request);
+
+      if (isSchedulerEndpoint(request.getRequestURI()) && schedulerStaticKey.equals(token)) {
+        filterChain.doFilter(request, response);
+        return;
+      }
+
       if (token != null) {
         String email = tokenConfiguration.validateToken(token);
 
@@ -40,6 +49,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         }
       }
     } catch (Exception e) {
+      System.out.println("Erro no filtro de segurança: " + e.getMessage());
       response.setStatus(HttpServletResponse.SC_FORBIDDEN);
       response.getWriter().write("{\"erro\": \"Acesso negado: Token inválido ou expirado\"}");
       return;
@@ -57,5 +67,11 @@ public class SecurityFilter extends OncePerRequestFilter {
 
   private UserDetails loadByUserName(String username) {
     return userRepository.findByUsername(username);
+  }
+
+  private boolean isSchedulerEndpoint(String uri) {
+    return uri.startsWith("/scheduler/health")
+        || uri.startsWith("/scheduler/check-overdue")
+        || uri.startsWith("/scheduler/check-database-storage");
   }
 }
