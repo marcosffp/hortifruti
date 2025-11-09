@@ -1,13 +1,9 @@
-name: Execute Scheduler Endpoints
+name: Check Database Storage Scheduler
 
 on:
-  push:
-    branches:
-      - raiway
   schedule:
-    - cron: '0 0 */3 * *'   # check-overdue a cada 3 dias
-    - cron: '0 0 * * *'     # check-database-storage diariamente
-  workflow_dispatch:
+    - cron: '0 0 */15 * *' 
+  workflow_dispatch:          
 
 jobs:
   wake-up-application:
@@ -30,26 +26,16 @@ jobs:
           echo "❌ Não foi possível acordar a aplicação após 10 tentativas."
           exit 1
 
-  call-scheduler-endpoints:
+  call-check-database-storage:
     runs-on: ubuntu-latest
     needs: wake-up-application
     steps:
-      - name: Call "check-overdue" endpoint
-        run: |
-          echo "🔄 Chamando endpoint 'check-overdue'..."
-          curl -X POST "${{ secrets.API_BASE_URL }}/scheduler/check-overdue" \
-          -H "Authorization: Bearer ${{ secrets.API_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          --max-time 120 \
-          --retry 2
-          echo "✅ Check-overdue concluído!"
-
       - name: Call "check-database-storage" endpoint
         run: |
           echo "🔄 Chamando endpoint 'check-database-storage'..."
           curl -X POST "${{ secrets.API_BASE_URL }}/scheduler/check-database-storage" \
-          -H "Authorization: Bearer ${{ secrets.API_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          --max-time 120 \
-          --retry 2
+            -H "Authorization: Bearer ${{ secrets.API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            --max-time 120 \
+            --retry 2
           echo "✅ Check-database-storage concluído!"
