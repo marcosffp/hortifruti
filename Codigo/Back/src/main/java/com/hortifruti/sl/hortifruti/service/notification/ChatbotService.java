@@ -78,8 +78,8 @@ public class ChatbotService {
             
             if (isFromMe) {
                 // Mensagem enviada manualmente pelo atendente via WhatsApp
-                log.info("Mensagem manual detectada para {}. Pausando bot por 1 hora e mudando status para PAUSED.", phoneNumber);
-                chatSessionService.pauseBotForPhone(phoneNumber, 1);
+                log.info("Mensagem manual detectada para {}. Pausando bot por 2 horas e mudando status para PAUSED.", phoneNumber);
+                chatSessionService.pauseBotForPhone(phoneNumber, 2);
                 
                 // Muda o status da sessão para PAUSED (atendimento humano em andamento)
                 ChatSession session = chatSessionService.getOrCreateSession(phoneNumber);
@@ -174,40 +174,54 @@ public class ChatbotService {
     private void handleMenuSelection(ChatSession session, String phoneNumber, String message) {
         String normalized = message.toLowerCase().trim();
         
-        // Opção 1: Boleto
-        if (normalized.equals("1") || normalized.contains("boleto")) {
-            chatSessionService.setSessionContext(session.getId(), SessionContext.BOLETO);
-            chatSessionService.updateSessionStatus(session.getId(), SessionStatus.AWAITING_DOCUMENT);
-            String msg = "Para consultar seus boletos, por favor, envie seu CPF *(apenas números)* ou CNPJ.\n\n" +
-                    " Digite MENU para voltar ao início";
-            whatsAppService.sendTextMessage(phoneNumber, msg);
-            return;
-        }
-        
-        // Opção 2: Pedido
-        if (normalized.equals("2") || normalized.contains("pedido")) {
+        // Opção 1: Pedido
+        if (normalized.equals("1") || normalized.contains("pedido")) {
             chatSessionService.setSessionContext(session.getId(), SessionContext.PEDIDO);
             chatSessionService.updateSessionStatus(session.getId(), SessionStatus.AWAITING_HUMAN);
             String msg = "📋 *Fazer Pedido*\n\n" +
                     "Por favor, envie a lista de produtos que deseja:\n" +
                     "Nossa equipe vai receber seu pedido e responder em breve com disponibilidade e valores.\n\n" +
-                    "Horário de atendimento: \n"+
-                    "• Segunda a Sábado, 7h às 20h.\n"+
-                    "• Domingo, das 7h às 12h";
+                    "Horário de atendimento:\n" +
+                    "• Segunda a Sábado, 7h às 20h\n" +
+                    "• Domingo, 7h às 12h";
             whatsAppService.sendTextMessage(phoneNumber, msg);
             return;
         }
         
-        // Opção 3: Outro assunto
-        if (normalized.equals("3") || normalized.contains("outro")) {
+        // Opção 2: Outro assunto
+        if (normalized.equals("2") || normalized.contains("outro")) {
             chatSessionService.setSessionContext(session.getId(), SessionContext.OUTRO);
             chatSessionService.updateSessionStatus(session.getId(), SessionStatus.AWAITING_HUMAN);
-            String msg = "💬 *Falar com Atendimento*\n\n" +
+            String msg = "� *Falar com Atendimento*\n\n" +
                     "Por favor, descreva seu assunto ou dúvida:\n" +
                     "Nossa equipe vai receber sua mensagem e responder em breve.\n\n" +
-                   "Horário de atendimento: \n"+
-                    "• Segunda a Sábado, 7h às 20h.\n"+
-                    "• Domingo, das 7h às 12h";
+                    "Horário de atendimento:\n" +
+                    "• Segunda a Sábado, 7h às 20h\n" +
+                    "• Domingo, 7h às 12h";
+            whatsAppService.sendTextMessage(phoneNumber, msg);
+            return;
+        }
+        
+        // Opção 3: Boletos
+        if (normalized.equals("3") || normalized.contains("boleto")) {
+            chatSessionService.setSessionContext(session.getId(), SessionContext.BOLETO);
+            chatSessionService.updateSessionStatus(session.getId(), SessionStatus.AWAITING_DOCUMENT);
+            String msg = "� *Consultar Boletos Pendentes*\n\n" +
+                    "Para consultar seus boletos, por favor, envie seu CPF *(apenas números)* ou CNPJ.\n\n" +
+                    "Exemplo: 12345678900 ou 12345678000190\n\n" +
+                    "💡 Digite MENU para voltar ao início";
+            whatsAppService.sendTextMessage(phoneNumber, msg);
+            return;
+        }
+        
+        // Opção 4: Nota Fiscal
+        if (normalized.equals("4") || normalized.contains("nota fiscal") || normalized.contains("nf")) {
+            chatSessionService.setSessionContext(session.getId(), SessionContext.NOTA_FISCAL);
+            chatSessionService.updateSessionStatus(session.getId(), SessionStatus.AWAITING_DOCUMENT);
+            String msg = "📄 *Consultar Nota Fiscal*\n\n" +
+                    "Por favor, envie o *número da nota fiscal* que deseja consultar.\n\n" +
+                    "Exemplo: 123456\n\n" +
+                    "💡 Digite MENU para voltar ao início";
             whatsAppService.sendTextMessage(phoneNumber, msg);
             return;
         }
@@ -220,28 +234,157 @@ public class ChatbotService {
      * Envia o menu principal
      */
     private void sendMainMenu(String phoneNumber) {
-        String menu = "Olá! Bem-vindo ao Hortifruti SL!\n\n" +
+        String menu = "Olá! Bem-vindo ao Hortifruti SL! 🌿\n\n" +
                 "Como posso te ajudar hoje? Digite o número da opção:\n\n" +
-                "*1* - Boleto - Consultar boletos em aberto\n" +
-                "*2* - Pedido - Dúvidas sobre pedidos\n" +
-                "*3* - Outro assunto - Falar com atendimento\n\n" +
-                "Digite o número da opção desejada (1, 2 ou 3)\n\n" +
-                "A qualquer momento, digite MENU para voltar aqui";
+                "*1* - 📋 Pedido - Fazer novo pedido\n" +
+                "*2* - 💬 Outro assunto - Falar com atendimento\n" +
+                "*3* - 💰 Boletos - Consultar boletos pendentes\n" +
+                "*4* - 📄 Nota Fiscal - Consultar NF por número\n\n" +
+                "Digite o número da opção desejada (1, 2, 3 ou 4)\n\n" +
+                "💡 A qualquer momento, digite MENU para voltar aqui";
         whatsAppService.sendTextMessage(phoneNumber, menu);
     }
 
     /**
-     * Processa entrada de documento (CPF/CNPJ)
+     * Processa entrada de documento (CPF/CNPJ ou número de NF)
      */
     private void handleDocumentInput(ChatSession session, String phoneNumber, String message) {
-        String onlyDigits = message.replaceAll("[^0-9]", "");
+        SessionContext context = session.getContext();
         
-        if (onlyDigits.length() == 11 || onlyDigits.length() == 14) {
-            handleBilletRequestByDocument(session, phoneNumber, onlyDigits);
-        } else {
-            String msg = "Documento inválido. Por favor, envie um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.\n\n" +
-                    "Exemplo: 12345678900 ou 12345678000190";
+        // Se o contexto for NOTA_FISCAL, processa como número de NF
+        if (context == SessionContext.NOTA_FISCAL) {
+            handleInvoiceQuery(session, phoneNumber, message);
+            return;
+        }
+        
+        // Se o contexto for BOLETO, processa como CPF/CNPJ
+        if (context == SessionContext.BOLETO) {
+            String onlyDigits = message.replaceAll("[^0-9]", "");
+            
+            if (onlyDigits.length() == 11 || onlyDigits.length() == 14) {
+                handleBilletRequestByDocument(session, phoneNumber, onlyDigits);
+            } else {
+                String msg = "❌ Documento inválido. Por favor, envie um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.\n\n" +
+                        "Exemplo: 12345678900 ou 12345678000190\n\n" +
+                        "💡 Digite MENU para voltar ao início";
+                whatsAppService.sendTextMessage(phoneNumber, msg);
+            }
+            return;
+        }
+        
+        // Contexto desconhecido
+        sendMainMenu(phoneNumber);
+    }
+
+    /**
+     * Consulta e envia informações de uma nota fiscal específica pelo número/ref
+     * 
+     * @param session Sessão de chat ativa
+     * @param phoneNumber Número de telefone do cliente
+     * @param invoiceRef Número/referência da nota fiscal
+     */
+    private void handleInvoiceQuery(ChatSession session, String phoneNumber, String invoiceRef) {
+        try {
+            log.info("========================================");
+            log.info("Consultando nota fiscal por número/ref: {}", invoiceRef);
+            log.info("Telefone: {}", phoneNumber);
+            
+            // Consultar a nota fiscal usando o serviço
+            var invoiceResponse = invoiceService.consultInvoice(invoiceRef);
+            
+            if (invoiceResponse == null) {
+                String msg = "❌ Nota fiscal não encontrada.\n\n" +
+                        "Verifique se o número está correto e tente novamente.\n\n" +
+                        "💡 Digite MENU para voltar ao início";
+                whatsAppService.sendTextMessage(phoneNumber, msg);
+                chatSessionService.closeSession(session.getId(), "NOT_FOUND");
+                return;
+            }
+            
+            log.info("✓ Nota fiscal encontrada:");
+            log.info("  Nome: {}", invoiceResponse.name());
+            log.info("  Número: {}", invoiceResponse.number());
+            log.info("  Status: {}", invoiceResponse.status());
+            log.info("  Valor: R$ {}", invoiceResponse.totalValue());
+            log.info("  Data: {}", invoiceResponse.date());
+            log.info("  Referência: {}", invoiceResponse.reference());
+            
+            // Montar mensagem com informações da NF
+            StringBuilder messageBuilder = new StringBuilder();
+            messageBuilder.append("📄 *Nota Fiscal Encontrada*\n\n");
+            messageBuilder.append(String.format("*Número:* %s\n", invoiceResponse.number()));
+            messageBuilder.append(String.format("*Status:* %s\n", invoiceResponse.status()));
+            messageBuilder.append(String.format("*Valor Total:* R$ %.2f\n", invoiceResponse.totalValue()));
+            messageBuilder.append(String.format("*Data:* %s\n", invoiceResponse.date()));
+            messageBuilder.append(String.format("*Cliente:* %s\n\n", invoiceResponse.name()));
+            
+            // Se a NF estiver autorizada, oferece download do PDF
+            if ("autorizado".equalsIgnoreCase(invoiceResponse.status())) {
+                messageBuilder.append("✅ *Documento Disponível*\n\n");
+                messageBuilder.append("Aguarde enquanto preparo o PDF da nota fiscal...");
+                whatsAppService.sendTextMessage(phoneNumber, messageBuilder.toString());
+                
+                // Baixar e enviar o DANFE
+                log.info("Baixando DANFE para ref: {}", invoiceResponse.reference());
+                try {
+                    ResponseEntity<Resource> danfeResponse = invoiceService.downloadDanfe(invoiceResponse.reference());
+                    Resource resource = danfeResponse.getBody();
+                    
+                    if (resource != null) {
+                        byte[] danfePdf = resource.getContentAsByteArray();
+                        if (danfePdf != null && danfePdf.length > 0) {
+                            String fileName = "NotaFiscal-" + invoiceResponse.number() + ".pdf";
+                            boolean sent = whatsAppService.sendDocument(
+                                phoneNumber,
+                                "📄 Nota Fiscal nº " + invoiceResponse.number(),
+                                danfePdf,
+                                fileName
+                            );
+                            
+                            if (sent) {
+                                log.info("✓ DANFE enviado com sucesso!");
+                            } else {
+                                log.error("✗ Falha ao enviar DANFE");
+                                whatsAppService.sendTextMessage(phoneNumber, 
+                                    "⚠️ Houve um problema ao enviar o documento. Por favor, tente novamente.");
+                            }
+                        } else {
+                            log.warn("DANFE retornado é nulo ou vazio");
+                            whatsAppService.sendTextMessage(phoneNumber, 
+                                "⚠️ Documento não disponível no momento. Entre em contato: (31) 3641-2244");
+                        }
+                    } else {
+                        log.warn("Resource DANFE é nulo");
+                        whatsAppService.sendTextMessage(phoneNumber, 
+                            "⚠️ Documento não disponível no momento. Entre em contato: (31) 3641-2244");
+                    }
+                } catch (Exception ex) {
+                    log.error("Erro ao baixar DANFE: {}", ex.getMessage(), ex);
+                    whatsAppService.sendTextMessage(phoneNumber, 
+                        "❌ Erro ao processar o documento. Entre em contato: (31) 3641-2244");
+                }
+            } else {
+                // NF não autorizada
+                messageBuilder.append("⚠️ *Documento Indisponível*\n\n");
+                messageBuilder.append("Esta nota fiscal não está autorizada para download.\n");
+                messageBuilder.append("Status atual: ").append(invoiceResponse.status()).append("\n\n");
+                messageBuilder.append("Para mais informações, entre em contato:\n");
+                messageBuilder.append("📞 (31) 3641-2244");
+                whatsAppService.sendTextMessage(phoneNumber, messageBuilder.toString());
+            }
+            
+            // Fechar sessão
+            chatSessionService.closeSession(session.getId(), "COMPLETED");
+            log.info("Sessão {} finalizada", session.getId());
+            log.info("========================================");
+            
+        } catch (Exception e) {
+            log.error("Erro ao consultar nota fiscal {}: {}", invoiceRef, e.getMessage(), e);
+            String msg = "❌ Erro ao consultar a nota fiscal.\n\n" +
+                    "Por favor, verifique o número e tente novamente ou entre em contato:\n" +
+                    "📞 (31) 3641-2244";
             whatsAppService.sendTextMessage(phoneNumber, msg);
+            chatSessionService.closeSession(session.getId(), "ERROR");
         }
     }
 
