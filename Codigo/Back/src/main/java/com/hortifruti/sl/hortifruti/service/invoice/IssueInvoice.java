@@ -56,15 +56,15 @@ public class IssueInvoice {
     try {
       CombinedScore combinedScore = fetchCombinedScore(combinedScoreId);
       Client client = fetchClient(combinedScore.getClientId());
-      
+
       RecipientRequest recipient = recipientService.createRecipientRequest(client.getId());
       List<ItemRequest> items = invoiceItemService.createItems(combinedScore.getGroupedProducts());
       IssueInvoiceRequest request = buildInvoiceRequest(combinedScoreId, recipient, items);
-      
+
       String ref = UUID.randomUUID().toString();
       String payload = invoicePayloadService.buildFocusNfePayload(request, ref);
       String response = focusNfeApiClient.sendRequest(ref, payload);
-      
+
       InvoiceResponse invoiceResponse = objectMapper.readValue(response, InvoiceResponse.class);
       updateCombinedScoreStatus(combinedScore, invoiceResponse);
 
@@ -97,7 +97,8 @@ public class IssueInvoice {
         info);
   }
 
-  private void updateCombinedScoreStatus(CombinedScore combinedScore, InvoiceResponse invoiceResponse) {
+  private void updateCombinedScoreStatus(
+      CombinedScore combinedScore, InvoiceResponse invoiceResponse) {
     combinedScore.setHasInvoice(true);
     combinedScore.setInvoiceRef(invoiceResponse.ref());
     combinedScoreRepository.save(combinedScore);
