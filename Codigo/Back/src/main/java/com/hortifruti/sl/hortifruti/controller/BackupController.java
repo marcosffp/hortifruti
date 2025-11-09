@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,6 +25,7 @@ public class BackupController {
    * @param endDate Data final do período (formato ISO, opcional).
    * @return Mensagem de sucesso ou erro.
    */
+  @PreAuthorize("hasRole('MANAGER')")
   @PostMapping
   public ResponseEntity<BackupResponse> performBackup(
       @RequestParam(required = false) String startDate,
@@ -36,6 +38,7 @@ public class BackupController {
    *
    * @return Tamanho do banco de dados em MB.
    */
+  @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/storage")
   public ResponseEntity<BackupResponse> getDatabaseStorage() {
     BigDecimal databaseSize = backupService.getDatabaseSizeInMB();
@@ -43,6 +46,7 @@ public class BackupController {
         new BackupResponse(databaseSize + "/" + backupService.getMaxDatabaseSizeInMB() + " MB"));
   }
 
+  @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/oauth2callback")
   public ResponseEntity<String> handleOAuth2Callback(
       @RequestParam("code") String authorizationCode) {
