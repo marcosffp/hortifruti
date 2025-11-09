@@ -144,16 +144,12 @@ public class DashboardService {
             .collect(
                 Collectors.groupingBy(
                     Transaction::getCategory,
-                    Collectors.reducing(
-                        BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)));
+                    Collectors.reducing(BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)));
 
     // Transforma os valores finais em absolutos
     Map<Category, BigDecimal> absoluteCategoryTotals =
         categoryTotals.entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    Map.Entry::getKey,
-                    entry -> entry.getValue().abs()));
+            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().abs()));
 
     // Calcula o total absoluto geral
     BigDecimal totalAmount =
@@ -173,7 +169,7 @@ public class DashboardService {
                 }));
   }
 
-private List<Map<String, Object>> getExpenseCategoryRanking(Month month, int year) {
+  private List<Map<String, Object>> getExpenseCategoryRanking(Month month, int year) {
     LocalDate startDate = LocalDate.of(year, month, 1);
     LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
 
@@ -196,16 +192,12 @@ private List<Map<String, Object>> getExpenseCategoryRanking(Month month, int yea
             .collect(
                 Collectors.groupingBy(
                     Transaction::getCategory,
-                    Collectors.reducing(
-                        BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)));
+                    Collectors.reducing(BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)));
 
     // Transforma os valores finais em absolutos
     Map<Category, BigDecimal> absoluteCategoryCosts =
         categoryCosts.entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    Map.Entry::getKey,
-                    entry -> entry.getValue().abs()));
+            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().abs()));
 
     // Cria o ranking ordenado por valor absoluto (decrescente)
     List<Map<String, Object>> ranking =
@@ -226,7 +218,8 @@ private List<Map<String, Object>> getExpenseCategoryRanking(Month month, int yea
     }
 
     return ranking;
-}
+  }
+
   /**
    * Retorna o fluxo de vendas agrupado por semana. Utiliza a data de CONFIRMAÇÃO (confirmedAt) ao
    * invés de vencimento (dueDate).

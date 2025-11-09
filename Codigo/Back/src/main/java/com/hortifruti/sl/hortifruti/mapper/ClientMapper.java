@@ -24,5 +24,7 @@ public interface ClientMapper {
   @Mapping(source = "document", target = "document")
   @Mapping(source = "stateRegistration", target = "stateRegistration")
   @Mapping(source = "stateIndicator", target = "stateIndicator")
+  @Mapping(source = "lastPurchaseDate", target = "lastPurchaseDate")
+  @Mapping(source = "totalPurchaseValue", target = "totalPurchaseValue")
   ClientResponse toClientResponse(Client client);
 }
