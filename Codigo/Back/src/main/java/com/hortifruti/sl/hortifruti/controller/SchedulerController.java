@@ -6,6 +6,7 @@ import com.hortifruti.sl.hortifruti.service.scheduler.DatabaseStorageSchedulerSe
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,14 +22,27 @@ public class SchedulerController {
   private final ApiTokenService apiTokenService;
 
   /**
+   * Endpoint para verificar se a aplicação está ativa. Requer token de autenticação específico para
+   * APIs programáticas.
+   */
+  @GetMapping("/health")
+  public ResponseEntity<String> checkHealth(
+      @RequestHeader(value = "Authorization", required = false) String authHeader) {
+    if (!isValidToken(authHeader)) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+          .body("Token de autenticação inválido ou não fornecido");
+    }
+
+    return ResponseEntity.ok("Aplicação está ativa e funcionando corretamente.");
+  }
+
+  /**
    * Endpoint para executar a verificação de CombinedScores vencidos manualmente. Requer token de
    * autenticação específico para APIs programáticas.
    */
   @PostMapping("/check-overdue")
   public ResponseEntity<String> checkOverdueCombinedScores(
       @RequestHeader(value = "Authorization", required = false) String authHeader) {
-
-    // Validação do token
     if (!isValidToken(authHeader)) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
           .body("Token de autenticação inválido ou não fornecido");
@@ -45,8 +59,6 @@ public class SchedulerController {
   @PostMapping("/check-database-storage")
   public ResponseEntity<String> checkDatabaseStorage(
       @RequestHeader(value = "Authorization", required = false) String authHeader) {
-
-    // Validação do token
     if (!isValidToken(authHeader)) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
           .body("Token de autenticação inválido ou não fornecido");
@@ -66,7 +78,7 @@ public class SchedulerController {
       return false;
     }
 
-    String token = authHeader.substring(7); // Remove "Bearer "
+    String token = authHeader.substring(7);
     return apiTokenService.validateSchedulerToken(token);
   }
 }
