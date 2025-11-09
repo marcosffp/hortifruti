@@ -61,7 +61,7 @@ public class SecurityConfig {
         List.of(
             "http://localhost:8080",
             "http://localhost:3000",
-            "https://plf-es-2025-2-ti4-1247100-hortifruti-sl.onrender.com"));
+            "https://plf-es-2025-2-ti4-1247100-hortifruti-sl-production.up.railway.app"));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
     configuration.setAllowedHeaders(List.of("*"));
     configuration.setAllowCredentials(true);
