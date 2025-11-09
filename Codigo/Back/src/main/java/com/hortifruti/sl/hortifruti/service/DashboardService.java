@@ -138,18 +138,29 @@ public class DashboardService {
     List<Transaction> transactions =
         transactionRepository.findTransactionsByDateRange(startDate, endDate);
 
+    // Calcula o total por categoria considerando valores positivos e negativos
     Map<Category, BigDecimal> categoryTotals =
         transactions.stream()
             .collect(
                 Collectors.groupingBy(
                     Transaction::getCategory,
                     Collectors.reducing(
-                        BigDecimal.ZERO, t -> t.getAmount().abs(), BigDecimal::add)));
+                        BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)));
 
+    // Transforma os valores finais em absolutos
+    Map<Category, BigDecimal> absoluteCategoryTotals =
+        categoryTotals.entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry -> entry.getValue().abs()));
+
+    // Calcula o total absoluto geral
     BigDecimal totalAmount =
-        categoryTotals.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        absoluteCategoryTotals.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    return categoryTotals.entrySet().stream()
+    // Retorna os dados com porcentagem e valor absoluto
+    return absoluteCategoryTotals.entrySet().stream()
         .collect(
             Collectors.toMap(
                 Map.Entry::getKey,
@@ -162,7 +173,7 @@ public class DashboardService {
                 }));
   }
 
-  private List<Map<String, Object>> getExpenseCategoryRanking(Month month, int year) {
+private List<Map<String, Object>> getExpenseCategoryRanking(Month month, int year) {
     LocalDate startDate = LocalDate.of(year, month, 1);
     LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
 
@@ -178,6 +189,7 @@ public class DashboardService {
             Category.FISCAL,
             Category.IMPOSTOS);
 
+    // Calcula o total por categoria considerando valores positivos e negativos
     Map<Category, BigDecimal> categoryCosts =
         transactionRepository.findTransactionsByDateRange(startDate, endDate).stream()
             .filter(transaction -> expenseCategories.contains(transaction.getCategory()))
@@ -185,10 +197,19 @@ public class DashboardService {
                 Collectors.groupingBy(
                     Transaction::getCategory,
                     Collectors.reducing(
-                        BigDecimal.ZERO, t -> t.getAmount().abs(), BigDecimal::add)));
+                        BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)));
 
-    List<Map<String, Object>> ranking =
+    // Transforma os valores finais em absolutos
+    Map<Category, BigDecimal> absoluteCategoryCosts =
         categoryCosts.entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry -> entry.getValue().abs()));
+
+    // Cria o ranking ordenado por valor absoluto (decrescente)
+    List<Map<String, Object>> ranking =
+        absoluteCategoryCosts.entrySet().stream()
             .sorted(Map.Entry.<Category, BigDecimal>comparingByValue().reversed())
             .map(
                 entry -> {
@@ -199,13 +220,13 @@ public class DashboardService {
                 })
             .collect(Collectors.toList());
 
+    // Adiciona o rank numérico ao resultado
     for (int i = 0; i < ranking.size(); i++) {
       ranking.get(i).put("Rank", i + 1);
     }
 
     return ranking;
-  }
-
+}
   /**
    * Retorna o fluxo de vendas agrupado por semana. Utiliza a data de CONFIRMAÇÃO (confirmedAt) ao
    * invés de vencimento (dueDate).
