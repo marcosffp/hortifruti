@@ -35,7 +35,6 @@ jobs:
     needs: wake-up-application
     steps:
       - name: Call "check-overdue" endpoint
-        if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '0 0 */3 * *' }}
         run: |
           echo "🔄 Chamando endpoint 'check-overdue'..."
           curl -X POST "${{ secrets.API_BASE_URL }}/scheduler/check-overdue" \
@@ -46,7 +45,6 @@ jobs:
           echo "✅ Check-overdue concluído!"
 
       - name: Call "check-database-storage" endpoint
-        if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '0 0 * * *' }}
         run: |
           echo "🔄 Chamando endpoint 'check-database-storage'..."
           curl -X POST "${{ secrets.API_BASE_URL }}/scheduler/check-database-storage" \
