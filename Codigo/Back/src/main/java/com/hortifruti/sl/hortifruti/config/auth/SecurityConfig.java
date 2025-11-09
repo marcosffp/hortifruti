@@ -41,7 +41,8 @@ public class SecurityConfig {
                         "/v3/api-docs/**",
                         "/backup/**",
                         "/invoices/**",
-                        "/scheduler/**")
+                        "/scheduler/**",
+                        "/icms-report/**")
                     .permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.GET, "/clients/**")
                     .permitAll()

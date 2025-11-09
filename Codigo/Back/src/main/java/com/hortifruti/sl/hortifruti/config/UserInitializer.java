@@ -14,8 +14,6 @@ import com.hortifruti.sl.hortifruti.repository.ProductRepository;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
-import com.hortifruti.sl.hortifruti.service.invoice.InvoiceService;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -38,13 +36,11 @@ public class UserInitializer implements CommandLineRunner {
   private final FreightConfigRepository freightConfigRepository;
   private final ClientRepository clientRepository;
   private final CombinedScoreRepository combinedScoreRepository;
-  private final InvoiceService invoiceService;
-  private final Base64FileDecoder base64FileDecoder; // Adicionado para salvar o cliente
+  private final Base64FileDecoder base64FileDecoder;
 
   @Override
   public void run(String... args) throws Exception {
     decodeBase64Files(); // Decodifica os arquivos Base64 primeiro
-    invoiceService.printRawInvoiceJson("719ad504-116a-46e7-ab4f-7735c13b1034");
     initializeUsers();
     initializeFreightConfig();
     initializeClients(); // Inicializa os clientes

@@ -17,6 +17,7 @@ import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.GroupedProductRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -239,5 +240,10 @@ public class CombinedScoreService {
     combinedScore.setTotalValue(newTotal);
 
     combinedScoreRepository.save(combinedScore);
+  }
+
+  @Transactional(readOnly = true)
+  public List<CombinedScore> getCombinedScoresWithInvoice(LocalDate startDate, LocalDate endDate) {
+    return combinedScoreRepository.findByHasInvoiceTrueAndConfirmedAtBetween(startDate, endDate);
   }
 }
