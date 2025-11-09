@@ -11,7 +11,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.ZipParameters;
 import org.apache.poi.ss.usermodel.*;
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class FileGenerationService {
 
   private final StatementSelectionService statementSelectionService;
@@ -366,7 +364,6 @@ public class FileGenerationService {
       return zipBytes;
 
     } catch (Exception e) {
-      log.error("Erro ao gerar ZIP de notas fiscais", e);
       return new byte[0]; // Retorna array vazio se houver erro
     }
   }

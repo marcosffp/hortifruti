@@ -2,11 +2,12 @@ package com.hortifruti.sl.hortifruti.controller;
 
 import com.hortifruti.sl.hortifruti.dto.BackupResponse;
 import com.hortifruti.sl.hortifruti.service.backup.BackupService;
-import lombok.RequiredArgsConstructor;
-
+import com.hortifruti.sl.hortifruti.service.backup.oauth.GoogleOAuthService;
 import java.math.BigDecimal;
-
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class BackupController {
 
   private final BackupService backupService;
+  private final GoogleOAuthService googleOAuthService;
 
   /**
    * Endpoint para realizar o backup completo ou por período.
@@ -23,6 +25,7 @@ public class BackupController {
    * @param endDate Data final do período (formato ISO, opcional).
    * @return Mensagem de sucesso ou erro.
    */
+  @PreAuthorize("hasRole('MANAGER')")
   @PostMapping
   public ResponseEntity<BackupResponse> performBackup(
       @RequestParam(required = false) String startDate,
@@ -35,9 +38,25 @@ public class BackupController {
    *
    * @return Tamanho do banco de dados em MB.
    */
+  @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/storage")
   public ResponseEntity<BackupResponse> getDatabaseStorage() {
     BigDecimal databaseSize = backupService.getDatabaseSizeInMB();
-    return ResponseEntity.ok(new BackupResponse( databaseSize + " MB"));
+    return ResponseEntity.ok(
+        new BackupResponse(databaseSize + "/" + backupService.getMaxDatabaseSizeInMB() + " MB"));
+  }
+
+  @PreAuthorize("hasRole('MANAGER')")
+  @GetMapping("/oauth2callback")
+  public ResponseEntity<String> handleOAuth2Callback(
+      @RequestParam("code") String authorizationCode) {
+    try {
+      googleOAuthService.handleOAuth2Callback(authorizationCode);
+      return ResponseEntity.ok(
+          "Autenticação concluída com sucesso. Você pode retornar ao processo de backup.");
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body("Erro ao processar o callback de autorização: " + e.getMessage());
+    }
   }
 }

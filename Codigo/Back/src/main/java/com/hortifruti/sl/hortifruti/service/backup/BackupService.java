@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.service.backup;
 
 import com.hortifruti.sl.hortifruti.dto.BackupResponse;
 import com.hortifruti.sl.hortifruti.exception.BackupException;
+import com.hortifruti.sl.hortifruti.service.backup.folders.GoogleFolderService;
 import com.hortifruti.sl.hortifruti.service.scheduler.DatabaseStorageService;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -10,16 +11,15 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
 @AllArgsConstructor
-@Slf4j
 public class BackupService {
 
+  private final GoogleFolderService googleFolderService;
+
   private final CsvGeneratorService csvGeneratorService;
-  private final GoogleDriveService googleDriveService;
   private final BackupPathService backupPathService;
   private final EntityCleanupService entityCleanupService;
   private final DatabaseStorageService databaseStorageService;
@@ -32,58 +32,40 @@ public class BackupService {
    * @return Mensagem de sucesso ou erro.
    */
   public BackupResponse performBackupForPeriod(LocalDateTime startDate, LocalDateTime endDate) {
-    log.info("Iniciando backup para o período: {} a {}", startDate, endDate);
     try {
       // Gerar arquivos CSV
-      log.info("Gerando arquivos CSV...");
       List<String> csvFiles = csvGeneratorService.generateCSVsForPeriod(startDate, endDate);
-      log.info("Arquivos CSV gerados com sucesso. Lista de arquivos: {}", csvFiles);
 
       // Fazer upload dos arquivos
       for (String filePath : csvFiles) {
         String fileName = filePath.substring(filePath.lastIndexOf("\\") + 1);
-        log.info("Preparando upload do arquivo: {}", fileName);
 
         String folderId =
             backupPathService.getOrCreateBackupPath(
                 "Backup", startDate.toLocalDate(), endDate.toLocalDate());
-        log.info(
-            "Pasta de destino no Google Drive obtida/criada com sucesso. Folder ID: {}", folderId);
 
-        googleDriveService.uploadFile(filePath, fileName, folderId);
-        log.info("Upload concluído com sucesso para o arquivo: {}", fileName);
+        googleFolderService.uploadFile(filePath, fileName, folderId);
 
-        // Remover o arquivo temporário após o upload
         try {
           Files.delete(Paths.get(filePath));
-          log.info("Arquivo temporário removido com sucesso: {}", filePath);
         } catch (IOException e) {
-          log.warn(
-              "Não foi possível remover o arquivo temporário: {}. Erro: {}",
-              filePath,
-              e.getMessage());
+          System.out.println("Não foi possível deletar o arquivo temporário: " + filePath);
         }
       }
 
-      // Remover entidades do banco
-      log.info(
-          "Iniciando remoção de entidades do banco de dados para o período: {} a {}",
-          startDate,
-          endDate);
       entityCleanupService.cleanupEntitiesForPeriod(startDate, endDate);
-      log.info("Entidades removidas com sucesso do banco de dados.");
 
-      return new BackupResponse("Backup para o período " + startDate + " a " + endDate + " concluído com sucesso.");
+      return new BackupResponse(
+          "Backup para o período " + startDate + " a " + endDate + " concluído com sucesso.");
     } catch (BackupException e) {
-      // Re-lançar exceções de autorização para serem tratadas no método handleBackupRequestWithAuthLink
+      // Re-lançar exceções de autorização para serem tratadas no método
+      // handleBackupRequestWithAuthLink
       if (e.getMessage() != null && e.getMessage().startsWith("AUTHORIZATION_REQUIRED:")) {
         throw e;
       }
-      log.error("Erro ao executar o backup: {}", e.getMessage(), e);
       throw new BackupException(
           "Erro ao executar o backup para o período: " + startDate + " a " + endDate, e);
     } catch (Exception e) {
-      log.error("Erro ao executar o backup: {}", e.getMessage(), e);
       throw new BackupException(
           "Erro ao executar o backup para o período: " + startDate + " a " + endDate, e);
     }
@@ -97,31 +79,19 @@ public class BackupService {
    * @return Mensagem de sucesso ou erro.
    */
   public BackupResponse handleBackupRequest(String startDate, String endDate) {
-    log.info("Recebendo solicitação de backup com startDate: {} e endDate: {}", startDate, endDate);
     try {
       if (startDate != null && endDate != null) {
-        log.info("Tentando converter startDate e endDate para LocalDateTime...");
 
         // Ajusta o formato das datas para evitar duplicação
         String formattedStartDate = startDate.contains("T") ? startDate : startDate + "T00:00:00";
         String formattedEndDate = endDate.contains("T") ? endDate : endDate + "T23:59:59";
 
-        log.debug(
-            "Datas formatadas: startDate = {}, endDate = {}", formattedStartDate, formattedEndDate);
-
         LocalDateTime start = LocalDateTime.parse(formattedStartDate);
         LocalDateTime end = LocalDateTime.parse(formattedEndDate);
 
-        log.info("Datas convertidas com sucesso: startDate = {}, endDate = {}", start, end);
         return performBackupForPeriod(start, end);
-      } else {
-        log.warn(
-            "Parâmetros startDate ou endDate estão nulos. startDate: {}, endDate: {}",
-            startDate,
-            endDate);
       }
     } catch (Exception e) {
-      log.error("Erro ao processar a solicitação de backup: {}", e.getMessage(), e);
       throw new BackupException("Erro ao processar a solicitação de backup: " + e.getMessage(), e);
     }
     return new BackupResponse("Backup não realizado: parâmetros inválidos ou erro desconhecido.");
@@ -135,46 +105,34 @@ public class BackupService {
    * @return Mensagem de sucesso ou erro.
    */
   public BackupResponse handleBackupRequestWithAuthLink(String startDate, String endDate) {
-    log.info("Recebendo solicitação de backup com startDate: {} e endDate: {}", startDate, endDate);
     try {
       if (startDate != null && endDate != null) {
-        log.info("Tentando converter startDate e endDate para LocalDateTime...");
 
         String formattedStartDate = startDate.contains("T") ? startDate : startDate + "T00:00:00";
         String formattedEndDate = endDate.contains("T") ? endDate : endDate + "T23:59:59";
 
-        log.debug(
-            "Datas formatadas: startDate = {}, endDate = {}", formattedStartDate, formattedEndDate);
-
         LocalDateTime start = LocalDateTime.parse(formattedStartDate);
         LocalDateTime end = LocalDateTime.parse(formattedEndDate);
 
-        log.info("Datas convertidas com sucesso: startDate = {}, endDate = {}", start, end);
         return performBackupForPeriod(start, end);
-      } else {
-        log.warn(
-            "Parâmetros startDate ou endDate estão nulos. startDate: {}, endDate: {}",
-            startDate,
-            endDate);
       }
     } catch (BackupException e) {
-      // Verificar se é uma exceção de autorização necessária
       if (e.getMessage() != null && e.getMessage().startsWith("AUTHORIZATION_REQUIRED:")) {
         String authUrl = e.getMessage().substring("AUTHORIZATION_REQUIRED:".length());
-        log.info("Autorização necessária. Retornando URL: {}", authUrl);
         return new BackupResponse(authUrl);
       }
-      log.error("Erro ao processar a solicitação de backup: {}", e.getMessage(), e);
       throw e;
     } catch (Exception e) {
-      log.error("Erro ao processar a solicitação de backup: {}", e.getMessage(), e);
       throw new BackupException("Erro ao processar a solicitação de backup: " + e.getMessage(), e);
     }
     return new BackupResponse("Backup não realizado: parâmetros inválidos ou erro desconhecido.");
   }
 
-  // Novo método para obter o tamanho do banco de dados
   public BigDecimal getDatabaseSizeInMB() {
     return databaseStorageService.getDatabaseSizeInMB();
+  }
+
+  public BigDecimal getMaxDatabaseSizeInMB() {
+    return databaseStorageService.getMaxStorageInMB();
   }
 }

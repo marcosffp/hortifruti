@@ -36,7 +36,7 @@ public class UserInitializer implements CommandLineRunner {
   private final FreightConfigRepository freightConfigRepository;
   private final ClientRepository clientRepository;
   private final CombinedScoreRepository combinedScoreRepository;
-  private final Base64FileDecoder base64FileDecoder; // Adicionado para salvar o cliente
+  private final Base64FileDecoder base64FileDecoder;
 
   @Override
   public void run(String... args) throws Exception {

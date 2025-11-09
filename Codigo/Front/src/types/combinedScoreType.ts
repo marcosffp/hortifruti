@@ -4,10 +4,11 @@ export interface CombinedScoreType {
   totalValue: number;
   dueDate: string | null;
   confirmedAt: string;
-  status: "PENDING" | "PAID" | "CANCELLED" | "OVERDUE";
+  status: string;
   hasBillet: boolean;
   hasInvoice: boolean;
   number: string;
+  invoiceRef?: string | null;
 }
 
 export interface CombinedScoreResponse {

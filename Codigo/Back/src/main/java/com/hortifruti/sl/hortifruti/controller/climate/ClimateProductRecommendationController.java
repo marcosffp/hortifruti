@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/recommendations")
 @RequiredArgsConstructor
@@ -50,12 +48,8 @@ public class ClimateProductRecommendationController {
       throw new RecommendationException("Categoria de temperatura não pode ser nula.");
     }
 
-    log.info("Buscando produtos para categoria de temperatura: {}", category);
-
     List<ClimateProductRecommendationDTO> products =
         recommendationService.getProductsByTemperatureCategory(category);
-
-    log.info("Encontrados {} produtos para categoria {}", products.size(), category);
 
     return ResponseEntity.ok(products);
   }
@@ -91,12 +85,8 @@ public class ClimateProductRecommendationController {
       throw new RecommendationException("Formato de data inválido. Use o formato YYYY-MM-DD.");
     }
 
-    log.info("Buscando recomendações para a data: {}", date);
-
     List<ClimateProductRecommendationDTO> recommendations =
         recommendationService.getRecommendationsByDate(date);
-
-    log.info("Encontradas {} recomendações para a data {}", recommendations.size(), date);
 
     return ResponseEntity.ok(recommendations);
   }

@@ -1,7 +1,3 @@
 package com.hortifruti.sl.hortifruti.dto;
 
-public record BackupResponse (
-    String message
-) {
-    
-}
+public record BackupResponse(String message) {}

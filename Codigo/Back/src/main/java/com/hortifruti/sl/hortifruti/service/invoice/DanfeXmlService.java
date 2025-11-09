@@ -5,6 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.config.FocusNfeApiClient;
 import com.hortifruti.sl.hortifruti.exception.InvoiceException;
 import jakarta.transaction.Transactional;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -31,47 +38,32 @@ public class DanfeXmlService {
       String response = focusNfeApiClient.sendGetRequest(ref, COMPLETE);
       ObjectMapper objectMapper = new ObjectMapper();
       JsonNode rootNode = objectMapper.readTree(response);
+
+      // Verifica o status da nota
+      String status = rootNode.path("status").asText();
+      if (status.contains("processando") || status.contains("pendente")) {
+        throw new InvoiceException(
+            "A nota fiscal ainda está sendo processada. Aguarde alguns instantes e tente novamente.");
+      }
+
       String filePath = rootNode.path(jsonPath).asText();
 
+      // Verifica se o caminho do arquivo foi retornado
+      if (filePath == null || filePath.trim().isEmpty()) {
+        throw new InvoiceException(
+            "Arquivo ainda não disponível. A nota fiscal pode estar em processamento.");
+      }
+
       return filePath;
+    } catch (InvoiceException e) {
+      throw e;
     } catch (Exception e) {
       throw new InvoiceException("Erro ao consultar arquivo com referência: " + ref, e);
     }
   }
 
   private String getDanfePath(String ref) {
-    try {
-      System.out.println("========================================");
-      System.out.println("DanfeXmlService.getDanfePath()");
-      System.out.println("Ref: " + ref);
-      
-      String response = focusNfeApiClient.sendGetRequest(ref, COMPLETE);
-      
-      System.out.println("Response recebida:");
-      System.out.println("  É null? " + (response == null));
-      System.out.println("  Length: " + (response != null ? response.length() : 0));
-      
-      ObjectMapper objectMapper = new ObjectMapper();
-      JsonNode rootNode = objectMapper.readTree(response);
-      String filePath = rootNode.path("caminho_danfe").asText();
-      
-      System.out.println("Campo 'caminho_danfe':");
-      System.out.println("  Existe? " + rootNode.has("caminho_danfe"));
-      System.out.println("  Valor: '" + filePath + "'");
-      System.out.println("  Está vazio? " + (filePath == null || filePath.isEmpty()));
-      System.out.println("========================================");
-      
-      if (filePath == null || filePath.isEmpty()) {
-        throw new InvoiceException("Campo 'caminho_danfe' não encontrado ou vazio para ref: " + ref);
-      }
-      
-      return filePath;
-    } catch (Exception e) {
-      System.err.println("✗ ERRO em getDanfePath para ref: " + ref);
-      System.err.println("Erro: " + e.getMessage());
-      e.printStackTrace();
-      throw new InvoiceException("Erro ao obter caminho do DANFE para ref: " + ref, e);
-    }
+    return getFilePathFromApi(ref, "caminho_danfe");
   }
 
   private String getXmlPath(String ref) {
@@ -81,23 +73,7 @@ public class DanfeXmlService {
   private ResponseEntity<Resource> downloadFileStream(
       String ref, String fileUrl, MediaType mediaType, String filePrefix) {
     try {
-      System.out.println("========================================");
-      System.out.println("DanfeXmlService.downloadFileStream()");
-      System.out.println("Ref: " + ref);
-      System.out.println("FileUrl recebido: '" + fileUrl + "'");
-      System.out.println("FileUrl é null? " + (fileUrl == null));
-      System.out.println("FileUrl está vazio? " + (fileUrl != null && fileUrl.isEmpty()));
-      
-      if (fileUrl == null || fileUrl.trim().isEmpty()) {
-        System.err.println("✗ ERRO: fileUrl está vazio ou null!");
-        System.err.println("Não é possível fazer download sem o caminho do arquivo");
-        System.err.println("========================================");
-        return ResponseEntity.notFound().build();
-      }
-      
       String fullUrl = focusNfeApiUrl + fileUrl;
-      System.out.println("URL completa: " + fullUrl);
-      System.out.println("Iniciando download...");
 
       byte[] fileBytes =
           webClient
@@ -106,21 +82,15 @@ public class DanfeXmlService {
               .accept(MediaType.ALL)
               .retrieve()
               .bodyToMono(byte[].class)
+              .timeout(java.time.Duration.ofSeconds(100))
               .block();
 
-      System.out.println("Download concluído");
-      System.out.println("  fileBytes é null? " + (fileBytes == null));
-      System.out.println("  fileBytes length: " + (fileBytes != null ? fileBytes.length : 0));
-
       if (fileBytes == null || fileBytes.length == 0) {
-        System.err.println("✗ Arquivo vazio ou não encontrado!");
-        System.err.println("========================================");
-        return ResponseEntity.notFound().build();
+        throw new InvoiceException(
+            "Arquivo não disponível ou vazio. A nota fiscal pode ainda estar sendo processada.");
       }
 
       Resource resource = new ByteArrayResource(fileBytes);
-      System.out.println("✓ Resource criado com sucesso - " + fileBytes.length + " bytes");
-      System.out.println("========================================");
 
       return ResponseEntity.ok()
           .contentType(mediaType)
@@ -134,15 +104,12 @@ public class DanfeXmlService {
                   + "\"")
           .body(resource);
 
+    } catch (org.springframework.web.reactive.function.client.WebClientRequestException e) {
+      throw new InvoiceException(
+          "Erro de conexão ao baixar arquivo. A nota fiscal pode ainda estar sendo processada. Tente novamente em alguns instantes.",
+          e);
     } catch (Exception e) {
-      System.err.println("========================================");
-      System.err.println("✗ ERRO em downloadFileStream");
-      System.err.println("Ref: " + ref);
-      System.err.println("FileUrl: " + fileUrl);
-      System.err.println("Erro: " + e.getMessage());
-      e.printStackTrace();
-      System.err.println("========================================");
-      throw new InvoiceException("Erro ao fazer download do arquivo", e);
+      throw new InvoiceException("Erro ao fazer download do arquivo: " + e.getMessage(), e);
     }
   }
 
@@ -155,15 +122,142 @@ public class DanfeXmlService {
     return "";
   }
 
+  private ResponseEntity<Resource> downloadWithRetry(
+      String ref, String fileType, MediaType mediaType, String filePrefix, int initialDelay) {
+
+    // Delay inicial (usado apenas para DANFE logo após criação)
+    if (initialDelay > 0) {
+      sleep(initialDelay);
+    }
+
+    int maxRetries = 4;
+    int retryDelay = 4000;
+
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        String filePath = "danfe".equals(fileType) ? getDanfePath(ref) : getXmlPath(ref);
+
+        return downloadFileStream(ref, filePath, mediaType, filePrefix);
+
+      } catch (InvoiceException e) {
+        if (attempt == maxRetries) {
+          String errorMsg =
+              "danfe".equals(fileType)
+                  ? "DANFE ainda não disponível. A nota fiscal foi criada com sucesso mas ainda está sendo processada. Aguarde alguns instantes e clique em 'Ver NF' para visualizar."
+                  : "XML ainda não disponível. Aguarde alguns instantes e tente novamente.";
+          throw new InvoiceException(errorMsg, e);
+        }
+
+        if (e.getMessage().contains("processando") || e.getMessage().contains("não disponível")) {
+          sleep(retryDelay);
+          retryDelay += 1000;
+        } else {
+          throw e;
+        }
+      }
+    }
+
+    throw new InvoiceException(
+        "Não foi possível baixar o "
+            + fileType.toUpperCase()
+            + " após "
+            + maxRetries
+            + " tentativas");
+  }
+
+  private void sleep(int milliseconds) {
+    try {
+      Thread.sleep(milliseconds);
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      throw new InvoiceException("Timeout ao aguardar processamento da nota fiscal", ie);
+    }
+  }
+
   @Transactional
   protected ResponseEntity<Resource> downloadDanfe(String ref) {
-    String danfePath = getDanfePath(ref);
-    return downloadFileStream(ref, danfePath, MediaType.APPLICATION_PDF, "danfe");
+    return downloadWithRetry(ref, "danfe", MediaType.APPLICATION_PDF, "danfe", 4000);
   }
 
   @Transactional
   protected ResponseEntity<Resource> downloadXml(String ref) {
-    String xmlPath = getXmlPath(ref);
-    return downloadFileStream(ref, xmlPath, MediaType.APPLICATION_XML, "nota-fiscal");
+    return downloadWithRetry(ref, "xml", MediaType.APPLICATION_XML, "nota-fiscal", 0);
+  }
+
+  @Transactional
+  public List<String> getXmlPathsForPeriod(List<String> refs) {
+    return refs.stream()
+        .map(
+            ref -> {
+              try {
+                return getXmlPath(ref);
+              } catch (InvoiceException e) {
+                System.err.println("Erro ao buscar caminho XML para referência: " + ref);
+                e.printStackTrace();
+                return null; // Ignorar erros
+              }
+            })
+        .filter(path -> path != null) // Remover nulos
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Baixa os arquivos XML para o disco e retorna a lista de arquivos locais.
+   *
+   * @param refs Lista de referências das notas fiscais.
+   * @return Lista de arquivos XML salvos localmente.
+   */
+  @Transactional
+  public List<File> downloadXmlFilesForPeriod(List<String> refs) {
+    Path tempDir;
+    try {
+      tempDir = Files.createTempDirectory("nf-xmls-");
+    } catch (IOException e) {
+      throw new InvoiceException("Erro ao criar diretório temporário para XMLs", e);
+    }
+
+    return refs.stream()
+        .map(
+            ref -> {
+              try {
+                String xmlPath = getXmlPath(ref);
+                String fullUrl = focusNfeApiUrl + xmlPath;
+
+                byte[] xmlBytes =
+                    webClient
+                        .get()
+                        .uri(fullUrl)
+                        .accept(MediaType.APPLICATION_XML)
+                        .retrieve()
+                        .bodyToMono(byte[].class)
+                        .timeout(java.time.Duration.ofSeconds(100))
+                        .block();
+
+                if (xmlBytes == null || xmlBytes.length == 0) {
+                  System.err.println("Arquivo XML vazio para referência: " + ref);
+                  return null;
+                }
+
+                File xmlFile = tempDir.resolve(ref + ".xml").toFile();
+                try (FileOutputStream fos = new FileOutputStream(xmlFile)) {
+                  fos.write(xmlBytes);
+                }
+
+                System.out.println(
+                    "Arquivo XML salvo: "
+                        + xmlFile.getAbsolutePath()
+                        + " (Tamanho: "
+                        + xmlFile.length()
+                        + " bytes)");
+                return xmlFile;
+
+              } catch (Exception e) {
+                System.err.println(
+                    "Erro ao baixar XML para referência: " + ref + " - " + e.getMessage());
+                return null;
+              }
+            })
+        .filter(file -> file != null && file.exists())
+        .collect(Collectors.toList());
   }
 }
