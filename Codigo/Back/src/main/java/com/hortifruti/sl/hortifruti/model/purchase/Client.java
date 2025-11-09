@@ -13,6 +13,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -71,11 +72,15 @@ public class Client {
   @Column(nullable = true)
   private BigDecimal totalPurchaseValue;
 
+  @Column(nullable = true)
+  private LocalDate lastPurchaseDate;
+
   @PrePersist
   protected void onCreate() {
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
     this.totalPurchaseValue = BigDecimal.ZERO;
+    this.lastPurchaseDate = null;
   }
 
   @PreUpdate

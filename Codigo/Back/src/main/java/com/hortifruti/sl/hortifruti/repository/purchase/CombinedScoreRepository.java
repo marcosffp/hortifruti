@@ -26,12 +26,12 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
 
   /** Busca CombinedScores vencidos que ainda não foram pagos (confirmedAt is null) */
   @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.dueDate < :currentDate AND cs.confirmedAt IS NULL")
+      "SELECT cs FROM CombinedScore cs WHERE cs.dueDate < :currentDate AND cs.status = 'PENDENTE'")
   List<CombinedScore> findOverdueUnpaidScores(@Param("currentDate") LocalDate currentDate);
 
   /** Busca CombinedScores vencidos por cliente */
   @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.dueDate < :currentDate AND cs.confirmedAt IS NULL")
+      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.dueDate < :currentDate AND cs.status = 'PENDENTE'")
   List<CombinedScore> findOverdueUnpaidScoresByClient(
       @Param("clientId") Long clientId, @Param("currentDate") LocalDate currentDate);
 
@@ -45,4 +45,9 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
 
   @Query("SELECT cs FROM CombinedScore cs WHERE cs.status = 'PENDENTE' AND cs.dueDate <= :date")
   List<CombinedScore> findOverduePendingScores(@Param("date") LocalDate date);
+
+  @Query(
+      "SELECT cs FROM CombinedScore cs WHERE cs.hasInvoice = true AND cs.confirmedAt BETWEEN :startDate AND :endDate")
+  List<CombinedScore> findByHasInvoiceTrueAndConfirmedAtBetween(
+      @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }

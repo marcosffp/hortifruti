@@ -41,25 +41,15 @@ public class DatabaseStorageService {
     return BigDecimal.ZERO;
   }
 
+  public BigDecimal getMaxStorageInMB() {
+    return MAX_STORAGE_MB;
+  }
+
   public boolean isDatabaseOverThreshold() {
     BigDecimal currentSize = getDatabaseSizeInMB();
     BigDecimal thresholdSize =
         MAX_STORAGE_MB.multiply(THRESHOLD_PERCENTAGE).divide(new BigDecimal("100"));
     return currentSize.compareTo(thresholdSize) >= 0;
-  }
-
-  public void cleanDatabaseIfNecessary() {
-    BigDecimal currentSize = getDatabaseSizeInMB();
-    BigDecimal thresholdSize =
-        MAX_STORAGE_MB.multiply(THRESHOLD_PERCENTAGE).divide(new BigDecimal("100"));
-
-    if (currentSize.compareTo(thresholdSize) >= 0) {
-      log.warn(
-          "Banco de dados atingiu {} MB, excedendo o limite de {} MB", currentSize, thresholdSize);
-
-      // Enviar notificação para a gerência
-      sendNotificationToManagement(currentSize);
-    }
   }
 
   private void sendNotificationToManagement(BigDecimal currentSize) {

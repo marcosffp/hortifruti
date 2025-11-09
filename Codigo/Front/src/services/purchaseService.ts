@@ -8,7 +8,7 @@ export const purchaseService = {
   // Upload de notas fiscais
   async uploadPurchases(files: File[]): Promise<{ message: string }> {
     const formData = new FormData();
-    formData.append("file", files[0]);
+    formData.append("file", files[files.length - 1]);
 
     const response = await fetch(`${API_BASE_URL}/purchases/process`, {
       method: "POST",

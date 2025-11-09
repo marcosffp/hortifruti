@@ -228,8 +228,17 @@ export default function ClientForm({
       case "estado":
         return !value.trim() ? "Estado é obrigatório" : "";
       case "stateRegistration":
-        // Só é obrigatório se for contribuinte ICMS (indicador = 1)
-        
+        // Validação de Inscrição Estadual desabilitada - aceita qualquer valor
+        // // Só é obrigatório se for contribuinte ICMS (indicador = 1)
+        // if (formData.stateIndicator === "1") {
+        //   if (!value.trim()) {
+        //     return "Inscrição Estadual é obrigatória para contribuintes ICMS";
+        //   }
+        //   // Valida formato de MG
+        //   if (!validarIEMinasGerais(value)) {
+        //     return "Inscrição Estadual inválida.";
+        //   }
+        // }
         return "";
       default:
         return "";

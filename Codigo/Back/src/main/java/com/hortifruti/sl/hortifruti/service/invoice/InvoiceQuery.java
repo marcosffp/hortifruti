@@ -5,8 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.config.FocusNfeApiClient;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseSimplif;
+import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceTaxDetails;
+import com.hortifruti.sl.hortifruti.dto.invoice.ItemTaxDetails;
 import com.hortifruti.sl.hortifruti.exception.InvoiceException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
+import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import jakarta.transaction.Transactional;
@@ -29,16 +32,41 @@ public class InvoiceQuery {
 
   private final int COMPLETE = 1;
 
+  // CNPJ de teste usado pela Focus NFe em ambiente de homologação
+  private static final String CNPJ_HOMOLOGACAO = "10297478000189";
+
   @Transactional
   protected InvoiceResponseGet consultInvoice(String ref) {
     try {
       String response = fetchInvoiceData(ref);
       JsonNode rootNode = parseJson(response);
+
+      validateInvoiceStatus(rootNode);
+
       InvoiceResponseSimplif invoiceSimplif = extractInvoiceData(rootNode);
-      Client client = findClient(invoiceSimplif.cnpjDestinatario());
+      Client client = findClientForInvoice(invoiceSimplif.cnpjDestinatario(), ref);
       return buildInvoiceResponse(invoiceSimplif, client, ref);
+    } catch (InvoiceException e) {
+      throw e;
     } catch (Exception e) {
       throw new InvoiceException("Erro ao consultar a nota fiscal com referência: " + ref, e);
+    }
+  }
+
+  private void validateInvoiceStatus(JsonNode rootNode) {
+    String status = rootNode.path("status").asText();
+
+    if (status.contains("processando") || status.contains("pendente")) {
+      throw new InvoiceException(
+          "A nota fiscal ainda está sendo processada. Status: "
+              + status
+              + ". Aguarde alguns instantes e tente novamente.");
+    }
+
+    JsonNode requisicaoNode = rootNode.path("requisicao_nota_fiscal");
+    if (requisicaoNode.isMissingNode() || requisicaoNode.isNull() || requisicaoNode.isEmpty()) {
+      throw new InvoiceException(
+          "Dados da nota fiscal ainda não estão disponíveis. Status: " + status);
     }
   }
 
@@ -53,8 +81,11 @@ public class InvoiceQuery {
 
   private InvoiceResponseSimplif extractInvoiceData(JsonNode rootNode) {
     JsonNode requisicaoNode = rootNode.path("requisicao_nota_fiscal");
-    String dataEmissaoStr = requisicaoNode.path("data_emissao").asText();
-    LocalDateTime dataEmissao = OffsetDateTime.parse(dataEmissaoStr).toLocalDateTime();
+
+    validateRequiredFields(requisicaoNode);
+
+    LocalDateTime dataEmissao =
+        OffsetDateTime.parse(requisicaoNode.path("data_emissao").asText()).toLocalDateTime();
 
     return new InvoiceResponseSimplif(
         requisicaoNode.path("cnpj_destinatario").asText(),
@@ -62,14 +93,52 @@ public class InvoiceQuery {
         requisicaoNode.path("numero").asText(),
         rootNode.path("status").asText(),
         dataEmissao,
-        requisicaoNode.path("ref").asText());
+        rootNode.path("ref").asText());
   }
 
-  private Client findClient(String cnpjDestinatario) {
+  private void validateRequiredFields(JsonNode requisicaoNode) {
+    String dataEmissao = requisicaoNode.path("data_emissao").asText();
+    String cnpjDestinatario = requisicaoNode.path("cnpj_destinatario").asText();
+    String valorTotal = requisicaoNode.path("valor_total").asText();
+
+    if (dataEmissao.isEmpty()) {
+      throw new InvoiceException(
+          "Data de emissão não disponível. A nota fiscal pode estar em processamento.");
+    }
+    if (cnpjDestinatario.isEmpty()) {
+      throw new InvoiceException("CNPJ do destinatário não disponível na nota fiscal.");
+    }
+    if (valorTotal.isEmpty()) {
+      throw new InvoiceException("Valor total não disponível na nota fiscal.");
+    }
+  }
+
+  private Client findClientForInvoice(String cnpjDestinatario, String ref) {
+    if (CNPJ_HOMOLOGACAO.equals(cnpjDestinatario)) {
+      return findClientByInvoiceRef(ref);
+    }
+
     return clientRepository
         .findByDocument(cnpjDestinatario)
         .orElseThrow(
             () -> new InvoiceException("Cliente não encontrado para o CNPJ: " + cnpjDestinatario));
+  }
+
+  private Client findClientByInvoiceRef(String ref) {
+    CombinedScore combinedScore =
+        combinedScoreRepository
+            .findByInvoiceRef(ref)
+            .orElseThrow(
+                () ->
+                    new InvoiceException(
+                        "Agrupamento não encontrado para a nota fiscal com referência: " + ref));
+
+    return clientRepository
+        .findById(combinedScore.getClientId())
+        .orElseThrow(
+            () ->
+                new InvoiceException(
+                    "Cliente não encontrado para o agrupamento: " + combinedScore.getId()));
   }
 
   private InvoiceResponseGet buildInvoiceResponse(
@@ -83,56 +152,49 @@ public class InvoiceQuery {
         ref);
   }
 
-  /**
-   * Lista todas as referências (refs) de notas fiscais para um CPF/CNPJ
-   * 
-   * IMPORTANTE: Busca as refs no BANCO DE DADOS local, não na API Focus NFe
-   * (A API Focus NFe não possui endpoint para listar NFes por destinatário)
-   * 
-   * @param cpfCnpj CPF ou CNPJ do cliente (apenas números)
-   * @return Lista de referências das notas fiscais emitidas para o cliente
-   */
   @Transactional
-  protected List<String> listInvoiceRefsByDocument(String cpfCnpj) {
-    List<String> refs = new ArrayList<>();
+  public InvoiceTaxDetails extractInvoiceTaxDetails(String ref) {
     try {
-      log.info("========================================");
-      log.info("InvoiceQuery - Buscando notas fiscais NO BANCO DE DADOS");
-      log.info("CPF/CNPJ: {}", cpfCnpj);
-      
-      // 1. Buscar o cliente pelo CPF/CNPJ
-      Client client = clientRepository.findByDocument(cpfCnpj).orElse(null);
-      
-      if (client == null) {
-        log.warn("⚠️ Cliente não encontrado para o documento: {}", cpfCnpj);
-        log.info("========================================");
-        return refs;
-      }
-      
-      log.info("✓ Cliente encontrado: {} (ID: {})", client.getClientName(), client.getId());
-      
-      // 2. Buscar todas as refs de notas fiscais deste cliente no banco
-      refs = combinedScoreRepository.findAllInvoiceRefsByClientId(client.getId());
-      
-      log.info("Total de notas fiscais emitidas encontradas no banco: {}", refs.size());
-      
-      if (!refs.isEmpty()) {
-        log.info("Refs encontradas:");
-        for (int i = 0; i < refs.size(); i++) {
-          log.info("  [{}] {}", i + 1, refs.get(i));
-        }
-      }
-      
-      log.info("========================================");
-      return refs;
+      String response = fetchInvoiceData(ref);
+      ObjectMapper mapper = new ObjectMapper();
+      JsonNode rootNode = mapper.readTree(response);
+
+      InvoiceTaxDetails dto = extractInvoiceData(rootNode, ref);
+      return dto;
+
     } catch (Exception e) {
-      log.error("========================================");
-      log.error("✗ ERRO ao listar notas fiscais por CPF/CNPJ: {}", cpfCnpj);
-      log.error("Tipo de erro: {}", e.getClass().getSimpleName());
-      log.error("Mensagem: {}", e.getMessage(), e);
-      log.error("========================================");
-      // Retorna lista vazia em vez de lançar exceção para não quebrar o fluxo
-      return refs;
+      throw new InvoiceException("Erro ao consultar a nota fiscal com referência: " + ref, e);
     }
+  }
+
+  private InvoiceTaxDetails extractInvoiceData(JsonNode rootNode, String ref) {
+    JsonNode requisicaoNode = rootNode.path("requisicao_nota_fiscal");
+
+    String dataEmissaoStr = requisicaoNode.path("data_emissao").asText();
+    var dataEmissao = OffsetDateTime.parse(dataEmissaoStr).toLocalDateTime();
+
+    List<ItemTaxDetails> items = new ArrayList<>();
+    JsonNode itensNode = requisicaoNode.path("itens");
+    if (itensNode.isArray()) {
+      for (JsonNode itemNode : itensNode) {
+        ItemTaxDetails item =
+            new ItemTaxDetails(
+                itemNode.path("cfop").asText(),
+                new BigDecimal(itemNode.path("valor_bruto").asText("0")),
+                itemNode.path("icms_situacao_tributaria").asText());
+        items.add(item);
+      }
+    }
+
+    return new InvoiceTaxDetails(
+        rootNode.path("status").asText(),
+        rootNode.path("numero").asText(),
+        dataEmissao,
+        new BigDecimal(requisicaoNode.path("valor_produtos").asText("0")),
+        new BigDecimal(requisicaoNode.path("valor_total").asText("0")),
+        new BigDecimal(requisicaoNode.path("icms_base_calculo").asText("0")),
+        new BigDecimal(requisicaoNode.path("icms_valor_total").asText("0")),
+        items,
+        ref);
   }
 }

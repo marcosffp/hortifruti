@@ -17,6 +17,7 @@ import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.GroupedProductRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -131,6 +132,17 @@ public class CombinedScoreService {
       throw new CombinedScoreException("O pagamento deste agrupamento já foi confirmado.");
     }
 
+    Client client =
+        clientRepository
+            .findById(combinedScore.getClientId())
+            .orElseThrow(
+                () ->
+                    new CombinedScoreException(
+                        "Cliente com ID " + combinedScore.getClientId() + " não encontrado."));
+    BigDecimal newTotal = client.getTotalPurchaseValue().add(combinedScore.getTotalValue());
+    client.setTotalPurchaseValue(newTotal);
+    clientRepository.save(client);
+
     combinedScore.setStatus(Status.PAGO);
     combinedScoreRepository.save(combinedScore);
   }
@@ -239,5 +251,10 @@ public class CombinedScoreService {
     combinedScore.setTotalValue(newTotal);
 
     combinedScoreRepository.save(combinedScore);
+  }
+
+  @Transactional(readOnly = true)
+  public List<CombinedScore> getCombinedScoresWithInvoice(LocalDate startDate, LocalDate endDate) {
+    return combinedScoreRepository.findByHasInvoiceTrueAndConfirmedAtBetween(startDate, endDate);
   }
 }
