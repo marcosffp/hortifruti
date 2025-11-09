@@ -12,16 +12,16 @@ public class DatabaseStorageSchedulerService {
   private final DatabaseStorageService databaseStorageService;
 
   /**
-   * Verifica o armazenamento do banco de dados e executa a limpeza, se necessário. Este método será
-   * chamado manualmente via endpoint.
+   * Verifica o armazenamento do banco de dados e notifica se necessário. Este método será chamado
+   * manualmente via endpoint.
    */
   public void scheduledDatabaseCheck() {
     log.info("Verificação manual de armazenamento do banco de dados iniciada");
 
     try {
       if (databaseStorageService.isDatabaseOverThreshold()) {
-        log.warn("Banco de dados excedeu o limite configurado. Iniciando limpeza...");
-        databaseStorageService.cleanDatabaseIfNecessary();
+        log.warn("Banco de dados excedeu o limite configurado. Enviando notificação...");
+        databaseStorageService.checkDatabaseStorage();
       } else {
         log.info("Banco de dados dentro do limite configurado. Nenhuma ação necessária.");
       }

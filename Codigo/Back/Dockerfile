@@ -6,19 +6,16 @@ WORKDIR /app
 # Copia apenas o pom.xml primeiro para aproveitar cache do Docker
 COPY pom.xml ./
 
-# Download das dependências com cache eficiente
-RUN mvn dependency:go-offline -B --fail-never
+# Download das dependências
+RUN mvn dependency:go-offline -B
 
 # Copia o código fonte
 COPY src ./src
 
-# Build otimizado com camada separada para dependências
-RUN mvn clean package -DskipTests \
-    -Dmaven.test.skip=true \
-    -Dmaven.compile.fork=true \
-    -T 1C
+# Build da aplicação
+RUN mvn clean package -DskipTests
 
-# Etapa 2: Imagem final minimalista
+# Etapa 2: Imagem final
 FROM eclipse-temurin:21-jre-jammy
 
 # Usa usuário não-root para segurança
@@ -27,27 +24,22 @@ RUN addgroup --system --gid 1000 appuser && \
 
 WORKDIR /app
 
-# Copia o JAR de forma explícita
+# Copia o JAR
 COPY --from=builder --chown=appuser:appuser /app/target/*.jar app.jar
 
-# Cria diretório temp com permissões
+# Cria diretórios temporários
 RUN mkdir -p /app/temp/cert /app/temp/google /app/temp/notifications && \
     chown -R appuser:appuser /app/temp
 
-# Otimizações JVM para containers
+# Variáveis de ambiente para Railway
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
 ENV SPRING_PROFILES_ACTIVE="prod"
-ENV SPRING_CONFIG_LOCATION="classpath:/application.properties"
+ENV PORT=8080
 
-# Expõe porta
+# Expõe porta (Railway usa variável PORT)
 EXPOSE 8080
 
-# Muda para usuário não-root
 USER appuser
 
-# Health check opcional
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/actuator/health || exit 1
-
-# Entrypoint otimizado
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+# Comando de inicialização compatível com Railway
+CMD ["sh", "-c", "java $JAVA_OPTS -Dserver.port=$PORT -jar app.jar"]
