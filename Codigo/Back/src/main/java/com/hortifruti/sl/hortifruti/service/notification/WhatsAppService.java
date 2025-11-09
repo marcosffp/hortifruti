@@ -124,25 +124,23 @@ public class WhatsAppService {
         body.add("caption", message);
       }
 
-      System.out.println("WhatsApp Document - Dados enviados:");
-      System.out.println("  to: " + formattedPhone);
-      System.out.println("  filename: " + fileName);
-      System.out.println("  caption: " + message);
-      System.out.println("  document size: " + document.length + " bytes");
-      System.out.println("  document base64 length: " + documentBase64.length() + " chars");
+      System.out.println("WhatsApp Document - Enviando:");
+      System.out.println("  To: " + formattedPhone);
+      System.out.println("  Filename: " + fileName);
+      System.out.println("  Document: " + document.length + " bytes (base64: " + documentBase64.length() + " chars)");
 
       HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
       ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
-      System.out.println("WhatsApp Document - Número original: " + phoneNumber);
-      System.out.println("WhatsApp Document - Número formatado: " + formattedPhone);
-      System.out.println("WhatsApp Document - URL: " + url.replace(ultraMsgToken, "***TOKEN***"));
-      System.out.println("WhatsApp Document - Status response: " + response.getStatusCode());
-      System.out.println("WhatsApp Document - Response body: " + response.getBody());
-
+      System.out.println("WhatsApp Document - Status: " + response.getStatusCode());
+      
       // Verificar se tem erro na resposta
       String responseBody = response.getBody();
       boolean hasError = responseBody != null && responseBody.contains("\"error\"");
+      
+      if (hasError) {
+        System.err.println("WhatsApp Document - Erro na resposta: " + responseBody);
+      }
 
       return response.getStatusCode().is2xxSuccessful() && !hasError;
     } catch (Exception e) {
