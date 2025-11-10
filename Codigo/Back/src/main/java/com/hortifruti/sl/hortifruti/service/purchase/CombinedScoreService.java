@@ -132,6 +132,17 @@ public class CombinedScoreService {
       throw new CombinedScoreException("O pagamento deste agrupamento já foi confirmado.");
     }
 
+    Client client =
+        clientRepository
+            .findById(combinedScore.getClientId())
+            .orElseThrow(
+                () ->
+                    new CombinedScoreException(
+                        "Cliente com ID " + combinedScore.getClientId() + " não encontrado."));
+    BigDecimal newTotal = client.getTotalPurchaseValue().add(combinedScore.getTotalValue());
+    client.setTotalPurchaseValue(newTotal);
+    clientRepository.save(client);
+
     combinedScore.setStatus(Status.PAGO);
     combinedScoreRepository.save(combinedScore);
   }

@@ -5,6 +5,7 @@ import com.hortifruti.sl.hortifruti.dto.purchase.PurchaseResponse;
 import com.hortifruti.sl.hortifruti.exception.ClientException;
 import com.hortifruti.sl.hortifruti.exception.PurchaseException;
 import com.hortifruti.sl.hortifruti.mapper.InvoiceProductMapper;
+import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
@@ -36,6 +37,15 @@ public class PurchaseService {
     }
 
     Purchase purchase = purchaseProcessingService.processPurchaseFile(file);
+    Client client =
+        clientRepository
+            .findById(purchase.getClient().getId())
+            .orElseThrow(
+                () ->
+                    new ClientException(
+                        "Cliente não encontrado com o ID: " + purchase.getClient().getId()));
+    client.setLastPurchaseDate(purchase.getCreatedAt().toLocalDate());
+    clientRepository.save(client);
     return purchase;
   }
 
