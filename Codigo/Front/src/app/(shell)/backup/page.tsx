@@ -3,9 +3,11 @@
 import RoleGuard from "@/components/auth/RoleGuard";
 import { useBackup } from "@/hooks/useBackup";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { DatabaseBackup, DatabaseZap, Link as LinkIcon, RefreshCcw } from "lucide-react";
 
 export default function BackupPage() {
+  const searchParams = useSearchParams();
   const { isLoading, error, storage, lastMessage, authUrl, refreshStorage, runBackup, setAuthUrl, setLastMessage } =
     useBackup();
 
@@ -18,7 +20,18 @@ export default function BackupPage() {
 
   useEffect(() => {
     refreshStorage();
-  }, [refreshStorage]);
+
+    // Verificar se voltou do OAuth
+    const authStatus = searchParams?.get("auth");
+    const authMessage = searchParams?.get("message");
+
+    if (authStatus === "success") {
+      setLastMessage("Autenticação realizada com sucesso! Você pode executar o backup novamente.");
+      setAuthUrl(null);
+    } else if (authStatus === "error") {
+      setLastMessage(`Erro na autenticação: ${authMessage || "Erro desconhecido"}`);
+    }
+  }, [refreshStorage, searchParams, setLastMessage, setAuthUrl]);
 
   const onBackupPeriod = () => runBackup(startDate, endDate);
 
@@ -114,22 +127,23 @@ export default function BackupPage() {
               </a>
             )}
           </div>
+        </div>
 
-          <div className="mt-4 space-y-2">
-            {error && (
-              <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>
-            )}
-            {lastMessage && !authUrl && (
-              <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded p-2">
-                {lastMessage}
-              </div>
-            )}
-            {authUrl && (
-              <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-                É necessária autorização. Conclua o login na janela aberta e depois execute o backup novamente.
-              </div>
-            )}
-          </div>
+        {/* Atualizar apenas a seção de mensagens */}
+        <div className="mt-4 space-y-2">
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>
+          )}
+          {lastMessage && !authUrl && (
+            <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded p-2">
+              {lastMessage}
+            </div>
+          )}
+          {authUrl && (
+            <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+              É necessária autorização. Conclua o login na janela aberta e aguarde o redirecionamento automático.
+            </div>
+          )}
         </div>
       </div>
     </RoleGuard>
