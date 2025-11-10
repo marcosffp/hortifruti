@@ -3,7 +3,13 @@ package com.hortifruti.sl.hortifruti.controller;
 import com.hortifruti.sl.hortifruti.dto.BackupResponse;
 import com.hortifruti.sl.hortifruti.service.backup.BackupService;
 import com.hortifruti.sl.hortifruti.service.backup.oauth.GoogleOAuthService;
+
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,31 +19,26 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/backup")
 @RequiredArgsConstructor
+@CrossOrigin(origins = {"http://localhost:3000", "https://plf-es-2025-2-ti4-1247100-hortifruti-sl-production.up.railway.app"})
 public class BackupController {
 
   private final BackupService backupService;
   private final GoogleOAuthService googleOAuthService;
 
-  /**
-   * Endpoint para realizar o backup completo ou por período.
-   *
-   * @param startDate Data inicial do período (formato ISO, opcional).
-   * @param endDate Data final do período (formato ISO, opcional).
-   * @return Mensagem de sucesso ou erro.
-   */
   @PreAuthorize("hasRole('MANAGER')")
   @PostMapping
   public ResponseEntity<BackupResponse> performBackup(
       @RequestParam(required = false) String startDate,
       @RequestParam(required = false) String endDate) {
-    return ResponseEntity.ok(backupService.handleBackupRequestWithAuthLink(startDate, endDate));
+    try {
+      BackupResponse response = backupService.handleBackupRequestWithAuthLink(startDate, endDate);
+      return ResponseEntity.ok(response);
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(new BackupResponse("Erro: " + e.getMessage()));
+    }
   }
 
-  /**
-   * Endpoint para obter o tamanho atual do banco de dados.
-   *
-   * @return Tamanho do banco de dados em MB.
-   */
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/storage")
   public ResponseEntity<BackupResponse> getDatabaseStorage() {
@@ -49,12 +50,25 @@ public class BackupController {
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/oauth2callback")
   public ResponseEntity<String> handleOAuth2Callback(
-      @RequestParam("code") String authorizationCode) {
+      @RequestParam("code") String authorizationCode,
+      HttpServletResponse response) {
     try {
       googleOAuthService.handleOAuth2Callback(authorizationCode);
-      return ResponseEntity.ok(
-          "Autenticação concluída com sucesso. Você pode retornar ao processo de backup.");
+      
+      // Redirecionar para o frontend após sucesso
+      String frontendUrl = "http://localhost:3000/backup?auth=success";
+      response.sendRedirect(frontendUrl);
+      
+      return ResponseEntity.ok("Redirecionando para o frontend...");
     } catch (Exception e) {
+      try {
+        String frontendUrl = "http://localhost:3000/backup?auth=error&message=" + 
+                           URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8);
+        response.sendRedirect(frontendUrl);
+      } catch (IOException ioException) {
+        // fallback
+      }
+      
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
           .body("Erro ao processar o callback de autorização: " + e.getMessage());
     }
