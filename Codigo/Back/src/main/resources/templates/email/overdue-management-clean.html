@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório de Boletos Vencidos - Hortifruti SL</title>
+    <title>Relatório de Boletos Pendentes - Hortifruti SL</title>
     <style>
         * {
             box-sizing: border-box;
@@ -210,7 +210,7 @@
         <table class="message-logo-container" role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
             <tr>
                 <td class="message-cell">
-                    <h2 class="message-title">Relatório de Boletos Vencidos</h2>
+                    <h2 class="message-title">Relatório de Boletos Pendentes</h2>
                     <div class="message-content">
                         <p>Segue o resumo dos boletos com pagamento pendente até a data de hoje.</p>
                     </div>
@@ -223,7 +223,7 @@
         
         <div class="summary-card-section">
             <div class="summary-card">
-                <div class="summary-card-label">Valor Total em Atraso</div>
+                <div class="summary-card-label">Valor Total Pendente</div>
                 <div class="summary-card-value">R$ {{TOTAL_OVERDUE_AMOUNT}}</div>
                 <div class="summary-card-date">Relatório gerado em: {{REPORT_DATE}}</div>
             </div>
@@ -239,7 +239,7 @@
                     <td><strong>{{TOTAL_CLIENTS}}</strong></td>
                 </tr>
                 <tr>
-                    <td>Total de boletos vencidos</td>
+                    <td>Total de boletos pendentes</td>
                     <td><strong>{{TOTAL_OVERDUE_BOLETOS}}</strong></td>
                 </tr>
             </table>
