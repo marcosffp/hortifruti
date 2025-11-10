@@ -26,10 +26,7 @@ public class NotificationService {
   @Value("${accounting.email}")
   private String accountingEmail;
 
-  /**
-   * Envio para contabilidade: Arquivos genéricos com cálculo de redução de 60% separado para débito
-   * e crédito
-   */
+
   public NotificationResponse sendGenericFilesToAccounting(
       List<MultipartFile> files, GenericFilesAccountingRequest request) {
     try {
