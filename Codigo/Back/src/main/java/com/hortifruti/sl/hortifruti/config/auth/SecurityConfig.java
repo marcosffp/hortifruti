@@ -1,7 +1,8 @@
 package com.hortifruti.sl.hortifruti.config.auth;
 
 import java.util.List;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,10 +23,16 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class SecurityConfig {
   private final SecurityFilter securityFilter;
   private final RateLimitingFilter rateLimitingFilter;
+
+  @Value("${frontend.url}")
+  private String frontendUrl;
+
+  @Value("${backend.url}")
+  private String backendUrl;
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -35,7 +42,12 @@ public class SecurityConfig {
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/auth", "/swagger-ui/**", "/v3/api-docs/**", "/scheduler/**","/backup/oauth2callback")
+                auth.requestMatchers(
+                        "/auth",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**",
+                        "/scheduler/**",
+                        "/backup/oauth2callback")
                     .permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.GET, "/clients/**")
                     .permitAll()
@@ -56,15 +68,17 @@ public class SecurityConfig {
 
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
+    if (frontendUrl == null || backendUrl == null) {
+      throw new IllegalStateException(
+          "As URLs frontend.url ou backend.url não estão configuradas corretamente.");
+    }
+
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(
-        List.of(
-            "http://localhost:8080",
-            "http://localhost:3000",
-            "https://plf-es-2025-2-ti4-1247100-hortifruti-sl-production.up.railway.app"));
+    configuration.setAllowedOrigins(List.of(backendUrl, frontendUrl));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
     configuration.setAllowedHeaders(List.of("*"));
     configuration.setAllowCredentials(true);
+
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
     return source;
