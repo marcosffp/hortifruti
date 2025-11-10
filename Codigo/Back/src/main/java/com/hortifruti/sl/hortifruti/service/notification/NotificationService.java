@@ -44,14 +44,11 @@ public class NotificationService {
         }
       }
 
-      // Calcular valores com desconto de 60% separadamente
-      BigDecimal debitValue = request.debitValue() != null ? request.debitValue() : BigDecimal.ZERO;
-      BigDecimal creditValue =
-          request.creditValue() != null ? request.creditValue() : BigDecimal.ZERO;
+  
+      BigDecimal cardValue = request.cardValue() != null ? request.cardValue() : BigDecimal.ZERO;
       BigDecimal cashValue = request.cashValue() != null ? request.cashValue() : BigDecimal.ZERO;
 
-      BigDecimal debitComDesconto = debitValue.multiply(BigDecimal.valueOf(0.4));
-      BigDecimal creditComDesconto = creditValue.multiply(BigDecimal.valueOf(0.4));
+      BigDecimal discountedCardValue = cardValue.multiply(BigDecimal.valueOf(0.4));
 
       // Preparar dados
       String subject = "Arquivos Contábeis - Resumo Financeiro";
@@ -59,7 +56,7 @@ public class NotificationService {
       int filesCount = hasFiles ? fileContents.size() : 0;
       String emailBody =
           buildGenericFilesMessage(
-              request, debitComDesconto, creditComDesconto, cashValue, hasFiles, filesCount);
+              request, discountedCardValue, cashValue, hasFiles, filesCount);
 
       // Enviar apenas por email (sem WhatsApp para contabilidade)
       try {
@@ -129,20 +126,17 @@ public class NotificationService {
 
   private String buildGenericFilesMessage(
       GenericFilesAccountingRequest request,
-      BigDecimal debitComDesconto,
-      BigDecimal creditComDesconto,
+      BigDecimal discountedCardValue,
       BigDecimal cashValue,
       boolean hasFiles,
       int filesCount) {
     Map<String, String> variables = new HashMap<>();
-    variables.put("DEBIT_VALUE", String.format("%.2f", debitComDesconto));
-    variables.put("CREDIT_VALUE", String.format("%.2f", creditComDesconto));
+    variables.put("CARD_VALUE", String.format("%.2f", discountedCardValue));
     variables.put("CASH_VALUE", String.format("%.2f", cashValue));
 
     // Controle de valores financeiros - só exibir se pelo menos um valor for diferente de zero
     boolean hasFinancialValues =
-        debitComDesconto.compareTo(BigDecimal.ZERO) != 0
-            || creditComDesconto.compareTo(BigDecimal.ZERO) != 0
+        discountedCardValue.compareTo(BigDecimal.ZERO) != 0
             || cashValue.compareTo(BigDecimal.ZERO) != 0;
     if (hasFinancialValues) {
       variables.put("HAS_FINANCIAL_VALUES", "true");
