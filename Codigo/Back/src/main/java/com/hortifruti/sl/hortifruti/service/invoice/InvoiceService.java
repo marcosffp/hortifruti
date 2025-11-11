@@ -43,14 +43,4 @@ public class InvoiceService {
     return invoiceCancelService.cancelInvoice(ref, justificativa);
   }
 
-  /**
-   * Lista todas as referências de notas fiscais para um CPF/CNPJ
-   * 
-   * @param cpfCnpj CPF ou CNPJ do cliente (apenas números)
-   * @return Lista de referências das notas fiscais autorizadas
-   */
-  @Transactional
-  public List<String> listInvoiceRefsByDocument(String cpfCnpj) {
-    return invoiceQueryService.listInvoiceRefsByDocument(cpfCnpj);
-  }
 }

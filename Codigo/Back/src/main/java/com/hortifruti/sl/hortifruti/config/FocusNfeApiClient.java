@@ -58,33 +58,6 @@ public class FocusNfeApiClient {
     }
   }
 
-  /**
-   * Lista notas fiscais por CPF/CNPJ do destinatário
-   * 
-   * Endpoint correto da API Focus NFe para listar NFe's:
-   * GET /v2/nfes?cnpj_destinatario=XXXXX
-   * 
-   * Documentação: https://focusnfe.com.br/doc/
-   * 
-   * @param cpfCnpj CPF ou CNPJ do destinatário (apenas números)
-   * @return JSON com a lista de notas fiscais
-   */
-  /**
-   * MÉTODO NÃO UTILIZADO - API Focus NFe não suporta listar NFes por CPF/CNPJ
-   * 
-   * A API Focus NFe não possui endpoint para listar notas por destinatário.
-   * Use o método getInvoiceByRef() com as refs armazenadas no banco de dados.
-   * 
-   * @deprecated Use InvoiceQuery.listInvoiceRefsByDocument() que busca refs do banco
-   */
-  @Deprecated
-  public String listInvoicesByDocument(String cpfCnpj) {
-    throw new UnsupportedOperationException(
-        "API Focus NFe não suporta listar NFes por CPF/CNPJ. " +
-        "Use as refs armazenadas no banco de dados (CombinedScore.invoiceRef)"
-    );
-  }
-
   public String cancelInvoice(String ref, String justificativa) {
     try {
       String url = focusNfeApiUrl + "/v2/nfe/" + ref;

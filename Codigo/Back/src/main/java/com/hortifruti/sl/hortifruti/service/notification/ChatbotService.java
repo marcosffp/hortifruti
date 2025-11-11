@@ -6,6 +6,7 @@ import com.hortifruti.sl.hortifruti.model.chatbot.SessionStatus;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
+import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import com.hortifruti.sl.hortifruti.service.billet.BilletService;
 import com.hortifruti.sl.hortifruti.service.chatbot.ChatSessionService;
 import com.hortifruti.sl.hortifruti.service.invoice.InvoiceService;
@@ -36,6 +37,7 @@ public class ChatbotService {
     private final WhatsAppService whatsAppService;
     private final BilletService billetService;
     private final ClientRepository clientRepository;
+    private final CombinedScoreRepository combinedScoreRepository;
     private final ChatSessionService chatSessionService;
     private final InvoiceService invoiceService;
 
@@ -277,27 +279,65 @@ public class ChatbotService {
     }
 
     /**
-     * Consulta e envia informações de uma nota fiscal específica pelo número/ref
+     * Consulta e envia informações de uma nota fiscal específica pelo número
+     * 
+     * O cliente informa apenas o NÚMERO da nota fiscal (ex: 123456).
+     * O sistema busca a referência (ref) correspondente no banco de dados
+     * e então consulta os detalhes na API Focus NFe.
      * 
      * @param session Sessão de chat ativa
      * @param phoneNumber Número de telefone do cliente
-     * @param invoiceRef Número/referência da nota fiscal
+     * @param invoiceNumber Número da nota fiscal informado pelo cliente
      */
-    private void handleInvoiceQuery(ChatSession session, String phoneNumber, String invoiceRef) {
+    private void handleInvoiceQuery(ChatSession session, String phoneNumber, String invoiceNumber) {
         try {
             log.info("========================================");
-            log.info("Consultando nota fiscal por número/ref: {}", invoiceRef);
+            log.info("Consultando nota fiscal por NÚMERO: {}", invoiceNumber);
             log.info("Telefone: {}", phoneNumber);
             
-            // Consultar a nota fiscal usando o serviço
-            var invoiceResponse = invoiceService.consultInvoice(invoiceRef);
+            // Remove caracteres não numéricos
+            String cleanNumber = invoiceNumber.replaceAll("[^0-9]", "");
             
-            if (invoiceResponse == null) {
-                String msg = "❌ Nota fiscal não encontrada.\n\n" +
-                        "Verifique se o número está correto e tente novamente.\n\n" +
+            if (cleanNumber.isEmpty()) {
+                String msg = "❌ Número da nota fiscal inválido.\n\n" +
+                        "Por favor, envie apenas números.\n" +
+                        "Exemplo: 123456\n\n" +
                         "💡 Digite MENU para voltar ao início";
                 whatsAppService.sendTextMessage(phoneNumber, msg);
+                return;
+            }
+            
+            log.info("Número limpo: {}", cleanNumber);
+            
+            // Busca a ref no banco de dados pelo número da nota fiscal
+            // Como não temos o número armazenado, vamos buscar todas as refs
+            // e consultar cada uma até encontrar o número correspondente
+            log.info("Buscando referência da nota fiscal no banco de dados...");
+            
+            String foundRef = findInvoiceRefByNumber(cleanNumber);
+            
+            if (foundRef == null) {
+                String msg = "❌ Nota fiscal não encontrada.\n\n" +
+                        "Verifique se o número *" + cleanNumber + "* está correto.\n\n" +
+                        "💡 Digite MENU para voltar ao início ou entre em contato:\n" +
+                        "📞 (31) 3641-2244";
+                whatsAppService.sendTextMessage(phoneNumber, msg);
                 chatSessionService.closeSession(session.getId(), "NOT_FOUND");
+                return;
+            }
+            
+            log.info("✓ Referência encontrada: {}", foundRef);
+            
+            // Consultar a nota fiscal usando a ref encontrada
+            var invoiceResponse = invoiceService.consultInvoice(foundRef);
+            
+            if (invoiceResponse == null) {
+                String msg = "❌ Erro ao consultar a nota fiscal.\n\n" +
+                        "Por favor, tente novamente ou entre em contato:\n" +
+                        "📞 (31) 3641-2244\n\n" +
+                        "💡 Digite MENU para voltar ao início";
+                whatsAppService.sendTextMessage(phoneNumber, msg);
+                chatSessionService.closeSession(session.getId(), "ERROR");
                 return;
             }
             
@@ -379,12 +419,65 @@ public class ChatbotService {
             log.info("========================================");
             
         } catch (Exception e) {
-            log.error("Erro ao consultar nota fiscal {}: {}", invoiceRef, e.getMessage(), e);
+            log.error("Erro ao consultar nota fiscal com número {}: {}", invoiceNumber, e.getMessage(), e);
             String msg = "❌ Erro ao consultar a nota fiscal.\n\n" +
                     "Por favor, verifique o número e tente novamente ou entre em contato:\n" +
                     "📞 (31) 3641-2244";
             whatsAppService.sendTextMessage(phoneNumber, msg);
             chatSessionService.closeSession(session.getId(), "ERROR");
+        }
+    }
+
+    /**
+     * Busca a referência (ref) de uma nota fiscal pelo seu número.
+     * 
+     * Como o banco de dados não armazena o número da NF diretamente,
+     * este método busca todas as refs de notas fiscais no banco
+     * e consulta cada uma na API até encontrar a que possui o número informado.
+     * 
+     * @param invoiceNumber Número da nota fiscal
+     * @return Referência da nota fiscal ou null se não encontrada
+     */
+    private String findInvoiceRefByNumber(String invoiceNumber) {
+        try {
+            // Busca todas as refs de notas fiscais no banco
+            log.info("Buscando todas as referências de notas fiscais no banco...");
+            List<CombinedScore> allScoresWithInvoice = combinedScoreRepository
+                .findAll()
+                .stream()
+                .filter(cs -> cs.isHasInvoice() && cs.getInvoiceRef() != null && !cs.getInvoiceRef().isEmpty())
+                .toList();
+            
+            log.info("Total de CombinedScores com nota fiscal: {}", allScoresWithInvoice.size());
+            
+            // Para cada ref, consulta na API e verifica se o número corresponde
+            for (CombinedScore cs : allScoresWithInvoice) {
+                String ref = cs.getInvoiceRef();
+                try {
+                    log.info("Verificando ref: {}", ref);
+                    var invoiceResponse = invoiceService.consultInvoice(ref);
+                    
+                    if (invoiceResponse != null && invoiceResponse.number() != null) {
+                        String nfNumber = invoiceResponse.number().replaceAll("[^0-9]", "");
+                        log.info("  Número da NF: {} (comparando com {})", nfNumber, invoiceNumber);
+                        
+                        if (nfNumber.equals(invoiceNumber)) {
+                            log.info("✓ Nota fiscal encontrada! Ref: {}", ref);
+                            return ref;
+                        }
+                    }
+                } catch (Exception ex) {
+                    log.warn("Erro ao consultar ref {}: {}", ref, ex.getMessage());
+                    // Continua para a próxima ref
+                }
+            }
+            
+            log.warn("Nota fiscal com número {} não encontrada", invoiceNumber);
+            return null;
+            
+        } catch (Exception e) {
+            log.error("Erro ao buscar referência da nota fiscal: {}", e.getMessage(), e);
+            return null;
         }
     }
 
@@ -428,17 +521,17 @@ public class ChatbotService {
             List<CombinedScore> allPending = billetService.findAllPendingByClient(client.getId());
             log.info("Combined Scores pendentes TOTAL: {}", allPending.size());
 
-            // Busca todas as notas fiscais pela API Focus NFe usando CPF/CNPJ
-            log.info("Iniciando busca de notas fiscais na API Focus NFe...");
+            // Busca todas as notas fiscais do cliente no banco de dados
+            log.info("Iniciando busca de notas fiscais no banco de dados...");
             List<String> invoiceRefs = new ArrayList<>();
             try {
-                invoiceRefs = invoiceService.listInvoiceRefsByDocument(document);
-                log.info("✓ Notas fiscais autorizadas encontradas: {}", invoiceRefs.size());
+                invoiceRefs = combinedScoreRepository.findAllInvoiceRefsByClientId(client.getId());
+                log.info("✓ Notas fiscais encontradas no banco: {}", invoiceRefs.size());
                 if (!invoiceRefs.isEmpty()) {
                     log.info("Refs encontradas: {}", String.join(", ", invoiceRefs));
                 }
             } catch (Exception ex) {
-                log.error("✗ Erro ao buscar notas fiscais na API: {}", ex.getMessage(), ex);
+                log.error("✗ Erro ao buscar notas fiscais no banco: {}", ex.getMessage(), ex);
             }
             log.info("========================================");
 
