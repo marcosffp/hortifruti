@@ -46,8 +46,7 @@ export default function NotificacoesPage() {
   const [enviando, setEnviando] = useState(false);
 
   // Estados específicos para contabilidade
-  const [debitValue, setDebitValue] = useState("");
-  const [creditValue, setCreditValue] = useState("");
+  const [cardValue, setCardValue] = useState("");
   const [cashValue, setCashValue] = useState("");
 
   // Efeito para ajustar canais de envio quando muda o tipo de destinatário
@@ -236,8 +235,7 @@ export default function NotificacoesPage() {
 
       // Adicionar campos financeiros se for contabilidade
       if (tipoDestinatario === "contabilidade") {
-        if (creditValue) requestData.creditValue = creditValue;
-        if (debitValue) requestData.debitValue = debitValue;
+        if (cardValue) requestData.cardValue = cardValue;
         if (cashValue) requestData.cashValue = cashValue;
       }
 
@@ -255,8 +253,7 @@ export default function NotificacoesPage() {
         setCanaisEnvio({ email: false, whatsapp: false });
         
         // Limpar campos financeiros
-        setCreditValue("");
-        setDebitValue("");
+        setCardValue("");
         setCashValue("");
 
       } else {
@@ -460,37 +457,20 @@ export default function NotificacoesPage() {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-[var(--neutral-900)]">Valores Financeiros</h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Campo Crédito */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Campo Cartão */}
                     <div>
-                      <label htmlFor="credito" className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
-                        Valor de Crédito (R$)
+                      <label htmlFor="cartao" className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
+                        Valor de Cartão (R$)
                       </label>
                       <input
                         type="number"
-                        id="credito"
+                        id="cartao"
                         step="0.01"
                         min="0"
                         placeholder="0,00"
-                        value={creditValue}
-                        onChange={(e) => setCreditValue(e.target.value)}
-                        className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                      />
-                    </div>
-
-                    {/* Campo Débito */}
-                    <div>
-                      <label htmlFor="debito" className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
-                        Valor de Débito (R$)
-                      </label>
-                      <input
-                        type="number"
-                        id="debito"
-                        step="0.01"
-                        min="0"
-                        placeholder="0,00"
-                        value={debitValue}
-                        onChange={(e) => setDebitValue(e.target.value)}
+                        value={cardValue}
+                        onChange={(e) => setCardValue(e.target.value)}
                         className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                       />
                     </div>
