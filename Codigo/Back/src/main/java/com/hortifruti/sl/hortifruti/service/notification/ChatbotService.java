@@ -236,7 +236,7 @@ public class ChatbotService {
      * Envia o menu principal
      */
     private void sendMainMenu(String phoneNumber) {
-        String menu = "Olá! Bem-vindo ao Hortifruti SL! 🌿\n\n" +
+        String menu = "Olá! Bem-vindo ao Hortifruti SL!\n\n" +
                 "Como posso te ajudar hoje? Digite o número da opção:\n\n" +
                 "*1* - 📋 Pedido - Fazer novo pedido\n" +
                 "*2* - 💬 Outro assunto - Falar com atendimento\n" +
@@ -633,10 +633,9 @@ public class ChatbotService {
                     byte[] pdf = pdfResponse.getBody();
                     
                     if (pdf != null && pdf.length > 0) {
-                        String fileName = "Boleto-" + 
-                            (cs.getYourNumber() != null && !cs.getYourNumber().isEmpty() 
-                                ? cs.getYourNumber() 
-                                : cs.getId()) + ".pdf";
+                        // Garante unicidade usando ID do CombinedScore + índice
+                        String fileName = "Boleto-" + cs.getId() + "-" + (idx + 1) + ".pdf";
+                        
                         documents.add(pdf);
                         fileNames.add(fileName);
                         boletosAdicionados++;
@@ -650,7 +649,6 @@ public class ChatbotService {
                         cs.getId(), ex.getMessage(), ex);
                 }
             }
-            log.info("Total de boletos adicionados: {}/{}", boletosAdicionados, pendingWithBillet.size());
             log.info("Total de boletos adicionados: {}/{}", boletosAdicionados, pendingWithBillet.size());
             
             // 2. Processar TODAS as notas fiscais buscadas pela API Focus NFe
