@@ -11,8 +11,7 @@ export interface BulkNotificationRequest {
   destinationType: string; // "clientes" ou "contabilidade"
   customMessage?: string;
   // Campos financeiros para contabilidade
-  creditValue?: string;
-  debitValue?: string;
+  cardValue?: string;
   cashValue?: string;
 }
 
@@ -77,11 +76,8 @@ export const bulkNotificationService = {
     }
 
     // Adicionar campos financeiros para contabilidade (se houver)
-    if (request.creditValue) {
-      formData.append("creditValue", request.creditValue);
-    }
-    if (request.debitValue) {
-      formData.append("debitValue", request.debitValue);
+    if (request.cardValue) {
+      formData.append("cardValue", request.cardValue);
     }
     if (request.cashValue) {
       formData.append("cashValue", request.cashValue);
