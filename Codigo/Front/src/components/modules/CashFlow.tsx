@@ -76,23 +76,17 @@ const categoryNames: { [key: string]: string } = {
   'FISCAL': 'Fiscal',
 };
 
-export default function CashFlow() {
+type CashFlowProps = {
+  startDate: string;
+  endDate: string;
+  setStartDate: React.Dispatch<React.SetStateAction<string>>;
+  setEndDate: React.Dispatch<React.SetStateAction<string>>;
+}
+
+export default function CashFlow({ startDate, endDate, setStartDate, setEndDate }: CashFlowProps) {
   const { isLoading, error, getDashboardData } = useDashboard();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
-
-  // Estados para filtros
-  const [startDate, setStartDate] = useState(() => {
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    return firstDay.toISOString().split('T')[0];
-  });
-  
-  const [endDate, setEndDate] = useState(() => {
-    const now = new Date();
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return lastDay.toISOString().split('T')[0];
-  });
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());

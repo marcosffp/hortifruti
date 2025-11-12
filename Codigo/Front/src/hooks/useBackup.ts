@@ -17,11 +17,14 @@ export function useBackup() {
 
     const refreshStorage = useCallback(async () => {
         setError(null);
+        setIsLoading(true);
         try {
             const s = await backupService.getStorage();
             setStorage(s);
         } catch (e: any) {
             setError(e.message || "Erro ao obter armazenamento");
+        } finally {
+            setIsLoading(false);
         }
     }, []);
 
