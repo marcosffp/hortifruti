@@ -1,14 +1,13 @@
 package com.hortifruti.sl.hortifruti.model.chatbot;
 
 public enum SessionStatus {
+  MENU,
 
-    MENU,
+  AWAITING_DOCUMENT,
 
-    AWAITING_DOCUMENT,
+  AWAITING_HUMAN,
 
-    AWAITING_HUMAN,
+  PAUSED,
 
-    PAUSED,
-
-    CLOSED
+  CLOSED
 }
