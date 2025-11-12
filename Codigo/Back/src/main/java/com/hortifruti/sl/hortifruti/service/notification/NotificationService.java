@@ -26,7 +26,6 @@ public class NotificationService {
   @Value("${accounting.email}")
   private String accountingEmail;
 
-
   public NotificationResponse sendGenericFilesToAccounting(
       List<MultipartFile> files, GenericFilesAccountingRequest request) {
     try {
@@ -41,7 +40,6 @@ public class NotificationService {
         }
       }
 
-  
       BigDecimal cardValue = request.cardValue() != null ? request.cardValue() : BigDecimal.ZERO;
       BigDecimal cashValue = request.cashValue() != null ? request.cashValue() : BigDecimal.ZERO;
 
@@ -52,8 +50,7 @@ public class NotificationService {
       boolean hasFiles = fileContents != null && !fileContents.isEmpty();
       int filesCount = hasFiles ? fileContents.size() : 0;
       String emailBody =
-          buildGenericFilesMessage(
-              request, discountedCardValue, cashValue, hasFiles, filesCount);
+          buildGenericFilesMessage(request, discountedCardValue, cashValue, hasFiles, filesCount);
 
       // Enviar apenas por email (sem WhatsApp para contabilidade)
       try {
