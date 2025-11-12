@@ -38,6 +38,13 @@ public class ChatbotService {
   private final CombinedScoreRepository combinedScoreRepository;
   private final ChatSessionService chatSessionService;
   private final InvoiceService invoiceService;
+  
+  // Cache para rastrear mensagens enviadas pelo bot nos últimos 10 segundos
+  // Key: phoneNumber, Value: timestamp da última mensagem enviada pelo bot
+  private final Map<String, Long> botSentMessages = new java.util.concurrent.ConcurrentHashMap<>();
+  private static final long BOT_MESSAGE_THRESHOLD_MS = 10000; // 10 segundos
+  
+  private static final String CONTACT_PHONE = "(31) 3641-2244";
 
   /**
    * Processa mensagens recebidas do webhook do WhatsApp.
@@ -59,12 +66,17 @@ public class ChatbotService {
 
       Map<String, Object> data = (Map<String, Object>) dataObj;
       String from = (String) data.getOrDefault("from", "");
+      String to = (String) data.getOrDefault("to", "");
+
+      log.info("=== DEBUG WEBHOOK ===");
+      log.info("FROM: {}", from);
+      log.info("TO: {}", to);
+      log.info("====================");
 
       if (!from.endsWith("@c.us")) {
         return;
       }
 
-      String phoneNumber = extractPhoneFromJid(from);
       String messageBody = extractMessageBodyUltraMsg(data);
       String messageType = extractMessageTypeUltraMsg(data);
 
@@ -72,14 +84,47 @@ public class ChatbotService {
         return;
       }
 
-      // Detecta se a mensagem foi enviada manualmente (não é do cliente)
-      // Mensagens do bot têm o campo "fromMe" = true no payload do UltraMsg
+      // Detecta se a mensagem foi enviada manualmente pelo atendente
       boolean isFromMe = detectIfMessageIsFromBot(data);
 
+      // Define o número correto do CLIENTE baseado em quem enviou a mensagem
+      String phoneNumber;
       if (isFromMe) {
+        // Mensagem enviada PELO ATENDENTE (você)
+        // from = você (atendente) - 557799012005
+        // to = cliente (destinatário) - 553398139500
+        // Queremos o número do CLIENTE, então usamos TO
+        phoneNumber = extractPhoneFromJid(to);
+        log.info("Mensagem DO ATENDENTE PARA o cliente: {}", phoneNumber);
+      } else {
+        // Mensagem enviada PELO CLIENTE
+        // from = cliente (remetente) - 553398139500
+        // to = você (atendente) - 557799012005
+        // Queremos o número do CLIENTE, então usamos FROM
+        phoneNumber = extractPhoneFromJid(from);
+        log.info("Mensagem DO CLIENTE: {}", phoneNumber);
+      }
+
+      if (isFromMe) {
+        // Mensagem enviada pelo atendente ou pelo próprio bot
+        log.info("Detectada mensagem fromMe=true para cliente: {}", phoneNumber);
+        
+        // Verifica se esta mensagem foi enviada pelo bot recentemente
+        Long lastBotMessageTime = botSentMessages.get(phoneNumber);
+        long now = System.currentTimeMillis();
+        
+        if (lastBotMessageTime != null && (now - lastBotMessageTime) < BOT_MESSAGE_THRESHOLD_MS) {
+          // Mensagem enviada pelo bot automaticamente nos últimos 10 segundos
+          log.info("Mensagem automática do BOT detectada para {}. Ignorando para não pausar.", phoneNumber);
+          
+          // Remove do cache após usar
+          botSentMessages.remove(phoneNumber);
+          return;
+        }
+        
         // Mensagem enviada manualmente pelo atendente via WhatsApp
         log.info(
-            "Mensagem manual detectada para {}. Criando/obtendo sessão e pausando bot por 1 hora.",
+            "Mensagem MANUAL do atendente detectada para cliente {}. Criando/obtendo sessão e pausando bot por 1 hora.",
             phoneNumber);
 
         // 1. Primeiro: Garante que a sessão existe (cria se necessário)
@@ -116,23 +161,35 @@ public class ChatbotService {
    */
   private void processCommand(String phoneNumber, String message) {
     try {
-      // 1. Verificar se o bot está pausado para este número
-      if (chatSessionService.isBotPausedForPhone(phoneNumber)) {
-        log.info("Bot pausado para telefone {}. Mensagem ignorada.", phoneNumber);
-        return;
-      }
-
-      // 2. Verificar comandos globais (funcionam em qualquer estado)
+      // 1. Verificar comandos globais ANTES de verificar se está pausado
+      // (comandos como "menu" funcionam sempre, mesmo com bot pausado)
       String normalized = message.toLowerCase().trim();
       if (normalized.equals("menu")
           || normalized.equals("recomeçar")
           || normalized.equals("recomecar")) {
-        // Reseta a sessão e volta ao menu principal
+        // Obtém ou cria a sessão
         ChatSession session = chatSessionService.getOrCreateSession(phoneNumber);
+        
+        // Se estava pausado, remove a pausa
+        boolean wasPaused = chatSessionService.isBotPausedForPhone(phoneNumber);
+        if (wasPaused) {
+          log.info("Cliente {} solicitou menu enquanto bot estava pausado. Despausando bot...", phoneNumber);
+          chatSessionService.unpauseBot(session.getId());
+          log.info("Bot despausado com sucesso para cliente {}", phoneNumber);
+        }
+        
+        // Atualiza status para MENU e limpa contexto
         chatSessionService.updateSessionStatus(session.getId(), SessionStatus.MENU);
-        chatSessionService.setSessionContext(session.getId(), null); // Limpa contexto
+        chatSessionService.setSessionContext(session.getId(), null);
+        
+        log.info("Cliente {} no menu principal. Status: MENU, Pausado: false", phoneNumber);
         sendMainMenu(phoneNumber);
-        log.info("Cliente {} solicitou voltar ao menu principal", phoneNumber);
+        return;
+      }
+
+      // 2. Verificar se o bot está pausado para este número
+      if (chatSessionService.isBotPausedForPhone(phoneNumber)) {
+        log.info("Bot pausado para telefone {}. Mensagem ignorada.", phoneNumber);
         return;
       }
 
@@ -156,8 +213,11 @@ public class ChatbotService {
 
         case PAUSED:
           // Bot pausado - atendimento humano em andamento
-          // Não responde para não atrapalhar o atendente
-          log.info("Bot pausado para {}. Atendimento humano em andamento.", phoneNumber);
+          // NOTA: Normalmente nunca chegamos aqui porque verificamos isBotPausedForPhone antes
+          // Mas se chegamos, é porque a pausa expirou mas o status ainda não foi atualizado
+          log.warn("Status PAUSED detectado mas bot não está pausado. Mudando para MENU.");
+          chatSessionService.updateSessionStatus(session.getId(), SessionStatus.MENU);
+          sendMainMenu(phoneNumber);
           break;
 
         case CLOSED:
@@ -188,9 +248,8 @@ public class ChatbotService {
           "📋 *Fazer Pedido*\n\n"
               + "Por favor, envie a lista de produtos que deseja:\n"
               + "Nossa equipe vai receber seu pedido e responder em breve com disponibilidade e valores.\n\n"
-              + "Horário de atendimento:\n"
-              + "• Segunda a Sábado, 7h às 20h\n"
-              + "• Domingo, 7h às 12h";
+              + "💡 Digite MENU para voltar ao início";
+      registerBotMessage(phoneNumber);
       whatsAppService.sendTextMessage(phoneNumber, msg);
       return;
     }
@@ -200,12 +259,11 @@ public class ChatbotService {
       chatSessionService.setSessionContext(session.getId(), SessionContext.OUTRO);
       chatSessionService.updateSessionStatus(session.getId(), SessionStatus.AWAITING_HUMAN);
       String msg =
-          "� *Falar com Atendimento*\n\n"
+          "💬 *Falar com Atendimento*\n\n"
               + "Por favor, descreva seu assunto ou dúvida:\n"
               + "Nossa equipe vai receber sua mensagem e responder em breve.\n\n"
-              + "Horário de atendimento:\n"
-              + "• Segunda a Sábado, 7h às 20h\n"
-              + "• Domingo, 7h às 12h";
+             + "💡 Digite MENU para voltar ao início";
+      registerBotMessage(phoneNumber);
       whatsAppService.sendTextMessage(phoneNumber, msg);
       return;
     }
@@ -215,10 +273,11 @@ public class ChatbotService {
       chatSessionService.setSessionContext(session.getId(), SessionContext.BOLETO);
       chatSessionService.updateSessionStatus(session.getId(), SessionStatus.AWAITING_DOCUMENT);
       String msg =
-          "� *Consultar Boletos Pendentes*\n\n"
+          "💰 *Consultar Boletos Pendentes*\n\n"
               + "Para consultar seus boletos, por favor, envie seu CPF *(apenas números)* ou CNPJ.\n\n"
               + "Exemplo: 12345678900 ou 12345678000190\n\n"
               + "💡 Digite MENU para voltar ao início";
+      registerBotMessage(phoneNumber);
       whatsAppService.sendTextMessage(phoneNumber, msg);
       return;
     }
@@ -232,6 +291,7 @@ public class ChatbotService {
               + "Por favor, envie o *número da nota fiscal* que deseja consultar.\n\n"
               + "Exemplo: 123456\n\n"
               + "💡 Digite MENU para voltar ao início";
+      registerBotMessage(phoneNumber);
       whatsAppService.sendTextMessage(phoneNumber, msg);
       return;
     }
@@ -242,6 +302,9 @@ public class ChatbotService {
 
   /** Envia o menu principal */
   private void sendMainMenu(String phoneNumber) {
+    // Registra que o bot vai enviar uma mensagem
+    registerBotMessage(phoneNumber);
+    
     String menu =
         "Olá! Bem-vindo ao Hortifruti SL!\n\n"
             + "Como posso te ajudar hoje? Digite o número da opção:\n\n"
@@ -252,6 +315,14 @@ public class ChatbotService {
             + "Digite o número da opção desejada (1, 2, 3 ou 4)\n\n"
             + "💡 A qualquer momento, digite MENU para voltar aqui";
     whatsAppService.sendTextMessage(phoneNumber, menu);
+  }
+  
+  /**
+   * Registra que o bot está enviando uma mensagem para evitar pausar quando o webhook retornar
+   */
+  private void registerBotMessage(String phoneNumber) {
+    botSentMessages.put(phoneNumber, System.currentTimeMillis());
+    log.debug("Registrada mensagem do bot para {}", phoneNumber);
   }
 
   /** Processa entrada de documento (CPF/CNPJ ou número de NF) */
@@ -329,7 +400,7 @@ public class ChatbotService {
                 + cleanNumber
                 + "* está correto.\n\n"
                 + "💡 Digite MENU para voltar ao início ou entre em contato:\n"
-                + "📞 (31) 3641-2244";
+                + "📞 " + CONTACT_PHONE;
         whatsAppService.sendTextMessage(phoneNumber, msg);
         chatSessionService.closeSession(session.getId(), "NOT_FOUND");
         return;
@@ -344,7 +415,7 @@ public class ChatbotService {
         String msg =
             "❌ Erro ao consultar a nota fiscal.\n\n"
                 + "Por favor, tente novamente ou entre em contato:\n"
-                + "📞 (31) 3641-2244\n\n"
+                + "📞 " + CONTACT_PHONE + "\n\n"
                 + "💡 Digite MENU para voltar ao início";
         whatsAppService.sendTextMessage(phoneNumber, msg);
         chatSessionService.closeSession(session.getId(), "ERROR");
@@ -405,18 +476,18 @@ public class ChatbotService {
               log.warn("DANFE retornado é nulo ou vazio");
               whatsAppService.sendTextMessage(
                   phoneNumber,
-                  "⚠️ Documento não disponível no momento. Entre em contato: (31) 3641-2244");
+                  "⚠️ Documento não disponível no momento. Entre em contato: " + CONTACT_PHONE);
             }
           } else {
             log.warn("Resource DANFE é nulo");
             whatsAppService.sendTextMessage(
                 phoneNumber,
-                "⚠️ Documento não disponível no momento. Entre em contato: (31) 3641-2244");
+                "⚠️ Documento não disponível no momento. Entre em contato: " + CONTACT_PHONE);
           }
         } catch (Exception ex) {
           log.error("Erro ao baixar DANFE: {}", ex.getMessage(), ex);
           whatsAppService.sendTextMessage(
-              phoneNumber, "❌ Erro ao processar o documento. Entre em contato: (31) 3641-2244");
+              phoneNumber, "❌ Erro ao processar o documento. Entre em contato: " + CONTACT_PHONE);
         }
       } else {
         // NF não autorizada
@@ -424,7 +495,7 @@ public class ChatbotService {
         messageBuilder.append("Esta nota fiscal não está autorizada para download.\n");
         messageBuilder.append("Status atual: ").append(invoiceResponse.status()).append("\n\n");
         messageBuilder.append("Para mais informações, entre em contato:\n");
-        messageBuilder.append("📞 (31) 3641-2244");
+        messageBuilder.append("📞 " + CONTACT_PHONE);
         whatsAppService.sendTextMessage(phoneNumber, messageBuilder.toString());
       }
 
@@ -439,7 +510,7 @@ public class ChatbotService {
       String msg =
           "❌ Erro ao consultar a nota fiscal.\n\n"
               + "Por favor, verifique o número e tente novamente ou entre em contato:\n"
-              + "📞 (31) 3641-2244";
+              + "📞 " + CONTACT_PHONE;
       whatsAppService.sendTextMessage(phoneNumber, msg);
       chatSessionService.closeSession(session.getId(), "ERROR");
     }
@@ -502,13 +573,10 @@ public class ChatbotService {
   }
 
   /**
-   * Busca e envia boletos e notas fiscais pendentes de um cliente específico.
+   * Busca e envia boletos pendentes de um cliente específico.
    *
-   * <p>Localiza o cliente pelo documento (CPF/CNPJ), busca: 1. Todos os combined scores pendentes
-   * (para boletos) 2. Todas as notas fiscais autorizadas pela API Focus NFe (usando CPF/CNPJ)
-   *
-   * <p>Envia: - Boletos (se houver hasBillet = true) - Notas Fiscais/DANFE (buscadas pela API
-   * usando CPF/CNPJ) - Apenas mensagem informativa se não houver arquivos
+   * <p>Localiza o cliente pelo documento (CPF/CNPJ) e busca todos os combined scores pendentes
+   * que possuem boletos emitidos (hasBillet = true).
    *
    * @param session Sessão de chat ativa
    * @param phoneNumber Número de telefone do cliente
@@ -522,7 +590,8 @@ public class ChatbotService {
         String message =
             "Desculpe, não encontrei nenhum cliente com esse documento em nosso sistema.\n\n"
                 + "Verifique se o CPF ou CNPJ está correto ou entre em contato conosco:\n"
-                + "(31) 3641-2244";
+                + CONTACT_PHONE;
+        registerBotMessage(phoneNumber);
         whatsAppService.sendTextMessage(phoneNumber, message);
         return;
       }
@@ -541,29 +610,16 @@ public class ChatbotService {
       List<CombinedScore> allPending = billetService.findAllPendingByClient(client.getId());
       log.info("Combined Scores pendentes TOTAL: {}", allPending.size());
 
-      // Busca todas as notas fiscais do cliente no banco de dados
-      log.info("Iniciando busca de notas fiscais no banco de dados...");
-      List<String> invoiceRefs = new ArrayList<>();
-      try {
-        invoiceRefs = combinedScoreRepository.findAllInvoiceRefsByClientId(client.getId());
-        log.info("✓ Notas fiscais encontradas no banco: {}", invoiceRefs.size());
-        if (!invoiceRefs.isEmpty()) {
-          log.info("Refs encontradas: {}", String.join(", ", invoiceRefs));
-        }
-      } catch (Exception ex) {
-        log.error("✗ Erro ao buscar notas fiscais no banco: {}", ex.getMessage(), ex);
-      }
-      log.info("========================================");
-
-      // Se não houver cobranças pendentes e nem notas fiscais
-      if (allPending.isEmpty() && invoiceRefs.isEmpty()) {
+      // Se não houver cobranças pendentes
+      if (allPending.isEmpty()) {
         String message =
             String.format(
                 "Olá, %s!\n\n"
-                    + "Boa notícia! Você não possui cobranças pendentes nem notas fiscais no momento.\n\n"
+                    + "Boa notícia! Você não possui cobranças pendentes no momento.\n\n"
                     + "Se tiver alguma dúvida, entre em contato conosco:\n"
-                    + "(31) 3641-2244",
+                    + CONTACT_PHONE,
                 client.getClientName());
+        registerBotMessage(phoneNumber);
         whatsAppService.sendTextMessage(phoneNumber, message);
         return;
       }
@@ -575,88 +631,84 @@ public class ChatbotService {
       // Contadores
       int totalWithBillet = pendingWithBillet.size();
       int totalWithoutBillet = allPending.size() - pendingWithBillet.size();
-      int totalInvoices = invoiceRefs.size();
 
       // Informações sobre cobranças pendentes
-      if (!allPending.isEmpty()) {
-        messageBuilder.append(String.format("📋 *Cobranças Pendentes:* %d\n\n", allPending.size()));
+      messageBuilder.append(String.format("📋 *Cobranças Pendentes:* %d\n\n", allPending.size()));
 
-        int i = 1;
-        for (CombinedScore cs : allPending) {
-          messageBuilder.append(String.format("*Cobrança %d:*\n", i));
-          messageBuilder.append(String.format("Valor: R$ %.2f\n", cs.getTotalValue()));
+      int i = 1;
+      for (CombinedScore cs : allPending) {
+        messageBuilder.append(String.format("*Cobrança %d:*\n", i));
+        messageBuilder.append(String.format("Valor: R$ %.2f\n", cs.getTotalValue()));
+        messageBuilder.append(
+            String.format(
+                "Vencimento: %s\n",
+                cs.getDueDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))));
+
+        if (cs.isHasBillet()) {
           messageBuilder.append(
               String.format(
-                  "Vencimento: %s\n",
-                  cs.getDueDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))));
-
-          if (cs.isHasBillet()) {
-            messageBuilder.append(
-                String.format(
-                    "✓ Boleto: %s\n",
-                    cs.getYourNumber() != null ? cs.getYourNumber() : "Disponível"));
-          } else {
-            messageBuilder.append("○ Boleto: Não emitido ainda\n");
-          }
-
-          if (i < allPending.size()) {
-            messageBuilder.append("────────────────\n\n");
-          }
-          i++;
+                  "✓ Boleto: %s\n",
+                  cs.getYourNumber() != null ? cs.getYourNumber() : "Disponível"));
+        } else {
+          messageBuilder.append("○ Boleto: Não emitido ainda\n");
         }
-      }
 
-      // Informações sobre notas fiscais
-      if (totalInvoices > 0) {
-        if (!allPending.isEmpty()) {
-          messageBuilder.append("\n────────────────\n\n");
+        if (i < allPending.size()) {
+          messageBuilder.append("────────────────\n\n");
         }
-        messageBuilder.append(String.format("📄 *Notas Fiscais Autorizadas:* %d\n", totalInvoices));
+        i++;
       }
 
       // Resumo de documentos disponíveis
       messageBuilder.append("\n────────────────\n\n");
-      messageBuilder.append("📦 *Documentos Disponíveis:*\n");
+      messageBuilder.append("📦 *Boletos Disponíveis:*\n");
       if (totalWithBillet > 0) {
-        messageBuilder.append(String.format("✓ %d Boleto(s)\n", totalWithBillet));
-      }
-      if (totalInvoices > 0) {
-        messageBuilder.append(String.format("✓ %d Nota(s) Fiscal(is)\n", totalInvoices));
-      }
-      if (totalWithBillet == 0 && totalInvoices == 0) {
-        messageBuilder.append("⚠️ Nenhum documento disponível no momento\n");
+        messageBuilder.append(String.format("✓ %d Boleto(s) para download\n", totalWithBillet));
+      } else {
+        messageBuilder.append("⚠️ Nenhum boleto disponível no momento\n");
       }
 
       log.info(
-          "Resumo - Cobranças: {}, Com boleto: {}, Sem boleto: {}, Notas Fiscais: {}",
+          "Resumo - Cobranças: {}, Com boleto: {}, Sem boleto: {}",
           allPending.size(),
           totalWithBillet,
-          totalWithoutBillet,
-          totalInvoices);
+          totalWithoutBillet);
 
+      registerBotMessage(phoneNumber);
       whatsAppService.sendTextMessage(phoneNumber, messageBuilder.toString());
 
-      // Listas para armazenar os documentos (boletos e notas fiscais)
+      // Se não houver boletos emitidos, não precisa continuar
+      if (pendingWithBillet.isEmpty()) {
+        String noDocumentsMessage = "⚠️ *Boletos Pendentes de Emissão*\n\n";
+        noDocumentsMessage +=
+            String.format(
+                "Você possui %d cobrança(s) sem boleto emitido ainda.\n\n", totalWithoutBillet);
+        noDocumentsMessage +=
+            "*Entre em contato para mais informações:*\n"
+                + "📞 " + CONTACT_PHONE + "\n\n"
+                + "Horário de atendimento:\n"
+                + "• Segunda a Sábado, 7h às 20h\n"
+                + "• Domingo, 7h às 12h";
+        
+        registerBotMessage(phoneNumber);
+        whatsAppService.sendTextMessage(phoneNumber, noDocumentsMessage);
+        
+        // Associar cliente à sessão e finalizar
+        chatSessionService.associateClient(session.getId(), client.getId());
+        chatSessionService.closeSession(session.getId(), "COMPLETED");
+        log.info("Sessão {} finalizada para cliente {}", session.getId(), client.getId());
+        return;
+      }
+
+      // Listas para armazenar os boletos
       List<byte[]> documents = new ArrayList<>();
       List<String> fileNames = new ArrayList<>();
 
       log.info("========================================");
-      log.info("Iniciando coleta de documentos...");
+      log.info("Iniciando coleta de boletos...");
       log.info("Combined Scores COM BOLETO a processar: {}", pendingWithBillet.size());
-      log.info("Notas Fiscais a processar: {}", invoiceRefs.size());
 
-      // DEBUG: Listar todos os Combined Scores com boleto
-      for (int idx = 0; idx < pendingWithBillet.size(); idx++) {
-        CombinedScore cs = pendingWithBillet.get(idx);
-        log.info(
-            "  [{}] ID: {}, YourNumber: {}, HasBillet: {}",
-            idx + 1,
-            cs.getId(),
-            cs.getYourNumber(),
-            cs.isHasBillet());
-      }
-
-      // 1. Processar APENAS boletos dos Combined Scores que têm hasBillet = true
+      // Processar APENAS boletos dos Combined Scores que têm hasBillet = true
       log.info("Processando {} boletos...", pendingWithBillet.size());
       int boletosAdicionados = 0;
       for (int idx = 0; idx < pendingWithBillet.size(); idx++) {
@@ -672,9 +724,7 @@ public class ChatbotService {
           byte[] pdf = pdfResponse.getBody();
 
           if (pdf != null && pdf.length > 0) {
-            // Garante unicidade usando ID do CombinedScore + índice
             String fileName = "Boleto-" + cs.getId() + "-" + (idx + 1) + ".pdf";
-
             documents.add(pdf);
             fileNames.add(fileName);
             boletosAdicionados++;
@@ -694,134 +744,42 @@ public class ChatbotService {
       }
       log.info("Total de boletos adicionados: {}/{}", boletosAdicionados, pendingWithBillet.size());
 
-      // 2. Processar TODAS as notas fiscais buscadas pela API Focus NFe
-      log.info("Processando {} notas fiscais...", invoiceRefs.size());
-      int notasAdicionadas = 0;
-      for (int idx = 0; idx < invoiceRefs.size(); idx++) {
-        String ref = invoiceRefs.get(idx);
-        try {
-          log.info(
-              "  → [{}/{}] Obtendo DANFE para invoiceRef: {}", idx + 1, invoiceRefs.size(), ref);
-          ResponseEntity<Resource> danfeResponse = invoiceService.downloadDanfe(ref);
-          Resource resource = danfeResponse.getBody();
-
-          if (resource != null) {
-            byte[] danfePdf = resource.getContentAsByteArray();
-            if (danfePdf != null && danfePdf.length > 0) {
-              String fileName = "NotaFiscal-" + ref + ".pdf";
-              documents.add(danfePdf);
-              fileNames.add(fileName);
-              notasAdicionadas++;
-              log.info(
-                  "    ✓ Nota Fiscal adicionada: {} ({} bytes) - Total: {}/{}",
-                  fileName,
-                  danfePdf.length,
-                  notasAdicionadas,
-                  invoiceRefs.size());
-            } else {
-              log.warn("    ✗ DANFE retornado é nulo ou vazio para ref: {}", ref);
-            }
-          } else {
-            log.warn("    ✗ Resource DANFE é nulo para ref: {}", ref);
-          }
-        } catch (Exception ex) {
-          log.error("    ✗ Falha ao obter DANFE para ref {}: {}", ref, ex.getMessage(), ex);
-        }
-      }
-      log.info("Total de notas fiscais adicionadas: {}/{}", notasAdicionadas, invoiceRefs.size());
-      log.info("Total de notas fiscais adicionadas: {}/{}", notasAdicionadas, invoiceRefs.size());
-
       log.info("Coleta finalizada:");
       log.info("  • Boletos: {}/{}", boletosAdicionados, pendingWithBillet.size());
-      log.info("  • Notas Fiscais: {}/{}", notasAdicionadas, invoiceRefs.size());
       log.info("  • Total de documentos coletados: {}", documents.size());
-      log.info("Lista de arquivos coletados:");
-      for (int i = 0; i < fileNames.size(); i++) {
-        log.info("  [{}] {} ({} bytes)", i + 1, fileNames.get(i), documents.get(i).length);
-      }
       log.info("========================================");
 
-      // 3. Enviar documentos se houver algum
+      // Enviar boletos
       if (!documents.isEmpty()) {
         int totalDocs = documents.size();
-
-        // Detalhar quais documentos serão enviados
-        int boletosCount = 0;
-        int notasCount = 0;
-        for (String name : fileNames) {
-          if (name.startsWith("Boleto-")) boletosCount++;
-          if (name.startsWith("NotaFiscal-")) notasCount++;
-        }
-
-        String caption = String.format("📎 Enviando %d documento(s):\n", totalDocs);
-        if (boletosCount > 0) {
-          caption += String.format("• %d Boleto(s)\n", boletosCount);
-        }
-        if (notasCount > 0) {
-          caption += String.format("• %d Nota(s) Fiscal(is)\n", notasCount);
-        }
+        String caption = String.format("📎 Enviando %d boleto(s)", totalDocs);
 
         log.info("========================================");
-        log.info("PREPARANDO ENVIO DE DOCUMENTOS");
+        log.info("PREPARANDO ENVIO DE BOLETOS");
         log.info("Destinatário: {}", phoneNumber);
-        log.info("Total de documentos a enviar: {}", totalDocs);
-        log.info("  • Boletos: {}", boletosCount);
-        log.info("  • Notas Fiscais: {}", notasCount);
-        log.info("Documentos na lista:");
-        for (int i = 0; i < fileNames.size(); i++) {
-          log.info("  [{}] {} ({} bytes)", i + 1, fileNames.get(i), documents.get(i).length);
-        }
+        log.info("Total de boletos a enviar: {}", totalDocs);
         log.info("========================================");
 
         boolean sent =
             whatsAppService.sendMultipleDocuments(phoneNumber, caption, documents, fileNames);
 
         if (sent) {
-          log.info("✓ SUCESSO: Todos os {} documentos foram enviados com sucesso!", totalDocs);
+          log.info("✓ SUCESSO: Todos os {} boletos foram enviados com sucesso!", totalDocs);
         } else {
-          log.error("✗ FALHA: Um ou mais documentos não foram enviados corretamente");
+          log.error("✗ FALHA: Um ou mais boletos não foram enviados corretamente");
         }
-      } else {
-        // Se não houver documentos disponíveis para envio
-        log.warn(
-            "Nenhum documento disponível para envio (Cobranças: {}, Boletos emitidos: {}, Notas: {})",
-            allPending.size(),
-            pendingWithBillet.size(),
-            invoiceRefs.size());
-
-        String noDocumentsMessage = "⚠️ *Documentos Pendentes*\n\n";
-
-        if (totalWithoutBillet > 0) {
-          noDocumentsMessage +=
-              String.format(
-                  "Você possui %d cobrança(s) sem boleto emitido ainda.\n", totalWithoutBillet);
-        }
-
-        if (invoiceRefs.isEmpty() && !allPending.isEmpty()) {
-          noDocumentsMessage +=
-              "As notas fiscais estão sendo processadas ou ainda não foram emitidas.\n";
-        }
-
-        noDocumentsMessage +=
-            "\n*Entre em contato para mais informações:*\n"
-                + "📞 (31) 3641-2244\n\n"
-                + "Horário de atendimento:\n"
-                + "• Segunda a Sábado, 7h às 20h\n"
-                + "• Domingo, 7h às 12h";
-
-        whatsAppService.sendTextMessage(phoneNumber, noDocumentsMessage);
       }
 
       // Associar cliente à sessão
       chatSessionService.associateClient(session.getId(), client.getId());
 
-      // Deleta a sessão após enviar os documentos (limpa o banco)
+      // Deleta a sessão após enviar os documentos
       chatSessionService.closeSession(session.getId(), "COMPLETED");
       log.info("Sessão {} finalizada para cliente {}", session.getId(), client.getId());
 
     } catch (Exception e) {
       log.error(
-          "Erro ao processar solicitação de documentos para {}: {}",
+          "Erro ao processar solicitação de boletos para {}: {}",
           phoneNumber,
           e.getMessage(),
           e);
@@ -842,7 +800,7 @@ public class ChatbotService {
             + "- 'ajuda' - Lista de comandos\n"
             + "- 'oi' - Saudação e boas-vindas\n\n"
             + "Tente usar uma dessas palavras-chave!\n\n"
-            + "Para outras dúvidas: (31) 3641-2244";
+            + "Para outras dúvidas: " + CONTACT_PHONE;
 
     whatsAppService.sendTextMessage(phoneNumber, message);
   }
@@ -856,7 +814,7 @@ public class ChatbotService {
     String message =
         "Ops! Ocorreu um erro temporário.\n\n"
             + "Por favor, tente novamente em alguns minutos ou entre em contato:\n\n"
-            + "(31) 3641-2244\n"
+            + CONTACT_PHONE + "\n"
             + "Segunda a Sexta, 8h às 18h";
 
     whatsAppService.sendTextMessage(phoneNumber, message);
