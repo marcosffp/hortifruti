@@ -79,13 +79,20 @@ public class ChatbotService {
       if (isFromMe) {
         // Mensagem enviada manualmente pelo atendente via WhatsApp
         log.info(
-            "Mensagem manual detectada para {}. Pausando bot por 2 horas e mudando status para PAUSED.",
+            "Mensagem manual detectada para {}. Criando/obtendo sessão e pausando bot por 1 hora.",
             phoneNumber);
-        chatSessionService.pauseBotForPhone(phoneNumber, 2);
 
-        // Muda o status da sessão para PAUSED (atendimento humano em andamento)
+        // 1. Primeiro: Garante que a sessão existe (cria se necessário)
         ChatSession session = chatSessionService.getOrCreateSession(phoneNumber);
+        log.info("Sessão obtida/criada: ID {}", session.getId());
+
+        // 2. Depois: Pausa o bot para esta sessão
+        chatSessionService.pauseBotForSession(session.getId(), 1);
+
+        // 3. Por fim: Muda o status para PAUSED (atendimento humano em andamento)
         chatSessionService.updateSessionStatus(session.getId(), SessionStatus.PAUSED);
+        log.info("Status da sessão {} alterado para PAUSED. Bot pausado até: {}", 
+            session.getId(), session.getPausedUntil());
 
         return; // Não processa como comando
       }
