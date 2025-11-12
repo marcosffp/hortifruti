@@ -42,7 +42,7 @@ public class NotificationController {
   @Operation(
       summary = "Enviar arquivos genéricos para contabilidade",
       description =
-          "Upload de arquivos genéricos (opcional) e valores de débito, crédito e dinheiro (opcionais). Envia apenas via email.")
+          "Upload de arquivos genéricos (opcional) e valores de cartão e dinheiro (opcionais). Envia apenas via email.")
   @PostMapping(value = "/accounting/generic-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<NotificationResponse> sendGenericFilesToAccounting(
       @Parameter(
@@ -50,12 +50,9 @@ public class NotificationController {
               content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
           @RequestParam(value = "files", required = false)
           List<MultipartFile> files,
-      @Parameter(description = "Valor de débito (opcional)")
-          @RequestParam(value = "debitValue", required = false, defaultValue = "0")
-          String debitValue,
-      @Parameter(description = "Valor de crédito (opcional)")
-          @RequestParam(value = "creditValue", required = false, defaultValue = "0")
-          String creditValue,
+      @Parameter(description = "Valor do cartão (opcional)")
+          @RequestParam(value = "cardValue", required = false, defaultValue = "0")
+          String cardValue,
       @Parameter(description = "Valor em dinheiro (opcional)")
           @RequestParam(value = "cashValue", required = false, defaultValue = "0")
           String cashValue,
@@ -65,10 +62,7 @@ public class NotificationController {
     try {
       GenericFilesAccountingRequest request =
           new GenericFilesAccountingRequest(
-              new BigDecimal(debitValue),
-              new BigDecimal(creditValue),
-              new BigDecimal(cashValue),
-              customMessage);
+              new BigDecimal(cardValue), new BigDecimal(cashValue), customMessage);
       NotificationResponse response =
           notificationService.sendGenericFilesToAccounting(files, request);
       return ResponseEntity.ok(response);

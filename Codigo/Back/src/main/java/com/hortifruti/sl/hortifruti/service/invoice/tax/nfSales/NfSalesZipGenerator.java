@@ -33,7 +33,6 @@ public class NfSalesZipGenerator {
         Path destinationPath = folderPath.resolve(sourcePath.getFileName());
         System.out.println("Copiando arquivo de: " + sourcePath + " para: " + destinationPath);
 
-        // Substituir o arquivo existente, se necessário
         Files.copy(sourcePath, destinationPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
       } catch (IOException e) {
         System.err.println("Erro ao copiar arquivo XML: " + xmlFile.getName());
@@ -65,6 +64,23 @@ public class NfSalesZipGenerator {
       System.err.println("Erro ao criar o arquivo ZIP: " + zipFileName);
       e.printStackTrace();
       throw new IOException("Erro ao criar o arquivo ZIP: " + zipFileName, e);
+    }
+
+    try {
+      Files.walk(folderPath)
+          .sorted((path1, path2) -> path2.compareTo(path1))
+          .forEach(
+              path -> {
+                try {
+                  Files.delete(path);
+                } catch (IOException e) {
+                  System.err.println("Erro ao excluir: " + path);
+                  e.printStackTrace();
+                }
+              });
+    } catch (IOException e) {
+      System.err.println("Erro ao excluir a pasta: " + folderPath);
+      e.printStackTrace();
     }
 
     return zipFileName;
