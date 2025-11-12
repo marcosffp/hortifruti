@@ -47,7 +47,8 @@ public class SecurityConfig {
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/scheduler/**",
-                        "/backup/oauth2callback")
+                        "/backup/oauth2callback",
+                        "/chatbot/webhook")
                     .permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.GET, "/clients/**")
                     .permitAll()
