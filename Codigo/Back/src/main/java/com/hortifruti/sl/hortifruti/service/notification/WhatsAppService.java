@@ -127,17 +127,22 @@ public class WhatsAppService {
       System.out.println("WhatsApp Document - Enviando:");
       System.out.println("  To: " + formattedPhone);
       System.out.println("  Filename: " + fileName);
-      System.out.println("  Document: " + document.length + " bytes (base64: " + documentBase64.length() + " chars)");
+      System.out.println(
+          "  Document: "
+              + document.length
+              + " bytes (base64: "
+              + documentBase64.length()
+              + " chars)");
 
       HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
       ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
       System.out.println("WhatsApp Document - Status: " + response.getStatusCode());
-      
+
       // Verificar se tem erro na resposta
       String responseBody = response.getBody();
       boolean hasError = responseBody != null && responseBody.contains("\"error\"");
-      
+
       if (hasError) {
         System.err.println("WhatsApp Document - Erro na resposta: " + responseBody);
       }
@@ -153,27 +158,31 @@ public class WhatsAppService {
 
   public boolean sendMultipleDocuments(
       String phoneNumber, String message, List<byte[]> documents, List<String> fileNames) {
-    
+
     System.out.println("========================================");
     System.out.println("WhatsApp - Enviando múltiplos documentos");
     System.out.println("Destinatário: " + phoneNumber);
     System.out.println("Total de documentos: " + documents.size());
     System.out.println("Total de nomes: " + fileNames.size());
-    
+
     // Validação de entrada
     if (documents == null || fileNames == null) {
       System.err.println("✗ ERRO: Listas de documentos ou nomes são nulas!");
       return false;
     }
-    
+
     if (documents.isEmpty()) {
       System.err.println("✗ ERRO: Lista de documentos está vazia!");
       return false;
     }
-    
+
     if (documents.size() != fileNames.size()) {
-      System.err.println("✗ ERRO: Número de documentos (" + documents.size() + 
-          ") diferente do número de nomes (" + fileNames.size() + ")!");
+      System.err.println(
+          "✗ ERRO: Número de documentos ("
+              + documents.size()
+              + ") diferente do número de nomes ("
+              + fileNames.size()
+              + ")!");
       return false;
     }
 
@@ -181,7 +190,7 @@ public class WhatsAppService {
     System.out.println("→ Enviando mensagem de texto inicial...");
     sendTextMessage(phoneNumber, message);
     System.out.println("✓ Mensagem de texto enviada");
-    
+
     boolean allSent = true;
     int sucessos = 0;
     int falhas = 0;
@@ -192,13 +201,11 @@ public class WhatsAppService {
       System.out.println("→ Enviando documento " + (i + 1) + "/" + documents.size());
       System.out.println("  Nome: " + fileNames.get(i));
       System.out.println("  Tamanho: " + documents.get(i).length + " bytes");
-      
-      boolean sent = sendDocument(
-              phoneNumber, 
-              "Documento: " + fileNames.get(i), 
-              documents.get(i), 
-              fileNames.get(i));
-      
+
+      boolean sent =
+          sendDocument(
+              phoneNumber, "Documento: " + fileNames.get(i), documents.get(i), fileNames.get(i));
+
       if (sent) {
         sucessos++;
         System.out.println("✓ Documento " + (i + 1) + " enviado com sucesso!");
@@ -207,7 +214,7 @@ public class WhatsAppService {
         System.err.println("✗ FALHA ao enviar documento " + (i + 1));
         allSent = false;
       }
-      
+
       // Delay de 2 segundos entre documentos para evitar rate limit
       if (i < documents.size() - 1) {
         try {
@@ -219,7 +226,7 @@ public class WhatsAppService {
         }
       }
     }
-    
+
     System.out.println("════════════════════════════════════════");
     System.out.println("RESULTADO DO ENVIO:");
     System.out.println("  Total: " + documents.size());

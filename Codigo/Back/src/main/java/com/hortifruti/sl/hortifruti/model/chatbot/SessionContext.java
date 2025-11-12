@@ -1,11 +1,11 @@
 package com.hortifruti.sl.hortifruti.model.chatbot;
+
 public enum SessionContext {
+  PEDIDO,
 
-    PEDIDO,
+  OUTRO,
 
-    OUTRO,
+  BOLETO,
 
-    BOLETO,
-
-    NOTA_FISCAL
+  NOTA_FISCAL
 }
