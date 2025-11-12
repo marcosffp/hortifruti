@@ -17,7 +17,8 @@ public class ReportTaxController {
   private final ReportTaxService reportTaxService;
 
   @GetMapping("/icms-report/monthly/{start}/{end}")
-  public ResponseEntity<byte[]> generateMonthlyReports(@PathVariable LocalDate start, @PathVariable LocalDate end) {
+  public ResponseEntity<byte[]> generateMonthlyReports(
+      @PathVariable LocalDate start, @PathVariable LocalDate end) {
 
     byte[] zipBytes = reportTaxService.generateMonthly(start, end);
     return ResponseEntity.ok()

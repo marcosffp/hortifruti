@@ -16,8 +16,6 @@ import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import lombok.AllArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -30,25 +28,27 @@ public class ReportTaxService {
   private final IcmsReport icmsReport;
 
   public byte[] generateMonthly(LocalDate startDate, LocalDate endDate) {
+    Path zipPath = null;
     try {
-
       String zipFilePath = generateMonthlyReports(startDate, endDate);
+      zipPath = Paths.get(zipFilePath);
 
-      Path zipPath = Paths.get(zipFilePath);
       byte[] zipBytes = Files.readAllBytes(zipPath);
 
-      String sanitizedFileName =
-          zipPath.getFileName().toString().replace(":", "_").replace("\\", "/");
-
-      HttpHeaders headers = new HttpHeaders();
-      headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-      headers.setContentDispositionFormData("attachment", sanitizedFileName);
-
       return zipBytes;
-
     } catch (Exception e) {
       e.printStackTrace();
       return null;
+    } finally {
+      // Remove o arquivo ZIP gerado
+      if (zipPath != null && Files.exists(zipPath)) {
+        try {
+          Files.delete(zipPath);
+        } catch (IOException e) {
+          System.err.println("Erro ao excluir o arquivo: " + zipPath);
+          e.printStackTrace();
+        }
+      }
     }
   }
 
@@ -114,7 +114,15 @@ public class ReportTaxService {
     String nfSalesZipName = capitalizeFirstLetter(monthName) + "_NFE_SAIDAS.zip";
     String nfSalesZipPath = generateNfSalesZip(startDate, endDate);
 
-    Files.move(Path.of(nfSalesZipPath), folderPath.resolve(nfSalesZipName));
+    Path targetPath = folderPath.resolve(nfSalesZipName);
+
+    // Verifica se o arquivo já existe e exclui, se necessário
+    if (Files.exists(targetPath)) {
+      Files.delete(targetPath); // Remove o arquivo existente
+    }
+
+    // Move o arquivo para o destino
+    Files.move(Path.of(nfSalesZipPath), targetPath);
   }
 
   private Path compressFolder(Path folderPath, String folderName) throws IOException {
