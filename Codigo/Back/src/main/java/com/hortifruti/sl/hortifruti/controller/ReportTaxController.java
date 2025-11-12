@@ -7,6 +7,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -15,11 +16,9 @@ public class ReportTaxController {
 
   private final ReportTaxService reportTaxService;
 
-  @GetMapping("/icms-report/monthly")
-  public ResponseEntity<byte[]> generateMonthlyReports() {
+  @GetMapping("/icms-report/monthly/{start}/{end}")
+  public ResponseEntity<byte[]> generateMonthlyReports(@PathVariable LocalDate start, @PathVariable LocalDate end) {
 
-    LocalDate start = LocalDate.parse("2025-11-01");
-    LocalDate end = LocalDate.parse("2025-11-30");
     byte[] zipBytes = reportTaxService.generateMonthly(start, end);
     return ResponseEntity.ok()
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"relatorios_mensais.zip\"")
