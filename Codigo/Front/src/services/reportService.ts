@@ -1,6 +1,6 @@
 import { getAuthHeaders } from "@/utils/httpUtils";
 
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:8080";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export const reportService = {
   async fetchMonthlyReport(startDate: string, endDate: string): Promise<Blob> {
