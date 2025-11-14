@@ -79,49 +79,30 @@ public class ChatbotService {
         return;
       }
 
-      // Detecta se a mensagem foi enviada manualmente pelo atendente
       boolean isFromMe = detectIfMessageIsFromBot(data);
 
-      // Define o número correto do CLIENTE baseado em quem enviou a mensagem
       String phoneNumber;
       if (isFromMe) {
-        // Mensagem enviada PELO ATENDENTE (você)
-        // from = você (atendente) - 557799012005
-        // to = cliente (destinatário) - 553398139500
-        // Queremos o número do CLIENTE, então usamos TO
         phoneNumber = extractPhoneFromJid(to);
-
       } else {
-        // Mensagem enviada PELO CLIENTE
-        // from = cliente (remetente) - 553398139500
-        // to = você (atendente) - 557799012005
-        // Queremos o número do CLIENTE, então usamos FROM
         phoneNumber = extractPhoneFromJid(from);
       }
 
       if (isFromMe) {
-
         Long lastBotMessageTime = botSentMessages.get(phoneNumber);
         long now = System.currentTimeMillis();
 
         if (lastBotMessageTime != null && (now - lastBotMessageTime) < BOT_MESSAGE_THRESHOLD_MS) {
-          // Mensagem enviada pelo bot automaticamente nos últimos 10 segundos
-
-          // Remove do cache após usar
           botSentMessages.remove(phoneNumber);
           return;
         }
 
         ChatSession session = chatSessionService.getOrCreateSession(phoneNumber);
-
         chatSessionService.pauseBotForSession(session.getId(), 1);
-
         chatSessionService.updateSessionStatus(session.getId(), SessionStatus.PAUSED);
-
         return;
       }
 
-      // Mensagem do cliente - processa normalmente
       processCommand(phoneNumber, messageBody);
 
     } catch (Exception e) {
@@ -140,23 +121,17 @@ public class ChatbotService {
    */
   private void processCommand(String phoneNumber, String message) {
     try {
-      // 1. Verificar comandos globais ANTES de verificar se está pausado
-      // (comandos como "menu" funcionam sempre, mesmo com bot pausado)
       String normalized = message.toLowerCase().trim();
       if (normalized.equals("menu")
           || normalized.equals("recomeçar")
           || normalized.equals("recomecar")) {
-        // Obtém ou cria a sessão
         ChatSession session = chatSessionService.getOrCreateSession(phoneNumber);
 
-        // Se estava pausado, remove a pausa
         boolean wasPaused = chatSessionService.isBotPausedForPhone(phoneNumber);
         if (wasPaused) {
-
           chatSessionService.unpauseBot(session.getId());
         }
 
-        // Atualiza status para MENU e limpa contexto
         chatSessionService.updateSessionStatus(session.getId(), SessionStatus.MENU);
         chatSessionService.setSessionContext(session.getId(), null);
 
@@ -164,16 +139,12 @@ public class ChatbotService {
         return;
       }
 
-      // 2. Verificar se o bot está pausado para este número
       if (chatSessionService.isBotPausedForPhone(phoneNumber)) {
-
         return;
       }
 
-      // 3. Obter ou criar sessão
       ChatSession session = chatSessionService.getOrCreateSession(phoneNumber);
 
-      // 4. Processar baseado no status da sessão
       switch (session.getStatus()) {
         case MENU:
           handleMenuSelection(session, phoneNumber, message);
@@ -187,15 +158,11 @@ public class ChatbotService {
           break;
 
         case PAUSED:
-          // Bot pausado - atendimento humano em andamento
-          // NOTA: Normalmente nunca chegamos aqui porque verificamos isBotPausedForPhone antes
-          // Mas se chegamos, é porque a pausa expirou mas o status ainda não foi atualizado
           chatSessionService.updateSessionStatus(session.getId(), SessionStatus.MENU);
           sendMainMenu(phoneNumber);
           break;
 
         case CLOSED:
-          // Sessão fechada, cria nova e mostra menu
           session = chatSessionService.createNewSession(phoneNumber);
           sendMainMenu(phoneNumber);
           break;
@@ -214,7 +181,6 @@ public class ChatbotService {
   private void handleMenuSelection(ChatSession session, String phoneNumber, String message) {
     String normalized = message.toLowerCase().trim();
 
-    // Opção 1: Pedido
     if (normalized.equals("1") || normalized.contains("pedido")) {
       chatSessionService.setSessionContext(session.getId(), SessionContext.PEDIDO);
       chatSessionService.updateSessionStatus(session.getId(), SessionStatus.AWAITING_HUMAN);
@@ -228,7 +194,6 @@ public class ChatbotService {
       return;
     }
 
-    // Opção 2: Outro assunto
     if (normalized.equals("2") || normalized.contains("outro")) {
       chatSessionService.setSessionContext(session.getId(), SessionContext.OUTRO);
       chatSessionService.updateSessionStatus(session.getId(), SessionStatus.AWAITING_HUMAN);
@@ -242,7 +207,6 @@ public class ChatbotService {
       return;
     }
 
-    // Opção 3: Boletos
     if (normalized.equals("3") || normalized.contains("boleto")) {
       chatSessionService.setSessionContext(session.getId(), SessionContext.BOLETO);
       chatSessionService.updateSessionStatus(session.getId(), SessionStatus.AWAITING_DOCUMENT);
@@ -256,7 +220,6 @@ public class ChatbotService {
       return;
     }
 
-    // Opção 4: Nota Fiscal
     if (normalized.equals("4") || normalized.contains("nota fiscal") || normalized.contains("nf")) {
       chatSessionService.setSessionContext(session.getId(), SessionContext.NOTA_FISCAL);
       chatSessionService.updateSessionStatus(session.getId(), SessionStatus.AWAITING_DOCUMENT);
@@ -270,13 +233,11 @@ public class ChatbotService {
       return;
     }
 
-    // Opção não reconhecida, reenvia menu
     sendMainMenu(phoneNumber);
   }
 
   /** Envia o menu principal */
   private void sendMainMenu(String phoneNumber) {
-    // Registra que o bot vai enviar uma mensagem
     registerBotMessage(phoneNumber);
 
     String menu =
@@ -300,13 +261,11 @@ public class ChatbotService {
   private void handleDocumentInput(ChatSession session, String phoneNumber, String message) {
     SessionContext context = session.getContext();
 
-    // Se o contexto for NOTA_FISCAL, processa como número de NF
     if (context == SessionContext.NOTA_FISCAL) {
       handleInvoiceQuery(session, phoneNumber, message);
       return;
     }
 
-    // Se o contexto for BOLETO, processa como CPF/CNPJ
     if (context == SessionContext.BOLETO) {
       String onlyDigits = message.replaceAll("[^0-9]", "");
 
@@ -322,7 +281,6 @@ public class ChatbotService {
       return;
     }
 
-    // Contexto desconhecido
     sendMainMenu(phoneNumber);
   }
 
@@ -338,8 +296,6 @@ public class ChatbotService {
    */
   private void handleInvoiceQuery(ChatSession session, String phoneNumber, String invoiceNumber) {
     try {
-
-      // Remove caracteres não numéricos
       String cleanNumber = invoiceNumber.replaceAll("[^0-9]", "");
 
       if (cleanNumber.isEmpty()) {
@@ -368,7 +324,6 @@ public class ChatbotService {
         return;
       }
 
-      // Consultar a nota fiscal usando a ref encontrada
       var invoiceResponse = invoiceService.consultInvoice(foundRef);
 
       if (invoiceResponse == null) {
@@ -383,7 +338,7 @@ public class ChatbotService {
         chatSessionService.closeSession(session.getId(), "ERROR");
         return;
       }
-      // Montar mensagem com informações da NF
+
       StringBuilder messageBuilder = new StringBuilder();
       messageBuilder.append("📄 *Nota Fiscal Encontrada*\n\n");
       messageBuilder.append(String.format("*Número:* %s\n", invoiceResponse.number()));
@@ -393,7 +348,6 @@ public class ChatbotService {
       messageBuilder.append(String.format("*Data:* %s\n", invoiceResponse.date()));
       messageBuilder.append(String.format("*Cliente:* %s\n\n", invoiceResponse.name()));
 
-      // Se a NF estiver autorizada, oferece download do PDF
       if ("autorizado".equalsIgnoreCase(invoiceResponse.status())) {
         messageBuilder.append("✅ *Documento Disponível*\n\n");
         messageBuilder.append("Aguarde enquanto preparo o PDF da nota fiscal...");
@@ -429,7 +383,6 @@ public class ChatbotService {
               phoneNumber, "❌ Erro ao processar o documento. Entre em contato: " + CONTACT_PHONE);
         }
       } else {
-        // NF não autorizada
         messageBuilder.append("⚠️ *Documento Indisponível*\n\n");
         messageBuilder.append("Esta nota fiscal não está autorizada para download.\n");
         messageBuilder.append("Status atual: ").append(invoiceResponse.status()).append("\n\n");
@@ -438,7 +391,6 @@ public class ChatbotService {
         whatsAppService.sendTextMessage(phoneNumber, messageBuilder.toString());
       }
 
-      // Fechar sessão
       chatSessionService.closeSession(session.getId(), "COMPLETED");
 
     } catch (Exception e) {
@@ -464,7 +416,6 @@ public class ChatbotService {
    */
   private String findInvoiceRefByNumber(String invoiceNumber) {
     try {
-      // Busca todas as refs de notas fiscais no banco
       List<CombinedScore> allScoresWithInvoice =
           combinedScoreRepository.findAll().stream()
               .filter(
@@ -474,7 +425,6 @@ public class ChatbotService {
                           && !cs.getInvoiceRef().isEmpty())
               .toList();
 
-      // Para cada ref, consulta na API e verifica se o número corresponde
       for (CombinedScore cs : allScoresWithInvoice) {
         String ref = cs.getInvoiceRef();
         try {
@@ -489,7 +439,6 @@ public class ChatbotService {
             }
           }
         } catch (Exception ex) {
-          // Ignora erros ao verificar ref individual e continua para próxima
         }
       }
 
@@ -527,14 +476,11 @@ public class ChatbotService {
 
       Client client = clientOpt.get();
 
-      // Busca Combined Scores pendentes COM BOLETO (hasBillet = true)
       List<CombinedScore> pendingWithBillet =
           billetService.findAllPendingWithBilletByClient(client.getId());
 
-      // Busca TODOS os Combined Scores pendentes (para informar ao cliente)
       List<CombinedScore> allPending = billetService.findAllPendingByClient(client.getId());
 
-      // Se não houver cobranças pendentes
       if (allPending.isEmpty()) {
         String message =
             String.format(
@@ -548,15 +494,12 @@ public class ChatbotService {
         return;
       }
 
-      // Monta mensagem resumo
       StringBuilder messageBuilder = new StringBuilder();
       messageBuilder.append(String.format("Olá, %s!\n\n", client.getClientName()));
 
-      // Contadores
       int totalWithBillet = pendingWithBillet.size();
       int totalWithoutBillet = allPending.size() - pendingWithBillet.size();
 
-      // Informações sobre cobranças pendentes
       messageBuilder.append(String.format("📋 *Cobranças Pendentes:* %d\n\n", allPending.size()));
 
       int i = 1;
@@ -583,7 +526,6 @@ public class ChatbotService {
         i++;
       }
 
-      // Resumo de documentos disponíveis
       messageBuilder.append("\n────────────────\n\n");
       messageBuilder.append("📦 *Boletos Disponíveis:*\n");
       if (totalWithBillet > 0) {
@@ -595,7 +537,6 @@ public class ChatbotService {
       registerBotMessage(phoneNumber);
       whatsAppService.sendTextMessage(phoneNumber, messageBuilder.toString());
 
-      // Se não houver boletos emitidos, não precisa continuar
       if (pendingWithBillet.isEmpty()) {
         String noDocumentsMessage = "⚠️ *Boletos Pendentes de Emissão*\n\n";
         noDocumentsMessage +=
@@ -613,13 +554,11 @@ public class ChatbotService {
         registerBotMessage(phoneNumber);
         whatsAppService.sendTextMessage(phoneNumber, noDocumentsMessage);
 
-        // Associar cliente à sessão e finalizar
         chatSessionService.associateClient(session.getId(), client.getId());
         chatSessionService.closeSession(session.getId(), "COMPLETED");
         return;
       }
 
-      // Listas para armazenar os boletos
       List<byte[]> documents = new ArrayList<>();
       List<String> fileNames = new ArrayList<>();
       int boletosAdicionados = 0;
@@ -651,10 +590,7 @@ public class ChatbotService {
             whatsAppService.sendMultipleDocuments(phoneNumber, caption, documents, fileNames);
       }
 
-      // Associar cliente à sessão
       chatSessionService.associateClient(session.getId(), client.getId());
-
-      // Deleta a sessão após enviar os documentos
       chatSessionService.closeSession(session.getId(), "COMPLETED");
 
     } catch (Exception e) {
@@ -745,7 +681,6 @@ public class ChatbotService {
    * @return true se a mensagem foi enviada pelo bot/atendente, false se foi do cliente
    */
   private boolean detectIfMessageIsFromBot(Map<String, Object> data) {
-    // Verifica o campo "fromMe" do payload
     Object fromMeObj = data.get("fromMe");
 
     if (fromMeObj instanceof Boolean) {
@@ -757,7 +692,6 @@ public class ChatbotService {
       return "true".equalsIgnoreCase(fromMeStr) || "1".equals(fromMeStr);
     }
 
-    // Verifica também o campo alternativo "from_me" (alguns webhooks usam snake_case)
     Object fromMe2Obj = data.get("from_me");
     if (fromMe2Obj instanceof Boolean) {
       return (Boolean) fromMe2Obj;
@@ -768,7 +702,6 @@ public class ChatbotService {
       return "true".equalsIgnoreCase(fromMe2Str) || "1".equals(fromMe2Str);
     }
 
-    // Por padrão, assume que é mensagem do cliente
     return false;
   }
 }
