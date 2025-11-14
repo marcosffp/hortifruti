@@ -15,7 +15,8 @@ import com.hortifruti.sl.hortifruti.service.invoice.factory.InvoiceItem;
 import com.hortifruti.sl.hortifruti.service.invoice.factory.InvoicePayload;
 import com.hortifruti.sl.hortifruti.service.invoice.factory.Recipient;
 import jakarta.transaction.Transactional;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
@@ -91,7 +92,8 @@ public class IssueInvoice {
     return new IssueInvoiceRequest(
         combinedScoreId,
         NATUREZA_OPERACAO,
-        LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+        ZonedDateTime.now(ZoneId.of("America/Sao_Paulo"))
+            .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
         recipient,
         items,
         info);

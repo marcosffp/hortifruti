@@ -397,7 +397,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                     {/* Botão Ver Produtos */}
                                     <button
                                         onClick={() => handleViewProducts(score)}
-                                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm cursor-pointer"
+                                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm cursor-pointer"
                                     >
                                         <Eye className="w-4 h-4" />
                                         Ver Produtos
@@ -416,7 +416,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                         ) : (
                                             <button
                                                 onClick={() => setClientNumberModal({ state: true, groupId: score.id })}
-                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs cursor-pointer"
+                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
                                             >
                                                 <FileText className="w-3 h-3" />
                                                 Gerar Boleto
@@ -434,7 +434,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                         ) : (
                                             <button
                                                 onClick={() => handleGenerateInvoice(score.id)}
-                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs cursor-pointer"
+                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
                                             >
                                                 <FileText className="w-3 h-3" />
                                                 Gerar NF
@@ -447,8 +447,9 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                         {!score.hasBillet && (
                                             <button
                                                 onClick={() => handleTogglePayment(score)}
+                                                disabled={score.hasInvoice && score.status === "PAGO"}
                                                 className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg transition-colors text-xs cursor-pointer ${score.status === "PAGO"
-                                                        ? "hidden"
+                                                        ? "bg-green-400 text-white"
                                                         : "bg-green-600 text-white hover:bg-green-700"
                                                     } ${score.hasInvoice ? "col-span-2 w-full" : ""}`}
                                             >

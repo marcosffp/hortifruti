@@ -64,6 +64,7 @@ public class ChatbotService {
         return;
       }
 
+      @SuppressWarnings("unchecked")
       Map<String, Object> data = (Map<String, Object>) dataObj;
       String from = (String) data.getOrDefault("from", "");
       String to = (String) data.getOrDefault("to", "");
