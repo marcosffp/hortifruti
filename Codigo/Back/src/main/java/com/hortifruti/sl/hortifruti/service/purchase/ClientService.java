@@ -1,17 +1,17 @@
 package com.hortifruti.sl.hortifruti.service.purchase;
 
-import com.hortifruti.sl.hortifruti.dto.client.ClientRequest;
-import com.hortifruti.sl.hortifruti.dto.client.ClientResponse;
-import com.hortifruti.sl.hortifruti.dto.client.ClientSelectionInfo;
-import com.hortifruti.sl.hortifruti.dto.client.ClientSummary;
-import com.hortifruti.sl.hortifruti.dto.client.ClientWithLastPurchaseResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientRequest;
+import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientSelectionInfo;
+import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientSummary;
+import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientWithLastPurchaseResponse;
 import com.hortifruti.sl.hortifruti.exception.ClientException;
 import com.hortifruti.sl.hortifruti.exception.PurchaseException;
 import com.hortifruti.sl.hortifruti.mapper.ClientMapper;
-import com.hortifruti.sl.hortifruti.model.Client;
-import com.hortifruti.sl.hortifruti.model.Purchase;
-import com.hortifruti.sl.hortifruti.repository.ClientRepository;
-import com.hortifruti.sl.hortifruti.repository.PurchaseRepository;
+import com.hortifruti.sl.hortifruti.model.purchase.Client;
+import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
+import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
+import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,6 +56,9 @@ public class ClientService {
     existingClient.setPhoneNumber(clientRequest.phoneNumber());
     existingClient.setAddress(clientRequest.address());
     existingClient.setDocument(clientRequest.document());
+    existingClient.setVariablePrice(clientRequest.variablePrice());
+    existingClient.setStateRegistration(clientRequest.stateRegistration());
+    existingClient.setStateIndicator(clientRequest.stateIndicator());
 
     Client updatedClient = clientRepository.save(existingClient);
     return clientMapper.toClientResponse(updatedClient);
@@ -112,9 +115,7 @@ public class ClientService {
                   lastPurchase.map(Purchase::getPurchaseDate).orElse(null),
                   lastPurchase.map(Purchase::getTotal).orElse(null));
             })
-        .filter(
-            response ->
-                response.lastPurchaseDate() != null) // Filtra clientes sem data de última compra
+        .filter(response -> response.lastPurchaseDate() != null)
         .toList();
   }
 

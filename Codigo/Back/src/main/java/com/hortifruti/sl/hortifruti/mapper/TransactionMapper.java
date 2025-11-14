@@ -2,10 +2,10 @@ package com.hortifruti.sl.hortifruti.mapper;
 
 import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequest;
 import com.hortifruti.sl.hortifruti.dto.transaction.TransactionResponse;
-import com.hortifruti.sl.hortifruti.model.Statement;
-import com.hortifruti.sl.hortifruti.model.Transaction;
 import com.hortifruti.sl.hortifruti.model.enumeration.Category;
 import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
+import com.hortifruti.sl.hortifruti.model.finance.Statement;
+import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import java.math.BigDecimal;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

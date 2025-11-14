@@ -1,8 +1,8 @@
 package com.hortifruti.sl.hortifruti.mapper;
 
-import com.hortifruti.sl.hortifruti.dto.client.ClientRequest;
-import com.hortifruti.sl.hortifruti.dto.client.ClientResponse;
-import com.hortifruti.sl.hortifruti.model.Client;
+import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientRequest;
+import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientResponse;
+import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
@@ -11,6 +11,8 @@ import org.mapstruct.ReportingPolicy;
 public interface ClientMapper {
 
   @Mapping(target = "id", ignore = true)
+  @Mapping(source = "stateRegistration", target = "stateRegistration")
+  @Mapping(source = "stateIndicator", target = "stateIndicator")
   Client toClient(ClientRequest clientRequest);
 
   @Mapping(source = "id", target = "id")
@@ -20,5 +22,9 @@ public interface ClientMapper {
   @Mapping(source = "address", target = "address")
   @Mapping(source = "variablePrice", target = "variablePrice")
   @Mapping(source = "document", target = "document")
+  @Mapping(source = "stateRegistration", target = "stateRegistration")
+  @Mapping(source = "stateIndicator", target = "stateIndicator")
+  @Mapping(source = "lastPurchaseDate", target = "lastPurchaseDate")
+  @Mapping(source = "totalPurchaseValue", target = "totalPurchaseValue")
   ClientResponse toClientResponse(Client client);
 }

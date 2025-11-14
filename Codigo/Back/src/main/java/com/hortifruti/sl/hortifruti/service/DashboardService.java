@@ -1,23 +1,31 @@
 package com.hortifruti.sl.hortifruti.service;
 
-import com.hortifruti.sl.hortifruti.model.Transaction;
 import com.hortifruti.sl.hortifruti.model.enumeration.Category;
 import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
-import com.hortifruti.sl.hortifruti.repository.TransactionRepository;
+import com.hortifruti.sl.hortifruti.model.finance.Transaction;
+import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
+import com.hortifruti.sl.hortifruti.model.purchase.GroupedProduct;
+import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
+import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
+import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
 public class DashboardService {
 
   private final TransactionRepository transactionRepository;
+  private final CombinedScoreRepository combinedScoreRepository;
 
+  @Transactional(readOnly = true)
   /** Método principal público que retorna um objeto com todas as informações do dashboard. */
   public Map<String, Object> getDashboardData(
       LocalDate startDate, LocalDate endDate, Month month, int year) {
@@ -45,6 +53,15 @@ public class DashboardService {
     // Divisória 5: Ranking de categorias de gastos
     dashboardData.put("RankingCategoriasGastos", getExpenseCategoryRanking(month, year));
 
+    // Divisória 6: Fluxo de vendas (Combined Score)
+    dashboardData.put("Fluxo de Vendas", getCombinedScoreData(startDate, endDate));
+
+    // Divisória 7: Produtos em alta
+    dashboardData.put("Produtos em Alta", getTopSellingProducts(startDate, endDate));
+
+    // Divisória 8: Top 10 produtos por quantidade
+    dashboardData.put("Top10ProdutosPorQuantidade", getTopProductsByQuantity(startDate, endDate));
+
     return dashboardData;
   }
 
@@ -59,7 +76,6 @@ public class DashboardService {
         .map(
             transaction -> {
               BigDecimal amount = transaction.getAmount();
-              // garante que custos (DEBITO) não fiquem negativos
               if (transaction.getTransactionType() == TransactionType.DEBITO) {
                 amount = amount.abs();
               }
@@ -89,7 +105,7 @@ public class DashboardService {
     BigDecimal totalCost = calculateTotalCost(startDate, endDate);
 
     if (totalRevenue.compareTo(BigDecimal.ZERO) == 0) {
-      return BigDecimal.ZERO; // Evita divisão por zero
+      return BigDecimal.ZERO;
     }
 
     return calculatePercentage(totalRevenue.subtract(totalCost), totalRevenue);
@@ -122,18 +138,25 @@ public class DashboardService {
     List<Transaction> transactions =
         transactionRepository.findTransactionsByDateRange(startDate, endDate);
 
+    // Calcula o total por categoria considerando valores positivos e negativos
     Map<Category, BigDecimal> categoryTotals =
         transactions.stream()
             .collect(
                 Collectors.groupingBy(
                     Transaction::getCategory,
-                    Collectors.reducing(
-                        BigDecimal.ZERO, t -> t.getAmount().abs(), BigDecimal::add)));
+                    Collectors.reducing(BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)));
 
+    // Transforma os valores finais em absolutos
+    Map<Category, BigDecimal> absoluteCategoryTotals =
+        categoryTotals.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().abs()));
+
+    // Calcula o total absoluto geral
     BigDecimal totalAmount =
-        categoryTotals.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        absoluteCategoryTotals.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    return categoryTotals.entrySet().stream()
+    // Retorna os dados com porcentagem e valor absoluto
+    return absoluteCategoryTotals.entrySet().stream()
         .collect(
             Collectors.toMap(
                 Map.Entry::getKey,
@@ -162,17 +185,23 @@ public class DashboardService {
             Category.FISCAL,
             Category.IMPOSTOS);
 
+    // Calcula o total por categoria considerando valores positivos e negativos
     Map<Category, BigDecimal> categoryCosts =
         transactionRepository.findTransactionsByDateRange(startDate, endDate).stream()
             .filter(transaction -> expenseCategories.contains(transaction.getCategory()))
             .collect(
                 Collectors.groupingBy(
                     Transaction::getCategory,
-                    Collectors.reducing(
-                        BigDecimal.ZERO, t -> t.getAmount().abs(), BigDecimal::add)));
+                    Collectors.reducing(BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)));
 
-    List<Map<String, Object>> ranking =
+    // Transforma os valores finais em absolutos
+    Map<Category, BigDecimal> absoluteCategoryCosts =
         categoryCosts.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().abs()));
+
+    // Cria o ranking ordenado por valor absoluto (decrescente)
+    List<Map<String, Object>> ranking =
+        absoluteCategoryCosts.entrySet().stream()
             .sorted(Map.Entry.<Category, BigDecimal>comparingByValue().reversed())
             .map(
                 entry -> {
@@ -183,10 +212,171 @@ public class DashboardService {
                 })
             .collect(Collectors.toList());
 
+    // Adiciona o rank numérico ao resultado
     for (int i = 0; i < ranking.size(); i++) {
       ranking.get(i).put("Rank", i + 1);
     }
 
     return ranking;
+  }
+
+  /**
+   * Retorna o fluxo de vendas agrupado por semana. Utiliza a data de CONFIRMAÇÃO (confirmedAt) ao
+   * invés de vencimento (dueDate).
+   */
+  public Map<String, Object> getCombinedScoreData(LocalDate startDate, LocalDate endDate) {
+    Map<String, Object> combinedScoreData = new HashMap<>();
+
+    // Fetch CombinedScores dentro do intervalo de CONFIRMAÇÃO (não vencimento)
+    List<CombinedScore> combinedScores =
+        combinedScoreRepository.findAllByOrderByConfirmedAtDesc(Pageable.unpaged()).stream()
+            .filter(
+                cs -> {
+                  if (cs.getConfirmedAt() == null) {
+                    return false;
+                  }
+                  LocalDate confirmedDate = cs.getConfirmedAt();
+                  return !confirmedDate.isBefore(startDate) && !confirmedDate.isAfter(endDate);
+                })
+            .collect(Collectors.toList());
+
+    // Group by week baseado na data de CONFIRMAÇÃO
+    Map<Integer, BigDecimal> weeklyScores =
+        combinedScores.stream()
+            .filter(cs -> cs.getConfirmedAt() != null)
+            .collect(
+                Collectors.groupingBy(
+                    cs -> cs.getConfirmedAt().get(ChronoField.ALIGNED_WEEK_OF_YEAR),
+                    Collectors.reducing(
+                        BigDecimal.ZERO, CombinedScore::getTotalValue, BigDecimal::add)));
+
+    // Format data for the frontend
+    weeklyScores.forEach(
+        (week, totalScore) -> {
+          combinedScoreData.put("Semana " + week, totalScore);
+        });
+
+    return combinedScoreData;
+  }
+
+  /**
+   * Retorna os top 10 produtos em alta (ordenados por quantidade e valor). Utiliza a data de
+   * CONFIRMAÇÃO (confirmedAt) ao invés de vencimento (dueDate).
+   */
+  public List<Map<String, Object>> getTopSellingProducts(LocalDate startDate, LocalDate endDate) {
+    // Fetch all CombinedScores dentro do intervalo de CONFIRMAÇÃO
+    List<CombinedScore> combinedScores =
+        combinedScoreRepository.findAllByOrderByConfirmedAtDesc(Pageable.unpaged()).stream()
+            .filter(
+                cs -> {
+                  if (cs.getConfirmedAt() == null) {
+                    return false;
+                  }
+                  LocalDate confirmedDate = cs.getConfirmedAt();
+                  return !confirmedDate.isBefore(startDate) && !confirmedDate.isAfter(endDate);
+                })
+            .collect(Collectors.toList());
+
+    // Extract all GroupedProducts from the CombinedScores
+    List<GroupedProduct> groupedProducts =
+        combinedScores.stream()
+            .flatMap(cs -> cs.getGroupedProducts().stream())
+            .collect(Collectors.toList());
+
+    // Aggregate data by product
+    Map<String, Map<String, Object>> productData =
+        groupedProducts.stream()
+            .collect(
+                Collectors.groupingBy(
+                    GroupedProduct::getCode,
+                    Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        products -> {
+                          Map<String, Object> data = new HashMap<>();
+                          data.put("Nome", products.get(0).getName());
+                          data.put(
+                              "QuantidadeTotal",
+                              products.stream()
+                                  .map(GroupedProduct::getQuantity)
+                                  .reduce(0, Integer::sum));
+                          data.put(
+                              "ValorTotal",
+                              products.stream()
+                                  .map(
+                                      p ->
+                                          p.getPrice()
+                                              .multiply(BigDecimal.valueOf(p.getQuantity())))
+                                  .reduce(BigDecimal.ZERO, BigDecimal::add));
+                          return data;
+                        })));
+
+    // Convert to a list and sort by quantity and value
+    List<Map<String, Object>> ranking = new ArrayList<>(productData.values());
+    ranking.sort(
+        (p1, p2) -> {
+          int quantityComparison =
+              ((Integer) p2.get("QuantidadeTotal")).compareTo((Integer) p1.get("QuantidadeTotal"));
+          if (quantityComparison != 0) {
+            return quantityComparison;
+          }
+          return ((BigDecimal) p2.get("ValorTotal")).compareTo((BigDecimal) p1.get("ValorTotal"));
+        });
+
+    // Limit to top 10 products
+    return ranking.stream().limit(10).collect(Collectors.toList());
+  }
+
+  /**
+   * Retorna os top 10 produtos com mais saída de quantidade em um período. Utiliza a data de
+   * CONFIRMAÇÃO (confirmedAt) ao invés de vencimento (dueDate).
+   */
+  public List<Map<String, Object>> getTopProductsByQuantity(
+      LocalDate startDate, LocalDate endDate) {
+    // Busca todos os CombinedScores dentro do intervalo de CONFIRMAÇÃO
+    List<CombinedScore> combinedScores =
+        combinedScoreRepository.findAllByOrderByConfirmedAtDesc(Pageable.unpaged()).stream()
+            .filter(
+                cs -> {
+                  if (cs.getConfirmedAt() == null) {
+                    return false;
+                  }
+                  LocalDate confirmedDate = cs.getConfirmedAt();
+                  return !confirmedDate.isBefore(startDate) && !confirmedDate.isAfter(endDate);
+                })
+            .collect(Collectors.toList());
+
+    // Extrai todos os GroupedProducts dos CombinedScores
+    List<GroupedProduct> groupedProducts =
+        combinedScores.stream()
+            .flatMap(cs -> cs.getGroupedProducts().stream())
+            .collect(Collectors.toList());
+
+    // Agrupa os produtos por código e soma as quantidades
+    Map<String, Map<String, Object>> productData =
+        groupedProducts.stream()
+            .collect(
+                Collectors.groupingBy(
+                    GroupedProduct::getCode,
+                    Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        products -> {
+                          Map<String, Object> data = new HashMap<>();
+                          data.put("Nome", products.get(0).getName());
+                          data.put(
+                              "QuantidadeTotal",
+                              products.stream()
+                                  .map(GroupedProduct::getQuantity)
+                                  .reduce(0, Integer::sum));
+                          return data;
+                        })));
+
+    // Converte para uma lista e ordena pelos produtos com maior quantidade
+    List<Map<String, Object>> ranking = new ArrayList<>(productData.values());
+    ranking.sort(
+        (p1, p2) ->
+            ((Integer) p2.get("QuantidadeTotal")).compareTo((Integer) p1.get("QuantidadeTotal")));
+
+    // Retorna os top 10 produtos
+    return ranking.stream().limit(10).collect(Collectors.toList());
   }
 }

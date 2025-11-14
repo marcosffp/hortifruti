@@ -39,7 +39,7 @@ export default function ClientSelector({ onClientSelect }: ClientSelectorProps) 
                 </label>
                 <select
                     id="client"
-                    className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
+                    className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-green-500 transition w-full truncate"
                     value={selectedId}
                     onChange={handleClientSelect}
                 >

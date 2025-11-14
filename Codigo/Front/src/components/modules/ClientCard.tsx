@@ -147,8 +147,8 @@ export default function ClientCard({
 
   // Default list mode layout (for use in a table)
   return (
-    <div className="grid grid-cols-12 gap-4 px-6 py-5 border-b items-center hover:bg-gray-50 transition-all duration-300 group">
-      <div className="col-span-3 flex items-start">
+    <div className="grid grid-cols-12 gap-4 px-6 py-5 border-b items-center hover:bg-gray-50 transition-all duration-300 group sm:grid-cols-12 sm:gap-4">
+      <div className="col-span-12 sm:col-span-3 flex items-start">
         <div className="mr-3 mt-1">
           <div className="h-8 w-8 bg-green-50 text-green-600 rounded-full flex items-center justify-center">
             <User size={18} />
@@ -159,7 +159,7 @@ export default function ClientCard({
           <div className="text-sm text-gray-500 mt-0.5">{email || "Sem e-mail cadastrado"}</div>
         </div>
       </div>
-      <div className="col-span-2 text-gray-700 flex items-center">
+      <div className="col-span-12 sm:col-span-2 text-gray-700 flex items-center">
         {telefone ? (
           <div className="flex items-center">
             <Phone size={14} className="text-gray-400 mr-1.5 flex-shrink-0" />
@@ -169,7 +169,7 @@ export default function ClientCard({
           <span className="text-gray-400 italic text-sm">Não informado</span>
         )}
       </div>
-      <div className="col-span-3 text-gray-700 relative group/tooltip">
+      <div className="col-span-12 sm:col-span-3 text-gray-700 relative group/tooltip">
         <div className="flex items-center gap-1.5">
           <MapPin size={14} className="text-gray-400 flex-shrink-0" />
           <div className="truncate max-w-[250px]">{endereco}</div>
@@ -177,12 +177,11 @@ export default function ClientCard({
             <span className="text-xs text-blue-500 cursor-help" title="Ver endereço completo">...</span>
           )}
         </div>
-        {/* Tooltip para exibir o endereço completo */}
         <div className="hidden group-hover/tooltip:block absolute z-10 bg-gray-800 text-white p-2 rounded shadow-lg text-sm max-w-xs left-0 mt-1">
           {endereco}
         </div>
       </div>
-      <div className="col-span-1">
+      <div className="col-span-6 sm:col-span-1">
         <span
           className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
             status === "preco-fixo"
@@ -194,7 +193,7 @@ export default function ClientCard({
           {status === "preco-fixo" ? "Preço Fixo" : "Preço Variável"}
         </span>
       </div>
-      <div className="col-span-1 text-gray-700">
+      <div className="col-span-6 sm:col-span-1 text-gray-700">
         <div className="flex items-center">
           <Calendar size={14} className="text-gray-400 mr-1.5 flex-shrink-0" />
           <div className="flex flex-col">
@@ -203,35 +202,35 @@ export default function ClientCard({
           </div>
         </div>
       </div>
-      <div className="col-span-1 flex items-center">
+      <div className="col-span-6 sm:col-span-1 flex items-center">
         <DollarSign size={14} className="text-gray-400 mr-1 flex-shrink-0" />
         <span className="font-medium text-gray-800">
           {totalCompras.toFixed(2).replace(".", ",")}
         </span>
       </div>
-      <div className="col-span-1 flex justify-end space-x-1">
-          <Link href={`/comercio/clientes/editar/${id}`}>
-            <button
-              className="h-9 w-9 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-all"
-              aria-label="Editar cliente"
-              title="Editar cliente"
-            >
-              <Edit size={16} />
-            </button>
-          </Link>
+      <div className="col-span-6 sm:col-span-1 flex justify-end space-x-1">
+        <Link href={`/comercio/clientes/editar/${id}`}>
           <button
-            className="h-9 w-9 flex items-center justify-center text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-all"
-            aria-label="Excluir cliente"
-            title="Excluir cliente"
-            onClick={(e) => {
-              e.preventDefault();
-              onDelete(id);
-            }}
+            className="h-9 w-9 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-all"
+            aria-label="Editar cliente"
+            title="Editar cliente"
           >
-            <Trash2 size={16} />
+            <Edit size={16} />
           </button>
-        </div>
+        </Link>
+        <button
+          className="h-9 w-9 flex items-center justify-center text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-all"
+          aria-label="Excluir cliente"
+          title="Excluir cliente"
+          onClick={(e) => {
+            e.preventDefault();
+            onDelete(id);
+          }}
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
+    </div>
 
   );
 }

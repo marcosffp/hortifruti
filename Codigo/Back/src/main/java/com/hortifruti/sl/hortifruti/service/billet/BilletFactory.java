@@ -1,11 +1,11 @@
 package com.hortifruti.sl.hortifruti.service.billet;
 
-import com.hortifruti.sl.hortifruti.dto.sicoob.BilletRequest;
-import com.hortifruti.sl.hortifruti.dto.sicoob.BilletRequestSimplified;
-import com.hortifruti.sl.hortifruti.dto.sicoob.Pagador;
+import com.hortifruti.sl.hortifruti.dto.billet.BilletRequest;
+import com.hortifruti.sl.hortifruti.dto.billet.BilletRequestSimplified;
+import com.hortifruti.sl.hortifruti.dto.billet.Pagador;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
-import com.hortifruti.sl.hortifruti.model.Client;
-import com.hortifruti.sl.hortifruti.model.CombinedScore;
+import com.hortifruti.sl.hortifruti.model.purchase.Client;
+import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -61,12 +61,11 @@ public class BilletFactory {
   public BilletRequestSimplified createBilletRequest(
       CombinedScore combinedScore, Long combinedScoreId, Pagador pagador, String number) {
     return new BilletRequestSimplified(
-        combinedScore.getConfirmedAt().toString(), // Data de emissão
-        number, // Seu número (identificador do boleto)
-        combinedScore.getTotalValue(), // Valor total
-        combinedScore.getDueDate().toString(), // Data de vencimento
-        pagador // Pagador
-        );
+        combinedScore.getConfirmedAt().toString(),
+        number,
+        combinedScore.getTotalValue(),
+        combinedScore.getDueDate().toString(),
+        pagador);
   }
 
   /**
@@ -76,53 +75,79 @@ public class BilletFactory {
    * @return Objeto Pagador
    */
   public Pagador createPagadorFromClient(Client client) {
-    // Exemplo de address recebido do front:
-    // "Rua X, 123, apto 2, Bairro Y, Cidade Z - UF, CEP: 12345-678"
     String address = client.getAddress();
 
-    // Separar rua, número, complemento, bairro, cidade/UF, CEP
-    String[] addressParts = address.split(",");
-    if (addressParts.length < 5) {
-      throw new BilletException("O endereço do cliente está incompleto ou mal formatado.");
+    try {
+      String[] addressParts = address.split(",");
+      if (addressParts.length < 5) {
+        throw new BilletException(
+            "O endereço do cliente está incompleto. Formato esperado: 'Rua, Numero, Complemento"
+                + " (opcional), Bairro, Cidade - UF, CEP: XXXXX-XXX'");
+      }
+
+      String rua = addressParts[0].trim();
+      String numero = addressParts[1].trim();
+      String complemento = "";
+
+      if (addressParts.length == 6) {
+        complemento = addressParts[2].trim();
+      }
+
+      String bairro = addressParts[addressParts.length - 3].trim();
+      String cidadeUf = addressParts[addressParts.length - 2].trim();
+      String cep = addressParts[addressParts.length - 1].trim();
+
+      String cidade = cidadeUf;
+      String uf = "";
+      if (cidadeUf.contains("-")) {
+        String[] cidadeUfParts = cidadeUf.split("-");
+        cidade = cidadeUfParts[0].trim();
+        uf = cidadeUfParts[1].trim();
+      }
+
+      if (cep.startsWith("CEP:")) {
+        cep = cep.replace("CEP:", "").trim().replaceAll("[^0-9]", "");
+      }
+
+      if (rua.isEmpty()) {
+        throw new BilletException("Rua não pode estar vazia no endereço do cliente.");
+      }
+      if (numero.isEmpty()) {
+        throw new BilletException("Número não pode estar vazio no endereço do cliente.");
+      }
+      if (bairro.isEmpty()) {
+        throw new BilletException("Bairro não pode estar vazio no endereço do cliente.");
+      }
+      if (cidade.isEmpty()) {
+        throw new BilletException("Cidade não pode estar vazia no endereço do cliente.");
+      }
+      if (uf.isEmpty()) {
+        throw new BilletException("UF não pode estar vazia no endereço do cliente.");
+      }
+      if (cep.length() != 8) {
+        throw new BilletException("CEP deve conter exatamente 8 dígitos numéricos.");
+      }
+
+      String enderecoCompleto =
+          rua + ", " + numero + (complemento.isEmpty() ? "" : ", " + complemento);
+
+      return new Pagador(
+          client.getDocument().replaceAll("[^0-9]", ""),
+          client.getClientName(),
+          enderecoCompleto,
+          bairro,
+          cidade,
+          cep,
+          uf);
+
+    } catch (Exception e) {
+      throw new BilletException(
+          "Erro ao processar endereço do cliente: "
+              + e.getMessage()
+              + ". Endereço recebido: '"
+              + address
+              + "'",
+          e);
     }
-
-    String rua = addressParts[0].trim();
-    String numero = addressParts[1].trim();
-    String complemento = "";
-
-    // Verifica se há complemento (ex: "apto 2")
-    if (addressParts.length == 6) {
-      complemento = addressParts[2].trim();
-    }
-
-    String bairro = addressParts[addressParts.length - 3].trim();
-    String cidadeUf = addressParts[addressParts.length - 2].trim();
-    String cep = addressParts[addressParts.length - 1].trim();
-
-    // Extrai cidade e UF
-    String cidade = cidadeUf;
-    String uf = "";
-    if (cidadeUf.contains("-")) {
-      String[] cidadeUfParts = cidadeUf.split("-");
-      cidade = cidadeUfParts[0].trim();
-      uf = cidadeUfParts[1].trim();
-    }
-
-    // Extrai CEP se vier como "CEP: 12345-678"
-    if (cep.startsWith("CEP:")) {
-      cep = cep.replace("CEP:", "").trim().replaceAll("[^0-9]", "");
-    }
-
-    // Monta rua completa
-    String ruaCompleta = rua + ", " + numero + (complemento.isEmpty() ? "" : ", " + complemento);
-
-    return new Pagador(
-        client.getDocument().replaceAll("[^0-9]", ""),
-        client.getClientName(),
-        ruaCompleta, // Rua + número + complemento
-        bairro,
-        cidade,
-        cep,
-        uf);
   }
 }
