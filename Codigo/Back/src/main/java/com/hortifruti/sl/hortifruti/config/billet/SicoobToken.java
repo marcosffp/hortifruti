@@ -44,7 +44,6 @@ public class SicoobToken {
    */
   public String getAccessToken() {
     try {
-      // Verifica se o token atual ainda é válido
       if (accessToken != null && System.currentTimeMillis() < tokenExpiresAt - 30000) {
         System.out.println("[DEBUG] Token ainda válido. Retornando token existente.");
         return accessToken;
@@ -52,7 +51,7 @@ public class SicoobToken {
 
       HttpHeaders headers = new HttpHeaders();
       headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-      
+
       headers.add("Accept", MediaType.APPLICATION_JSON_VALUE);
 
       MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
@@ -65,11 +64,11 @@ public class SicoobToken {
       ResponseEntity<String> response = restTemplate.postForEntity(authUrl, request, String.class);
 
       String token = processTokenResponse(response);
-      
+
       accessToken = token;
-      
-      tokenExpiresAt = System.currentTimeMillis() + (55 * 60 * 1000); // 55 minutos
-      
+
+      tokenExpiresAt = System.currentTimeMillis() + (55 * 60 * 1000);
+
       return token;
 
     } catch (HttpClientErrorException | HttpServerErrorException ex) {

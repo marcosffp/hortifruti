@@ -19,20 +19,16 @@ public class PdfCreate {
    */
   public ResponseEntity<byte[]> createResponsePdf(String pdfBase64, String nomeArquivo) {
     try {
-      // Verifica se o Base64 está vazio ou nulo
       if (pdfBase64 == null || pdfBase64.trim().isEmpty()) {
         throw new BilletException("O conteúdo do PDF em Base64 está vazio ou nulo.");
       }
 
-      // Decodifica o Base64 para bytes
       byte[] pdfBytes = Base64.getDecoder().decode(pdfBase64);
 
-      // Configura os headers para retornar o PDF
       HttpHeaders headers = new HttpHeaders();
       headers.setContentType(MediaType.APPLICATION_PDF);
       headers.setContentDispositionFormData("attachment", nomeArquivo);
 
-      // Retorna o PDF como resposta
       return ResponseEntity.ok().headers(headers).body(pdfBytes);
 
     } catch (IllegalArgumentException e) {
@@ -40,6 +36,29 @@ public class PdfCreate {
           "Erro ao decodificar o PDF em Base64. O conteúdo pode estar corrompido ou inválido.", e);
     } catch (Exception e) {
       throw new BilletException("Erro inesperado ao criar a resposta do PDF.", e);
+    }
+  }
+
+  /**
+   * Decodifica uma string Base64 contendo um PDF e retorna os bytes.
+   *
+   * @param pdfBase64 String Base64 contendo o PDF
+   * @return Array de bytes do PDF
+   * @throws BilletException Se o PDF em Base64 for inválido ou ocorrer algum erro na decodificação
+   */
+  public byte[] convertBase64ToBytes(String pdfBase64) {
+    try {
+      if (pdfBase64 == null || pdfBase64.trim().isEmpty()) {
+        throw new BilletException("O conteúdo do PDF em Base64 está vazio ou nulo.");
+      }
+
+      return Base64.getDecoder().decode(pdfBase64);
+
+    } catch (IllegalArgumentException e) {
+      throw new BilletException(
+          "Erro ao decodificar o PDF em Base64. O conteúdo pode estar corrompido ou inválido.", e);
+    } catch (Exception e) {
+      throw new BilletException("Erro inesperado ao decodificar o PDF.", e);
     }
   }
 }

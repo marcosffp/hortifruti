@@ -357,14 +357,6 @@ export default function FinancialLaunchesPage() {
           </div>
           <div className="flex gap-4 flex-wrap-reverse">
             <Button
-              variant="primary"
-              onClick={navigateToUpload}
-              className="py-2 px-4 bg-green-600 hover:bg-green-700 transition-colors"
-              icon={<Upload size={18} />}
-            >
-              Importar Extrato
-            </Button>
-            <Button
               variant="outline"
               onClick={handleExport}
               disabled={isLoading}

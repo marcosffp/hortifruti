@@ -140,7 +140,7 @@ export default function ClientesPage() {
           </div>
 
           {/* Barra de pesquisa e botão novo cliente */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between flex-wrap gap-3 items-center mb-6">
             <div className="flex items-center gap-4">
               <div className="relative w-full max-w-md">
                 <input
@@ -214,30 +214,30 @@ export default function ClientesPage() {
             </div>
 
             {viewMode === "list" && (
-              <div className="grid grid-cols-12 gap-4 px-6 py-4 border-b bg-gradient-to-r from-gray-50 to-gray-100 shadow-sm">
+              <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 border-b bg-gradient-to-r from-gray-50 to-gray-100 shadow-sm">
                 <div className="col-span-3 flex items-center gap-2">
                   <User size={16} className="text-gray-500" />
-                  <span className="font-semibold text-gray-800">Cliente</span>
+                  <span className="font-semibold text-gray-800 truncate">Cliente</span>
                 </div>
                 <div className="col-span-2 flex items-center gap-2">
                   <Phone size={16} className="text-gray-500" />
-                  <span className="font-semibold text-gray-800">Contato</span>
+                  <span className="font-semibold text-gray-800 truncate">Contato</span>
                 </div>
                 <div className="col-span-3 flex items-center gap-2">
                   <MapPin size={16} className="text-gray-500" />
-                  <span className="font-semibold text-gray-800">Endereço</span>
+                  <span className="font-semibold text-gray-800 truncate">Endereço</span>
                 </div>
                 <div className="col-span-1 flex items-center gap-2">
                   <CircleCheck size={16} className="text-gray-500" />
-                  <span className="font-semibold text-gray-800">Preço</span>
+                  <span className="font-semibold text-gray-800 truncate">Preço</span>
                 </div>
                 <div className="col-span-1 flex items-center gap-2">
                   <Calendar size={16} className="text-gray-500" />
-                  <span className="font-semibold text-gray-800">Compras</span>
+                  <span className="font-semibold text-gray-800 truncate">Compras</span>
                 </div>
                 <div className="col-span-1 flex items-center gap-2">
                   <DollarSign size={16} className="text-gray-500" />
-                  <span className="font-semibold text-gray-800">Total</span>
+                  <span className="font-semibold text-gray-800 truncate">Total</span>
                 </div>
                 <div className="col-span-1 flex justify-end">
                   <Settings size={16} className="text-gray-500" />

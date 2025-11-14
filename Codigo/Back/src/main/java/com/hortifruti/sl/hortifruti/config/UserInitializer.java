@@ -1,22 +1,21 @@
 package com.hortifruti.sl.hortifruti.config;
 
-import com.hortifruti.sl.hortifruti.model.Client;
 import com.hortifruti.sl.hortifruti.model.ClimateProduct;
-import com.hortifruti.sl.hortifruti.model.CombinedScore;
 import com.hortifruti.sl.hortifruti.model.FreightConfig;
 import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.model.enumeration.Month;
 import com.hortifruti.sl.hortifruti.model.enumeration.Role;
+import com.hortifruti.sl.hortifruti.model.enumeration.Status;
 import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
-import com.hortifruti.sl.hortifruti.repository.ClientRepository;
-import com.hortifruti.sl.hortifruti.repository.CombinedScoreRepository;
+import com.hortifruti.sl.hortifruti.model.purchase.Client;
+import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.FreightConfigRepository;
 import com.hortifruti.sl.hortifruti.repository.ProductRepository;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
-
+import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
+import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,8 +35,8 @@ public class UserInitializer implements CommandLineRunner {
   private final ProductRepository productRepository;
   private final FreightConfigRepository freightConfigRepository;
   private final ClientRepository clientRepository;
-  private final CombinedScoreRepository combinedScoreRepository; 
-  private final Base64FileDecoder base64FileDecoder; // Adicionado para salvar o cliente
+  private final CombinedScoreRepository combinedScoreRepository;
+  private final Base64FileDecoder base64FileDecoder;
 
   @Override
   public void run(String... args) throws Exception {
@@ -51,12 +50,12 @@ public class UserInitializer implements CommandLineRunner {
   // Decodifica os arquivos Base64 necessários
   private void decodeBase64Files() {
     try {
-        log.info("Decodificando arquivos Base64...");
-        base64FileDecoder.decodeGoogleDriveCredentials();
-        base64FileDecoder.decodePfx();
-        log.info("Arquivos Base64 decodificados com sucesso!");
+      log.info("Decodificando arquivos Base64...");
+      base64FileDecoder.decodeGoogleDriveCredentials();
+      base64FileDecoder.decodePfx();
+      log.info("Arquivos Base64 decodificados com sucesso!");
     } catch (Exception e) {
-        log.error("Erro ao decodificar arquivos Base64: ", e);
+      log.error("Erro ao decodificar arquivos Base64: ", e);
     }
   }
 
@@ -221,16 +220,21 @@ public class UserInitializer implements CommandLineRunner {
     System.out.println("Cliente " + clientName + " criado com sucesso!");
   }
 
-  private void createCombinedScore(Long clientId, LocalDate dueDate, BigDecimal totalValue, boolean paid) {
+  private void createCombinedScore(
+      Long clientId, LocalDate dueDate, BigDecimal totalValue, boolean paid) {
     CombinedScore combinedScore =
         CombinedScore.builder()
             .clientId(clientId)
-
             .dueDate(dueDate)
             .totalValue(totalValue)
-            .paid(paid)
+            .status(
+                paid
+                    ? Status.PAGO
+                    : Status.PENDENTE) // Define o status com base no parâmetro 'paid'
+            .hasBillet(false) // Valor padrão para 'hasBillet'
+            .hasInvoice(false) // Valor padrão para 'hasInvoice'
             .build();
-    
+
     combinedScoreRepository.save(combinedScore);
     System.out.println("CombinedScore criado para o cliente ID: " + clientId);
   }

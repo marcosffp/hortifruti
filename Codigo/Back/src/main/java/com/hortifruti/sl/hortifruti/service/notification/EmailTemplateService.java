@@ -1,15 +1,12 @@
 package com.hortifruti.sl.hortifruti.service.notification;
 
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-
-@Slf4j
 @Service
 public class EmailTemplateService {
 
@@ -19,64 +16,59 @@ public class EmailTemplateService {
     this.resourceLoader = resourceLoader;
   }
 
-  /**
-   * Carrega um template HTML e substitui as variáveis
-   */
+  /** Carrega um template HTML e substitui as variáveis */
   public String processTemplate(String templateName, Map<String, String> variables) {
     try {
       String template = loadTemplate(templateName);
       return replaceVariables(template, variables);
     } catch (IOException e) {
-      log.error("Erro ao processar template: {}", templateName, e);
       return getFallbackMessage(templateName);
     }
   }
 
-  /**
-   * Carrega o template HTML do arquivo (prioriza versões clean)
-   */
+  /** Carrega o template HTML do arquivo (prioriza versões clean) */
   private String loadTemplate(String templateName) throws IOException {
     // Primeiro tenta carregar a versão clean (sem avisos)
     String cleanTemplateName = templateName + "-clean";
-    Resource cleanResource = resourceLoader.getResource("classpath:templates/email/" + cleanTemplateName + ".html");
-    
+    Resource cleanResource =
+        resourceLoader.getResource("classpath:templates/email/" + cleanTemplateName + ".html");
+
     if (cleanResource.exists()) {
-      log.debug("Usando template limpo: {}", cleanTemplateName);
       return cleanResource.getContentAsString(StandardCharsets.UTF_8);
     }
-    
+
     // Fallback para a versão original
-    Resource resource = resourceLoader.getResource("classpath:templates/email/" + templateName + ".html");
-    log.debug("Usando template original: {}", templateName);
+    Resource resource =
+        resourceLoader.getResource("classpath:templates/email/" + templateName + ".html");
     return resource.getContentAsString(StandardCharsets.UTF_8);
   }
 
-  /**
-   * Substitui as variáveis no template
-   */
+  /** Substitui as variáveis no template */
   private String replaceVariables(String template, Map<String, String> variables) {
     String result = template;
-    
+
     for (Map.Entry<String, String> entry : variables.entrySet()) {
       String key = entry.getKey();
       String value = entry.getValue() != null ? entry.getValue() : "";
-      
+
       // Substituir variáveis simples: {{VARIABLE}}
       result = result.replace("{{" + key + "}}", value);
-      
+
       // Processar blocos condicionais: {{#VARIABLE}} conteúdo {{/VARIABLE}}
       if (value != null && !value.isEmpty()) {
         // Mostrar o bloco se a variável tem valor
-        result = result.replaceAll("\\{\\{#" + key + "\\}\\}([\\s\\S]*?)\\{\\{/" + key + "\\}\\}", "$1");
+        result =
+            result.replaceAll("\\{\\{#" + key + "\\}\\}([\\s\\S]*?)\\{\\{/" + key + "\\}\\}", "$1");
       } else {
         // Remover o bloco se a variável está vazia
-        result = result.replaceAll("\\{\\{#" + key + "\\}\\}[\\s\\S]*?\\{\\{/" + key + "\\}\\}", "");
+        result =
+            result.replaceAll("\\{\\{#" + key + "\\}\\}[\\s\\S]*?\\{\\{/" + key + "\\}\\}", "");
       }
     }
-    
+
     // Remover blocos condicionais não processados
     result = result.replaceAll("\\{\\{#[^}]+\\}\\}[\\s\\S]*?\\{\\{/[^}]+\\}\\}", "");
-    
+
     // Converter quebras de linha em <br> se necessário
     for (Map.Entry<String, String> entry : variables.entrySet()) {
       if (entry.getValue() != null && entry.getValue().contains("\n")) {
@@ -85,13 +77,11 @@ public class EmailTemplateService {
         result = result.replace(key, valueWithBr);
       }
     }
-    
+
     return result;
   }
 
-  /**
-   * Mensagem de fallback caso o template não carregue
-   */
+  /** Mensagem de fallback caso o template não carregue */
   private String getFallbackMessage(String templateName) {
     return """
         <html>

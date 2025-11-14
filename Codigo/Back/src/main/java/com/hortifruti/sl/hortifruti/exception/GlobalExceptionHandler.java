@@ -107,8 +107,11 @@ public class GlobalExceptionHandler {
       HttpMediaTypeNotSupportedException ex) {
     Map<String, String> response = new HashMap<>();
     response.put("error", "Tipo de conteúdo não suportado");
-    response.put("message", "O tipo de conteúdo '" + ex.getContentType() + 
-        "' não é suportado para este endpoint. Use 'multipart/form-data' para upload de arquivos.");
+    response.put(
+        "message",
+        "O tipo de conteúdo '"
+            + ex.getContentType()
+            + "' não é suportado para este endpoint. Use 'multipart/form-data' para upload de arquivos.");
     return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(response);
   }
 
@@ -197,5 +200,22 @@ public class GlobalExceptionHandler {
     response.put("error", "Erro de Backup");
     response.put("message", ex.getMessage());
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+  }
+
+  @ExceptionHandler(NotificationException.class)
+  public ResponseEntity<Map<String, String>> handleBulkNotificationException(
+      NotificationException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro de Notificação em Massa");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
+
+  @ExceptionHandler(InvoiceException.class)
+  public ResponseEntity<Map<String, String>> handleInvoiceException(InvoiceException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro de Fatura");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 }
