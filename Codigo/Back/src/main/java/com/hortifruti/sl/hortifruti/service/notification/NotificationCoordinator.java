@@ -30,6 +30,7 @@ public class NotificationCoordinator {
       List<byte[]> attachments,
       List<String> fileNames) {
 
+    System.out.println("Iniciando envio de notificação para destinatário único...");
     return sendNotification(
         recipient,
         recipient,
@@ -54,30 +55,46 @@ public class NotificationCoordinator {
       List<byte[]> attachments,
       List<String> fileNames) {
 
+    System.out.println("Iniciando envio de notificação...");
+    System.out.println("Destinatário de email: " + emailRecipient);
+    System.out.println("Destinatário de WhatsApp: " + whatsAppRecipient);
+    System.out.println("Canal: " + channel);
+    System.out.println("Assunto: " + subject);
+
     boolean emailSent = false;
     boolean whatsappSent = false;
 
     // Envio por Email
     if (channel == NotificationChannel.EMAIL || channel == NotificationChannel.BOTH) {
+      System.out.println("Tentando enviar notificação por email...");
       if (emailRecipient != null && !emailRecipient.trim().isEmpty()) {
         emailSent =
             emailService.sendEmailWithAttachments(
                 emailRecipient, subject, emailBody, attachments, fileNames);
+        System.out.println("Resultado do envio de email: " + emailSent);
+      } else {
+        System.out.println("Destinatário de email não fornecido ou inválido.");
       }
     }
 
     // Envio por WhatsApp (independente do email)
     if (channel == NotificationChannel.WHATSAPP || channel == NotificationChannel.BOTH) {
+      System.out.println("Tentando enviar notificação por WhatsApp...");
       if (whatsAppRecipient != null && !whatsAppRecipient.trim().isEmpty()) {
         String whatsappMessage = buildWhatsAppMessage(whatsAppType, whatsAppContext);
+        System.out.println("Mensagem de WhatsApp construída: " + whatsappMessage);
         whatsappSent =
             whatsAppService.sendMultipleDocuments(
                 whatsAppRecipient, whatsappMessage, attachments, fileNames);
+        System.out.println("Resultado do envio de WhatsApp: " + whatsappSent);
+      } else {
+        System.out.println("Destinatário de WhatsApp não fornecido ou inválido.");
       }
     }
 
     // Determinar sucesso baseado no canal solicitado
     boolean success = determineSuccess(channel, emailSent, whatsappSent);
+    System.out.println("Resultado final do envio: " + (success ? "Sucesso" : "Falha"));
 
     return NotificationResponse.withStatuses(
         success,
@@ -88,21 +105,26 @@ public class NotificationCoordinator {
 
   /** Constrói mensagem de WhatsApp baseada no tipo e contexto */
   private String buildWhatsAppMessage(WhatsAppMessageType type, WhatsAppMessageContext context) {
+    System.out.println("Construindo mensagem de WhatsApp...");
     switch (type) {
       case MONTHLY_STATEMENTS:
+        System.out.println("Tipo de mensagem: MONTHLY_STATEMENTS");
         return whatsAppMessageBuilder.buildMonthlyStatementsMessage(
             context.getPeriod(), context.getCustomMessage());
 
       case GENERIC_FILES:
+        System.out.println("Tipo de mensagem: GENERIC_FILES");
         return whatsAppMessageBuilder.buildGenericFilesMessage(
             context.getTotalValue(), context.getCustomMessage());
 
       case CLIENT_DOCUMENTS:
+        System.out.println("Tipo de mensagem: CLIENT_DOCUMENTS");
         return whatsAppMessageBuilder.buildClientDocumentsMessage(
             context.getClient(), context.getCustomMessage());
 
       case GENERIC:
       default:
+        System.out.println("Tipo de mensagem: GENERIC");
         return whatsAppMessageBuilder.buildGenericMessage(
             context.getSubject(), context.getCustomMessage());
     }
@@ -110,6 +132,7 @@ public class NotificationCoordinator {
 
   private boolean determineSuccess(
       NotificationChannel channel, boolean emailSent, boolean whatsappSent) {
+    System.out.println("Determinando sucesso do envio...");
     switch (channel) {
       case EMAIL:
         return emailSent;
@@ -129,19 +152,27 @@ public class NotificationCoordinator {
       String body,
       List<byte[]> attachments,
       List<String> fileNames) {
+    System.out.println("Enviando apenas email...");
+    System.out.println("Destinatário: " + recipient);
+    System.out.println("Assunto: " + subject);
     try {
       if (attachments != null && !attachments.isEmpty()) {
+        System.out.println("Anexos detectados. Enviando email com anexos...");
         return emailService.sendEmailWithAttachments(
             recipient, subject, body, attachments, fileNames);
       } else {
+        System.out.println("Sem anexos. Enviando email simples...");
         return emailService.sendSimpleEmail(recipient, subject, body);
       }
     } catch (Exception e) {
+      System.out.println("Erro ao enviar email: " + e.getMessage());
+      e.printStackTrace();
       return false;
     }
   }
 
   private String getEmailStatus(NotificationChannel channel, boolean emailSent) {
+    System.out.println("Obtendo status do email...");
     if (channel == NotificationChannel.EMAIL || channel == NotificationChannel.BOTH) {
       return emailSent ? "OK" : "FALHA";
     }
@@ -149,6 +180,7 @@ public class NotificationCoordinator {
   }
 
   private String getWhatsAppStatus(NotificationChannel channel, boolean whatsappSent) {
+    System.out.println("Obtendo status do WhatsApp...");
     if (channel == NotificationChannel.WHATSAPP || channel == NotificationChannel.BOTH) {
       return whatsappSent ? "OK" : "FALHA";
     }
