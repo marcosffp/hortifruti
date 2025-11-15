@@ -636,7 +636,7 @@ export default function NotificacoesPage() {
                     {canaisEnvio.email && (
                       <p className="text-sm text-[var(--neutral-600)] flex items-center gap-2">
                         <Mail className="w-4 h-4" />
-                        {process.env.CONTABILIDADE_EMAIL}
+                        {process.env.NEXT_PUBLIC_CONTABILIDADE_EMAIL}
                       </p>
                     )}
                     {canaisEnvio.whatsapp && (
