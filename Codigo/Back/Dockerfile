@@ -29,7 +29,8 @@ COPY --from=builder --chown=appuser:appuser /app/target/*.jar app.jar
 
 # Cria diretórios temporários
 RUN mkdir -p /app/temp/cert /app/temp/google /app/temp/notifications && \
-    chown -R appuser:appuser /app/temp
+    chown -R appuser:appuser /app/temp && \
+    chmod -R 755 /app/temp
 
 # Variáveis de ambiente para Railway
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
