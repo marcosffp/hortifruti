@@ -49,6 +49,24 @@ export default function NotificacoesPage() {
   const [cardValue, setCardValue] = useState("");
   const [cashValue, setCashValue] = useState("");
 
+  // Tipos de arquivos suportados para upload
+  const SUPPORTED_FILE_TYPES = [
+    ".pdf",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".zip",
+    ".rar",
+    ".7z",
+    ".tar",
+    ".tar.gz",
+    ".tgz",
+    ".tar.bz2",
+  ] as const;
+
+  // Converter lista para string usada no accept=""
+  const FILE_ACCEPT_STRING = SUPPORTED_FILE_TYPES.join(",");
+
   // Efeito para ajustar canais de envio quando muda o tipo de destinatário
   useEffect(() => {
     if (tipoDestinatario === "contabilidade") {
@@ -369,7 +387,7 @@ export default function NotificacoesPage() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="block text-sm font-medium text-[var(--neutral-700)]">
-                    Arquivos (PDF, JPG, PNG - Máx. 10MB cada)
+                    Arquivos (PDF, imagens e pacotes — Máx. 10MB cada)
                   </div>
                   {arquivos.length > 0 && (
                     <span className="text-sm text-[var(--primary)] font-medium">
@@ -389,7 +407,7 @@ export default function NotificacoesPage() {
                   <input
                     type="file"
                     className="hidden"
-                    accept=".pdf,.jpg,.jpeg,.png"
+                    accept={FILE_ACCEPT_STRING}
                     onChange={handleFileChange}
                     multiple
                   />
@@ -636,7 +654,7 @@ export default function NotificacoesPage() {
                     {canaisEnvio.email && (
                       <p className="text-sm text-[var(--neutral-600)] flex items-center gap-2">
                         <Mail className="w-4 h-4" />
-                        carlosdybala.fig@gmail.com
+                        {process.env.NEXT_PUBLIC_CONTABILIDADE_EMAIL}
                       </p>
                     )}
                     {canaisEnvio.whatsapp && (

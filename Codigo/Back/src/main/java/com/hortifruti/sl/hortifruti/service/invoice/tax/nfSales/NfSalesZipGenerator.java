@@ -19,7 +19,10 @@ public class NfSalesZipGenerator {
   public String generateZipFromXmlFiles(List<File> xmlFiles, LocalDate startDate, LocalDate endDate)
       throws IOException {
     String folderName = formatFolderName(startDate, endDate);
-    Path folderPath = Paths.get(folderName);
+    
+    // ✅ USAR DIRETÓRIO TEMPORÁRIO em vez de /app/
+    Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
+    Path folderPath = tempDir.resolve(folderName);
 
     Files.createDirectories(folderPath);
 
@@ -42,7 +45,9 @@ public class NfSalesZipGenerator {
     }
 
     String zipFileName = folderName + ".zip";
-    try (FileOutputStream fos = new FileOutputStream(zipFileName);
+    Path zipFilePath = tempDir.resolve(zipFileName); // ✅ ZIP também no temp dir
+    
+    try (FileOutputStream fos = new FileOutputStream(zipFilePath.toFile());
         ZipOutputStream zos = new ZipOutputStream(fos)) {
 
       Files.walk(folderPath)
@@ -66,6 +71,7 @@ public class NfSalesZipGenerator {
       throw new IOException("Erro ao criar o arquivo ZIP: " + zipFileName, e);
     }
 
+    // Limpeza dos arquivos temporários
     try {
       Files.walk(folderPath)
           .sorted((path1, path2) -> path2.compareTo(path1))
@@ -83,7 +89,7 @@ public class NfSalesZipGenerator {
       e.printStackTrace();
     }
 
-    return zipFileName;
+    return zipFilePath.toString(); // ✅ Retorna o caminho completo do ZIP
   }
 
   private String formatFolderName(LocalDate startDate, LocalDate endDate) {
