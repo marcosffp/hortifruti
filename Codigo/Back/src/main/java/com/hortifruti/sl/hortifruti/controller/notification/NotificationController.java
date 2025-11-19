@@ -230,12 +230,4 @@ public class NotificationController {
                   "Erro ao processar notificações: " + e.getMessage(), List.of()));
     }
   }
-
-  @GetMapping("/test")
-  @Operation(
-      summary = "Testar serviços de notificação",
-      description = "Verifica se os serviços de e-mail e WhatsApp estão funcionando")
-  public ResponseEntity<String> testServices() {
-    return ResponseEntity.ok("Serviço de notificações está ativo");
-  }
 }
