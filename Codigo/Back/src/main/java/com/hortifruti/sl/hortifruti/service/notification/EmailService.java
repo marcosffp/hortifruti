@@ -24,7 +24,7 @@ public class EmailService {
   private String fromEmail;
 
   public boolean sendSimpleEmail(String to, String subject, String text) {
-    System.out.println("Iniciando envio de email simples...");
+    System.out.println("Iniciando método sendSimpleEmail...");
     try {
       log.info("Tentando enviar email de '{}' para '{}'", fromEmail, to);
       System.out.println("De: " + fromEmail + ", Para: " + to + ", Assunto: " + subject);
@@ -37,6 +37,7 @@ public class EmailService {
       System.out.println("Adicionando logo inline...");
       addInlineLogo(mail);
 
+      System.out.println("Criando objeto SendGrid...");
       SendGrid sg = new SendGrid(sendGridApiKey);
       Request request = new Request();
       request.setMethod(Method.POST);
@@ -49,11 +50,12 @@ public class EmailService {
       System.out.println("Resposta do SendGrid: Status = " + response.getStatusCode() + ", Body = " + response.getBody());
       if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
         log.info("Email enviado com sucesso para: {}", to);
+        System.out.println("Email enviado com sucesso.");
         return true;
       } else {
         log.error("Erro ao enviar email. Status: {}, Body: {}", 
                   response.getStatusCode(), response.getBody());
-        log.error("Email remetente usado: {}", fromEmail);
+        System.out.println("Erro ao enviar email. Status: " + response.getStatusCode() + ", Body: " + response.getBody());
         return false;
       }
     } catch (IOException e) {
@@ -65,7 +67,7 @@ public class EmailService {
 
   public boolean sendEmailWithAttachments(
       String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
-    System.out.println("Iniciando envio de email com anexos...");
+    System.out.println("Iniciando método sendEmailWithAttachments...");
     try {
       Email from = new Email(fromEmail);
       Email toEmail = new Email(to);
@@ -89,6 +91,7 @@ public class EmailService {
         }
       }
 
+      System.out.println("Criando objeto SendGrid...");
       SendGrid sg = new SendGrid(sendGridApiKey);
       Request request = new Request();
       request.setMethod(Method.POST);
@@ -101,10 +104,12 @@ public class EmailService {
       System.out.println("Resposta do SendGrid: Status = " + response.getStatusCode() + ", Body = " + response.getBody());
       if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
         log.info("Email com anexos enviado com sucesso para: {}", to);
+        System.out.println("Email com anexos enviado com sucesso.");
         return true;
       } else {
         log.error("Erro ao enviar email com anexos. Status: {}, Body: {}", 
                   response.getStatusCode(), response.getBody());
+        System.out.println("Erro ao enviar email com anexos. Status: " + response.getStatusCode() + ", Body: " + response.getBody());
         return false;
       }
     } catch (IOException e) {
@@ -116,12 +121,12 @@ public class EmailService {
 
   public boolean sendEmailWithSingleAttachment(
       String to, String subject, String text, byte[] attachment, String fileName) {
-    System.out.println("Iniciando envio de email com único anexo...");
+    System.out.println("Iniciando método sendEmailWithSingleAttachment...");
     return sendEmailWithAttachments(to, subject, text, List.of(attachment), List.of(fileName));
   }
 
   private void addInlineLogo(Mail mail) {
-    System.out.println("Tentando adicionar logo inline...");
+    System.out.println("Iniciando método addInlineLogo...");
     try {
       ClassPathResource logoResource = new ClassPathResource("static/images/logo.png");
       if (logoResource.exists()) {

@@ -59,14 +59,18 @@ public class NotificationController {
       @Parameter(description = "Mensagem personalizada (opcional)")
           @RequestParam(value = "customMessage", required = false)
           String customMessage) {
+    System.out.println("Iniciando envio de arquivos genéricos para contabilidade...");
     try {
       GenericFilesAccountingRequest request =
           new GenericFilesAccountingRequest(
               new BigDecimal(cardValue), new BigDecimal(cashValue), customMessage);
+      System.out.println("Request criado com sucesso: " + request);
       NotificationResponse response =
           notificationService.sendGenericFilesToAccounting(files, request);
+      System.out.println("Resposta do serviço: " + response);
       return ResponseEntity.ok(response);
     } catch (Exception e) {
+      System.out.println("Erro ao enviar arquivos para contabilidade: " + e.getMessage());
       return ResponseEntity.badRequest()
           .body(
               new NotificationResponse(
@@ -92,13 +96,17 @@ public class NotificationController {
       @Parameter(description = "Mensagem personalizada (opcional)")
           @RequestParam(value = "customMessage", required = false)
           String customMessage) {
+    System.out.println("Iniciando envio de documentos para cliente...");
     try {
       ClientDocumentsRequest request =
           new ClientDocumentsRequest(
               clientId, NotificationChannel.valueOf(channel.toUpperCase()), customMessage);
+      System.out.println("Request criado com sucesso: " + request);
       NotificationResponse response = notificationService.sendDocumentsToClient(files, request);
+      System.out.println("Resposta do serviço: " + response);
       return ResponseEntity.ok(response);
     } catch (Exception e) {
+      System.out.println("Erro ao enviar documentos para cliente: " + e.getMessage());
       return ResponseEntity.badRequest()
           .body(
               new NotificationResponse(
@@ -118,14 +126,14 @@ public class NotificationController {
         @ApiResponse(responseCode = "403", description = "Acesso negado - apenas administradores")
       })
   public ResponseEntity<Map<String, Object>> testDatabaseStorageAlert() {
+    System.out.println("Iniciando teste de alerta de armazenamento do banco de dados...");
     try {
-      // Obter tamanho real atual do banco de dados
       BigDecimal currentSizeMB = databaseStorageService.getDatabaseSizeInMB();
+      System.out.println("Tamanho atual do banco de dados: " + currentSizeMB + " MB");
 
-      // Enviar notificação com dados reais
       databaseStorageService.sendTestStorageNotification(currentSizeMB);
+      System.out.println("Email de teste enviado com sucesso.");
 
-      // Calcular percentual de uso para a resposta
       BigDecimal maxSize = new BigDecimal("5120"); // 5GB
       BigDecimal storagePercentage =
           currentSizeMB
@@ -144,6 +152,7 @@ public class NotificationController {
       return ResponseEntity.ok(response);
 
     } catch (Exception e) {
+      System.out.println("Erro ao enviar email de teste: " + e.getMessage());
       Map<String, Object> errorResponse = new HashMap<>();
       errorResponse.put("success", false);
       errorResponse.put("message", "Erro ao enviar email de teste: " + e.getMessage());
@@ -213,17 +222,20 @@ public class NotificationController {
       @RequestParam("channels") List<String> channels,
       @RequestParam("destinationType") String destinationType,
       @RequestParam(value = "customMessage", required = false) String customMessage) {
+    System.out.println("Iniciando envio de notificações em massa...");
     try {
       BulkNotificationResponse response =
           bulkNotificationService.sendBulkNotifications(
               files, clientIds, channels, destinationType, customMessage);
-
+      System.out.println("Resposta do serviço: " + response);
       return ResponseEntity.ok(response);
 
     } catch (IllegalArgumentException e) {
+      System.out.println("Erro de validação: " + e.getMessage());
       return ResponseEntity.badRequest()
           .body(BulkNotificationResponse.failure(e.getMessage(), List.of()));
     } catch (Exception e) {
+      System.out.println("Erro ao processar notificações: " + e.getMessage());
       return ResponseEntity.status(500)
           .body(
               BulkNotificationResponse.failure(
