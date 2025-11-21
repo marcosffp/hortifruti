@@ -62,6 +62,9 @@ export default function NotificacoesPage() {
     ".tar.gz",
     ".tgz",
     ".tar.bz2",
+    ".xls",
+    ".xlsx",
+    ".csv",
   ] as const;
 
   // Converter lista para string usada no accept=""
