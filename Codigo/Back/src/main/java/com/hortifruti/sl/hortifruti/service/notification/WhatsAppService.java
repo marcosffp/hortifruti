@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.notification;
 
+import com.hortifruti.sl.hortifruti.exception.NotificationException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -86,21 +87,14 @@ public class WhatsAppService {
       HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
       ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
-      System.out.println("WhatsApp - Número original: " + phoneNumber);
-      System.out.println("WhatsApp - Número formatado: " + formattedPhone);
-      System.out.println("WhatsApp - URL: " + url.replace(ultraMsgToken, "***TOKEN***"));
-      System.out.println("WhatsApp - Status response: " + response.getStatusCode());
-      System.out.println("WhatsApp - Response body: " + response.getBody());
-
       // Verificar se tem erro na resposta
       String responseBody = response.getBody();
       boolean hasError = responseBody != null && responseBody.contains("\"error\"");
 
       return response.getStatusCode().is2xxSuccessful() && !hasError;
     } catch (Exception e) {
-      System.err.println("Erro ao enviar WhatsApp para " + phoneNumber + ": " + e.getMessage());
-      e.printStackTrace();
-      return false;
+      throw new NotificationException(
+          "Erro ao enviar mensagem WhatsApp para " + phoneNumber + ": " + e.getMessage());
     }
   }
 
@@ -124,116 +118,65 @@ public class WhatsAppService {
         body.add("caption", message);
       }
 
-      System.out.println("WhatsApp Document - Enviando:");
-      System.out.println("  To: " + formattedPhone);
-      System.out.println("  Filename: " + fileName);
-      System.out.println(
-          "  Document: "
-              + document.length
-              + " bytes (base64: "
-              + documentBase64.length()
-              + " chars)");
-
       HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
       ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
-
-      System.out.println("WhatsApp Document - Status: " + response.getStatusCode());
 
       // Verificar se tem erro na resposta
       String responseBody = response.getBody();
       boolean hasError = responseBody != null && responseBody.contains("\"error\"");
 
       if (hasError) {
-        System.err.println("WhatsApp Document - Erro na resposta: " + responseBody);
+        throw new NotificationException(
+            "Erro ao enviar documento WhatsApp para " + phoneNumber + ": " + responseBody);
       }
 
       return response.getStatusCode().is2xxSuccessful() && !hasError;
     } catch (Exception e) {
-      System.err.println(
+      throw new NotificationException(
           "Erro ao enviar documento WhatsApp para " + phoneNumber + ": " + e.getMessage());
-      e.printStackTrace();
-      return false;
     }
   }
 
   public boolean sendMultipleDocuments(
       String phoneNumber, String message, List<byte[]> documents, List<String> fileNames) {
 
-    System.out.println("========================================");
-    System.out.println("WhatsApp - Enviando múltiplos documentos");
-    System.out.println("Destinatário: " + phoneNumber);
-    System.out.println("Total de documentos: " + documents.size());
-    System.out.println("Total de nomes: " + fileNames.size());
-
     // Validação de entrada
     if (documents == null || fileNames == null) {
-      System.err.println("✗ ERRO: Listas de documentos ou nomes são nulas!");
-      return false;
+      throw new NotificationException("Listas de documentos ou nomes são nulas!");
     }
 
     if (documents.isEmpty()) {
-      System.err.println("✗ ERRO: Lista de documentos está vazia!");
-      return false;
+      throw new NotificationException("Lista de documentos está vazia!");
     }
 
     if (documents.size() != fileNames.size()) {
-      System.err.println(
-          "✗ ERRO: Número de documentos ("
-              + documents.size()
-              + ") diferente do número de nomes ("
-              + fileNames.size()
-              + ")!");
-      return false;
+      throw new NotificationException("Listas de documentos e nomes têm tamanhos diferentes!");
     }
 
-    // Enviar mensagem de texto primeiro
-    System.out.println("→ Enviando mensagem de texto inicial...");
     sendTextMessage(phoneNumber, message);
-    System.out.println("✓ Mensagem de texto enviada");
 
     boolean allSent = true;
-    int sucessos = 0;
-    int falhas = 0;
 
     // Enviar cada documento com delay entre eles
     for (int i = 0; i < documents.size(); i++) {
-      System.out.println("────────────────────────────────────────");
-      System.out.println("→ Enviando documento " + (i + 1) + "/" + documents.size());
-      System.out.println("  Nome: " + fileNames.get(i));
-      System.out.println("  Tamanho: " + documents.get(i).length + " bytes");
 
       boolean sent =
           sendDocument(
               phoneNumber, "Documento: " + fileNames.get(i), documents.get(i), fileNames.get(i));
 
-      if (sent) {
-        sucessos++;
-        System.out.println("✓ Documento " + (i + 1) + " enviado com sucesso!");
-      } else {
-        falhas++;
-        System.err.println("✗ FALHA ao enviar documento " + (i + 1));
+      if (!sent) {
         allSent = false;
       }
 
       // Delay de 2 segundos entre documentos para evitar rate limit
       if (i < documents.size() - 1) {
         try {
-          System.out.println("⏳ Aguardando 2 segundos antes do próximo envio...");
           Thread.sleep(2000);
         } catch (InterruptedException e) {
-          System.err.println("⚠️ Delay interrompido: " + e.getMessage());
-          Thread.currentThread().interrupt();
+          throw new NotificationException("Envio interrompido: " + e.getMessage());
         }
       }
     }
-
-    System.out.println("════════════════════════════════════════");
-    System.out.println("RESULTADO DO ENVIO:");
-    System.out.println("  Total: " + documents.size());
-    System.out.println("  Sucessos: " + sucessos);
-    System.out.println("  Falhas: " + falhas);
-    System.out.println("  Status Final: " + (allSent ? "✓ SUCESSO" : "✗ FALHA PARCIAL/TOTAL"));
-    System.out.println("════════════════════════════════════════");
 
     return allSent;
   }
