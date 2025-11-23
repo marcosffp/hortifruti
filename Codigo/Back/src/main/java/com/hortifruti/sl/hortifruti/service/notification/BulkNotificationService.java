@@ -38,41 +38,51 @@ public class BulkNotificationService {
       List<String> channels,
       String destinationType,
       String customMessage) {
+    System.out.println("Iniciando envio de notificações em massa...");
     try {
       // Validações
       if (files == null || files.isEmpty()) {
+        System.out.println("Nenhum arquivo foi fornecido.");
         throw new IllegalArgumentException("Pelo menos um arquivo deve ser fornecido");
       }
 
       if (channels == null || channels.isEmpty()) {
+        System.out.println("Nenhum canal foi selecionado.");
         throw new IllegalArgumentException("Pelo menos um canal deve ser selecionado");
       }
 
       // Converter arquivos para bytes
+      System.out.println("Convertendo arquivos para bytes...");
       List<byte[]> fileContents = new ArrayList<>();
       List<String> fileNames = new ArrayList<>();
 
       for (MultipartFile file : files) {
         fileContents.add(file.getBytes());
         fileNames.add(file.getOriginalFilename());
+        System.out.println("Arquivo processado: " + file.getOriginalFilename());
       }
 
       // Determinar canais
       boolean sendEmail = channels.contains("email");
       boolean sendWhatsApp = channels.contains("whatsapp");
       NotificationChannel channel = determineChannel(sendEmail, sendWhatsApp);
+      System.out.println("Canal determinado: " + channel);
 
       // Enviar para contabilidade ou clientes
       if ("contabilidade".equalsIgnoreCase(destinationType)) {
+        System.out.println("Destino: Contabilidade");
         return sendToAccounting(fileContents, fileNames, customMessage, channel);
       } else {
+        System.out.println("Destino: Clientes");
         return sendToClients(clientIds, fileContents, fileNames, customMessage, channel);
       }
 
     } catch (IOException e) {
+      System.out.println("Erro ao processar arquivos: " + e.getMessage());
       return BulkNotificationResponse.failure(
           "Erro ao processar arquivos: " + e.getMessage(), List.of());
     } catch (Exception e) {
+      System.out.println("Erro ao enviar notificações: " + e.getMessage());
       return BulkNotificationResponse.failure(
           "Erro ao enviar notificações: " + e.getMessage(), List.of());
     }
@@ -84,16 +94,21 @@ public class BulkNotificationService {
       List<String> fileNames,
       String customMessage,
       NotificationChannel channel) {
+    System.out.println("Enviando notificações para contabilidade...");
     try {
       String subject = String.format("Documentos Contábeis - %d arquivo(s)", fileContents.size());
       String emailBody = buildAccountingMessage(fileContents.size(), customMessage);
+      System.out.println("Assunto do email: " + subject);
 
       boolean success =
           switch (channel) {
-            case EMAIL ->
-                notificationCoordinator.sendEmailOnly(
-                    accountingEmail, subject, emailBody, fileContents, fileNames);
+            case EMAIL -> {
+              System.out.println("Enviando via email...");
+              yield notificationCoordinator.sendEmailOnly(
+                  accountingEmail, subject, emailBody, fileContents, fileNames);
+            }
             case WHATSAPP, BOTH -> {
+              System.out.println("Enviando via WhatsApp...");
               var whatsAppContext =
                   NotificationCoordinator.WhatsAppMessageContext.builder()
                       .customMessage(customMessage)
@@ -115,17 +130,20 @@ public class BulkNotificationService {
 
       if (success) {
         String channelText = getChannelText(channel);
+        System.out.println("Notificação enviada com sucesso via " + channelText);
         return BulkNotificationResponse.success(
             1,
             String.format(
                 "%d arquivo(s) enviado(s) para contabilidade via %s",
                 fileContents.size(), channelText));
       } else {
+        System.out.println("Falha ao enviar para contabilidade.");
         return BulkNotificationResponse.failure(
             "Falha ao enviar para contabilidade", List.of("Contabilidade"));
       }
 
     } catch (Exception e) {
+      System.out.println("Erro ao enviar para contabilidade: " + e.getMessage());
       return BulkNotificationResponse.failure(
           "Erro ao enviar para contabilidade: " + e.getMessage(), List.of("Contabilidade"));
     }
@@ -138,7 +156,9 @@ public class BulkNotificationService {
       List<String> fileNames,
       String customMessage,
       NotificationChannel channel) {
+    System.out.println("Enviando notificações para múltiplos clientes...");
     if (clientIds == null || clientIds.isEmpty()) {
+      System.out.println("Nenhum cliente foi selecionado.");
       throw new IllegalArgumentException("Pelo menos um cliente deve ser selecionado");
     }
 
@@ -147,24 +167,29 @@ public class BulkNotificationService {
 
     for (Long clientId : clientIds) {
       try {
+        System.out.println("Processando cliente ID: " + clientId);
         Optional<Client> clientOpt = clientRepository.findById(clientId);
 
         if (clientOpt.isEmpty()) {
+          System.out.println("Cliente não encontrado: ID " + clientId);
           failedRecipients.add("Cliente ID: " + clientId);
           continue;
         }
 
         Client client = clientOpt.get();
+        System.out.println("Cliente encontrado: " + client.getClientName());
 
         // Validar se o cliente tem os contatos necessários
         if (channel == NotificationChannel.EMAIL
             && (client.getEmail() == null || client.getEmail().isEmpty())) {
+          System.out.println("Cliente sem email: " + client.getClientName());
           failedRecipients.add(client.getClientName() + " (sem e-mail)");
           continue;
         }
 
         if (channel == NotificationChannel.WHATSAPP
             && (client.getPhoneNumber() == null || client.getPhoneNumber().isEmpty())) {
+          System.out.println("Cliente sem telefone: " + client.getClientName());
           failedRecipients.add(client.getClientName() + " (sem telefone)");
           continue;
         }
@@ -172,6 +197,7 @@ public class BulkNotificationService {
         if (channel == NotificationChannel.BOTH) {
           if ((client.getEmail() == null || client.getEmail().isEmpty())
               && (client.getPhoneNumber() == null || client.getPhoneNumber().isEmpty())) {
+            System.out.println("Cliente sem contatos: " + client.getClientName());
             failedRecipients.add(client.getClientName() + " (sem contatos)");
             continue;
           }
@@ -180,6 +206,7 @@ public class BulkNotificationService {
         // Enviar notificação
         String subject = String.format("Documentos - %s", client.getClientName());
         String emailBody = buildClientMessage(client, fileContents.size(), customMessage);
+        System.out.println("Assunto do email: " + subject);
 
         var whatsAppContext =
             NotificationCoordinator.WhatsAppMessageContext.builder()
@@ -199,28 +226,34 @@ public class BulkNotificationService {
                 fileNames);
 
         if (response.success()) {
+          System.out.println("Notificação enviada com sucesso para: " + client.getClientName());
           successCount++;
         } else {
+          System.out.println("Falha ao enviar notificação para: " + client.getClientName());
           failedRecipients.add(client.getClientName());
         }
 
       } catch (Exception e) {
+        System.out.println("Erro ao processar cliente ID: " + clientId + " - " + e.getMessage());
         failedRecipients.add("Cliente ID: " + clientId + " (erro)");
       }
     }
 
     // Construir resposta
     if (successCount == 0) {
+      System.out.println("Nenhuma notificação foi enviada com sucesso.");
       return BulkNotificationResponse.failure(
           "Nenhuma notificação foi enviada com sucesso", failedRecipients);
     } else if (failedRecipients.isEmpty()) {
       String channelText = getChannelText(channel);
+      System.out.println("Todas as notificações foram enviadas com sucesso.");
       return BulkNotificationResponse.success(
           successCount,
           String.format(
               "%d arquivo(s) enviado(s) com sucesso para %d destinatário(s) via %s",
               fileContents.size(), successCount, channelText));
     } else {
+      System.out.println("Notificações parcialmente enviadas.");
       return BulkNotificationResponse.partial(
           successCount, failedRecipients.size(), failedRecipients);
     }
