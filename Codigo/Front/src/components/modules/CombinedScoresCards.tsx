@@ -461,7 +461,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                         {!isBilletOpen(score) && !score.hasInvoice && (
                                             <button
                                                 onClick={() => handleDelete(score.id, score.number)}
-                                                className={`flex items-center justify-center gap-1 px-2 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs cursor-pointer ${(score.status === "PAGO" || score.status === "PAID") ? "col-span-2 w-full" : ""}`}
+                                                className={`flex items-center justify-center gap-1 px-2 py-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors text-xs cursor-pointer ${(score.status === "PAGO" || score.status === "PAID") ? "col-span-2 w-full" : ""}`}
                                             >
                                                 <Trash2 className="w-3 h-3" />
                                                 Deletar
