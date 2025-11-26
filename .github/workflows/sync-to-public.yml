@@ -1,28 +1,27 @@
-name: Sync prod to Public Repo
+name: Sync prod & master to Public Repo
 
 on:
   push:
     branches:
       - prod
+      - master   # ← ADICIONADO PARA SINCRONIZAR TAMBÉM A MASTER
 
 jobs:
   sync-to-public:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout prod branch
+      - name: Checkout branch atual
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: prod
-          persist-credentials: false  # ← CRÍTICO: Não persistir credenciais do GITHUB_TOKEN
+          ref: ${{ github.ref_name }}   # ← Checkout dinâmico da branch (prod OU master)
+          persist-credentials: false
 
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Limpar qualquer credencial em cache
           git config --unset-all http.https://github.com/.extraheader || true
 
       - name: Debug - Verificar secret
@@ -33,18 +32,20 @@ jobs:
           fi
           echo "✅ Secret encontrado"
 
-      - name: Sincronizar prod → prod
+      - name: Sincronizar branch para o repositório público
         env:
           GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
         run: |
-          # Configurar credenciais do Git para usar o token
+          CURRENT_BRANCH="${{ github.ref_name }}"
+          echo "📌 Branch atual: $CURRENT_BRANCH"
+
+          # Configurar credenciais
           git config --local credential.helper '!f() { echo "username=x-access-token"; echo "password=$GITHUB_TOKEN"; }; f'
-          
+
           # Adicionar remote
           git remote add public https://github.com/marcosffp/hortifruti.git
-          
-          # Push
-          echo "📤 Enviando para repositório público..."
-          git push public prod:prod --force --verbose
-          
+
+          echo "📤 Enviando $CURRENT_BRANCH → $CURRENT_BRANCH para o repositório público..."
+          git push public "$CURRENT_BRANCH:$CURRENT_BRANCH" --force --verbose
+
           echo "✅ Sincronização concluída!"
