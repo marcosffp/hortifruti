@@ -292,7 +292,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
             case "PAGO":
                 return "bg-green-100 text-green-800";
             case "PENDENTE":
-                return "bg-yellow-100 text-yellow-800";
+                return "bg-blue-100 text-blue-800";
             case "BAIXADO":
             case "CANCELADO":
             case "CANCELADO_BOLETO":
@@ -448,10 +448,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                             <button
                                                 onClick={() => handleTogglePayment(score)}
                                                 disabled={score.hasInvoice && score.status === "PAGO"}
-                                                className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg transition-colors text-xs cursor-pointer ${score.status === "PAGO"
-                                                        ? "bg-green-400 text-white"
-                                                        : "bg-green-600 text-white hover:bg-green-700"
-                                                    } ${score.hasInvoice ? "col-span-2 w-full" : ""}`}
+                                                className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg transition-colors text-xs cursor-pointer text-white bg-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--primary-dark)] ${score.hasInvoice ? "col-span-2 w-full" : ""}`}
                                             >
                                                 <CheckCircle className="w-3 h-3" />
                                                 Confirmar Pag.
@@ -461,7 +458,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                         {!isBilletOpen(score) && !score.hasInvoice && (
                                             <button
                                                 onClick={() => handleDelete(score.id, score.number)}
-                                                className={`flex items-center justify-center gap-1 px-2 py-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors text-xs cursor-pointer ${(score.status === "PAGO" || score.status === "PAID") ? "col-span-2 w-full" : ""}`}
+                                                className={`flex items-center justify-center gap-1 px-2 py-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors text-xs cursor-pointer`}
                                             >
                                                 <Trash2 className="w-3 h-3" />
                                                 Deletar
