@@ -1,67 +1,56 @@
 name: Sync prod to Public Repo
 
-# Dispara apenas em pushes na branch prod
 on:
   push:
     branches:
       - prod
-
-permissions:
-  contents: read
 
 jobs:
   sync-to-public:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout repositório privado
+      - name: Checkout prod branch
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Necessário para histórico completo
-          ref: prod       # Garante que estamos na branch prod
+          fetch-depth: 0
+          ref: prod
 
-      - name: Configurar Git
+      - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Adicionar remote público
+      - name: Verificar token
         env:
           PUBLIC_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
         run: |
-          PUBLIC_URL="https://x-access-token:${PUBLIC_TOKEN}@github.com/marcosffp/hortifruti.git"
-          git remote add public "${PUBLIC_URL}"
-          git fetch public
+          if [ -z "$PUBLIC_TOKEN" ]; then
+            echo "::error::PUBLIC_REPO_TOKEN não está configurado"
+            exit 1
+          fi
+          
+          # Testa se o token tem permissão
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: token ${PUBLIC_TOKEN}" \
+            https://api.github.com/repos/marcosffp/hortifruti)
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Token válido e com permissão"
+          else
+            echo "::error::Token sem permissão (HTTP $HTTP_CODE)"
+            exit 1
+          fi
 
-      - name: Identificar branch padrão do repositório público
-        id: get-default-branch
+      - name: Sincronizar prod → prod (repositório público)
         env:
           PUBLIC_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
         run: |
-          # Busca a branch padrão via API do GitHub
-          DEFAULT_BRANCH=$(curl -s -H "Authorization: token ${PUBLIC_TOKEN}" \
-            https://api.github.com/repos/marcosffp/hortifruti | \
-            jq -r '.default_branch')
-          echo "default_branch=${DEFAULT_BRANCH}" >> $GITHUB_OUTPUT
-          echo "Branch padrão detectada: ${DEFAULT_BRANCH}"
-
-      - name: Sincronizar prod → branch padrão pública
-        env:
-          DEFAULT_BRANCH: ${{ steps.get-default-branch.outputs.default_branch }}
-        run: |
-          echo "Sincronizando prod → ${DEFAULT_BRANCH}"
+          # Adiciona remote com token
+          git remote add public https://${PUBLIC_TOKEN}@github.com/marcosffp/hortifruti.git
           
-          # Push da branch prod para a branch padrão do público
-          git push public prod:${DEFAULT_BRANCH} --force-with-lease
+          # Sincroniza prod → prod
+          echo "📤 Sincronizando branch prod para o repositório público..."
+          git push public prod:prod --force
           
-          echo "✅ Sincronização concluída com sucesso!"
-
-      - name: Notificar sucesso
-        if: success()
-        run: |
-          echo "::notice::Branch prod sincronizada com sucesso para o repositório público"
-
-      - name: Notificar falha
-        if: failure()
-        run: |
-          echo "::error::Falha ao sincronizar. Verifique os logs acima."
+          echo "✅ Sincronização concluída! Branch prod → prod"
