@@ -467,7 +467,7 @@ export default function ClientForm({
                   <button
                     type="button"
                     onClick={() => buscarEnderecoPorCEP(formData.cep)}
-                    className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                    className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-800 transition-colors"
                     title="Buscar endereço pelo CEP"
                   >
                     Buscar
