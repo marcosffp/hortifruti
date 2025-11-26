@@ -200,7 +200,7 @@ export default function ShowInvoiceDataModal({
                     <button
                         onClick={handleDownloadDanfe}
                         disabled={isLoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-800 text-white rounded-lg hover:bg-blue-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >                                                   
                         <FileText className="w-4 h-4" />
                         {isLoading ? "Baixando..." : "Baixar DANFE (PDF)"}
@@ -216,7 +216,7 @@ export default function ShowInvoiceDataModal({
                     {canCancelInvoice() && (
                         <button
                             onClick={() => setShowCancelModal(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors cursor-pointer"
+                            className="flex items-center gap-2 px-4 py-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors cursor-pointer"
                         >
                             <AlertTriangle className="w-4 h-4" />
                             Cancelar Nota Fiscal
@@ -271,7 +271,7 @@ export default function ShowInvoiceDataModal({
                                 <button
                                     onClick={handleCancelInvoice}
                                     disabled={cancelling || justificativa.trim().length < 15}
-                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 px-4 py-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {cancelling ? "Cancelando..." : "Confirmar Cancelamento"}
                                 </button>
