@@ -15,42 +15,29 @@ jobs:
         with:
           fetch-depth: 0
           ref: prod
+          # Use token padrão para checkout
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Verificar token
-        env:
-          PUBLIC_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+      - name: Debug - Verificar se secret existe
         run: |
-          if [ -z "$PUBLIC_TOKEN" ]; then
-            echo "::error::PUBLIC_REPO_TOKEN não está configurado"
+          if [ -z "${{ secrets.PUBLIC_REPO_TOKEN }}" ]; then
+            echo "::error::PUBLIC_REPO_TOKEN não configurado"
             exit 1
           fi
-          
-          # Testa se o token tem permissão
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: token ${PUBLIC_TOKEN}" \
-            https://api.github.com/repos/marcosffp/hortifruti)
-          
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "✅ Token válido e com permissão"
-          else
-            echo "::error::Token sem permissão (HTTP $HTTP_CODE)"
-            exit 1
-          fi
+          echo "✅ Secret encontrado"
 
-      - name: Sincronizar prod → prod (repositório público)
-        env:
-          PUBLIC_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+      - name: Sincronizar prod → prod
         run: |
-          # Adiciona remote com token
-          git remote add public https://${PUBLIC_TOKEN}@github.com/marcosffp/hortifruti.git
+          # Configurar remote com token
+          git remote add public https://x-access-token:${{ secrets.PUBLIC_REPO_TOKEN }}@github.com/marcosffp/hortifruti.git
           
-          # Sincroniza prod → prod
-          echo "📤 Sincronizando branch prod para o repositório público..."
-          git push public prod:prod --force
+          # Push
+          echo "📤 Enviando para repositório público..."
+          git push public prod:prod --force --verbose
           
-          echo "✅ Sincronização concluída! Branch prod → prod"
+          echo "✅ Sincronização concluída!"
