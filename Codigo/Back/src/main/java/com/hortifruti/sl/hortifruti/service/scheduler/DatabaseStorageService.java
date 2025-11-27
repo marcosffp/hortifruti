@@ -25,7 +25,7 @@ public class DatabaseStorageService {
   @Value("${overdue.notification.emails}")
   private String overdueNotificationEmails;
 
-  private static final BigDecimal MAX_STORAGE_MB = new BigDecimal("5120"); // 5GB
+  private static final BigDecimal MAX_STORAGE_MB = new BigDecimal("1024"); // 1GB
   private static final BigDecimal THRESHOLD_PERCENTAGE = new BigDecimal("80"); // 80%
 
   public BigDecimal getDatabaseSizeInMB() {

@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.service.notification;
 
 import com.hortifruti.sl.hortifruti.dto.notification.BulkNotificationResponse;
 import com.hortifruti.sl.hortifruti.dto.notification.NotificationResponse;
+import com.hortifruti.sl.hortifruti.exception.NotificationException;
 import com.hortifruti.sl.hortifruti.model.enumeration.NotificationChannel;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
@@ -41,11 +42,11 @@ public class BulkNotificationService {
     try {
       // Validações
       if (files == null || files.isEmpty()) {
-        throw new IllegalArgumentException("Pelo menos um arquivo deve ser fornecido");
+        throw new NotificationException("Pelo menos um arquivo deve ser fornecido");
       }
 
       if (channels == null || channels.isEmpty()) {
-        throw new IllegalArgumentException("Pelo menos um canal deve ser selecionado");
+        throw new NotificationException("Pelo menos um canal deve ser selecionado");
       }
 
       // Converter arquivos para bytes
@@ -139,7 +140,7 @@ public class BulkNotificationService {
       String customMessage,
       NotificationChannel channel) {
     if (clientIds == null || clientIds.isEmpty()) {
-      throw new IllegalArgumentException("Pelo menos um cliente deve ser selecionado");
+      throw new NotificationException("Pelo menos um cliente deve ser selecionado");
     }
 
     int successCount = 0;
@@ -274,7 +275,7 @@ public class BulkNotificationService {
     } else if (sendWhatsApp) {
       return NotificationChannel.WHATSAPP;
     } else {
-      throw new IllegalArgumentException("Pelo menos um canal deve ser selecionado");
+      throw new NotificationException("Pelo menos um canal deve ser selecionado");
     }
   }
 

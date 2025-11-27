@@ -1,16 +1,13 @@
 package com.hortifruti.sl.hortifruti.service.notification;
 
 import com.hortifruti.sl.hortifruti.dto.notification.NotificationResponse;
+import com.hortifruti.sl.hortifruti.exception.NotificationException;
 import com.hortifruti.sl.hortifruti.model.enumeration.NotificationChannel;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-/**
- * Service de coordenação para envio de notificações Responsável por orquestrar Email e WhatsApp de
- * forma independente
- */
 @Service
 @RequiredArgsConstructor
 public class NotificationCoordinator {
@@ -57,26 +54,27 @@ public class NotificationCoordinator {
     boolean emailSent = false;
     boolean whatsappSent = false;
 
-    // Envio por Email
+    // EMAIL
     if (channel == NotificationChannel.EMAIL || channel == NotificationChannel.BOTH) {
-      if (emailRecipient != null && !emailRecipient.trim().isEmpty()) {
-        emailSent =
-            emailService.sendEmailWithAttachments(
-                emailRecipient, subject, emailBody, attachments, fileNames);
+      if (emailRecipient == null || emailRecipient.trim().isEmpty()) {
+        throw new NotificationException("Destinatário de email inválido.");
       }
+      emailSent =
+          emailService.sendEmailWithAttachments(
+              emailRecipient, subject, emailBody, attachments, fileNames);
     }
 
-    // Envio por WhatsApp (independente do email)
+    // WHATSAPP
     if (channel == NotificationChannel.WHATSAPP || channel == NotificationChannel.BOTH) {
-      if (whatsAppRecipient != null && !whatsAppRecipient.trim().isEmpty()) {
-        String whatsappMessage = buildWhatsAppMessage(whatsAppType, whatsAppContext);
-        whatsappSent =
-            whatsAppService.sendMultipleDocuments(
-                whatsAppRecipient, whatsappMessage, attachments, fileNames);
+      if (whatsAppRecipient == null || whatsAppRecipient.trim().isEmpty()) {
+        throw new NotificationException("Destinatário de WhatsApp inválido.");
       }
+      String whatsappMessage = buildWhatsAppMessage(whatsAppType, whatsAppContext);
+      whatsappSent =
+          whatsAppService.sendMultipleDocuments(
+              whatsAppRecipient, whatsappMessage, attachments, fileNames);
     }
 
-    // Determinar sucesso baseado no canal solicitado
     boolean success = determineSuccess(channel, emailSent, whatsappSent);
 
     return NotificationResponse.withStatuses(
@@ -129,6 +127,11 @@ public class NotificationCoordinator {
       String body,
       List<byte[]> attachments,
       List<String> fileNames) {
+
+    if (recipient == null || recipient.trim().isEmpty()) {
+      throw new NotificationException("Destinatário de email inválido.");
+    }
+
     try {
       if (attachments != null && !attachments.isEmpty()) {
         return emailService.sendEmailWithAttachments(
@@ -137,7 +140,7 @@ public class NotificationCoordinator {
         return emailService.sendSimpleEmail(recipient, subject, body);
       }
     } catch (Exception e) {
-      return false;
+      throw new NotificationException("Erro ao enviar email: " + e.getMessage());
     }
   }
 
@@ -172,7 +175,6 @@ public class NotificationCoordinator {
     private String subject;
     private Client client;
 
-    // Builder pattern
     public static WhatsAppMessageContext builder() {
       return new WhatsAppMessageContext();
     }
@@ -207,7 +209,6 @@ public class NotificationCoordinator {
       return this;
     }
 
-    // Getters
     public String getPeriod() {
       return period;
     }

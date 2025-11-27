@@ -5,17 +5,10 @@ import com.hortifruti.sl.hortifruti.model.FreightConfig;
 import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.model.enumeration.Month;
 import com.hortifruti.sl.hortifruti.model.enumeration.Role;
-import com.hortifruti.sl.hortifruti.model.enumeration.Status;
 import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
-import com.hortifruti.sl.hortifruti.model.purchase.Client;
-import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.FreightConfigRepository;
 import com.hortifruti.sl.hortifruti.repository.ProductRepository;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
-import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
-import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,8 +27,6 @@ public class UserInitializer implements CommandLineRunner {
   private final PasswordEncoder passwordEncoder;
   private final ProductRepository productRepository;
   private final FreightConfigRepository freightConfigRepository;
-  private final ClientRepository clientRepository;
-  private final CombinedScoreRepository combinedScoreRepository;
   private final Base64FileDecoder base64FileDecoder;
 
   @Override
@@ -43,8 +34,6 @@ public class UserInitializer implements CommandLineRunner {
     decodeBase64Files(); // Decodifica os arquivos Base64 primeiro
     initializeUsers();
     initializeFreightConfig();
-    initializeClients(); // Inicializa os clientes
-    inicializarCombinedScores(); // Inicializa os CombinedScores
   }
 
   // Decodifica os arquivos Base64 necessários
@@ -76,74 +65,255 @@ public class UserInitializer implements CommandLineRunner {
   }
 
   private void createSampleProducts() {
-    // Produtos QUENTES (>=25°C)
+    // Produtos FRIOS (6-14°C)
     productRepository.save(
         new ClimateProduct(
-            "Melancia",
-            TemperatureCategory.QUENTE,
-            List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO, Month.MARCO), // Verão
-            List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO) // Inverno
-            ));
-
-    productRepository.save(
-        new ClimateProduct(
-            "Abacaxi",
-            TemperatureCategory.QUENTE,
-            List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO),
-            List.of(Month.MAIO, Month.JUNHO, Month.JULHO)));
-
-    productRepository.save(
-        new ClimateProduct(
-            "Água de Coco",
-            TemperatureCategory.QUENTE,
-            List.of(Month.NOVEMBRO, Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO, Month.MARCO),
-            List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO)));
-
-    // Produtos AMENOS (15-24°C)
-    productRepository.save(
-        new ClimateProduct(
-            "Maçã",
-            TemperatureCategory.AMENO,
-            List.of(Month.MARCO, Month.ABRIL, Month.MAIO, Month.SETEMBRO, Month.OUTUBRO),
-            List.of(Month.DEZEMBRO, Month.JANEIRO)));
-
-    productRepository.save(
-        new ClimateProduct(
-            "Banana",
-            TemperatureCategory.AMENO,
+            "COUVE",
+            TemperatureCategory.FRIO,
             List.of(
+                Month.ABRIL, Month.MAIO, Month.JUNHO, Month.JULHO, Month.AGOSTO, Month.SETEMBRO),
+            List.of(
+                Month.JANEIRO,
+                Month.FEVEREIRO,
+                Month.MARCO,
+                Month.OUTUBRO,
+                Month.NOVEMBRO,
+                Month.DEZEMBRO)));
+    productRepository.save(
+        new ClimateProduct(
+            "CEBOLINHA",
+            TemperatureCategory.FRIO,
+            List.of(
+                Month.ABRIL, Month.MAIO, Month.JUNHO, Month.JULHO, Month.AGOSTO, Month.SETEMBRO),
+            List.of(
+                Month.JANEIRO,
+                Month.FEVEREIRO,
+                Month.MARCO,
+                Month.OUTUBRO,
+                Month.NOVEMBRO,
+                Month.DEZEMBRO)));
+    productRepository.save(
+        new ClimateProduct(
+            "MOSTARDA",
+            TemperatureCategory.FRIO,
+            List.of(Month.ABRIL, Month.MAIO, Month.JUNHO, Month.JULHO, Month.AGOSTO),
+            List.of(
+                Month.JANEIRO,
+                Month.FEVEREIRO,
+                Month.MARCO,
+                Month.SETEMBRO,
+                Month.OUTUBRO,
+                Month.NOVEMBRO,
+                Month.DEZEMBRO)));
+    productRepository.save(
+        new ClimateProduct(
+            "MANDIOCA",
+            TemperatureCategory.FRIO,
+            List.of(
+                Month.MAIO, Month.JUNHO, Month.JULHO, Month.AGOSTO, Month.SETEMBRO, Month.OUTUBRO),
+            List.of(
+                Month.JANEIRO,
+                Month.FEVEREIRO,
+                Month.MARCO,
+                Month.ABRIL,
+                Month.NOVEMBRO,
+                Month.DEZEMBRO)));
+    productRepository.save(
+        new ClimateProduct(
+            "ALMEIRÃO",
+            TemperatureCategory.FRIO,
+            List.of(Month.MAIO, Month.JUNHO, Month.JULHO),
+            List.of(
+                Month.JANEIRO,
+                Month.FEVEREIRO,
+                Month.MARCO,
+                Month.OUTUBRO,
+                Month.NOVEMBRO,
+                Month.DEZEMBRO)));
+    productRepository.save(
+        new ClimateProduct(
+            "BATATA",
+            TemperatureCategory.FRIO,
+            List.of(Month.AGOSTO, Month.JUNHO, Month.JULHO),
+            List.of(
+                Month.JANEIRO,
+                Month.FEVEREIRO,
+                Month.MARCO,
+                Month.OUTUBRO,
+                Month.NOVEMBRO,
+                Month.DEZEMBRO)));
+
+    productRepository.save(
+        new ClimateProduct(
+            "ABOBORA D'ÁGUA",
+            TemperatureCategory.FRIO,
+            List.of(Month.MAIO, Month.JUNHO, Month.JULHO),
+            List.of(
+                Month.JANEIRO,
+                Month.FEVEREIRO,
+                Month.MARCO,
+                Month.ABRIL,
+                Month.NOVEMBRO,
+                Month.DEZEMBRO)));
+
+    // Produtos QUENTES
+    productRepository.save(
+        new ClimateProduct(
+            "AMEIXA",
+            TemperatureCategory.QUENTE,
+            List.of(Month.JANEIRO, Month.FEVEREIRO, Month.MARCO, Month.NOVEMBRO, Month.DEZEMBRO),
+            List.of(Month.MAIO, Month.JUNHO, Month.JULHO, Month.AGOSTO)));
+    productRepository.save(
+        new ClimateProduct(
+            "KIWI",
+            TemperatureCategory.QUENTE,
+            List.of(
+                Month.FEVEREIRO, Month.MARCO, Month.ABRIL, Month.MAIO, Month.JUNHO, Month.JULHO),
+            List.of(Month.SETEMBRO, Month.OUTUBRO, Month.NOVEMBRO, Month.DEZEMBRO)));
+    productRepository.save(
+        new ClimateProduct(
+            "UVA SEM SEMENTE",
+            TemperatureCategory.QUENTE,
+            List.of(Month.JANEIRO, Month.OUTUBRO, Month.NOVEMBRO, Month.DEZEMBRO),
+            List.of(Month.JULHO, Month.JUNHO, Month.AGOSTO, Month.MAIO)));
+    productRepository.save(
+        new ClimateProduct(
+            "QUIABO",
+            TemperatureCategory.QUENTE,
+            List.of(
+                Month.JANEIRO,
+                Month.FEVEREIRO,
                 Month.MARCO,
                 Month.ABRIL,
                 Month.MAIO,
                 Month.SETEMBRO,
                 Month.OUTUBRO,
-                Month.NOVEMBRO),
-            List.of(Month.JULHO, Month.AGOSTO)));
-
-    // Produtos FRIOS (6-14°C)
+                Month.NOVEMBRO,
+                Month.DEZEMBRO),
+            List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO)));
     productRepository.save(
         new ClimateProduct(
-            "Batata Doce",
-            TemperatureCategory.FRIO,
-            List.of(Month.MAIO, Month.JUNHO, Month.JULHO, Month.AGOSTO, Month.SETEMBRO),
-            List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO)));
+            "MELÂNCIA",
+            TemperatureCategory.QUENTE,
+            List.of(Month.JANEIRO, Month.FEVEREIRO, Month.MARCO, Month.DEZEMBRO),
+            List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO, Month.MAIO)));
+    productRepository.save(
+        new ClimateProduct(
+            "MELÃO",
+            TemperatureCategory.QUENTE,
+            List.of(Month.JANEIRO, Month.FEVEREIRO, Month.OUTUBRO, Month.NOVEMBRO, Month.DEZEMBRO),
+            List.of(Month.MARCO, Month.ABRIL, Month.SETEMBRO)));
+    productRepository.save(
+        new ClimateProduct(
+            "MARACUJÁ",
+            TemperatureCategory.QUENTE,
+            List.of(Month.JANEIRO, Month.FEVEREIRO, Month.OUTUBRO, Month.NOVEMBRO, Month.DEZEMBRO),
+            List.of(Month.MAIO, Month.JUNHO, Month.JULHO, Month.AGOSTO)));
+    productRepository.save(
+        new ClimateProduct(
+            "ALFACE",
+            TemperatureCategory.QUENTE,
+            List.of(Month.JANEIRO, Month.SETEMBRO, Month.OUTUBRO, Month.NOVEMBRO, Month.DEZEMBRO),
+            List.of(Month.MAIO, Month.JUNHO, Month.JULHO, Month.AGOSTO)));
+    productRepository.save(
+        new ClimateProduct(
+            "REPOLHO",
+            TemperatureCategory.QUENTE,
+            List.of(Month.MAIO, Month.JUNHO, Month.JULHO),
+            List.of(
+                Month.JANEIRO,
+                Month.FEVEREIRO,
+                Month.MARCO,
+                Month.ABRIL,
+                Month.NOVEMBRO,
+                Month.DEZEMBRO)));
+    productRepository.save(
+        new ClimateProduct(
+            "RUCULA",
+            TemperatureCategory.QUENTE,
+            List.of(Month.JANEIRO, Month.SETEMBRO, Month.OUTUBRO, Month.NOVEMBRO, Month.DEZEMBRO),
+            List.of(Month.MAIO, Month.JUNHO, Month.JULHO, Month.AGOSTO)));
 
     productRepository.save(
         new ClimateProduct(
-            "Mandioca",
-            TemperatureCategory.FRIO,
-            List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO, Month.SETEMBRO),
-            List.of(Month.JANEIRO, Month.FEVEREIRO, Month.MARCO)));
+            "ÁGUA DE COCO",
+            TemperatureCategory.QUENTE,
+            List.of(Month.JANEIRO, Month.FEVEREIRO, Month.SETEMBRO, Month.DEZEMBRO),
+            List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO, Month.OUTUBRO)));
 
-    // Produtos CONGELANDO (<=5°C)
+    // Produtos AMENOS
     productRepository.save(
         new ClimateProduct(
-            "Gengibre",
-            TemperatureCategory.CONGELANDO,
+            "LARANJA",
+            TemperatureCategory.AMENO,
+            List.of(Month.JUNHO, Month.JULHO, Month.MAIO, Month.AGOSTO),
+            List.of(Month.JANEIRO, Month.FEVEREIRO, Month.MARCO, Month.DEZEMBRO)));
+    productRepository.save(
+        new ClimateProduct(
+            "LIMÃO",
+            TemperatureCategory.AMENO,
+            List.of(Month.JANEIRO, Month.SETEMBRO, Month.OUTUBRO, Month.NOVEMBRO, Month.DEZEMBRO),
+            List.of(Month.MAIO, Month.JUNHO, Month.JULHO, Month.AGOSTO)));
+    productRepository.save(
+        new ClimateProduct(
+            "TOMATE",
+            TemperatureCategory.AMENO,
+            List.of(Month.SETEMBRO, Month.OUTUBRO, Month.NOVEMBRO, Month.DEZEMBRO),
+            List.of(Month.MAIO, Month.JUNHO, Month.JULHO, Month.AGOSTO)));
+    productRepository.save(
+        new ClimateProduct(
+            "CENOURA",
+            TemperatureCategory.AMENO,
+            List.of(Month.MAIO, Month.JUNHO, Month.JULHO),
+            List.of(
+                Month.JANEIRO,
+                Month.FEVEREIRO,
+                Month.MARCO,
+                Month.ABRIL,
+                Month.NOVEMBRO,
+                Month.DEZEMBRO)));
+    productRepository.save(
+        new ClimateProduct(
+            "COENTRO",
+            TemperatureCategory.AMENO,
+            List.of(
+                Month.JANEIRO,
+                Month.FEVEREIRO,
+                Month.JULHO,
+                Month.JULHO,
+                Month.AGOSTO,
+                Month.SETEMBRO),
+            List.of(Month.OUTUBRO, Month.NOVEMBRO, Month.DEZEMBRO)));
+    productRepository.save(
+        new ClimateProduct(
+            "MORANGO",
+            TemperatureCategory.AMENO,
+            List.of(Month.MAIO, Month.ABRIL, Month.JUNHO, Month.DEZEMBRO),
+            List.of(Month.OUTUBRO, Month.NOVEMBRO, Month.JANEIRO, Month.FEVEREIRO, Month.MARCO)));
+    productRepository.save(
+        new ClimateProduct(
+            "MEXERICA",
+            TemperatureCategory.AMENO,
+            List.of(Month.JUNHO, Month.JULHO, Month.MAIO),
+            List.of(
+                Month.NOVEMBRO,
+                Month.DEZEMBRO,
+                Month.JANEIRO,
+                Month.FEVEREIRO,
+                Month.MARCO,
+                Month.ABRIL)));
+    productRepository.save(
+        new ClimateProduct(
+            "OVO",
+            TemperatureCategory.AMENO,
+            List.of(Month.JANEIRO, Month.FEVEREIRO, Month.MARCO, Month.JUNHO),
+            List.of(Month.OUTUBRO, Month.NOVEMBRO, Month.DEZEMBRO)));
+    productRepository.save(
+        new ClimateProduct(
+            "MILHO VERDE",
+            TemperatureCategory.AMENO,
             List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO),
-            List.of(Month.DEZEMBRO, Month.JANEIRO, Month.FEVEREIRO)));
-
-    log.info("Criados {} produtos de exemplo", productRepository.count());
+            List.of(Month.OUTUBRO, Month.ABRIL)));
   }
 
   // Cria um usuário com os dados fornecidos
@@ -184,64 +354,5 @@ public class UserInitializer implements CommandLineRunner {
         .marginPercentage(20.0)
         .fixedFee(3.00)
         .build();
-  }
-
-  // Inicializa os clientes padrão
-  private void initializeClients() {
-    if (clientRepository.count() == 0) {
-      createClient(
-          "Llinea Irani",
-          "llinea.irani@example.com",
-          "123456789",
-          "Rua Exemplo, 123",
-          "12345678900",
-          false);
-    }
-  }
-
-  // Cria um cliente com os dados fornecidos
-  private void createClient(
-      String clientName,
-      String email,
-      String phoneNumber,
-      String address,
-      String document,
-      boolean variablePrice) {
-    Client client =
-        Client.builder()
-            .clientName(clientName)
-            .email(email)
-            .phoneNumber(phoneNumber)
-            .address(address)
-            .document(document)
-            .variablePrice(variablePrice)
-            .build();
-    clientRepository.save(client);
-    System.out.println("Cliente " + clientName + " criado com sucesso!");
-  }
-
-  private void createCombinedScore(
-      Long clientId, LocalDate dueDate, BigDecimal totalValue, boolean paid) {
-    CombinedScore combinedScore =
-        CombinedScore.builder()
-            .clientId(clientId)
-            .dueDate(dueDate)
-            .totalValue(totalValue)
-            .status(
-                paid
-                    ? Status.PAGO
-                    : Status.PENDENTE) // Define o status com base no parâmetro 'paid'
-            .hasBillet(false) // Valor padrão para 'hasBillet'
-            .hasInvoice(false) // Valor padrão para 'hasInvoice'
-            .build();
-
-    combinedScoreRepository.save(combinedScore);
-    System.out.println("CombinedScore criado para o cliente ID: " + clientId);
-  }
-
-  private void inicializarCombinedScores() {
-    if (combinedScoreRepository.count() == 0) {
-      createCombinedScore(2L, LocalDate.now().plusDays(15), BigDecimal.valueOf(200.00), true);
-    }
   }
 }

@@ -360,16 +360,7 @@ public class ChatbotService {
 
           if (resource != null) {
             byte[] danfePdf = resource.getContentAsByteArray();
-            if (danfePdf != null && danfePdf.length > 0) {
-              String fileName = "NotaFiscal-" + invoiceResponse.number() + ".pdf";
-              boolean sent =
-                  whatsAppService.sendDocument(
-                      phoneNumber,
-                      "📄 Nota Fiscal nº " + invoiceResponse.number(),
-                      danfePdf,
-                      fileName);
-
-            } else {
+            if (!(danfePdf != null && danfePdf.length > 0)) {
               whatsAppService.sendTextMessage(
                   phoneNumber,
                   "⚠️ Documento não disponível no momento. Entre em contato: " + CONTACT_PHONE);
@@ -562,7 +553,6 @@ public class ChatbotService {
 
       List<byte[]> documents = new ArrayList<>();
       List<String> fileNames = new ArrayList<>();
-      int boletosAdicionados = 0;
       for (int idx = 0; idx < pendingWithBillet.size(); idx++) {
         CombinedScore cs = pendingWithBillet.get(idx);
         try {
@@ -574,21 +564,12 @@ public class ChatbotService {
             String fileName = "Boleto-" + cs.getId() + "-" + (idx + 1) + ".pdf";
             documents.add(pdf);
             fileNames.add(fileName);
-            boletosAdicionados++;
           } else {
             log.warn("Boleto retornado vazio");
           }
         } catch (Exception ex) {
           log.error("Erro ao gerar PDF do boleto");
         }
-      }
-
-      if (!documents.isEmpty()) {
-        int totalDocs = documents.size();
-        String caption = String.format("📎 Enviando %d boleto(s)", totalDocs);
-
-        boolean sent =
-            whatsAppService.sendMultipleDocuments(phoneNumber, caption, documents, fileNames);
       }
 
       chatSessionService.associateClient(session.getId(), client.getId());

@@ -119,13 +119,9 @@ public class NotificationController {
       })
   public ResponseEntity<Map<String, Object>> testDatabaseStorageAlert() {
     try {
-      // Obter tamanho real atual do banco de dados
       BigDecimal currentSizeMB = databaseStorageService.getDatabaseSizeInMB();
-
-      // Enviar notificação com dados reais
       databaseStorageService.sendTestStorageNotification(currentSizeMB);
 
-      // Calcular percentual de uso para a resposta
       BigDecimal maxSize = new BigDecimal("5120"); // 5GB
       BigDecimal storagePercentage =
           currentSizeMB
@@ -217,7 +213,6 @@ public class NotificationController {
       BulkNotificationResponse response =
           bulkNotificationService.sendBulkNotifications(
               files, clientIds, channels, destinationType, customMessage);
-
       return ResponseEntity.ok(response);
 
     } catch (IllegalArgumentException e) {
@@ -229,13 +224,5 @@ public class NotificationController {
               BulkNotificationResponse.failure(
                   "Erro ao processar notificações: " + e.getMessage(), List.of()));
     }
-  }
-
-  @GetMapping("/test")
-  @Operation(
-      summary = "Testar serviços de notificação",
-      description = "Verifica se os serviços de e-mail e WhatsApp estão funcionando")
-  public ResponseEntity<String> testServices() {
-    return ResponseEntity.ok("Serviço de notificações está ativo");
   }
 }
