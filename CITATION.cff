@@ -1,31 +1,33 @@
 cff-version: 1.0.1
 message: Please cite this software using these metadata.
-title: 
+title: Hortifruti SL
 authors:
-  - family-names: 
-    given-names: 
-  - family-names: 
-    given-names: 
-  - family-names: 
-    given-names: 
-  - family-names: 
-    given-names: 
-  - family-names: 
-    given-names: 
-  - family-names: 
-    given-names:
+  - family-names: Souza Alvim
+    given-names: Bernrdo
+  - family-names: Gomes Batista Figueiredo
+    given-names: Carlos José
+  - family-names: Alvarenga Cardoso
+    given-names: Gabriela
+  - family-names: Ferreira Pinto
+    given-names: Marcos Alberto
+  - family-names: Araujo Santos
+    given-names: Mateus
+  - family-names: Ganascini de Moura
+    given-names: Rafael
   - name-suffix: Professor
     affiliation: PUC Minas
-    family-names: 
-    given-names: 
+    family-names: Lucia da Silva
+    given-names: Soraia
   - name-suffix: Professor
     affiliation: PUC Minas
-    family-names: 
-    given-names: 
+    family-names: Ishitani
+    given-names: Lucila
 keywords:
-  - 
-  - 
-repository-code: 
+  - Gerenciamento
+  - Pagamento
+  - Comércio
+  - Automação
+repository-code: https://github.com/marcosffp/hortifruti
 license: CC-BY-4.0
-version: 1.0.0
-date-released: 2022-07-14
+version: 1.1.0
+date-released: 2025-11-27
