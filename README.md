@@ -65,60 +65,87 @@ A equipe elaborou os slides da apresentação final e conduziu avaliação pelos
    cd Codigo/Back
    ```
 
-2. **Configure as variáveis de ambiente** criando um arquivo `.env` na raiz do backend:
+2. **Configure as variáveis de ambiente** criando um arquivo `.env` na raiz do backend com as seguintes variáveis:
+
    ```env
-   # URLs
+   # ==============================
+   # 🔹 CONFIG. DE URLS
+   # ==============================
    FRONTEND_URL=http://localhost:3000
    BACKEND_URL=http://localhost:8080
 
-   # Banco de Dados MySQL
+   # ==============================
+   # 🔹 CONFIG. DE BANCO DE DADOS
+   # ==============================
    MYSQLHOST=localhost
    MYSQLPORT=3306
    MYSQLDATABASE=hortifruti_sl
    MYSQLUSER=seu_usuario
    MYSQLPASSWORD=sua_senha
 
-   # Autenticação
-   JWT_SECRET=sua_chave_secreta_jwt
-   API_SCHEDULER_TOKEN=token_para_scheduler
+   # ==============================
+   # 🔹 CONFIG. DE AUTENTICAÇÃO
+   # ==============================
+   JWT_SECRET=sua_chave_secreta_jwt_com_pelo_menos_32_caracteres
+   API_SCHEDULER_TOKEN=token_seguro_para_endpoints_scheduler
 
-   # Google APIs
+   # ==============================
+   # 🔹 CONFIG. DE GOOGLE
+   # ==============================
    CREDENTIALS_GOOGLE=sua_api_key_google_maps
-   GOOGLE_DRIVE_CREDENTIALS=credenciais_google_drive
+   GOOGLE_DRIVE_CREDENTIALS=suas_credenciais_google_drive_json
    GOOGLE_REDIRECT_URI=http://localhost:8080/oauth2/callback
 
-   # Sicoob API (Boletos)
-   SICOOB_CLIENT_ID=seu_client_id
-   SICOOB_API_URL=url_api_sicoob
-   SICOOB_AUTH_URL=url_auth_sicoob
-   SICOOB_SCOPE=escopo_sicoob
-   SICOOB_NUM_CLIENTE=numero_cliente
-   SICOOB_NUM_CONTA_CORRENTE=conta_corrente
+   # ==============================
+   # 🔹 CONFIG. DE SICOOB
+   # ==============================
+   SICOOB_CLIENT_ID=seu_client_id_sicoob
+   SICOOB_API_URL=https://api.sicoob.com.br
+   SICOOB_AUTH_URL=https://auth.sicoob.com.br
+   SICOOB_SCOPE=cobranca_boletos
+   SICOOB_NUM_CLIENTE=numero_cliente_sicoob
+   SICOOB_NUM_CONTA_CORRENTE=numero_conta_corrente
    SICOOB_DOMAIN=dominio_sicoob
-   DOCUMENT_PFX=certificado_base64
-   PASSWORD_PFX=senha_certificado
 
-   # OpenWeather API
+   # Certificado Digital (.pfx em Base64)
+   DOCUMENT_PFX=certificado_digital_base64
+   PASSWORD_PFX=senha_do_certificado_pfx
+
+   # ==============================
+   # 🔹 CONFIG. DE OPENWEATHER
+   # ==============================
    API_TOKEN=sua_api_key_openweather
    API_URL=https://api.openweathermap.org/data/2.5/forecast
 
-   # Focus NFe API
-   FOCUS_NFE_TOKEN=seu_token_focus
-   FOCUS_NFE_API_URL=url_api_focus
-   FOCUS_NFE_ENVIRONMENT=homologation
-   FOCUS_NFE_CNPJ_EMITENTE=cnpj_emitente
-   COMPANY_NAME=nome_empresa
-   COMPANY_STATE_REGISTRATION=inscricao_estadual
-   COMPANY_CNPJ=cnpj_empresa
+   # ==============================
+   # 🔹 CONFIG. DE FOCUS NFE
+   # ==============================
+   FOCUS_NFE_TOKEN=seu_token_focus_nfe
+   FOCUS_NFE_API_URL=https://api.focusnfe.com.br
+   FOCUS_NFE_ENVIRONMENT=homologacao
+   FOCUS_NFE_CNPJ_EMITENTE=cnpj_da_empresa_emitente
 
-   # Notificações
-   ULTRAMSG_TOKEN=token_ultramsg
+   # Dados da Empresa
+   COMPANY_NAME=Nome da Empresa LTDA
+   COMPANY_STATE_REGISTRATION=inscricao_estadual
+   COMPANY_CNPJ=cnpj_da_empresa
+
+   # ==============================
+   # 🔹 CONFIG. DE NOTIFICAÇÃO
+   # ==============================
+   
+   # Ultramsg (WhatsApp)
+   ULTRAMSG_TOKEN=token_ultramsg_whatsapp
    ULTRAMSG_INSTANCE_ID=instance_id_ultramsg
+
+   # SendGrid (E-mail)
    SENDGRID_API_KEY=sua_api_key_sendgrid
-   SENDGRID_FROM_EMAIL=email_remetente
-   ACCOUNTING_EMAIL=email_contabilidade
-   ACCOUNTING_WHATSAPP=whatsapp_contabilidade
-   OVERDUE_NOTIFICATION_EMAILS=emails_notificacao
+   SENDGRID_FROM_EMAIL=noreply@seudominio.com
+
+   # E-mails e WhatsApp Destinatários
+   ACCOUNTING_EMAIL=contabilidade@empresa.com
+   ACCOUNTING_WHATSAPP=5531999999999
+   OVERDUE_NOTIFICATION_EMAILS=email1@empresa.com,email2@empresa.com
    ```
 
 3. **Execute o backend:**
@@ -148,8 +175,65 @@ A equipe elaborou os slides da apresentação final e conduziu avaliação pelos
    ```
    A aplicação estará disponível em `http://localhost:3000`
 
-### Observações
+### Banco de Dados
 
-- Certifique-se de que o MySQL está rodando antes de iniciar o backend
-- O banco de dados será criado automaticamente se não existir
-- Algumas funcionalidades dependem de APIs externas (Sicoob, SendGrid, Ultramsg, Google, etc.) que precisam ser configuradas com credenciais válidas
+1. **Instale e configure o MySQL 8.0+**
+
+2. **Crie o banco de dados (opcional - será criado automaticamente):**
+   ```sql
+   CREATE DATABASE hortifruti_sl;
+   ```
+
+3. **O sistema está configurado para:**
+   - Criação automática do banco se não existir (`createDatabaseIfNotExist=true`)
+   - Timezone: America/Sao_Paulo
+   - Hibernate: update (cria/atualiza tabelas automaticamente)
+
+### Funcionalidades Principais
+
+#### 🔧 Módulos Implementados
+
+- **Gestão de Usuários**: Cadastro, autenticação JWT
+- **Gestão de Clientes**: CRUD completo com informações de contato
+- **Conciliação Bancária**: Upload e processamento de extratos em PDF
+- **Sistema de Boletos**: Integração com Sicoob para geração de cobrança
+- **Notificações**: E-mail (SendGrid) e WhatsApp (Ultramsg)
+- **Gestão de Produtos**: Cadastro e recomendações de compra
+- **Dashboard**: Visão consolidada das operações
+- **Nota Fiscal Eletrônica**: Integração com Focus NFe
+- **Previsão do Tempo**: OpenWeather API para Santa Luzia/MG
+- **Armazenamento**: Integração com Google Drive
+
+#### 🔐 Segurança
+
+- Autenticação JWT
+- Certificados digitais (.pfx) para APIs bancárias
+- Tokens seguros para endpoints de scheduler
+- Variáveis de ambiente para credenciais sensíveis
+
+#### 📊 Integrações Externas
+
+- **Sicoob**: Geração de boletos e consulta bancária
+- **Google Maps**: Cálculo de frete e rotas
+- **Google Drive**: Armazenamento de documentos
+- **Focus NFe**: Emissão de notas fiscais eletrônicas
+- **SendGrid**: Envio de e-mails transacionais
+- **Ultramsg**: Envio de mensagens WhatsApp
+- **OpenWeather**: Previsão meteorológica
+
+### Observações Importantes
+
+- ⚠️ **Certifique-se** de que o MySQL está rodando antes de iniciar o backend
+- ⚠️ **Todas as APIs externas** precisam de credenciais válidas para funcionamento completo
+- ⚠️ **O certificado .pfx** deve estar em formato Base64 na variável `DOCUMENT_PFX`
+- ⚠️ **Para produção**, altere `spring.profiles.active` para `prod` no `application.properties`
+- 📁 **Diretórios temporários** serão criados automaticamente em `temp/`
+- 🕐 **Timezone padrão**: America/Sao_Paulo
+- 📅 **Formato de data**: dd/MM/yyyy
+
+### Troubleshooting
+
+1. **Erro de conexão com banco**: Verifique se MySQL está rodando e as credenciais estão corretas
+2. **Erro de JWT**: Certifique-se que `JWT_SECRET` tem pelo menos 32 caracteres
+3. **Erro de certificado**: Verifique se o arquivo .pfx está codificado corretamente em Base64
+4. **APIs externas**: Verifique se todas as chaves de API estão válidas e com as permissões necessárias
