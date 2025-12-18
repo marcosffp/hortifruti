@@ -2,6 +2,20 @@
 
 Este trabalho aborda o desenvolvimento de um sistema de gestão para o Hortifruti Santa Luzia LTDA, focado em automatizar processos manuais críticos: conciliação bancária via extração de dados de PDF e agrupamento de vendas por cliente. O software visa eliminar tarefas repetitivas, centralizar informações e fornecer controle operacional, modernizando a gestão do negócio e promovendo eficiência.
 
+## 🌐 Acesso ao Sistema
+
+**Site em Produção:** https://hortifruti-two.vercel.app/landing
+
+### 👤 Credenciais de Acesso
+
+- **Gestor:**
+  - Usuário: `root`
+  - Senha: `root`
+
+- **Administrador:**
+  - Usuário: `admin`
+  - Senha: `admin`
+
 ## Alunos integrantes da equipe
 
 * Bernado Souza Alvim
@@ -164,12 +178,20 @@ A equipe elaborou os slides da apresentação final e conduziu avaliação pelos
    cd Codigo/Front
    ```
 
-2. **Instale as dependências:**
+2. **Configure as variáveis de ambiente** criando um arquivo `.env` na raiz do frontend:
+
+   ```env
+   GOOGLE_MAPS_KEY=sua_api_key_google_maps
+   NEXT_PUBLIC_API_URL=http://localhost:8080
+   NEXT_PUBLIC_CONTABILIDADE_EMAIL=contabilidade@empresa.com
+   ```
+
+3. **Instale as dependências:**
    ```bash
    npm install
    ```
 
-3. **Execute o frontend:**
+4. **Execute o frontend:**
    ```bash
    npm run dev
    ```
