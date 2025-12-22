@@ -107,11 +107,50 @@ public class CombinedScoreService {
     CombinedScore combinedScore =
         CombinedScore.builder().clientId(request.clientId()).totalValue(totalValue).build();
 
+    // Define as datas antes de salvar
+    combinedScore.setConfirmedAt(LocalDate.now());
+    combinedScore.setDueDate(calculateDueDateForClient(client, combinedScore.getConfirmedAt()));
+    combinedScore.setStatus(Status.PENDENTE);
+    combinedScore.setHasBillet(false);
+    combinedScore.setHasInvoice(false);
+
     CombinedScore savedCombinedScore = combinedScoreRepository.saveAndFlush(combinedScore);
 
     groupedProducts.forEach(product -> product.setCombinedScore(savedCombinedScore));
 
     productGrouperRepository.saveAll(groupedProducts);
+  }
+
+  private LocalDate calculateDueDateForClient(Client client, LocalDate confirmedAt) {
+    LocalDate baseDueDate = confirmedAt.plusDays(20);
+
+    // Se for o cliente GrandMinas, ajusta para cair numa sexta-feira
+    if ("INDUSTRIA DE CARNES GRANDMINAS LTDA".equalsIgnoreCase(client.getClientName())) {
+      return adjustToFriday(baseDueDate);
+    }
+    return baseDueDate;
+  }
+
+  private LocalDate adjustToFriday(LocalDate date) {
+    // Se já é sexta-feira, mantém a data
+    if (date.getDayOfWeek() == java.time.DayOfWeek.FRIDAY) {
+      return date;
+    }
+
+    // Calcula quantos dias adicionar para chegar na próxima sexta-feira
+    int daysUntilFriday;
+    int currentDayValue = date.getDayOfWeek().getValue(); // 1=Monday, 7=Sunday
+    int fridayValue = java.time.DayOfWeek.FRIDAY.getValue(); // 5
+
+    if (currentDayValue < fridayValue) {
+      // Se estamos antes da sexta na mesma semana
+      daysUntilFriday = fridayValue - currentDayValue;
+    } else {
+      // Se estamos depois da sexta (sábado ou domingo), vai para a próxima sexta
+      daysUntilFriday = 7 - currentDayValue + fridayValue;
+    }
+
+    return date.plusDays(daysUntilFriday);
   }
 
   @Transactional

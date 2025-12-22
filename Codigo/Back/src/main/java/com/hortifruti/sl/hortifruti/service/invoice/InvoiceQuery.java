@@ -32,9 +32,6 @@ public class InvoiceQuery {
 
   private final int COMPLETE = 1;
 
-  // CNPJ de teste usado pela Focus NFe em ambiente de homologação
-  private static final String CNPJ_HOMOLOGACAO = "10297478000189";
-
   @Transactional
   protected InvoiceResponseGet consultInvoice(String ref) {
     try {
@@ -44,7 +41,7 @@ public class InvoiceQuery {
       validateInvoiceStatus(rootNode);
 
       InvoiceResponseSimplif invoiceSimplif = extractInvoiceData(rootNode);
-      Client client = findClientForInvoice(invoiceSimplif.cnpjDestinatario(), ref);
+      Client client = findClientForInvoice(ref);
       return buildInvoiceResponse(invoiceSimplif, client, ref);
     } catch (InvoiceException e) {
       throw e;
@@ -113,15 +110,8 @@ public class InvoiceQuery {
     }
   }
 
-  private Client findClientForInvoice(String cnpjDestinatario, String ref) {
-    if (CNPJ_HOMOLOGACAO.equals(cnpjDestinatario)) {
-      return findClientByInvoiceRef(ref);
-    }
-
-    return clientRepository
-        .findByDocument(cnpjDestinatario)
-        .orElseThrow(
-            () -> new InvoiceException("Cliente não encontrado para o CNPJ: " + cnpjDestinatario));
+  private Client findClientForInvoice(String ref) {
+    return findClientByInvoiceRef(ref);
   }
 
   private Client findClientByInvoiceRef(String ref) {
