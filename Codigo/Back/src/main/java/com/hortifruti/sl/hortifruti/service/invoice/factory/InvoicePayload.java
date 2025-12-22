@@ -21,9 +21,6 @@ public class InvoicePayload {
   @Value("${focus.nfe.api.url}")
   private String focusNfeApiUrl;
 
-  @Value("${focus.nfe.environment:homologacao}")
-  private String focusNfeEnvironment;
-
   @Value("${focus.nfe.cnpj.emitente}")
   private String focusNfeCnpjEmitente;
 
