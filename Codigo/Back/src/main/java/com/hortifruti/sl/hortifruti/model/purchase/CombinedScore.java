@@ -56,10 +56,8 @@ public class CombinedScore {
 
   @PrePersist
   protected void onCreate() {
-    this.confirmedAt = LocalDate.now();
-    this.dueDate = this.confirmedAt.plusDays(20);
-    this.status = Status.PENDENTE;
-    this.hasBillet = false;
-    this.hasInvoice = false;
+    if (this.status == null) {
+      this.status = Status.PENDENTE;
+    }
   }
 }
