@@ -12,7 +12,7 @@ export function useBillet() {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `BOL-${number}_${combinedScoreId}.pdf`);
+        link.setAttribute('download', `BOL-${number}.pdf`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

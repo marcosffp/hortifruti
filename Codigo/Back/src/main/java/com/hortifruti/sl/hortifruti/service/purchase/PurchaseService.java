@@ -100,11 +100,7 @@ public class PurchaseService {
     // Recalcula o total somando os valores dos produtos associados
     BigDecimal newTotal =
         purchase.getInvoiceProducts().stream()
-            .map(
-                invoiceProduct ->
-                    invoiceProduct
-                        .getPrice()
-                        .multiply(BigDecimal.valueOf(invoiceProduct.getQuantity())))
+            .map(invoiceProduct -> invoiceProduct.getPrice().multiply(invoiceProduct.getQuantity()))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     // Atualiza o total da compra

@@ -46,7 +46,6 @@ public class BilletSSLConfig {
       KeyStore keyStore = KeyStore.getInstance("PKCS12");
       try (FileInputStream instream = new FileInputStream(pfxFile)) {
         keyStore.load(instream, pfxPassword.toCharArray());
-        System.out.println("[DEBUG] Certificado PFX carregado com sucesso!");
       }
 
       TrustManagerFactory tmf =

@@ -23,13 +23,13 @@ public class GroupedProduct {
   @Column(nullable = false)
   private String name;
 
-  @Column(nullable = false)
+  @Column(nullable = false, precision = 10, scale = 4)
   private BigDecimal price;
 
-  @Column(nullable = false)
-  private Integer quantity;
+  @Column(nullable = false, precision = 10, scale = 4)
+  private BigDecimal quantity;
 
-  @Column(name = "total_value", nullable = false)
+  @Column(name = "total_value", nullable = false, precision = 12, scale = 4)
   private BigDecimal totalValue;
 
   @ManyToOne

@@ -26,7 +26,6 @@ public class SSLTrustAll {
   @PostConstruct
   public void configureSSL() {
     try {
-      System.out.println("[DEBUG] Configurando SSL para o domínio " + sicoobDomain);
 
       KeyStore keyStore = KeyStore.getInstance("PKCS12");
       base64FileDecoder.decodePfx();
