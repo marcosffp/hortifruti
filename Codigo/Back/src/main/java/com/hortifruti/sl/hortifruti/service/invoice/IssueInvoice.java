@@ -60,8 +60,11 @@ public class IssueInvoice {
       IssueInvoiceRequest request = buildInvoiceRequest(combinedScoreId, recipient, items);
 
       String ref = UUID.randomUUID().toString();
+      System.out.println("Emitindo NF-e com ref: " + ref);
       String payload = invoicePayloadService.buildFocusNfePayload(request, ref);
+      System.out.println("Payload NF-e: " + payload);
       String response = focusNfeApiClient.sendRequest(ref, payload);
+      System.out.println("Response NF-e: " + response);
 
       InvoiceResponse invoiceResponse = objectMapper.readValue(response, InvoiceResponse.class);
       updateCombinedScoreStatus(combinedScore, invoiceResponse);
