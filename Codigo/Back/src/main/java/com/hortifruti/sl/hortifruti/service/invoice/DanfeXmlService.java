@@ -243,12 +243,6 @@ public class DanfeXmlService {
                   fos.write(xmlBytes);
                 }
 
-                System.out.println(
-                    "Arquivo XML salvo: "
-                        + xmlFile.getAbsolutePath()
-                        + " (Tamanho: "
-                        + xmlFile.length()
-                        + " bytes)");
                 return xmlFile;
 
               } catch (Exception e) {
