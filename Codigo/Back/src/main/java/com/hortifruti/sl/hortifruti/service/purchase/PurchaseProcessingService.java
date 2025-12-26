@@ -55,11 +55,11 @@ public class PurchaseProcessingService {
         throw new PurchaseException("Nenhum cliente correspondente foi encontrado.");
       }
 
+      // Calcular total apenas com produtos que têm quantidade > 0
       BigDecimal total =
           invoiceProducts.stream()
-              .filter(product -> product.getQuantity() > 0)
-              .map(
-                  product -> product.getPrice().multiply(BigDecimal.valueOf(product.getQuantity())))
+              .filter(product -> product.getQuantity().compareTo(BigDecimal.ZERO) > 0)
+              .map(product -> product.getPrice().multiply(product.getQuantity()))
               .reduce(BigDecimal.ZERO, BigDecimal::add);
 
       if (total.compareTo(BigDecimal.ZERO) <= 0) {
@@ -75,12 +75,10 @@ public class PurchaseProcessingService {
 
       purchase = purchaseRepository.save(purchase);
 
-      List<InvoiceProduct> productsToSave =
-          invoiceProducts.stream().filter(product -> product.getQuantity() > 0).toList();
-
+      // Salvar TODOS os produtos, incluindo os com quantidade zero
       List<InvoiceProduct> savedProducts = new ArrayList<>();
 
-      for (InvoiceProduct product : productsToSave) {
+      for (InvoiceProduct product : invoiceProducts) {
         product.setPurchase(purchase);
         InvoiceProduct savedProduct = invoiceProductRepository.save(product);
         savedProducts.add(savedProduct);
@@ -91,7 +89,7 @@ public class PurchaseProcessingService {
 
       return purchase;
     } catch (PurchaseException e) {
-      throw e; // Exceções específicas já tratadas
+      throw e;
     } catch (IOException e) {
       throw new PurchaseException("Erro ao processar arquivo PDF: " + e.getMessage(), e);
     } catch (Exception e) {
@@ -143,14 +141,16 @@ public class PurchaseProcessingService {
 
   private InvoiceProduct parseProductLine(String line) {
     try {
+
       String[] parts = line.split("\\s+");
+
       if (parts.length < 2) return null;
 
       String code = parts[0];
       String name = extractProductName(parts);
       int currentIndex = name.split("\\s+").length + 1;
 
-      Integer quantity = parseQuantity(parts, currentIndex);
+      BigDecimal quantity = parseQuantity(parts, currentIndex);
       BigDecimal unitPrice = parseUnitPrice(parts, currentIndex + 1);
 
       return InvoiceProduct.builder()
@@ -177,16 +177,20 @@ public class PurchaseProcessingService {
     return nameBuilder.toString().trim();
   }
 
-  private Integer parseQuantity(String[] parts, int index) {
-    if (index < parts.length && parts[index].matches("\\d+")) {
-      return Integer.parseInt(parts[index]);
+  private BigDecimal parseQuantity(String[] parts, int index) {
+    if (index < parts.length && parts[index].matches("\\d+([,.]\\d+)?")) {
+      String quantityStr = parts[index].replace(",", ".");
+      BigDecimal quantity = new BigDecimal(quantityStr);
+      return quantity;
     }
     throw new PurchaseException("Quantidade inválida encontrada na linha do produto.");
   }
 
   private BigDecimal parseUnitPrice(String[] parts, int index) {
     if (index < parts.length && parts[index].matches("\\d+([,.]\\d+)?")) {
-      return new BigDecimal(parts[index].replace(",", "."));
+      String priceStr = parts[index].replace(",", ".");
+      BigDecimal price = new BigDecimal(priceStr);
+      return price;
     }
     throw new PurchaseException("Preço unitário inválido encontrado na linha do produto.");
   }

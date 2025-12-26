@@ -45,7 +45,6 @@ public class SicoobToken {
   public String getAccessToken() {
     try {
       if (accessToken != null && System.currentTimeMillis() < tokenExpiresAt - 30000) {
-        System.out.println("[DEBUG] Token ainda válido. Retornando token existente.");
         return accessToken;
       }
 

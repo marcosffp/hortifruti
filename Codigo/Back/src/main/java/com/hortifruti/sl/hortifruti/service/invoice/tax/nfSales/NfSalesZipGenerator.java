@@ -34,7 +34,6 @@ public class NfSalesZipGenerator {
         }
         Path sourcePath = xmlFile.toPath();
         Path destinationPath = folderPath.resolve(sourcePath.getFileName());
-        System.out.println("Copiando arquivo de: " + sourcePath + " para: " + destinationPath);
 
         Files.copy(sourcePath, destinationPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
       } catch (IOException e) {

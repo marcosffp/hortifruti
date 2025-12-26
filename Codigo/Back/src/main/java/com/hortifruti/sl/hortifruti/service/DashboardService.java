@@ -294,18 +294,17 @@ public class DashboardService {
                         products -> {
                           Map<String, Object> data = new HashMap<>();
                           data.put("Nome", products.get(0).getName());
+                          // Corrigir: usar BigDecimal ao invés de Integer
                           data.put(
                               "QuantidadeTotal",
                               products.stream()
                                   .map(GroupedProduct::getQuantity)
-                                  .reduce(0, Integer::sum));
+                                  .reduce(BigDecimal.ZERO, BigDecimal::add));
+                          // Corrigir: usar totalValue diretamente ao invés de recalcular
                           data.put(
                               "ValorTotal",
                               products.stream()
-                                  .map(
-                                      p ->
-                                          p.getPrice()
-                                              .multiply(BigDecimal.valueOf(p.getQuantity())))
+                                  .map(GroupedProduct::getTotalValue)
                                   .reduce(BigDecimal.ZERO, BigDecimal::add));
                           return data;
                         })));
@@ -314,8 +313,10 @@ public class DashboardService {
     List<Map<String, Object>> ranking = new ArrayList<>(productData.values());
     ranking.sort(
         (p1, p2) -> {
+          // Corrigir: usar BigDecimal ao invés de Integer
           int quantityComparison =
-              ((Integer) p2.get("QuantidadeTotal")).compareTo((Integer) p1.get("QuantidadeTotal"));
+              ((BigDecimal) p2.get("QuantidadeTotal"))
+                  .compareTo((BigDecimal) p1.get("QuantidadeTotal"));
           if (quantityComparison != 0) {
             return quantityComparison;
           }
@@ -362,11 +363,12 @@ public class DashboardService {
                         products -> {
                           Map<String, Object> data = new HashMap<>();
                           data.put("Nome", products.get(0).getName());
+                          // Corrigir: usar BigDecimal ao invés de Integer
                           data.put(
                               "QuantidadeTotal",
                               products.stream()
                                   .map(GroupedProduct::getQuantity)
-                                  .reduce(0, Integer::sum));
+                                  .reduce(BigDecimal.ZERO, BigDecimal::add));
                           return data;
                         })));
 
@@ -374,7 +376,9 @@ public class DashboardService {
     List<Map<String, Object>> ranking = new ArrayList<>(productData.values());
     ranking.sort(
         (p1, p2) ->
-            ((Integer) p2.get("QuantidadeTotal")).compareTo((Integer) p1.get("QuantidadeTotal")));
+            // Corrigir: usar BigDecimal ao invés de Integer
+            ((BigDecimal) p2.get("QuantidadeTotal"))
+                .compareTo((BigDecimal) p1.get("QuantidadeTotal")));
 
     // Retorna os top 10 produtos
     return ranking.stream().limit(10).collect(Collectors.toList());

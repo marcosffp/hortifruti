@@ -23,7 +23,6 @@ public class Auth {
 
     User user = userRepository.findByUsername(username);
     if (user == null) {
-      System.out.println("Usuário não encontrado: " + username);
       throw new AuthException(
           "Não encontramos um usuário com o nome informado. Verifique e tente novamente.");
     }

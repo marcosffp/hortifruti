@@ -3,7 +3,6 @@ package com.hortifruti.sl.hortifruti.service.invoice.factory;
 import com.hortifruti.sl.hortifruti.dto.invoice.ItemRequest;
 import com.hortifruti.sl.hortifruti.model.purchase.GroupedProduct;
 import com.hortifruti.sl.hortifruti.service.invoice.ProductNFService;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,11 +29,11 @@ public class InvoiceItem {
               (String) productData.get("ncm"),
               (String) productData.get("cfop"),
               (String) productData.get("unidade_comercial"),
-              new BigDecimal(product.getQuantity()),
+              product.getQuantity(),
               product.getPrice(),
               product.getTotalValue(),
               (String) productData.get("unidade_tributavel"),
-              new BigDecimal(product.getQuantity()),
+              product.getQuantity(),
               product.getPrice(),
               (String) productData.get("icms"),
               ICMS_ORIGEM,

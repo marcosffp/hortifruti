@@ -81,11 +81,14 @@ public class GroupedProductService {
 
     InvoiceProduct firstProduct = productList.get(0);
 
-    int totalQuantity = productList.stream().mapToInt(InvoiceProduct::getQuantity).sum();
+    BigDecimal totalQuantity =
+        productList.stream()
+            .map(InvoiceProduct::getQuantity)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     BigDecimal price = firstProduct.getPrice();
 
-    BigDecimal totalValue = price.multiply(BigDecimal.valueOf(totalQuantity));
+    BigDecimal totalValue = price.multiply(totalQuantity);
 
     return GroupedProduct.builder()
         .code(firstProduct.getCode())
@@ -105,25 +108,25 @@ public class GroupedProductService {
 
     BigDecimal totalValue = BigDecimal.ZERO;
     BigDecimal totalQuantityDecimal = BigDecimal.ZERO;
-    int totalQuantity = 0;
 
     InvoiceProduct firstProduct = productList.get(0);
 
+    // NÃO arredondar as quantidades individuais - manter valores originais
     for (InvoiceProduct product : productList) {
-      int quantity = product.getQuantity();
-      totalQuantity += quantity;
+      BigDecimal quantity = product.getQuantity();
+      BigDecimal productTotal = product.getPrice().multiply(quantity);
 
-      BigDecimal quantityBD = BigDecimal.valueOf(quantity);
-      totalQuantityDecimal = totalQuantityDecimal.add(quantityBD);
-      totalValue = totalValue.add(product.getPrice().multiply(quantityBD));
+      totalQuantityDecimal = totalQuantityDecimal.add(quantity);
+      totalValue = totalValue.add(productTotal);
     }
 
     BigDecimal weightedAvgPrice;
     try {
-      weightedAvgPrice =
-          totalQuantityDecimal.compareTo(BigDecimal.ZERO) == 0
-              ? BigDecimal.ZERO
-              : totalValue.divide(totalQuantityDecimal, 4, RoundingMode.HALF_EVEN);
+      if (totalQuantityDecimal.compareTo(BigDecimal.ZERO) == 0) {
+        weightedAvgPrice = BigDecimal.ZERO;
+      } else {
+        weightedAvgPrice = totalValue.divide(totalQuantityDecimal, 8, RoundingMode.HALF_EVEN);
+      }
     } catch (ArithmeticException e) {
       throw new PurchaseException("Erro ao calcular preço médio ponderado: " + e.getMessage(), e);
     }
@@ -132,7 +135,7 @@ public class GroupedProductService {
         .code(firstProduct.getCode())
         .name(firstProduct.getName())
         .price(weightedAvgPrice)
-        .quantity(totalQuantity)
+        .quantity(totalQuantityDecimal)
         .totalValue(totalValue)
         .build();
   }
