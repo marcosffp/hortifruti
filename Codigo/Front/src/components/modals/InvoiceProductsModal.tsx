@@ -185,13 +185,17 @@ export default function InvoiceProductsModal({
                         {editingProductId === product.id ? (
                           <input
                             type="number"
+                            step="0.01"
                             value={editForm.quantity ?? ""}
                             onChange={(e) => handleEditChange("quantity" as any, e.target.value)}
                             className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                             disabled={loading}
                           />
                         ) : (
-                          product.quantity
+                          new Intl.NumberFormat("pt-BR", {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 3,
+                          }).format(parseFloat(product.quantity.toString())).replace(/,?0+$/, '')
                         )}
                       </td>
                       <td className="p-3 text-right">
