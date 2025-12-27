@@ -108,7 +108,7 @@ export default function ShowBilletDataModal({
                 {/* Header */}
                 <div className="sticky top-0 bg-white border-b border-gray-300 p-6 flex justify-between items-center">
                     <h2 className="text-xl font-semibold">
-                        BOL-{clientNumber || "Agrupamento"}_{combinedScoreId}
+                        BOL-{clientNumber || "Agrupamento"}
                     </h2>
                     <button
                         onClick={onClose}
