@@ -33,7 +33,7 @@ export default function ShowInvoiceModal({ isOpen, onClose, invoiceData, scoreNu
             const url = URL.createObjectURL(invoiceData);
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `DANFE-${ref}.pdf`);
+            link.setAttribute('download', `NF-${scoreNumber || ref}.pdf`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
