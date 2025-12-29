@@ -25,14 +25,14 @@ export default function ShowInvoiceDataModal({
     const [cancelling, setCancelling] = useState(false);
 
     const handleDownloadDanfe = async () => {
-        try {
+        try {        
             showInfo("Baixando DANFE...");
             const blob = await getDanfe(invoiceData.reference);
             
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `DANFE-${invoiceData.reference}.pdf`);
+            link.setAttribute('download', `NF-${invoiceData.number}.pdf`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
