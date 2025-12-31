@@ -18,6 +18,8 @@ import com.hortifruti.sl.hortifruti.repository.purchase.GroupedProductRepository
 import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -107,8 +109,7 @@ public class CombinedScoreService {
     CombinedScore combinedScore =
         CombinedScore.builder().clientId(request.clientId()).totalValue(totalValue).build();
 
-    // Define as datas antes de salvar
-    combinedScore.setConfirmedAt(LocalDate.now());
+    combinedScore.setConfirmedAt(ZonedDateTime.now(ZoneId.of("America/Sao_Paulo")).toLocalDate());
     combinedScore.setDueDate(calculateDueDateForClient(client, combinedScore.getConfirmedAt()));
     combinedScore.setStatus(Status.PENDENTE);
     combinedScore.setHasBillet(false);
