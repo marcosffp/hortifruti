@@ -204,7 +204,7 @@ products:
     unidade_tributavel: "KG"
   - code: "7"
     description: "ALMEIRAO"
-    ncm: "07099090"
+    ncm: "07051900"
     cfop: "5102"
     icms: "102"
     unidade_comercial: "KG"
