@@ -384,10 +384,3 @@ products:
     icms: "102"
     unidade_comercial: "KG"
     unidade_tributavel: "KG"
-  - code: "62"  # ou outro código sequencial disponível
-    description: "PIMENTAO VERM/AM"
-    ncm: "07096000"  # mesmo NCM (Pimentões frescos ou refrigerados)
-    cfop: "5102"
-    icms: "102"
-    unidade_comercial: "KG"
-    unidade_tributavel: "KG"
