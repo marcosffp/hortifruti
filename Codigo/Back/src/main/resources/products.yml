@@ -384,3 +384,17 @@ products:
     icms: "102"
     unidade_comercial: "KG"
     unidade_tributavel: "KG"
+  - code: "64"
+    description: "TAXA DE ENTREGA"
+    ncm: "49019900"  # Outros impressos (usado para serviços diversos)
+    cfop: "5949"  # Outra saída não especificada
+    icms: "400"  # Não tributada pelo ICMS
+    unidade_comercial: "UN"
+    unidade_tributavel: "UN"
+  - code: "65"
+    description: "PRODUTOS EM PROMOCAO"
+    ncm: "21069090"  # Preparações alimentícias não especificadas (genérico para alimentos diversos)
+    cfop: "5102"
+    icms: "102"
+    unidade_comercial: "KG"
+    unidade_tributavel: "KG"
