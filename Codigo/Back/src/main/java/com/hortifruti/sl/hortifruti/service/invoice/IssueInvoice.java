@@ -60,7 +60,7 @@ public class IssueInvoice {
       IssueInvoiceRequest request = new IssueInvoiceRequest(
           combinedScoreId,
           NATUREZA_OPERACAO,
-          ZonedDateTime.of(2026, 1, 15, 0, 0, 0, 0, ZoneId.of("America/Sao_Paulo"))
+          ZonedDateTime.of(2026, 1, 19, 0, 0, 0, 0, ZoneId.of("America/Sao_Paulo"))
               .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
           recipient,
           items,
