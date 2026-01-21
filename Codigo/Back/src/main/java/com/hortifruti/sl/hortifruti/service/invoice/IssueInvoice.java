@@ -57,16 +57,7 @@ public class IssueInvoice {
 
       RecipientRequest recipient = recipientService.createRecipientRequest(client.getId());
       List<ItemRequest> items = invoiceItemService.createItems(combinedScore.getGroupedProducts());
-      IssueInvoiceRequest request = new IssueInvoiceRequest(
-          combinedScoreId,
-          NATUREZA_OPERACAO,
-          ZonedDateTime.of(2026, 1, 19, 0, 0, 0, 0, ZoneId.of("America/Sao_Paulo"))
-              .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-          recipient,
-          items,
-          info);
-      // IssueInvoiceRequest request = buildInvoiceRequest(combinedScoreId, recipient,
-      // items);
+      IssueInvoiceRequest request = buildInvoiceRequest(combinedScoreId, recipient, items);
 
       String ref = UUID.randomUUID().toString();
       String payload = invoicePayloadService.buildFocusNfePayload(request, ref);
@@ -93,17 +84,17 @@ public class IssueInvoice {
         .orElseThrow(() -> new InvoiceException("ID do cliente não encontrado"));
   }
 
-  // private IssueInvoiceRequest buildInvoiceRequest(
-  // Long combinedScoreId, RecipientRequest recipient, List<ItemRequest> items) {
-  // return new IssueInvoiceRequest(
-  // combinedScoreId,
-  // NATUREZA_OPERACAO,
-  // ZonedDateTime.now(ZoneId.of("America/Sao_Paulo"))
-  // .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-  // recipient,
-  // items,
-  // info);
-  // }
+  private IssueInvoiceRequest buildInvoiceRequest(
+      Long combinedScoreId, RecipientRequest recipient, List<ItemRequest> items) {
+    return new IssueInvoiceRequest(
+        combinedScoreId,
+        NATUREZA_OPERACAO,
+        ZonedDateTime.now(ZoneId.of("America/Sao_Paulo"))
+            .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+        recipient,
+        items,
+        info);
+  }
 
   private void updateCombinedScoreStatus(
       CombinedScore combinedScore, InvoiceResponse invoiceResponse) {
