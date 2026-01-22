@@ -74,7 +74,7 @@ public class BilletFactory {
  public BilletRequestSimplified createBilletRequest(
       CombinedScore combinedScore, Long combinedScoreId, Pagador pagador, String number) {
     return new BilletRequestSimplified(
-        LocalDate.of(2025, 12, 15).toString(),
+        LocalDate.of(2025, 12, 25).toString(),
         number,
         combinedScore.getTotalValue(),
         LocalDate.of(2026, 1, 30).toString(),
