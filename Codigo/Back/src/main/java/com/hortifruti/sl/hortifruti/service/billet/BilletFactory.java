@@ -6,9 +6,6 @@ import com.hortifruti.sl.hortifruti.dto.billet.Pagador;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
-
-import java.time.LocalDate;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -61,25 +58,16 @@ public class BilletFactory {
    * @param number Seu número (identificador do boleto)
    * @return Objeto BilletRequestSimplified
    */
- // public BilletRequestSimplified createBilletRequest(
-   //   CombinedScore combinedScore, Long combinedScoreId, Pagador pagador, String number) {
-    //return new BilletRequestSimplified(
-      //  combinedScore.getConfirmedAt().toString(),
-        //number,
-   //     combinedScore.getTotalValue(),
-   //     combinedScore.getDueDate().toString(),
-   //     pagador);
- // }
-
- public BilletRequestSimplified createBilletRequest(
+  public BilletRequestSimplified createBilletRequest(
       CombinedScore combinedScore, Long combinedScoreId, Pagador pagador, String number) {
     return new BilletRequestSimplified(
-        LocalDate.of(2025, 12, 11).toString(),
+        combinedScore.getConfirmedAt().toString(),
         number,
         combinedScore.getTotalValue(),
-        LocalDate.of(2026, 1, 30).toString(),
+        combinedScore.getDueDate().toString(),
         pagador);
   }
+
   /**
    * Cria o objeto Pagador a partir dos dados do cliente.
    *
