@@ -68,6 +68,18 @@ public class BilletFactory {
         pagador);
   }
 
+  /*
+   public BilletRequestSimplified createBilletRequest(
+      CombinedScore combinedScore, Long combinedScoreId, Pagador pagador, String number) {
+    return new BilletRequestSimplified(
+        LocalDate.of(2025, 12, 11).toString(),
+        number,
+        combinedScore.getTotalValue(),
+        LocalDate.of(2026, 1, 30).toString(),
+        pagador);
+  }
+   */
+
   /**
    * Cria o objeto Pagador a partir dos dados do cliente.
    *
