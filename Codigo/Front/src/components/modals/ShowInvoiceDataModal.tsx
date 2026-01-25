@@ -32,6 +32,7 @@ export default function ShowInvoiceDataModal({
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
+            // Use o number da nota fiscal ao invés do reference
             link.setAttribute('download', `NF-${invoiceData.number}.pdf`);
             document.body.appendChild(link);
             link.click();

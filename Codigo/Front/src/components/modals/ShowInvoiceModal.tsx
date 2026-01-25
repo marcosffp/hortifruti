@@ -10,9 +10,17 @@ interface ShowInvoiceModalProps {
     invoiceData: Blob;
     scoreNumber?: string | number | null;
     ref: string;
+    invoiceNumber?: string;
 }
 
-export default function ShowInvoiceModal({ isOpen, onClose, invoiceData, scoreNumber, ref }: ShowInvoiceModalProps) {
+export default function ShowInvoiceModal({ 
+    isOpen, 
+    onClose, 
+    invoiceData, 
+    scoreNumber, 
+    ref, 
+    invoiceNumber 
+}: ShowInvoiceModalProps) {
     const [pdfUrl, setPdfUrl] = useState<string>("");
 
     useEffect(() => {
@@ -30,10 +38,18 @@ export default function ShowInvoiceModal({ isOpen, onClose, invoiceData, scoreNu
 
     const handleDownload = () => {
         try {
+            console.log("invoiceNumber:", invoiceNumber); // Debug
+            console.log("scoreNumber:", scoreNumber); // Debug
+            console.log("ref:", ref); // Debug
+            
             const url = URL.createObjectURL(invoiceData);
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `NF-${scoreNumber || ref}.pdf`);
+            // Use invoiceNumber se disponível, senão fallback para scoreNumber ou ref
+            const fileName = invoiceNumber ? `NF-${invoiceNumber}.pdf` : `NF-${scoreNumber || ref}.pdf`;
+            console.log("Nome do arquivo:", fileName); // Debug
+            
+            link.setAttribute('download', fileName);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

@@ -32,8 +32,6 @@ public class PurchaseProcessingService {
         throw new PurchaseException("O arquivo enviado está vazio.");
       }
 
-
-
       String pdfText = PdfUtil.extractPdfText(file);
       if (pdfText == null || pdfText.isBlank()) {
         throw new PurchaseException("O conteúdo do arquivo PDF está vazio ou inválido.");
@@ -41,14 +39,14 @@ public class PurchaseProcessingService {
 
       String clientName = PdfUtil.findValueByKeyword(pdfText, "CLIENTE");
       System.out.println("Cliente encontrado: " + clientName);
-      
+
       if (clientName == null || clientName.isBlank()) {
         throw new PurchaseException("O nome do cliente não foi encontrado no arquivo.");
       }
 
       String purchaseDateString = PdfUtil.findValueByKeyword(pdfText, "DATA");
       System.out.println("Data encontrada: " + purchaseDateString);
-      
+
       if (purchaseDateString == null || purchaseDateString.isBlank()) {
         throw new PurchaseException("A data da compra não foi encontrada no arquivo.");
       }
