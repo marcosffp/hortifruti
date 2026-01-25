@@ -214,7 +214,14 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                     // Buscar o DANFE para exibir
                     const danfeBlob = await getDanfe(response.ref);
                     
-                    setSelectedScore({ ...score, invoiceRef: response.ref });
+                    // Buscar as informações da nota fiscal para ter o número
+                    const invoiceInfo = await getInvoiceInfo(response.ref);
+                    
+                    setSelectedScore({ 
+                        ...score, 
+                        invoiceRef: response.ref,
+                        invoiceInfo: invoiceInfo
+                    });
                     setInvoicePdf(danfeBlob);
                     setShowInvoiceModal(true);
 
@@ -560,6 +567,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                     invoiceData={invoicePdf}
                     scoreNumber={selectedScore.number || selectedScore.id}
                     ref={selectedScore.invoiceRef || ""}
+                    invoiceNumber={selectedScore.invoiceInfo?.number}
                 />
             )}
 
