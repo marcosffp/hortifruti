@@ -37,15 +37,13 @@ public class PurchaseProcessingService {
         throw new PurchaseException("O conteúdo do arquivo PDF está vazio ou inválido.");
       }
 
-      String clientName = PdfUtil.findValueByKeyword(pdfText, "CLIENTE");
-      System.out.println("Cliente encontrado: " + clientName);
+      String clientName = PdfUtil.findValueByKeyword(pdfText, "CTE");
 
       if (clientName == null || clientName.isBlank()) {
         throw new PurchaseException("O nome do cliente não foi encontrado no arquivo.");
       }
 
       String purchaseDateString = PdfUtil.findValueByKeyword(pdfText, "DATA");
-      System.out.println("Data encontrada: " + purchaseDateString);
 
       if (purchaseDateString == null || purchaseDateString.isBlank()) {
         throw new PurchaseException("A data da compra não foi encontrada no arquivo.");
@@ -106,8 +104,24 @@ public class PurchaseProcessingService {
 
   private LocalDate parsePurchaseDate(String purchaseDate) {
     try {
+      // Remover qualquer texto após a data (como "TOTAL: R$ 103,75")
+      String cleanDate = purchaseDate.trim();
+
+      // Se contém "TOTAL:", pega apenas a parte antes
+      if (cleanDate.contains("TOTAL:")) {
+        cleanDate = cleanDate.substring(0, cleanDate.indexOf("TOTAL:")).trim();
+      }
+
+      // Se contém "R$", pega apenas a parte antes
+      if (cleanDate.contains("R$")) {
+        cleanDate = cleanDate.substring(0, cleanDate.indexOf("R$")).trim();
+      }
+
+      // Remover espaços extras
+      cleanDate = cleanDate.replaceAll("\\s+", "");
+
       DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yy");
-      return LocalDate.parse(purchaseDate, formatter);
+      return LocalDate.parse(cleanDate, formatter);
     } catch (Exception e) {
       throw new PurchaseException("Formato de data inválido: " + purchaseDate);
     }
@@ -123,7 +137,7 @@ public class PurchaseProcessingService {
 
       if (line.contains("COD")
           && line.contains("PRODUTO")
-          && line.contains("QUANT")
+          && line.contains("QTD")
           && line.contains("KG")) {
         isProductSection = true;
         continue;
@@ -132,10 +146,14 @@ public class PurchaseProcessingService {
       if (!isProductSection) continue;
 
       if (line.matches("^\\d+\\s+.*")) {
-        InvoiceProduct product = parseProductLine(line);
-        if (product != null) {
-          products.add(product);
+        // Verificar se a linha tem quantidade válida antes de processar
+        if (hasValidQuantity(line)) {
+          InvoiceProduct product = parseProductLine(line);
+          if (product != null) {
+            products.add(product);
+          }
         }
+        // Se não tem quantidade válida, ignora o item silenciosamente
       }
     }
 
@@ -144,6 +162,33 @@ public class PurchaseProcessingService {
     }
 
     return products;
+  }
+
+  private boolean hasValidQuantity(String line) {
+    try {
+      String[] parts = line.split("\\s+");
+
+      if (parts.length < 3) return false; // Precisa ter pelo menos código, nome e mais alguma coisa
+
+      // Extrair o nome do produto para determinar onde deveria estar a quantidade
+      String name = extractProductName(parts);
+      int quantityIndex = name.split("\\s+").length + 1;
+
+      // Verificar se existe um valor de quantidade válido na posição esperada
+      // E se existe pelo menos mais um valor após (que seria o preço)
+      if (quantityIndex < parts.length - 1) {
+        String quantityStr = parts[quantityIndex];
+        // Verifica se não está vazio e se é um número válido (não começando com R$)
+        return !quantityStr.trim().isEmpty()
+            && quantityStr.matches("\\d+([,.]\\d+)?")
+            && !quantityStr.contains("R$");
+      }
+
+      return false;
+    } catch (Exception e) {
+      // Se houver erro ao verificar, considera como inválido
+      return false;
+    }
   }
 
   private InvoiceProduct parseProductLine(String line) {
