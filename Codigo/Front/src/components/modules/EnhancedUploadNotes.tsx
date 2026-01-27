@@ -42,6 +42,8 @@ export default function EnhancedUploadNotes({ clientId, onUploadSuccess }: Enhan
     if (selectedFile) {
       handleFileUpload(selectedFile);
     }
+    // Limpa o valor do input para permitir selecionar o mesmo arquivo novamente
+    e.target.value = '';
   };
 
   const handleDrop = (e: React.DragEvent) => {
