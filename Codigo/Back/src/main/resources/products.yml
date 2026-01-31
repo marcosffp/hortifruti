@@ -386,29 +386,30 @@ products:
     unidade_tributavel: "KG"
   - code: "64"
     description: "TAXA DE ENTREGA"
-    ncm: "49019900"  # Outros impressos (usado para serviços diversos)
-    cfop: "5949"  # Outra saída não especificada
-    icms: "400"  # Não tributada pelo ICMS
+    ncm: "49019900"  
+    cfop: "5949"  
+    icms: "400"  
     unidade_comercial: "UN"
     unidade_tributavel: "UN"
   - code: "65"
     description: "PRODUTOS EM PROMOCAO"
-    ncm: "21069090"  # Preparações alimentícias não especificadas (genérico para alimentos diversos)
+    ncm: "21069090"  
     cfop: "5102"
     icms: "102"
     unidade_comercial: "KG"
     unidade_tributavel: "KG"
-  - code: "1123"  # defina um código único
+  - code: "1123"  
     description: "LIMAO SICILIANO"
-    ncm: "08055000"  # NCM para limões
-    cfop: "5102"  # Venda de mercadoria adquirida ou recebida de terceiros
-    icms: "102"  # Tributação normal
+    ncm: "08055000"  
+    cfop: "5102"  
+    icms: "102"  
     unidade_comercial: "KG"
     unidade_tributavel: "KG"
-  - code: "1124"  # defina um código único
+  - code: "1124"  
     description: "SACO DE MILHO"
-    ncm: "10059090"  # Milho em grão (exceto para semeadura)
+    ncm: "10059090"  
     cfop: "5102"
     icms: "102"
-    unidade_comercial: "UN"  # ou "SC" para saco, ou "KG" se vender por peso
+    unidade_comercial: "UN"  
     unidade_tributavel: "UN"
+
