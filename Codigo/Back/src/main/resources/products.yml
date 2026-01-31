@@ -407,7 +407,7 @@ products:
     unidade_tributavel: "KG"
   - code: "1124"  # defina um código único
     description: "SACO DE MILHO"
-    ncm: "10059000"  # Milho em grão (exceto para semeadura)
+    ncm: "10059090"  # Milho em grão (exceto para semeadura)
     cfop: "5102"
     icms: "102"
     unidade_comercial: "UN"  # ou "SC" para saco, ou "KG" se vender por peso
