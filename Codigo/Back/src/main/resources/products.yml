@@ -287,7 +287,7 @@ products:
     unidade_comercial: "UN"
     unidade_tributavel: "UN"
   - code: "62"
-    description: "PIMEN VERMEL/AMAR"
+    description: "PIMEN VL/AMAR"
     ncm: "07096000"
     cfop: "5102"
     icms: "102"
