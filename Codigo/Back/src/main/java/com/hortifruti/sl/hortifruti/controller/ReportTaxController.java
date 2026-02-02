@@ -20,10 +20,21 @@ public class ReportTaxController {
   public ResponseEntity<byte[]> generateMonthlyReports(
       @PathVariable LocalDate start, @PathVariable LocalDate end) {
 
-    byte[] zipBytes = reportTaxService.generateMonthly(start, end);
-    return ResponseEntity.ok()
-        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"relatorios_mensais.zip\"")
-        .contentType(MediaType.APPLICATION_OCTET_STREAM)
-        .body(zipBytes);
+    try {
+      byte[] zipBytes = reportTaxService.generateMonthly(start, end);
+
+      if (zipBytes == null || zipBytes.length == 0) {
+        return ResponseEntity.badRequest()
+            .body("Erro: Não foi possível gerar os relatórios".getBytes());
+      }
+
+      return ResponseEntity.ok()
+          .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"relatorios_mensais.zip\"")
+          .contentType(MediaType.APPLICATION_OCTET_STREAM)
+          .body(zipBytes);
+    } catch (Exception e) {
+      return ResponseEntity.internalServerError()
+          .body(("Erro interno: " + e.getMessage()).getBytes());
+    }
   }
 }
