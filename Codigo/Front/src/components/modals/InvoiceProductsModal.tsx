@@ -195,7 +195,7 @@ export default function InvoiceProductsModal({
                           new Intl.NumberFormat("pt-BR", {
                             minimumFractionDigits: 0,
                             maximumFractionDigits: 3,
-                          }).format(parseFloat(product.quantity.toString())).replace(/,?0+$/, '')
+                          }).format(parseFloat(product.quantity.toString()))
                         )}
                       </td>
                       <td className="p-3 text-right">

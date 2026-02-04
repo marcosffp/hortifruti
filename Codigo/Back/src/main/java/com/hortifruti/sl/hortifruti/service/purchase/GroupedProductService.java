@@ -67,7 +67,9 @@ public class GroupedProductService {
 
   private String extractProductKey(InvoiceProduct product) {
     try {
-      return product.getCode().split("-")[0] + "-" + product.getName();
+      // Para preços variáveis, agrupa apenas por código + nome
+      // Sem split, para funcionar com códigos simples (48, 13, 24)
+      return product.getCode() + "-" + product.getName();
     } catch (Exception e) {
       throw new PurchaseException("Formato de código de produto inválido: " + product.getCode(), e);
     }
@@ -111,10 +113,11 @@ public class GroupedProductService {
 
     InvoiceProduct firstProduct = productList.get(0);
 
-    // NÃO arredondar as quantidades individuais - manter valores originais
+    // Calcular com alta precisão mantendo valores originais
     for (InvoiceProduct product : productList) {
       BigDecimal quantity = product.getQuantity();
-      BigDecimal productTotal = product.getPrice().multiply(quantity);
+      BigDecimal price = product.getPrice();
+      BigDecimal productTotal = price.multiply(quantity);
 
       totalQuantityDecimal = totalQuantityDecimal.add(quantity);
       totalValue = totalValue.add(productTotal);
@@ -125,10 +128,18 @@ public class GroupedProductService {
       if (totalQuantityDecimal.compareTo(BigDecimal.ZERO) == 0) {
         weightedAvgPrice = BigDecimal.ZERO;
       } else {
-        weightedAvgPrice = totalValue.divide(totalQuantityDecimal, 8, RoundingMode.HALF_EVEN);
+        // Usar precisão maior e arredondamento mais preciso
+        weightedAvgPrice = totalValue.divide(totalQuantityDecimal, 10, RoundingMode.HALF_UP);
       }
     } catch (ArithmeticException e) {
       throw new PurchaseException("Erro ao calcular preço médio ponderado: " + e.getMessage(), e);
+    }
+
+    // Validar se o cálculo está correto: preço * quantidade = total
+    BigDecimal calculatedTotal = weightedAvgPrice.multiply(totalQuantityDecimal);
+    if (calculatedTotal.subtract(totalValue).abs().compareTo(new BigDecimal("0.01")) > 0) {
+      // Se a diferença for maior que 1 centavo, ajustar o preço
+      weightedAvgPrice = totalValue.divide(totalQuantityDecimal, 12, RoundingMode.HALF_UP);
     }
 
     return GroupedProduct.builder()
