@@ -93,7 +93,7 @@ export default function GroupedProductsModal({
                         {new Intl.NumberFormat("pt-BR", {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 3,
-                        }).format(parseFloat(product.quantity.toString())).replace(/,?0+$/, '')}
+                        }).format(parseFloat(product.quantity.toString()))}
                       </td>
                       <td className="p-3 text-right">{formatCurrency(product.price)}</td>
                       <td className="p-3 text-right font-semibold">
