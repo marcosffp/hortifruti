@@ -109,9 +109,9 @@ public class CombinedScoreService {
     CombinedScore combinedScore =
         CombinedScore.builder().clientId(request.clientId()).totalValue(totalValue).build();
 
-    //combinedScore.setConfirmedAt(ZonedDateTime.of(2026, 2, 9, 0, 0, 0, 0,
-    //ZoneId.of("America/Sao_Paulo")).toLocalDate());
-    combinedScore.setConfirmedAt(ZonedDateTime.now(ZoneId.of("America/Sao_Paulo")).toLocalDate());
+    combinedScore.setConfirmedAt(ZonedDateTime.of(2026, 2, 9, 0, 0, 0, 0,
+    ZoneId.of("America/Sao_Paulo")).toLocalDate());
+    //combinedScore.setConfirmedAt(ZonedDateTime.now(ZoneId.of("America/Sao_Paulo")).toLocalDate());
     combinedScore.setDueDate(calculateDueDateForClient(client, combinedScore.getConfirmedAt()));
     combinedScore.setStatus(Status.PENDENTE);
     combinedScore.setHasBillet(false);
