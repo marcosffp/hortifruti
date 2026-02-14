@@ -392,7 +392,7 @@ products:
     unidade_comercial: "UN"
     unidade_tributavel: "UN"
   - code: "65"
-    description: "PRODUTOS EM PROMOÇÃO"
+    description: "PRODUTO EM PROMOÇÃO"
     ncm: "21069090"  
     cfop: "5102"
     icms: "102"
