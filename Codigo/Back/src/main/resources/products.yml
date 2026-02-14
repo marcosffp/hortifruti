@@ -175,7 +175,7 @@ products:
     unidade_comercial: "UN"
     unidade_tributavel: "UN"
   - code: "34"
-    description: "ABOB ITALIANA"
+    description: "ABÓB ITALIANA"
     ncm: "07099300"
     cfop: "5102"
     icms: "102"
