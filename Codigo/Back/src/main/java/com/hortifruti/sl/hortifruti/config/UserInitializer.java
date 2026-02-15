@@ -326,7 +326,6 @@ public class UserInitializer implements CommandLineRunner {
             .position(position)
             .build();
     userRepository.save(user);
-    System.out.println("Usuário " + username + " criado com sucesso!");
   }
 
   // Inicializa a configuração de frete padrão

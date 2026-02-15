@@ -33,4 +33,5 @@ export interface CombinedScoreRequest {
   clientId: number;
   startDate: string;
   endDate: string;
+  confirmedAt?: string;
 }

@@ -15,8 +15,8 @@ import com.hortifruti.sl.hortifruti.service.invoice.factory.InvoiceItem;
 import com.hortifruti.sl.hortifruti.service.invoice.factory.InvoicePayload;
 import com.hortifruti.sl.hortifruti.service.invoice.factory.Recipient;
 import jakarta.transaction.Transactional;
+import java.time.LocalTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
@@ -57,7 +57,7 @@ public class IssueInvoice {
 
       RecipientRequest recipient = recipientService.createRecipientRequest(client.getId());
       List<ItemRequest> items = invoiceItemService.createItems(combinedScore.getGroupedProducts());
-      IssueInvoiceRequest request = buildInvoiceRequest(combinedScoreId, recipient, items);
+      IssueInvoiceRequest request = buildInvoiceRequest(recipient, items, combinedScore);
 
       String ref = UUID.randomUUID().toString();
       String payload = invoicePayloadService.buildFocusNfePayload(request, ref);
@@ -85,28 +85,34 @@ public class IssueInvoice {
   }
 
   private IssueInvoiceRequest buildInvoiceRequest(
-      Long combinedScoreId, RecipientRequest recipient, List<ItemRequest> items) {
+      RecipientRequest recipient, List<ItemRequest> items, CombinedScore combinedScore) {
+
     return new IssueInvoiceRequest(
-        combinedScoreId,
+        combinedScore.getId(),
         NATUREZA_OPERACAO,
-        ZonedDateTime.now(ZoneId.of("America/Sao_Paulo"))
+        combinedScore
+            .getConfirmedAt()
+            .atTime(LocalTime.now(ZoneId.of("America/Sao_Paulo")))
+            .atZone(ZoneId.of("America/Sao_Paulo"))
             .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
         recipient,
         items,
         info);
   }
 
-  /*private IssueInvoiceRequest buildInvoiceRequest(
-      Long combinedScoreId, RecipientRequest recipient, List<ItemRequest> items) {
-    return new IssueInvoiceRequest(
-        combinedScoreId,
-        NATUREZA_OPERACAO,
-        ZonedDateTime.of(2026, 1, 22, 0, 0, 0, 0, ZoneId.of("America/Sao_Paulo"))
-            .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-        recipient,
-        items,
-        info);
-  }*/
+  /*
+   * private IssueInvoiceRequest buildInvoiceRequest(
+   * Long combinedScoreId, RecipientRequest recipient, List<ItemRequest> items) {
+   * return new IssueInvoiceRequest(
+   * combinedScoreId,
+   * NATUREZA_OPERACAO,
+   * ZonedDateTime.of(2026, 1, 22, 0, 0, 0, 0, ZoneId.of("America/Sao_Paulo"))
+   * .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+   * recipient,
+   * items,
+   * info);
+   * }
+   */
 
   private void updateCombinedScoreStatus(
       CombinedScore combinedScore, InvoiceResponse invoiceResponse) {
