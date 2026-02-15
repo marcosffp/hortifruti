@@ -55,7 +55,7 @@ public class DueDateCalculator {
     // IMPORTANTE: Os nomes devem estar EXATAMENTE como aparecem no banco de dados
     CNPJ_RULES_BY_NAME.put("LLINEA", new DueDateRule(20, WeekendAdjustment.PREVIOUS_FRIDAY));
     CNPJ_RULES_BY_NAME.put("APTA", new DueDateRule(15, WeekendAdjustment.PREVIOUS_FRIDAY));
-    CNPJ_RULES_BY_NAME.put("INDÚSTRIA", new DueDateRule(20, WeekendAdjustment.NEXT_FRIDAY));
+    CNPJ_RULES_BY_NAME.put("INDUSTRIA", new DueDateRule(20, WeekendAdjustment.NEXT_FRIDAY));
 
     // === ADICIONE NOVAS REGRAS AQUI ===
     // Exemplo:
