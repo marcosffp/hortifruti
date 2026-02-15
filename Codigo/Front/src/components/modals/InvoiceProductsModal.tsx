@@ -85,7 +85,7 @@ export default function InvoiceProductsModal({
         name: editForm.name,
         price: typeof editForm.price === "string" ? parseFloat(editForm.price) : editForm.price,
         quantity:
-          typeof editForm.quantity === "string" ? parseInt(editForm.quantity as string, 10) : editForm.quantity,
+          typeof editForm.quantity === "string" ? parseFloat(editForm.quantity as string) : editForm.quantity,
         unitType: editForm.unitType,
       };
       const updated = await purchaseService.updateInvoiceProduct(editingProductId, payload);
@@ -185,7 +185,7 @@ export default function InvoiceProductsModal({
                         {editingProductId === product.id ? (
                           <input
                             type="number"
-                            step="0.01"
+                            step="0.001"
                             value={editForm.quantity ?? ""}
                             onChange={(e) => handleEditChange("quantity" as any, e.target.value)}
                             className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -213,8 +213,9 @@ export default function InvoiceProductsModal({
                       <td className="p-3 text-right">
                         {editingProductId === product.id ? (
                           <input
-                            type="text"
-                            value={formatCurrency(editForm.price ?? 0)}
+                            type="number"
+                            step="0.01"
+                            value={editForm.price ?? ""}
                             onChange={(e) => handleEditChange("price" as any, e.target.value)}
                             className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                             disabled={loading}
