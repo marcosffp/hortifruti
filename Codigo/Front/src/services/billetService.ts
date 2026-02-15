@@ -4,9 +4,16 @@ import { getAuthHeaders } from "@/utils/httpUtils";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export const billetService = {
-  async generateBillet(combinedScoreId: number, number: string): Promise<Blob> {
+  async generateBillet(combinedScoreId: number, number: string, dueDate?: string): Promise<Blob> {
     try {
-      const response = await fetch(`${API_BASE_URL}/billet/generate/${combinedScoreId}?number=${encodeURIComponent(number)}`, {
+      let url = `${API_BASE_URL}/billet/generate/${combinedScoreId}?number=${encodeURIComponent(number)}`;
+      
+      // Adiciona a data de vencimento se foi fornecida
+      if (dueDate) {
+        url += `&dueDate=${encodeURIComponent(dueDate)}`;
+      }
+
+      const response = await fetch(url, {
         method: "GET",
         headers: getAuthHeaders(),
       });
