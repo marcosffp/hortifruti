@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -33,12 +34,20 @@ public class ReportTaxService {
       String zipFilePath = generateMonthlyReports(startDate, endDate);
       zipPath = Paths.get(zipFilePath);
 
-      byte[] zipBytes = Files.readAllBytes(zipPath);
+      if (!Files.exists(zipPath) || Files.size(zipPath) == 0) {
+        throw new RuntimeException("Arquivo ZIP não foi gerado corretamente ou está vazio");
+      }
 
+      byte[] zipBytes = Files.readAllBytes(zipPath);
       return zipBytes;
-    } catch (Exception e) {
+    } catch (IOException e) {
+      System.err.println("Erro de I/O durante geração de relatórios: " + e.getMessage());
       e.printStackTrace();
-      return null;
+      throw new RuntimeException("Erro ao processar arquivos", e);
+    } catch (Exception e) {
+      System.err.println("Erro geral durante geração de relatórios: " + e.getMessage());
+      e.printStackTrace();
+      throw new RuntimeException("Erro interno durante geração de relatórios", e);
     } finally {
       // Remove o arquivo ZIP gerado
       if (zipPath != null && Files.exists(zipPath)) {
@@ -98,14 +107,53 @@ public class ReportTaxService {
 
   private void generateAndSaveReports(LocalDate startDate, LocalDate endDate, Path folderPath)
       throws IOException {
-    saveFile(
-        folderPath.resolve("Resumo_de_Vendas_por_Forma_de_Pagamento.pdf"),
-        generatePaymentReport(startDate, endDate));
-    saveFile(
-        folderPath.resolve("Registro_de_saida_nf.pdf"), generateRegisterReport(startDate, endDate));
-    saveFile(folderPath.resolve("Relacao_de_Vendas.pdf"), generateSalesReport(startDate, endDate));
-    saveFile(
-        folderPath.resolve("Registro_Apuracao_ICMS.pdf"), generateIcmsReport(startDate, endDate));
+    try {
+      byte[] paymentData = generatePaymentReport(startDate, endDate);
+      if (paymentData != null && paymentData.length > 0) {
+        saveFile(folderPath.resolve("Resumo_de_Vendas_por_Forma_de_Pagamento.pdf"), paymentData);
+      } else {
+        System.err.println("Relatório de pagamento está vazio");
+      }
+    } catch (Exception e) {
+      System.err.println("Erro ao gerar relatório de pagamento: " + e.getMessage());
+      throw e;
+    }
+
+    try {
+      byte[] registerData = generateRegisterReport(startDate, endDate);
+      if (registerData != null && registerData.length > 0) {
+        saveFile(folderPath.resolve("Registro_de_saida_nf.pdf"), registerData);
+      } else {
+        System.err.println("Relatório de registro está vazio");
+      }
+    } catch (Exception e) {
+      System.err.println("Erro ao gerar relatório de registro: " + e.getMessage());
+      throw e;
+    }
+
+    try {
+      byte[] salesData = generateSalesReport(startDate, endDate);
+      if (salesData != null && salesData.length > 0) {
+        saveFile(folderPath.resolve("Relacao_de_Vendas.pdf"), salesData);
+      } else {
+        System.err.println("Relatório de vendas está vazio");
+      }
+    } catch (Exception e) {
+      System.err.println("Erro ao gerar relatório de vendas: " + e.getMessage());
+      throw e;
+    }
+
+    try {
+      byte[] icmsData = generateIcmsReport(startDate, endDate);
+      if (icmsData != null && icmsData.length > 0) {
+        saveFile(folderPath.resolve("Registro_Apuracao_ICMS.pdf"), icmsData);
+      } else {
+        System.err.println("Relatório de ICMS está vazio");
+      }
+    } catch (Exception e) {
+      System.err.println("Erro ao gerar relatório de ICMS: " + e.getMessage());
+      throw e;
+    }
   }
 
   private void generateAndMoveNfSalesZip(LocalDate startDate, LocalDate endDate, Path folderPath)
