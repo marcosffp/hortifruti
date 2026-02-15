@@ -6,7 +6,7 @@ import EnhancedUploadNotes from "@/components/modules/EnhancedUploadNotes";
 import { ClientSelectionInfo } from "@/types/clientType";
 import { useState } from "react";
 import PurchaseFilesTable from "@/components/modules/tables/PurchaseFilesTable";
-import { FileText, Package } from "lucide-react";
+import { FileText, Package, ExternalLink } from "lucide-react";
 import CombinedScoresCards from "@/components/modules/CombinedScoresCards";
 
 export default function PurchasesPage() {
@@ -20,9 +20,25 @@ export default function PurchasesPage() {
 
     return (
         <main className="flex-1 p-6 bg-gray-50 overflow-auto flex flex-col min-h-full">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-800">Gerenciamento de Compras</h1>
-                <p className="text-gray-600">Analise as compras agrupadas por semana, mês ou intervalo personalizado para facilitar a análise temporal</p>
+            <div className="mb-8 relative">
+                <div className="pr-72">
+                    <h1 className="text-3xl font-bold text-gray-800">Gerenciamento de Compras</h1>
+                    <p className="text-gray-600">Analise as compras agrupadas por semana, mês ou intervalo personalizado para facilitar a análise temporal</p>
+                </div>
+                <div className="absolute top-0 right-0 bg-white rounded-lg shadow-sm p-3 border border-gray-200 w-64">
+                    <div className="text-center mb-2">
+                        <h3 className="font-semibold text-sm text-gray-800 mb-1">
+                            Planilha de Preenchimento
+                        </h3>
+                    </div>
+                    <button
+                        onClick={() => window.open(process.env.NEXT_PUBLIC_LINK_PLANILHA_NOTINHAS || 'https://docs.google.com/spreadsheets/d/1urqNj0ccGktQn_EvYnow-CIqCuWudSSYEtsfEcFOTKQ/edit?gid=516854495#gid=516854495', '_blank')}
+                        className="flex items-center gap-2 px-3 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium text-sm w-full justify-center"
+                    >
+                        <ExternalLink className="w-3 h-3" />
+                        Acessar Planilha
+                    </button>
+                </div>
             </div>
 
             <div className="flex flex-wrap gap-6 mb-8 h-fit">

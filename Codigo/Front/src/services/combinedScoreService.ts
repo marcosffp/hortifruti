@@ -23,6 +23,7 @@ export const combinedScoreService = {
       clientId: request.clientId,
       startDate: `${request.startDate}T00:00:00`,
       endDate: `${request.endDate}T23:59:59`,
+      ...(request.confirmedAt && { confirmedAt: request.confirmedAt }),
     };
 
     const response = await fetch(`${API_BASE_URL}/combined-scores/create`, {
