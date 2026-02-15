@@ -63,11 +63,13 @@ public class BilletService {
    *
    * @param combinedScoreId ID do CombinedScore
    * @param number Número identificador do boleto
+   * @param dueDate Data de vencimento opcional como String (formato yyyy-MM-dd) - se null, usa a
+   *     data padrão do CombinedScore
    * @return Resposta HTTP contendo o PDF do boleto gerado
    * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
   @Transactional
-  public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number)
+  public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number, String dueDate)
       throws IOException {
     CombinedScore combinedScore =
         billetInfoCombinedAndClient.findCombinedScoreById(combinedScoreId);
@@ -75,6 +77,17 @@ public class BilletService {
     try {
       Client client = billetInfoCombinedAndClient.findClientById(combinedScore.getClientId());
       Pagador pagador = billetFactory.createPagadorFromClient(client);
+
+      // Verifica e converte a data se foi fornecida
+      if (dueDate != null && !dueDate.trim().isEmpty()) {
+        LocalDate customDueDate = LocalDate.parse(dueDate);
+        // Se a data personalizada é diferente da atual, atualiza o CombinedScore
+        if (!customDueDate.equals(combinedScore.getDueDate())) {
+          combinedScore.setDueDate(customDueDate);
+          combinedScoreRepository.save(combinedScore);
+        }
+      }
+
       BilletRequestSimplified billetRequest =
           billetFactory.createBilletRequest(combinedScore, combinedScoreId, pagador, number);
       Map<String, Object> responseBody = issueBilletAndExtractResponse(billetRequest);

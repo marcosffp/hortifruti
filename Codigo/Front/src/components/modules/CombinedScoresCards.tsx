@@ -156,7 +156,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
         setShowModalProducts(true);
     };
 
-    const handleGenerateBillet = async (scoreId: number, clientNumber: string) => {
+    const handleGenerateBillet = async (scoreId: number, clientNumber: string, dueDate?: string) => {
         try {
             const score = scores.find(s => s.id === scoreId);
             if (!score) {
@@ -164,7 +164,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                 return;
             }
 
-            const pdfBlob = await generateBillet(scoreId, clientNumber);
+            const pdfBlob = await generateBillet(scoreId, clientNumber, dueDate);
 
             setSelectedScore(score);
             setClientNumber(clientNumber);
@@ -549,9 +549,9 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
             <ClientNumberModal
                 open={clientNumberModal.state}
                 onClose={() => setClientNumberModal({ state: false, groupId: -1 })}
-                onConfirm={(number) => {
+                onConfirm={(number, dueDate) => {
                     setClientNumberModal({ state: false, groupId: -1 });
-                    handleGenerateBillet(clientNumberModal.groupId, number);
+                    handleGenerateBillet(clientNumberModal.groupId, number, dueDate);
                 }}
             />
 

@@ -20,14 +20,19 @@ public class BilletController {
   /**
    * Emite um boleto e retorna o PDF.
    *
-   * @param boleto Dados do boleto a ser emitido.
+   * @param combinedScoreId ID do CombinedScore
+   * @param number Número identificador do cliente
+   * @param dueDate Data de vencimento opcional (formato yyyy-MM-dd)
    * @return PDF do boleto emitido.
    */
   @GetMapping("/generate/{combinedScoreId}")
-  public ResponseEntity<byte[]> generateBillet(@PathVariable Long combinedScoreId, String number)
+  public ResponseEntity<byte[]> generateBillet(
+      @PathVariable Long combinedScoreId,
+      @RequestParam String number,
+      @RequestParam(required = false) String dueDate)
       throws IOException {
     try {
-      return billetService.generateBillet(combinedScoreId, number);
+      return billetService.generateBillet(combinedScoreId, number, dueDate);
     } catch (Exception e) {
       e.printStackTrace();
       return ResponseEntity.badRequest()

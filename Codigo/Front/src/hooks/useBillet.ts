@@ -19,11 +19,11 @@ export function useBillet() {
         window.URL.revokeObjectURL(url);
     };
 
-    const generateBillet = async (combinedScoreId: number, number: string) => {
+    const generateBillet = async (combinedScoreId: number, number: string, dueDate?: string) => {
         setIsLoading(true);
         setError(null);
         try {
-            const blob = await billetService.generateBillet(combinedScoreId, number);
+            const blob = await billetService.generateBillet(combinedScoreId, number, dueDate);
             downloadBillet(blob, combinedScoreId, number);
             return blob;
         } catch (err: any) {
