@@ -19,7 +19,6 @@ public record ProductRequest(
 
   /** Construtor com validações customizadas */
   public ProductRequest {
-    // Garantir que as listas não sejam nulas
     if (peakSalesMonths == null) {
       peakSalesMonths = List.of();
     }

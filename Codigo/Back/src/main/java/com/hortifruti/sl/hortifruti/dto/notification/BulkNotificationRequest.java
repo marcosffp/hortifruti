@@ -7,7 +7,7 @@ import java.util.List;
 public record BulkNotificationRequest(
     List<Long> clientIds,
     List<NotificationChannel> channels,
-    String destinationType, // "clientes" ou "contabilidade"
+    String destinationType,
     String customMessage,
     BigDecimal dueDate,
     BigDecimal billetValue) {}

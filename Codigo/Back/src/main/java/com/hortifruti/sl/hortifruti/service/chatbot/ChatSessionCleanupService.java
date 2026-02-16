@@ -17,7 +17,7 @@ public class ChatSessionCleanupService {
   private final ChatSessionService chatSessionService;
 
   /** Executa a cada 5 minutos para remover pausas expiradas */
-  @Scheduled(fixedRate = 300000) // 5 minutos
+  @Scheduled(fixedRate = 300000)
   public void unpauseExpiredSessions() {
     try {
       int unpausedCount = chatSessionService.unpauseExpiredSessions();

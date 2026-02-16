@@ -46,7 +46,7 @@ public class InvoiceProduct {
 
   @ManyToOne
   @JoinColumn(name = "purchase_id", nullable = false)
-  @JsonIgnore // Ignora a relação inversa ao serializar
+  @JsonIgnore
   private Purchase purchase;
 
   @PrePersist

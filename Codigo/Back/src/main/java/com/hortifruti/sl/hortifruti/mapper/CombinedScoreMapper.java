@@ -11,9 +11,9 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface CombinedScoreMapper {
 
-  @Mapping(target = "id", ignore = true) // ID será gerado automaticamente
-  @Mapping(target = "confirmedAt", ignore = true) // Gerenciado pelo @PrePersist
-  @Mapping(target = "totalValue", ignore = true) // Calculado automaticamente
+  @Mapping(target = "id", ignore = true)
+  @Mapping(target = "confirmedAt", ignore = true)
+  @Mapping(target = "totalValue", ignore = true)
   CombinedScore toEntity(CombinedScoreRequest request);
 
   @Mapping(target = "id", source = "id")
@@ -27,8 +27,8 @@ public interface CombinedScoreMapper {
   @Mapping(target = "yourNumber", source = "yourNumber")
   CombinedScoreResponse toResponse(CombinedScore combinedScore);
 
-  @Mapping(target = "id", ignore = true) // ID não deve ser alterado
-  @Mapping(target = "confirmedAt", ignore = true) // Não deve ser alterado
-  @Mapping(target = "totalValue", ignore = true) // Calculado automaticamente
+  @Mapping(target = "id", ignore = true)
+  @Mapping(target = "confirmedAt", ignore = true)
+  @Mapping(target = "totalValue", ignore = true)
   void updateEntityFromRequest(CombinedScoreRequest request, @MappingTarget CombinedScore entity);
 }
