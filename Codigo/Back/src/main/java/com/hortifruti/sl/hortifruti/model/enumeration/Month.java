@@ -39,7 +39,7 @@ public enum Month {
         return month;
       }
     }
-    return JANEIRO; // fallback
+    return JANEIRO;
   }
 
   /** Verifica se o mês está na temporada (lista de meses) */

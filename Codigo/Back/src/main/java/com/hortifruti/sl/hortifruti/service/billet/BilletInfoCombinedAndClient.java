@@ -15,7 +15,6 @@ public class BilletInfoCombinedAndClient {
   private final CombinedScoreRepository combinedScoreRepository;
   private final ClientRepository clientRepository;
 
-  // Método auxiliar para buscar o CombinedScore pelo ID
   protected CombinedScore findCombinedScoreById(Long idCombinedScore) {
     return combinedScoreRepository
         .findById(idCombinedScore)
@@ -25,7 +24,6 @@ public class BilletInfoCombinedAndClient {
                     "Agrupamento com o ID " + idCombinedScore + " não encontrado."));
   }
 
-  // Método auxiliar para buscar o Client pelo ID
   protected Client findClientById(Long clientId) {
     return clientRepository
         .findById(clientId)

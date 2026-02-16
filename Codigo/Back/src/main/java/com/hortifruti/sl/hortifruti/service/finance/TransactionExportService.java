@@ -1,17 +1,20 @@
 package com.hortifruti.sl.hortifruti.service.finance;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
+import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
+import com.hortifruti.sl.hortifruti.model.finance.Statement;
+import com.hortifruti.sl.hortifruti.model.finance.Transaction;
+import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.time.LocalDate;
-import java.time.format.TextStyle;
 import java.util.HashMap;
-import java.util.Locale;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
-import net.lingala.zip4j.ZipFile;
-import net.lingala.zip4j.model.ZipParameters;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,45 +23,92 @@ public class TransactionExportService {
 
   private final TransactionExcelExportService transactionExcelExportService;
   private final TransactionPdfExportService transactionPdfExportService;
+  private final TransactionRepository transactionRepository;
 
   public Map<String, byte[]> exportTransactionsAsZip() throws IOException {
-    // Gerar Excel
+    // Gerar Excel (apenas Banco do Brasil)
     Map<String, byte[]> excelData = transactionExcelExportService.exportTransactionsAsExcel();
 
-    // Gerar PDF
+    // Gerar PDF (apenas Banco do Brasil)
     Map<String, byte[]> pdfData = transactionPdfExportService.exportTransactionsAsPdf();
 
-    // Criar ZIP com ambos os arquivos
-    String currentMonth =
-        LocalDate.now().getMonth().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pt-BR"));
-    String zipFileName = "Relatorio-Hortifruti-Santa-Luzia-" + currentMonth + ".zip";
+    // 1. Buscar 10 transações do Banco do Brasil do mês passado para definir o período
+    LocalDate now = LocalDate.now();
+    LocalDate firstDayLastMonth = now.minusMonths(1).withDayOfMonth(1);
+    LocalDate lastDayLastMonth = now.withDayOfMonth(1).minusDays(1);
 
-    File tempZipFile = File.createTempFile("tmp", ".zip");
-    try {
-      ZipFile zipFile = new ZipFile(tempZipFile);
+    Pageable pageable = PageRequest.of(0, 10, Sort.by("transactionDate").descending());
+    List<Transaction> bbTransactions =
+        transactionRepository.findByTransactionDateBetweenAndStatementBank(
+            firstDayLastMonth, lastDayLastMonth, Bank.BANCO_DO_BRASIL, pageable);
 
-      // Adicionar Excel ao ZIP
-      String excelFileName = excelData.keySet().iterator().next();
-      byte[] excelBytes = excelData.get(excelFileName);
-      ZipParameters excelParams = new ZipParameters();
-      excelParams.setFileNameInZip(excelFileName);
-      zipFile.addStream(new ByteArrayInputStream(excelBytes), excelParams);
+    // 3. Buscar pelo menos 10 transações do SICOOB do mesmo período
+    List<Transaction> sicoobTransactions =
+        transactionRepository.findByTransactionDateBetweenAndStatementBank(
+            firstDayLastMonth, lastDayLastMonth, Bank.SICOOB, pageable);
 
-      // Adicionar PDF ao ZIP
-      String pdfFileName = pdfData.keySet().iterator().next();
-      byte[] pdfBytes = pdfData.get(pdfFileName);
-      ZipParameters pdfParams = new ZipParameters();
-      pdfParams.setFileNameInZip(pdfFileName);
-      zipFile.addStream(new ByteArrayInputStream(pdfBytes), pdfParams);
+    // 4. Coletar todos os extratos únicos referenciados por ambos os bancos
+    Set<Statement> referencedStatements = new HashSet<>();
 
-      zipFile.close();
-
-      byte[] zipBytes = Files.readAllBytes(tempZipFile.toPath());
-      Map<String, byte[]> result = new HashMap<>();
-      result.put(zipFileName, zipBytes);
-      return result;
-    } finally {
-      tempZipFile.delete();
+    // Extratos das transações do Banco do Brasil
+    for (Transaction transaction : bbTransactions) {
+      if (transaction.getStatement() != null) {
+        referencedStatements.add(transaction.getStatement());
+      }
     }
+
+    // Extratos das transações do SICOOB
+    for (Transaction transaction : sicoobTransactions) {
+      if (transaction.getStatement() != null) {
+        referencedStatements.add(transaction.getStatement());
+      }
+    }
+
+    // 5. Retornar todos os arquivos como Map sem criar ZIP
+    Map<String, byte[]> allFiles = new HashMap<>();
+
+    // Adicionar Excel
+    String excelFileName = excelData.keySet().iterator().next();
+    allFiles.put(excelFileName, excelData.get(excelFileName));
+
+    // Adicionar PDF
+    String pdfFileName = pdfData.keySet().iterator().next();
+    allFiles.put(pdfFileName, pdfData.get(pdfFileName));
+
+    // Adicionar extratos
+    int statementCount = 1;
+    for (Statement statement : referencedStatements) {
+      if (statement.getFilePath() != null && statement.getFilePath().length > 0) {
+        String statementFileName = sanitizeFileName(statement.getName());
+        if (!statementFileName.toLowerCase().endsWith(".pdf")) {
+          statementFileName += ".pdf";
+        }
+
+        String finalFileName =
+            String.format(
+                "%02d_%s_%s",
+                statementCount++, statement.getBank().toString().toLowerCase(), statementFileName);
+
+        allFiles.put(finalFileName, statement.getFilePath());
+      }
+    }
+
+    return allFiles;
+  }
+
+  private String sanitizeFileName(String fileName) {
+    if (fileName == null) {
+      return "extrato_sem_nome";
+    }
+
+    String sanitized = fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
+    sanitized = sanitized.replaceAll("_{2,}", "_");
+    sanitized = sanitized.replaceAll("^_+|_+$", "");
+
+    if (sanitized.isEmpty()) {
+      return "extrato_sem_nome";
+    }
+
+    return sanitized;
   }
 }

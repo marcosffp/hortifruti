@@ -26,7 +26,6 @@ public class BackupPathService {
   public String getOrCreateBackupPath(String entityName, LocalDate startDate, LocalDate endDate) {
 
     try {
-      // Formatar o período no formato "2025-06_to_2025-09"
       String period =
           startDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
               + "_to_"
@@ -38,21 +37,18 @@ public class BackupPathService {
         backupFolderId = googleFolderService.createFolder(BACKUP_FOLDER_NAME, null);
       }
 
-      // Obter ou criar a pasta do ano
       String year = String.valueOf(startDate.getYear());
       String yearFolderId = googleFolderService.getFolderId(year, backupFolderId);
       if (yearFolderId == null) {
         yearFolderId = googleFolderService.createFolder(year, backupFolderId);
       }
 
-      // Obter ou criar a pasta do mês
       String month = String.format("%02d", startDate.getMonthValue());
       String monthFolderId = googleFolderService.getFolderId(month, yearFolderId);
       if (monthFolderId == null) {
         monthFolderId = googleFolderService.createFolder(month, yearFolderId);
       }
 
-      // Obter ou criar a pasta da entidade com o período
       String entityFolderName = entityName + "_" + period;
       String entityFolderId = googleFolderService.getFolderId(entityFolderName, monthFolderId);
       if (entityFolderId == null) {
@@ -61,7 +57,6 @@ public class BackupPathService {
 
       return entityFolderId;
     } catch (BackupException e) {
-      // Re-lançar exceções de autorização sem encapsular
       if (e.getMessage() != null && e.getMessage().startsWith("AUTHORIZATION_REQUIRED:")) {
         throw e;
       }

@@ -12,12 +12,10 @@ public class TokenValidator {
       return false;
     }
 
-    // Verifica se o token de acesso está presente e não expirou
     if (credential.getAccessToken() != null && isTokenNotExpired(credential)) {
       return true;
     }
 
-    // Tenta renovar o token se expirado
     if (credential.getRefreshToken() != null) {
       return tryRefreshToken(credential);
     }

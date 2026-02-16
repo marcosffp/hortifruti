@@ -143,7 +143,6 @@ public class ChatSessionService {
     for (ChatSession session : sessionsToUnpause) {
       session.setPausedUntil(null);
 
-      // Se o status era PAUSED, volta para MENU após o atendimento humano
       if (session.getStatus() == SessionStatus.PAUSED) {
         session.setStatus(SessionStatus.MENU);
         log.info("Sessão {} despausada e status mudado para MENU", session.getId());

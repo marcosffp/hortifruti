@@ -13,7 +13,7 @@ public record WeatherForecastDTO(
       double minTemp,
       double maxTemp,
       double avgTemp,
-      double avgFeelsLike, // NOVO: Sensação térmica média
+      double avgFeelsLike,
       double humidity,
       double rainfall,
       double windSpeed,

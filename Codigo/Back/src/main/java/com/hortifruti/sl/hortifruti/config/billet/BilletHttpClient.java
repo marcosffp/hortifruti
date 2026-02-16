@@ -30,7 +30,6 @@ public class BilletHttpClient {
 
   private final SicoobToken sicoobToken;
 
-  // Usar o ObjectMapper configurado
   private final ObjectMapper objectMapper;
 
   public JsonNode get(String endpoint) throws IOException {
@@ -54,7 +53,6 @@ public class BilletHttpClient {
     try {
       HttpHeaders headers = createHeaders();
 
-      // ✅ Serializar o body usando o ObjectMapper configurado
       String jsonBody = objectMapper.writeValueAsString(body);
       System.out.println("JSON enviado para Sicoob: " + jsonBody);
 
@@ -125,24 +123,20 @@ public class BilletHttpClient {
     }
   }
 
-  // ✅ Método corrigido para evitar confliso do Jackson
   public ResponseEntity<JsonNode> getWithResponse(String endpoint) throws IOException {
     try {
       HttpHeaders headers = createHeaders();
       HttpEntity<String> entity = new HttpEntity<>(headers);
 
-      // ✅ Buscar como String primeiro
       ResponseEntity<String> stringResponse =
           restTemplate.exchange(apiUrl + endpoint, HttpMethod.GET, entity, String.class);
 
-      // ✅ Converter manualmente para JsonNode usando o ObjectMapper configurado
       if (stringResponse.getBody() == null) {
         throw new BilletException("A resposta da API está nula.");
       }
 
       JsonNode jsonNode = objectMapper.readTree(stringResponse.getBody());
 
-      // ✅ Criar ResponseEntity com JsonNode
       return ResponseEntity.status(stringResponse.getStatusCode())
           .headers(stringResponse.getHeaders())
           .body(jsonNode);

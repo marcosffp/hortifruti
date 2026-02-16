@@ -37,7 +37,6 @@ public class OpenWeatherClient {
    */
   @SuppressWarnings("unchecked")
   public Map<String, Object> fetch5DayForecast() throws WeatherApiException {
-    // Codificar a cidade para URL de forma mais explícita
     String encodedCity = city.replace(" ", "+");
 
     String url =
