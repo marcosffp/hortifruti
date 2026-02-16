@@ -199,6 +199,23 @@ export const transactionService = {
     }
   },
 
+  async exportTransactionsComplete(): Promise<Blob> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/transactions/export-complete`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) {
+        throw new Error(`Erro ao exportar relatório completo: ${response.statusText}`);
+      }
+      const blob = await response.blob();
+      return blob;
+    } catch (error) {
+      console.error("Erro ao exportar relatório completo:", error);
+      throw error;
+    }
+  },
+
   async getAllCategories(): Promise<string[]> {
     const response = await fetch(`${API_BASE_URL}/transactions/categories`, {
       headers: getAuthHeaders(),
