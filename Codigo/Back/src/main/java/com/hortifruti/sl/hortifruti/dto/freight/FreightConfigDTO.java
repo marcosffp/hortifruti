@@ -7,11 +7,9 @@ public record FreightConfigDTO(
     Double tireCostPerKm,
     Double depreciationCostPerKm,
     Double insuranceCostPerKm,
-    // Delivery Person Configurations
     Double baseSalary,
     Double chargesPercentage,
     Double monthlyHoursWorked,
     Double administrativeCostsPercentage,
-    // Margin Configurations
     Double marginPercentage,
     Double fixedFee) {}

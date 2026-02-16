@@ -44,14 +44,12 @@ public class BilletSSLConfig {
         keyStore.load(instream, pfxPassword.toCharArray());
       }
 
-      // ✅ Usar TlsConfig para configurar TLS
       TlsConfig tlsConfig =
           TlsConfig.custom()
               .setHandshakeTimeout(Timeout.ofSeconds(30))
               .setSupportedProtocols("TLSv1.2", "TLSv1.3")
               .build();
 
-      // ✅ Configurar o connection manager com as novas APIs
       PoolingHttpClientConnectionManager connectionManager =
           PoolingHttpClientConnectionManagerBuilder.create()
               .setDefaultTlsConfig(tlsConfig)

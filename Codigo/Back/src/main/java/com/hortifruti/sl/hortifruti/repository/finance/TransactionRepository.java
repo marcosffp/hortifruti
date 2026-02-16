@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -22,17 +23,19 @@ public interface TransactionRepository
   Set<String> findHashes(@Param("hashes") Set<String> hashes);
 
   @Query(
-      """
-          SELECT t FROM Transaction t
-          WHERE
-            t.transactionDate >= :startDate
-            AND t.transactionDate <= :endDate
-            AND t.statement.bank = :bank
-      """)
+      "SELECT t FROM Transaction t WHERE t.transactionDate BETWEEN :startDate AND :endDate AND t.statement.bank = :bank")
   List<Transaction> findByTransactionDateBetweenAndStatementBank(
       @Param("startDate") LocalDate startDate,
       @Param("endDate") LocalDate endDate,
       @Param("bank") Bank bank);
+
+  @Query(
+      "SELECT t FROM Transaction t WHERE t.transactionDate BETWEEN :startDate AND :endDate AND t.statement.bank = :bank")
+  List<Transaction> findByTransactionDateBetweenAndStatementBank(
+      @Param("startDate") LocalDate startDate,
+      @Param("endDate") LocalDate endDate,
+      @Param("bank") Bank bank,
+      Pageable pageable);
 
   @Query("SELECT DISTINCT t.category FROM Transaction t WHERE t.category IS NOT NULL")
   List<String> findAllCategories();

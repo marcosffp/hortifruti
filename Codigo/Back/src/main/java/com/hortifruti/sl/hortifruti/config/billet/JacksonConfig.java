@@ -23,11 +23,9 @@ public class JacksonConfig {
 
     objectMapper.registerModule(new JavaTimeModule());
 
-    // Configurações para serialização
     objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
     objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
-    // Configurações para deserialização
     objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, false);
 

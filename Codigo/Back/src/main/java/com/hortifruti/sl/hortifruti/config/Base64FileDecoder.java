@@ -75,7 +75,7 @@ public class Base64FileDecoder {
     byte[] decodedBytes = Base64.getDecoder().decode(base64);
     File outputFile = new File(outputPath);
     if (!outputFile.getParentFile().exists()) {
-      outputFile.getParentFile().mkdirs(); // Garante que o diretório exista
+      outputFile.getParentFile().mkdirs();
     }
     try (FileOutputStream fos = new FileOutputStream(outputFile)) {
       fos.write(decodedBytes);

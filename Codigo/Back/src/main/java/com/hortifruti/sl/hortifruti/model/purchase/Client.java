@@ -66,7 +66,7 @@ public class Client {
   private LocalDateTime createdAt;
 
   @OneToMany(mappedBy = "client", cascade = CascadeType.ALL)
-  @JsonIgnore // Adiciona essa anotação para evitar a serialização dessa coleção
+  @JsonIgnore
   private List<Purchase> purchases;
 
   @Column(nullable = true)

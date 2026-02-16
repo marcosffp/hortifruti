@@ -31,14 +31,13 @@ public class UserInitializer implements CommandLineRunner {
 
   @Override
   public void run(String... args) throws Exception {
-    decodeBase64Files(); // Decodifica os arquivos Base64 primeiro
+    decodeBase64Files();
     initializeUsers();
-    // Adicionar esta linha
+    initializeFreightConfig();
     repopulateProductsIfNeeded();
   }
 
   private void repopulateProductsIfNeeded() {
-    // Verifica se algum produto tem as listas vazias
     long productsWithEmptyLists =
         productRepository.findAll().stream()
             .filter(p -> p.getPeakSalesMonths() == null || p.getPeakSalesMonths().isEmpty())
@@ -52,7 +51,6 @@ public class UserInitializer implements CommandLineRunner {
     }
   }
 
-  // Decodifica os arquivos Base64 necessários
   private void decodeBase64Files() {
     try {
       log.info("Decodificando arquivos Base64...");

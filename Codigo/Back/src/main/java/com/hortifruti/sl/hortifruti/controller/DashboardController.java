@@ -33,16 +33,13 @@ public class DashboardController {
       @RequestParam("month") int month,
       @RequestParam("year") int year) {
 
-    // Converte os parâmetros para os tipos necessários
     LocalDate start = LocalDate.parse(startDate);
     LocalDate end = LocalDate.parse(endDate);
     Month selectedMonth = Month.of(month);
 
-    // Chama o serviço para obter os dados do dashboard
     Map<String, Object> dashboardData =
         dashboardService.getDashboardData(start, end, selectedMonth, year);
 
-    // Retorna os dados no corpo da resposta
     return ResponseEntity.ok(dashboardData);
   }
 }
