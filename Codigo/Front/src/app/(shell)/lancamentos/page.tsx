@@ -11,7 +11,8 @@ import {
   ArrowRight,
   X,
   Upload,
-  Wallet
+  Wallet,
+  FileArchive // Nova importação
 } from "lucide-react";
 import { useEffect, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -35,6 +36,7 @@ export default function FinancialLaunchesPage() {
     deleteTransaction,
     updateTransaction,
     exportTransactionsAsExcel,
+    exportTransactionsComplete, // Nova função
     getAllCategories,
   } = useTransaction();
 
@@ -145,9 +147,18 @@ export default function FinancialLaunchesPage() {
   const handleExport = async () => {
     try {
       await exportTransactionsAsExcel();
-      showSuccess("Exportação realizada com sucesso!");
+      showSuccess("Exportação Excel realizada com sucesso!");
     } catch (err) {
       showError("Erro ao exportar lançamentos: " + getErrorMessage(err));
+    }
+  };
+
+  const handleExportComplete = async () => {
+    try {
+      await exportTransactionsComplete();
+      showSuccess("Exportação completa realizada com sucesso!");
+    } catch (err) {
+      showError("Erro ao exportar relatório completo: " + getErrorMessage(err));
     }
   };
 
@@ -363,7 +374,16 @@ export default function FinancialLaunchesPage() {
               className="border border-gray-300 text-gray-700 px-4 py-2"
               icon={isLoading ? undefined : <Download size={18} />}
             >
-              {isLoading ? "Exportando..." : "Exportar"}
+              {isLoading ? "Exportando..." : "Exportar Excel"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleExportComplete}
+              disabled={isLoading}
+              className="border border-green-300 text-green-700 px-4 py-2 hover:bg-green-50"
+              icon={isLoading ? undefined : <FileArchive size={18} />}
+            >
+              {isLoading ? "Exportando..." : "Exportar Completo"}
             </Button>
           </div>
         </div>
