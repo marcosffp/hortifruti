@@ -33,7 +33,23 @@ public class UserInitializer implements CommandLineRunner {
   public void run(String... args) throws Exception {
     decodeBase64Files(); // Decodifica os arquivos Base64 primeiro
     initializeUsers();
-    initializeFreightConfig();
+    // Adicionar esta linha
+    repopulateProductsIfNeeded();
+  }
+
+  private void repopulateProductsIfNeeded() {
+    // Verifica se algum produto tem as listas vazias
+    long productsWithEmptyLists =
+        productRepository.findAll().stream()
+            .filter(p -> p.getPeakSalesMonths() == null || p.getPeakSalesMonths().isEmpty())
+            .count();
+
+    if (productsWithEmptyLists > 0) {
+      log.info("Detectado produtos com listas vazias. Repopulando...");
+      productRepository.deleteAll();
+      createSampleProducts();
+      log.info("Produtos repopulados com sucesso!");
+    }
   }
 
   // Decodifica os arquivos Base64 necessários

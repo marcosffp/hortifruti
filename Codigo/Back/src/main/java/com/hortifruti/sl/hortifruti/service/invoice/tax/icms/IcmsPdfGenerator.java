@@ -11,6 +11,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -41,14 +42,14 @@ public class IcmsPdfGenerator {
         float cellHeight = 25;
         float lineHeight = 20;
 
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 16);
+        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
         contentStream.beginText();
         contentStream.newLineAtOffset(leftMargin, yPosition);
         contentStream.showText("Registro de Apuração de ICMS");
         contentStream.endText();
         yPosition -= lineHeight * 2;
 
-        contentStream.setFont(PDType1Font.HELVETICA, 12);
+        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
         addText(contentStream, leftMargin, yPosition, "FIRMA: " + companyName);
         yPosition -= lineHeight;
         addText(contentStream, leftMargin, yPosition, "INSCRIÇÃO ESTADUAL: " + stateRegistration);
@@ -65,7 +66,7 @@ public class IcmsPdfGenerator {
         contentStream.stroke();
         yPosition -= lineHeight;
 
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 14);
+        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 14);
         addText(contentStream, leftMargin, yPosition, "SAÍDAS");
         yPosition -= lineHeight;
 
@@ -123,7 +124,7 @@ public class IcmsPdfGenerator {
         yPosition -= cellHeight * 2;
 
         // Legenda explicativa
-        contentStream.setFont(PDType1Font.HELVETICA, 10);
+        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
         addText(contentStream, leftMargin, yPosition, "Legenda:");
         yPosition -= lineHeight;
         addText(
@@ -206,7 +207,7 @@ public class IcmsPdfGenerator {
       contentStream.stroke();
 
       contentStream.beginText();
-      contentStream.setFont(PDType1Font.HELVETICA_BOLD, 10);
+      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
       contentStream.newLineAtOffset(
           x + (cellWidth * i) + 15, y - height + 10); // Ajustado espaçamento interno
       contentStream.showText(headers[i]);
@@ -229,7 +230,7 @@ public class IcmsPdfGenerator {
       contentStream.stroke();
 
       contentStream.beginText();
-      contentStream.setFont(PDType1Font.HELVETICA, 10);
+      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
       contentStream.newLineAtOffset(
           x + (cellWidth * i) + 15, y - height + 10); // Ajustado espaçamento interno
       contentStream.showText(values[i]);
