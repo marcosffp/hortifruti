@@ -11,6 +11,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -40,14 +41,14 @@ public class RegisterPdfGenerator {
         float cellHeight = 25;
         float lineHeight = 20;
 
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 16);
+        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
         contentStream.beginText();
         contentStream.newLineAtOffset(leftMargin, yPosition);
         contentStream.showText("Livro de Registro de Saídas - RE - Modelo P 2/A");
         contentStream.endText();
         yPosition -= lineHeight * 2;
 
-        contentStream.setFont(PDType1Font.HELVETICA, 12);
+        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 12);
         addText(contentStream, leftMargin, yPosition, "FIRMA: " + companyName);
         yPosition -= lineHeight;
         addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
@@ -94,7 +95,7 @@ public class RegisterPdfGenerator {
         }
 
         yPosition -= lineHeight * 2;
-        contentStream.setFont(PDType1Font.HELVETICA, 10);
+        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
         addText(contentStream, leftMargin, yPosition, "Legenda:");
         yPosition -= lineHeight;
 
@@ -180,7 +181,7 @@ public class RegisterPdfGenerator {
       contentStream.stroke();
 
       contentStream.beginText();
-      contentStream.setFont(PDType1Font.HELVETICA_BOLD, 10);
+      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
       contentStream.newLineAtOffset(x + (cellWidth * i) + 15, y - height + 10);
       contentStream.showText(headers[i]);
       contentStream.endText();
@@ -202,7 +203,7 @@ public class RegisterPdfGenerator {
       contentStream.stroke();
 
       contentStream.beginText();
-      contentStream.setFont(PDType1Font.HELVETICA, 10);
+      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
       contentStream.newLineAtOffset(x + (cellWidth * i) + 15, y - height + 10);
       contentStream.showText(values[i]);
       contentStream.endText();

@@ -29,7 +29,8 @@ public class ReportTaxController {
       }
 
       return ResponseEntity.ok()
-          .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"relatorios_mensais.zip\"")
+          .header(
+              HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"relatorios_mensais.zip\"")
           .contentType(MediaType.APPLICATION_OCTET_STREAM)
           .body(zipBytes);
     } catch (Exception e) {

@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.model;
 
 import com.hortifruti.sl.hortifruti.model.enumeration.Month;
 import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
+import com.hortifruti.sl.hortifruti.util.MonthListConverter;
 import jakarta.persistence.*;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -26,15 +27,14 @@ public class ClimateProduct {
   @Column(name = "temperature_category", nullable = false)
   private TemperatureCategory temperatureCategory;
 
-  @Enumerated(EnumType.STRING)
+  @Convert(converter = MonthListConverter.class)
   @Column(name = "peak_sales_months", length = 500)
   private List<Month> peakSalesMonths;
 
-  @Enumerated(EnumType.STRING)
+  @Convert(converter = MonthListConverter.class)
   @Column(name = "low_sales_months", length = 500)
   private List<Month> lowSalesMonths;
 
-  /** Construtor para facilitar a criação de produtos */
   public ClimateProduct(
       String name,
       TemperatureCategory temperatureCategory,
