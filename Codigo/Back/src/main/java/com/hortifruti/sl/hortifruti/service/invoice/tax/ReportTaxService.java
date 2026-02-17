@@ -48,7 +48,6 @@ public class ReportTaxService {
       e.printStackTrace();
       throw new RuntimeException("Erro interno durante geração de relatórios", e);
     } finally {
-      // Remove o arquivo ZIP gerado
       if (zipPath != null && Files.exists(zipPath)) {
         try {
           Files.delete(zipPath);
@@ -163,12 +162,10 @@ public class ReportTaxService {
 
     Path targetPath = folderPath.resolve(nfSalesZipName);
 
-    // Verifica se o arquivo já existe e exclui, se necessário
     if (Files.exists(targetPath)) {
-      Files.delete(targetPath); // Remove o arquivo existente
+      Files.delete(targetPath);
     }
 
-    // Move o arquivo para o destino
     Files.move(Path.of(nfSalesZipPath), targetPath);
   }
 

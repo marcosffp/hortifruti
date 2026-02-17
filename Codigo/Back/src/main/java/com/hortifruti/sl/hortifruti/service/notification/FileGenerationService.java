@@ -24,10 +24,8 @@ public class FileGenerationService {
   private final StatementSelectionService statementSelectionService;
 
   public byte[] createZipWithStatements(int month, int year) throws IOException {
-    // Usar a nova estratégia para buscar os melhores statements
     List<Statement> statements = statementSelectionService.getBestStatementsForMonth(month, year);
 
-    // Criar arquivo ZIP temporário
     String tempZipPath =
         System.getProperty("java.io.tmpdir") + "/statements_" + month + "_" + year + ".zip";
 
@@ -39,7 +37,6 @@ public class FileGenerationService {
         if (statement.getFilePath() != null) {
           String fileName = statement.getName() + "_" + statement.getBank().name() + ".pdf";
 
-          // Criar arquivo temporário para o PDF
           String tempPdfPath = System.getProperty("java.io.tmpdir") + "/" + fileName;
           try (FileOutputStream fos = new FileOutputStream(tempPdfPath)) {
             fos.write(statement.getFilePath());
@@ -48,7 +45,6 @@ public class FileGenerationService {
           zipParameters.setFileNameInZip(fileName);
           zipFile.addFile(tempPdfPath, zipParameters);
 
-          // Limpar arquivo temporário
           new File(tempPdfPath).delete();
         }
       }
@@ -70,26 +66,6 @@ public class FileGenerationService {
         new File(bbExcelPath).delete();
       }
 
-      // Gerar e adicionar Excel do Sicoob
-      List<Statement> sicoobStatements =
-          statements.stream().filter(s -> s.getBank() == Bank.SICOOB).collect(Collectors.toList());
-      if (!sicoobStatements.isEmpty()) {
-        byte[] sicoobExcel = generateBankExcel(sicoobStatements, "Sicoob");
-        String sicoobExcelPath =
-            System.getProperty("java.io.tmpdir")
-                + "/extrato_sicoob_"
-                + month
-                + "_"
-                + year
-                + ".xlsx";
-        try (FileOutputStream fos = new FileOutputStream(sicoobExcelPath)) {
-          fos.write(sicoobExcel);
-        }
-        zipParameters.setFileNameInZip("extrato_sicoob_" + month + "_" + year + ".xlsx");
-        zipFile.addFile(sicoobExcelPath, zipParameters);
-        new File(sicoobExcelPath).delete();
-      }
-
       // Gerar e adicionar ZIP com Notas Fiscais do mês anterior
       byte[] invoicesZip = generateMonthlyInvoicesZip(month, year);
       if (invoicesZip.length > 0) {
@@ -104,10 +80,8 @@ public class FileGenerationService {
       }
     }
 
-    // Ler o arquivo ZIP criado
     byte[] zipBytes = java.nio.file.Files.readAllBytes(new File(tempZipPath).toPath());
 
-    // Limpar arquivo ZIP temporário
     new File(tempZipPath).delete();
 
     return zipBytes;
@@ -117,7 +91,6 @@ public class FileGenerationService {
     try (Workbook workbook = new XSSFWorkbook()) {
       Sheet sheet = workbook.createSheet("Extrato " + bankName);
 
-      // Criar cabeçalho
       Row headerRow = sheet.createRow(0);
       String[] headers = {"Data", "Histórico", "Documento", "Valor", "Tipo", "Saldo"};
 
@@ -132,7 +105,6 @@ public class FileGenerationService {
         cell.setCellStyle(headerStyle);
       }
 
-      // Adicionar dados das transações
       int rowNum = 1;
       BigDecimal runningBalance = BigDecimal.ZERO;
 
@@ -147,7 +119,6 @@ public class FileGenerationService {
           row.createCell(3).setCellValue(transaction.getAmount().doubleValue());
           row.createCell(4).setCellValue(transaction.getTransactionType().toString());
 
-          // Calcular saldo corrente
           if (transaction.getTransactionType().toString().equals("CREDIT")) {
             runningBalance = runningBalance.add(transaction.getAmount());
           } else {
@@ -157,12 +128,10 @@ public class FileGenerationService {
         }
       }
 
-      // Auto-ajustar colunas
       for (int i = 0; i < headers.length; i++) {
         sheet.autoSizeColumn(i);
       }
 
-      // Converter para bytes
       try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
         workbook.write(outputStream);
         return outputStream.toByteArray();
@@ -177,26 +146,22 @@ public class FileGenerationService {
       String creditValue,
       String cashValue)
       throws IOException {
-    // Processar valores: remover 60% do crédito e débito
     BigDecimal debit = parseValue(debitValue);
     BigDecimal credit = parseValue(creditValue);
     BigDecimal cash = parseValue(cashValue);
 
-    BigDecimal processedDebit = debit.multiply(BigDecimal.valueOf(0.4)); // 40% restante
-    BigDecimal processedCredit = credit.multiply(BigDecimal.valueOf(0.4)); // 40% restante
+    BigDecimal processedDebit = debit.multiply(BigDecimal.valueOf(0.4));
+    BigDecimal processedCredit = credit.multiply(BigDecimal.valueOf(0.4));
 
-    // Criar um arquivo Excel com o resumo dos valores processados
     try (Workbook workbook = new XSSFWorkbook()) {
       Sheet sheet = workbook.createSheet("Resumo Financeiro");
 
-      // Criar cabeçalho
       Row headerRow = sheet.createRow(0);
       headerRow.createCell(0).setCellValue("Tipo");
       headerRow.createCell(1).setCellValue("Valor Original");
       headerRow.createCell(2).setCellValue("Valor Processado");
       headerRow.createCell(3).setCellValue("Observação");
 
-      // Adicionar dados
       Row debitRow = sheet.createRow(1);
       debitRow.createCell(0).setCellValue("Débito");
       debitRow.createCell(1).setCellValue(debit.doubleValue());
@@ -215,7 +180,6 @@ public class FileGenerationService {
       cashRow.createCell(2).setCellValue(cash.doubleValue());
       cashRow.createCell(3).setCellValue("Sem alteração");
 
-      // Auto-ajustar colunas
       for (int i = 0; i < 4; i++) {
         sheet.autoSizeColumn(i);
       }
@@ -232,9 +196,7 @@ public class FileGenerationService {
       return BigDecimal.ZERO;
     }
     try {
-      // Remove caracteres não numéricos exceto ponto e vírgula
       String cleanValue = value.replaceAll("[^0-9.,]", "");
-      // Substitui vírgula por ponto se necessário
       cleanValue = cleanValue.replace(",", ".");
       return new BigDecimal(cleanValue);
     } catch (Exception e) {
@@ -247,16 +209,13 @@ public class FileGenerationService {
     try (Workbook workbook = new XSSFWorkbook()) {
       Sheet sheet = workbook.createSheet("Boleto - Cliente " + clientId);
 
-      // Cabeçalho
       Row headerRow = sheet.createRow(0);
       headerRow.createCell(0).setCellValue("BOLETO BANCÁRIO");
 
-      // Informações do cliente
       Row clientRow = sheet.createRow(1);
       clientRow.createCell(0).setCellValue("Cliente ID:");
       clientRow.createCell(1).setCellValue(clientId);
 
-      // Dados do boleto
       Row dateRow = sheet.createRow(2);
       dateRow.createCell(0).setCellValue("Data de Emissão:");
       dateRow.createCell(1).setCellValue(java.time.LocalDate.now().toString());
@@ -267,9 +226,8 @@ public class FileGenerationService {
 
       Row valueRow = sheet.createRow(4);
       valueRow.createCell(0).setCellValue("Valor:");
-      valueRow.createCell(1).setCellValue("R$ 0,00"); // Seria calculado baseado nas pendências
+      valueRow.createCell(1).setCellValue("R$ 0,00");
 
-      // Auto-ajustar colunas
       for (int i = 0; i < 2; i++) {
         sheet.autoSizeColumn(i);
       }
@@ -286,16 +244,13 @@ public class FileGenerationService {
     try (Workbook workbook = new XSSFWorkbook()) {
       Sheet sheet = workbook.createSheet("Nota Fiscal - Cliente " + clientId);
 
-      // Cabeçalho
       Row headerRow = sheet.createRow(0);
       headerRow.createCell(0).setCellValue("NOTA FISCAL");
 
-      // Informações do cliente
       Row clientRow = sheet.createRow(1);
       clientRow.createCell(0).setCellValue("Cliente ID:");
       clientRow.createCell(1).setCellValue(clientId);
 
-      // Dados da nota
       Row dateRow = sheet.createRow(2);
       dateRow.createCell(0).setCellValue("Data de Emissão:");
       dateRow.createCell(1).setCellValue(java.time.LocalDate.now().toString());
@@ -306,9 +261,8 @@ public class FileGenerationService {
 
       Row valueRow = sheet.createRow(4);
       valueRow.createCell(0).setCellValue("Valor Total:");
-      valueRow.createCell(1).setCellValue("R$ 0,00"); // Seria calculado baseado nas transações
+      valueRow.createCell(1).setCellValue("R$ 0,00");
 
-      // Auto-ajustar colunas
       for (int i = 0; i < 2; i++) {
         sheet.autoSizeColumn(i);
       }
@@ -323,15 +277,12 @@ public class FileGenerationService {
   /** Gera ZIP com todas as notas fiscais do mês anterior */
   public byte[] generateMonthlyInvoicesZip(int month, int year) throws IOException {
     try {
-      // Para demonstração, criar algumas notas fiscais de exemplo
-      // Em um sistema real, buscaria do banco de dados
       String tempZipPath =
           System.getProperty("java.io.tmpdir") + "/invoices_" + month + "_" + year + ".zip";
 
       try (ZipFile zipFile = new ZipFile(tempZipPath)) {
         ZipParameters zipParameters = new ZipParameters();
 
-        // Gerar notas fiscais de exemplo (em um sistema real seria do banco)
         for (int i = 1; i <= 5; i++) {
           byte[] invoice = generateSampleInvoice(i, month, year);
           String invoicePath =
@@ -355,16 +306,14 @@ public class FileGenerationService {
         }
       }
 
-      // Ler o arquivo ZIP criado
       byte[] zipBytes = java.nio.file.Files.readAllBytes(new File(tempZipPath).toPath());
 
-      // Limpar arquivo ZIP temporário
       new File(tempZipPath).delete();
 
       return zipBytes;
 
     } catch (Exception e) {
-      return new byte[0]; // Retorna array vazio se houver erro
+      return new byte[0];
     }
   }
 
@@ -373,33 +322,27 @@ public class FileGenerationService {
     try (Workbook workbook = new XSSFWorkbook()) {
       Sheet sheet = workbook.createSheet("Nota Fiscal " + invoiceNumber);
 
-      // Cabeçalho
       Row headerRow = sheet.createRow(0);
       headerRow.createCell(0).setCellValue("NOTA FISCAL ELETRÔNICA");
 
-      // Número da nota
       Row numberRow = sheet.createRow(1);
       numberRow.createCell(0).setCellValue("Número:");
       numberRow
           .createCell(1)
           .setCellValue("NF-" + year + month + String.format("%03d", invoiceNumber));
 
-      // Data
       Row dateRow = sheet.createRow(2);
       dateRow.createCell(0).setCellValue("Data de Emissão:");
       dateRow.createCell(1).setCellValue(String.format("%02d/%02d/%d", 15, month, year));
 
-      // Cliente
       Row clientRow = sheet.createRow(3);
       clientRow.createCell(0).setCellValue("Cliente:");
       clientRow.createCell(1).setCellValue("Cliente " + invoiceNumber);
 
-      // Valor
       Row valueRow = sheet.createRow(4);
       valueRow.createCell(0).setCellValue("Valor Total:");
       valueRow.createCell(1).setCellValue("R$ " + (invoiceNumber * 150.50));
 
-      // Auto-ajustar colunas
       for (int i = 0; i < 2; i++) {
         sheet.autoSizeColumn(i);
       }

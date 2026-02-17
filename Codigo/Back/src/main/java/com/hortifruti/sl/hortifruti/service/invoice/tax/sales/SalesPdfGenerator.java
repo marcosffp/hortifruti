@@ -121,9 +121,7 @@ public class SalesPdfGenerator {
       float height,
       String[] headers)
       throws IOException {
-    float[] columnWidths = {
-      50, 40, 70, 70, 120, 60, 60, 60, 60
-    }; // Define largura específica para cada coluna
+    float[] columnWidths = {50, 40, 70, 70, 120, 60, 60, 60, 60};
 
     for (int i = 0; i < headers.length; i++) {
       contentStream.addRect(x, y, columnWidths[i], -height);

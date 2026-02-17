@@ -57,7 +57,6 @@ public class PurchaseProcessingService {
         throw new PurchaseException("Nenhum cliente correspondente foi encontrado.");
       }
 
-      // Calcular total apenas com produtos que têm quantidade > 0
       BigDecimal total =
           invoiceProducts.stream()
               .filter(product -> product.getQuantity().compareTo(BigDecimal.ZERO) > 0)
@@ -77,11 +76,9 @@ public class PurchaseProcessingService {
 
       purchase = purchaseRepository.save(purchase);
 
-      // Salvar apenas produtos com quantidade maior que zero
       List<InvoiceProduct> savedProducts = new ArrayList<>();
 
       for (InvoiceProduct product : invoiceProducts) {
-        // Filtrar produtos com quantidade zero antes de salvar
         if (product.getQuantity().compareTo(BigDecimal.ZERO) > 0) {
           product.setPurchase(purchase);
           InvoiceProduct savedProduct = invoiceProductRepository.save(product);
@@ -104,20 +101,16 @@ public class PurchaseProcessingService {
 
   private LocalDate parsePurchaseDate(String purchaseDate) {
     try {
-      // Remover qualquer texto após a data (como "TOTAL: R$ 103,75")
       String cleanDate = purchaseDate.trim();
 
-      // Se contém "TOTAL:", pega apenas a parte antes
       if (cleanDate.contains("TOTAL:")) {
         cleanDate = cleanDate.substring(0, cleanDate.indexOf("TOTAL:")).trim();
       }
 
-      // Se contém "R$", pega apenas a parte antes
       if (cleanDate.contains("R$")) {
         cleanDate = cleanDate.substring(0, cleanDate.indexOf("R$")).trim();
       }
 
-      // Remover espaços extras
       cleanDate = cleanDate.replaceAll("\\s+", "");
 
       DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yy");
@@ -146,14 +139,12 @@ public class PurchaseProcessingService {
       if (!isProductSection) continue;
 
       if (line.matches("^\\d+\\s+.*")) {
-        // Verificar se a linha tem quantidade válida antes de processar
         if (hasValidQuantity(line)) {
           InvoiceProduct product = parseProductLine(line);
           if (product != null) {
             products.add(product);
           }
         }
-        // Se não tem quantidade válida, ignora o item silenciosamente
       }
     }
 
@@ -168,17 +159,13 @@ public class PurchaseProcessingService {
     try {
       String[] parts = line.split("\\s+");
 
-      if (parts.length < 3) return false; // Precisa ter pelo menos código, nome e mais alguma coisa
+      if (parts.length < 3) return false;
 
-      // Extrair o nome do produto para determinar onde deveria estar a quantidade
       String name = extractProductName(parts);
       int quantityIndex = name.split("\\s+").length + 1;
 
-      // Verificar se existe um valor de quantidade válido na posição esperada
-      // E se existe pelo menos mais um valor após (que seria o preço)
       if (quantityIndex < parts.length - 1) {
         String quantityStr = parts[quantityIndex];
-        // Verifica se não está vazio e se é um número válido (não começando com R$)
         return !quantityStr.trim().isEmpty()
             && quantityStr.matches("\\d+([,.]\\d+)?")
             && !quantityStr.contains("R$");
@@ -186,7 +173,6 @@ public class PurchaseProcessingService {
 
       return false;
     } catch (Exception e) {
-      // Se houver erro ao verificar, considera como inválido
       return false;
     }
   }

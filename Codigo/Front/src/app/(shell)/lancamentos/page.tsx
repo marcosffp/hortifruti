@@ -90,19 +90,30 @@ export default function FinancialLaunchesPage() {
 
       const allTransactions: PageResult<TransactionResponse> | undefined =
         await getAllTransactions(search, type, category, page);
-      setTransactions(allTransactions?.content || []);
-      setTotalPages(allTransactions?.totalPages || 1);
+      
+      
+      if (allTransactions) {
+        setTransactions(allTransactions.content || []);
+        setTotalPages(allTransactions.totalPages || 1);
+        
+        if (page >= allTransactions.totalPages && allTransactions.totalPages > 0) {
+          setPage(Math.max(0, allTransactions.totalPages - 1));
+        }
+      } else {
+        setTransactions([]);
+        setTotalPages(1);
+      }
     } catch (err) {
       console.error("Erro ao buscar transações: ", err);
+      setTransactions([]);
+      setTotalPages(1);
     }
   };
 
-  // Effect para dados do resumo (reage às mudanças de data)
   useEffect(() => {
     fetchSummaryData();
   }, [startDate, endDate]);
 
-  // Effect para dados das transações (reage aos filtros de pesquisa)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       fetchTransactionsData();
@@ -133,11 +144,10 @@ export default function FinancialLaunchesPage() {
     if (!currentTransaction) return;
 
     try {
-      console.log("Enviando requisição de atualização:", formData);
       await updateTransaction(currentTransaction.id, formData);
       alert("Lançamento atualizado com sucesso!");
       setIsEditModalOpen(false);
-      fetchSummaryData(); // Refetch data after update
+      fetchSummaryData();
     } catch (err) {
       console.error("Erro detalhado:", err);
       alert("Erro ao atualizar lançamento: " + getErrorMessage(err));
@@ -519,43 +529,66 @@ export default function FinancialLaunchesPage() {
         </div>
         <div className="mt-4 flex justify-start max-sm:justify-center gap-5">
           <button
-            disabled={page === 0}
-            onClick={() => setPage(page - 1)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${page === 0
+            disabled={page === 0 || isLoading}
+            onClick={() => {
+              if (page > 0) {
+                setPage(page - 1);
+              }
+            }}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+              page === 0 || isLoading
                 ? "bg-gray-200 border-gray-300 cursor-not-allowed"
-                : "bg-white border-gray-300 hover:bg-gray-100"
+                : "bg-white border-gray-300 hover:bg-gray-100 cursor-pointer"
               } transition`}
           >
             <span
-              className={`flex items-center justify-center w-8 h-8 rounded-full ${page === 0 ? "bg-gray-300" : "bg-gray-100 hover:bg-gray-200"
-                }`}
+              className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                page === 0 || isLoading ? "bg-gray-300" : "bg-gray-100 hover:bg-gray-200"
+              }`}
             >
               <ArrowLeft
                 size={20}
-                className={page === 0 ? "text-gray-400" : "text-gray-700"}
+                className={page === 0 || isLoading ? "text-gray-400" : "text-gray-700"}
               />
             </span>
             Anterior
           </button>
+          
+          {/* Indicador de página atual - DEBUG */}
+          <div className="flex items-center px-4 py-2 bg-gray-100 rounded-lg">
+            <span className="text-sm text-gray-600">
+              Página {page + 1} de {Math.max(1, totalPages)}
+              {transactions?.length > 0 && ` (${transactions.length} resultados)`}
+            </span>
+          </div>
+          
           <button
-            disabled={page === totalPages - 1}
-            onClick={() => setPage(page + 1)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${page === totalPages - 1
+            disabled={page >= totalPages - 1 || totalPages <= 1 || isLoading}
+            onClick={() => {
+              if (page < totalPages - 1) {
+                setPage(page + 1);
+              }
+            }}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+              page >= totalPages - 1 || totalPages <= 1 || isLoading
                 ? "bg-gray-200 border-gray-300 cursor-not-allowed"
-                : "bg-white border-gray-300 hover:bg-gray-100"
+                : "bg-white border-gray-300 hover:bg-gray-100 cursor-pointer"
               } transition`}
           >
             Próxima
             <span
-              className={`flex items-center justify-center w-8 h-8 rounded-full ${page === totalPages - 1
+              className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                page >= totalPages - 1 || totalPages <= 1 || isLoading
                   ? "bg-gray-300"
                   : "bg-gray-100 hover:bg-gray-200"
-                }`}
+              }`}
             >
               <ArrowRight
                 size={20}
                 className={
-                  page === totalPages - 1 ? "text-gray-400" : "text-gray-700"
+                  page >= totalPages - 1 || totalPages <= 1 || isLoading 
+                    ? "text-gray-400" 
+                    : "text-gray-700"
                 }
               />
             </span>

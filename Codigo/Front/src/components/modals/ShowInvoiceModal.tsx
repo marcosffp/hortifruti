@@ -25,11 +25,9 @@ export default function ShowInvoiceModal({
 
     useEffect(() => {
         if (invoiceData && isOpen) {
-            // Cria URL do blob para exibir o PDF
             const url = URL.createObjectURL(invoiceData);
             setPdfUrl(url);
 
-            // Cleanup: revoga o URL quando o componente desmontar
             return () => {
                 URL.revokeObjectURL(url);
             };
@@ -38,16 +36,11 @@ export default function ShowInvoiceModal({
 
     const handleDownload = () => {
         try {
-            console.log("invoiceNumber:", invoiceNumber); // Debug
-            console.log("scoreNumber:", scoreNumber); // Debug
-            console.log("ref:", ref); // Debug
             
             const url = URL.createObjectURL(invoiceData);
             const link = document.createElement('a');
             link.href = url;
-            // Use invoiceNumber se disponível, senão fallback para scoreNumber ou ref
             const fileName = invoiceNumber ? `NF-${invoiceNumber}.pdf` : `NF-${scoreNumber || ref}.pdf`;
-            console.log("Nome do arquivo:", fileName); // Debug
             
             link.setAttribute('download', fileName);
             document.body.appendChild(link);

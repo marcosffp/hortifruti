@@ -123,7 +123,6 @@ public class IcmsPdfGenerator {
             });
         yPosition -= cellHeight * 2;
 
-        // Legenda explicativa
         contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
         addText(contentStream, leftMargin, yPosition, "Legenda:");
         yPosition -= lineHeight;
@@ -176,7 +175,6 @@ public class IcmsPdfGenerator {
             "Total Geral: Soma total de todas as operações apuradas no período.");
       }
 
-      // Retornar o documento como byte[]
       try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
         document.save(outputStream);
         return outputStream.toByteArray();
@@ -208,8 +206,7 @@ public class IcmsPdfGenerator {
 
       contentStream.beginText();
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
-      contentStream.newLineAtOffset(
-          x + (cellWidth * i) + 15, y - height + 10); // Ajustado espaçamento interno
+      contentStream.newLineAtOffset(x + (cellWidth * i) + 15, y - height + 10);
       contentStream.showText(headers[i]);
       contentStream.endText();
     }
@@ -231,8 +228,7 @@ public class IcmsPdfGenerator {
 
       contentStream.beginText();
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
-      contentStream.newLineAtOffset(
-          x + (cellWidth * i) + 15, y - height + 10); // Ajustado espaçamento interno
+      contentStream.newLineAtOffset(x + (cellWidth * i) + 15, y - height + 10);
       contentStream.showText(values[i]);
       contentStream.endText();
     }

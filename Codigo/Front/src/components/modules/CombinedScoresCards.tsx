@@ -211,10 +211,8 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
 
             if (response.ref) {
                 try {
-                    // Buscar o DANFE para exibir
                     const danfeBlob = await getDanfe(response.ref);
                     
-                    // Buscar as informações da nota fiscal para ter o número
                     const invoiceInfo = await getInvoiceInfo(response.ref);
                     
                     setSelectedScore({ 
@@ -228,18 +226,13 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                     showSuccess("Nota fiscal gerada com sucesso!");
                     fetchScores();
                 } catch (danfeError: any) {
-                    // Nota fiscal foi criada, mas DANFE ainda não está disponível
-                    console.log("DANFE ainda não disponível:", danfeError);
                     
-                    // Atualiza a lista para mostrar o botão "Ver NF"
                     fetchScores();
                     
-                    // Mostra mensagem amigável
                     showInfo("Nota fiscal gerada! O documento está sendo processado e estará disponível em alguns instantes. Clique em 'Ver NF' para visualizar.");
                 }
             }
         } catch (error: any) {
-            // Erro na criação da nota fiscal
             showError(error?.response?.data?.message || "Erro ao gerar nota fiscal");
             console.error(error);
         }
