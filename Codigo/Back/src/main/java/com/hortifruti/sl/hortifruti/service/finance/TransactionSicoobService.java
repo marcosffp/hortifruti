@@ -19,7 +19,6 @@ import java.util.regex.Pattern;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @AllArgsConstructor
@@ -31,9 +30,11 @@ public class TransactionSicoobService {
   private static final Pattern DATE_PATTERN = Pattern.compile("^(\\d{2}/\\d{2})");
   private static final Pattern VALUE_PATTERN = Pattern.compile("R\\$\\s*([\\d.,]+)([DC])");
 
-  protected List<Transaction> importStatement(MultipartFile file, Statement statement)
-      throws IOException {
-    String text = PdfUtil.extractPdfText(file);
+  protected List<Transaction> importStatement(
+      byte[] fileBytes, String fileName, Statement statement) throws IOException {
+
+    String text = PdfUtil.extractPdfText(fileBytes);
+
     List<Transaction> transactions = parseSicoob(text, statement);
 
     List<Transaction> newTransactions =
@@ -55,12 +56,22 @@ public class TransactionSicoobService {
   private List<Transaction> saveTransactionsIndividually(List<Transaction> transactions) {
     List<Transaction> savedTransactions = new ArrayList<>();
 
-    for (Transaction transaction : transactions) {
+    for (int i = 0; i < transactions.size(); i++) {
+      Transaction transaction = transactions.get(i);
       try {
+
+        if (transaction.getHistory() != null && transaction.getHistory().length() > 500) {
+          transaction.setHistory(transaction.getHistory().substring(0, 497) + "...");
+        }
+
+        transaction.setId(null);
+
         Transaction saved = transactionRepository.save(transaction);
         savedTransactions.add(saved);
       } catch (Exception e) {
-        throw new TransactionException("Erro ao salvar transação: " + transaction.toString(), e);
+
+        throw new TransactionException(
+            "Erro ao salvar transação " + (i + 1) + ": " + e.getMessage(), e);
       }
     }
 
@@ -75,7 +86,8 @@ public class TransactionSicoobService {
     StringBuilder historyBuffer = new StringBuilder();
     String document = null;
 
-    for (String rawLine : lines) {
+    for (int lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+      String rawLine = lines[lineIndex];
       String line = rawLine.trim();
 
       if (line.isBlank()
@@ -89,9 +101,14 @@ public class TransactionSicoobService {
       Matcher dateMatcher = DATE_PATTERN.matcher(line);
       if (dateMatcher.find()) {
         if (currentDate != null && historyBuffer.length() > 0) {
+          String historyContent = historyBuffer.toString().trim();
+          if (historyContent.length() > 200) {}
+
           Transaction transaction =
-              createTransaction(currentDate, document, historyBuffer.toString().trim(), statement);
-          if (transaction.getHash() != null && !transaction.getHash().isEmpty()) {
+              createTransaction(currentDate, document, historyContent, statement);
+          if (transaction != null
+              && transaction.getHash() != null
+              && !transaction.getHash().isEmpty()) {
             transactions.add(transaction);
           }
           historyBuffer.setLength(0);
@@ -100,6 +117,29 @@ public class TransactionSicoobService {
         String[] parts = line.split("\\s+", 3);
         currentDate = TransactionUtil.parseDate(parts[0]);
         document = parts.length > 1 ? parts[1] : null;
+
+        Matcher immediateValueMatcher = VALUE_PATTERN.matcher(line);
+        if (immediateValueMatcher.find()) {
+
+          String lineHistory = "";
+          if (parts.length > 2) {
+            String remainingLine = line.substring(parts[0].length() + parts[1].length()).trim();
+            lineHistory = remainingLine;
+          }
+
+          Transaction transaction =
+              createTransactionFromMatcher(
+                  currentDate, document, lineHistory, immediateValueMatcher, statement);
+          if (transaction != null
+              && transaction.getHash() != null
+              && !transaction.getHash().isEmpty()) {
+            transactions.add(transaction);
+          }
+
+          currentDate = null;
+          document = null;
+          continue;
+        }
         if (parts.length > 2) {
           historyBuffer.append(parts[2]).append(" ");
         }
@@ -108,10 +148,16 @@ public class TransactionSicoobService {
 
       Matcher valueMatcher = VALUE_PATTERN.matcher(line);
       if (valueMatcher.find() && currentDate != null) {
+
+        String historicalPart = line.replaceAll("R\\$\\s*[\\d.,]+[DC]", "").trim();
+        historyBuffer.append(historicalPart).append(" ");
+
         Transaction transaction =
             createTransactionFromMatcher(
                 currentDate, document, historyBuffer.toString().trim(), valueMatcher, statement);
-        if (transaction.getHash() != null && !transaction.getHash().isEmpty()) {
+        if (transaction != null
+            && transaction.getHash() != null
+            && !transaction.getHash().isEmpty()) {
           transactions.add(transaction);
         }
         historyBuffer.setLength(0);
@@ -119,13 +165,20 @@ public class TransactionSicoobService {
         currentDate = null;
       } else if (currentDate != null) {
         historyBuffer.append(line).append(" ");
+
+        if (historyBuffer.length() > 1000) {
+          historyBuffer.setLength(500);
+          historyBuffer.append("...");
+        }
       }
     }
 
     if (currentDate != null && historyBuffer.length() > 0) {
-      Transaction transaction =
-          createTransaction(currentDate, document, historyBuffer.toString().trim(), statement);
-      if (transaction.getHash() != null && !transaction.getHash().isEmpty()) {
+      String historyContent = historyBuffer.toString().trim();
+      Transaction transaction = createTransaction(currentDate, document, historyContent, statement);
+      if (transaction != null
+          && transaction.getHash() != null
+          && !transaction.getHash().isEmpty()) {
         transactions.add(transaction);
       }
     }
@@ -135,11 +188,16 @@ public class TransactionSicoobService {
 
   private Transaction createTransactionFromMatcher(
       LocalDate date, String document, String history, Matcher valueMatcher, Statement statement) {
+
     String type = valueMatcher.group(2);
     BigDecimal amount = TransactionUtil.parseAmount(valueMatcher.group(1), type);
     TransactionType transactionType = TransactionUtil.determineTransactionType(type);
     Category category = TransactionUtil.determineCategory(history.toLowerCase(), type);
     history = cleanDescription(history);
+
+    if (history != null && history.length() > 500) {
+      history = history.substring(0, 497) + "...";
+    }
 
     Transaction transaction =
         transactionMapper.toTransaction(
@@ -164,19 +222,95 @@ public class TransactionSicoobService {
 
   private Transaction createTransaction(
       LocalDate date, String document, String history, Statement statement) {
+
     Matcher valueMatcher = VALUE_PATTERN.matcher(history);
     if (valueMatcher.find()) {
       return createTransactionFromMatcher(date, document, history, valueMatcher, statement);
     }
 
+    BigDecimal amount = BigDecimal.ZERO;
+    TransactionType transactionType = TransactionType.DEBITO;
+    String cleanHistory = history;
+
+    Pattern[] valuePatterns = {
+      Pattern.compile("R\\$\\s*([\\d.,]+)([DC])"), // R$ 1,26D
+      Pattern.compile("R\\$\\s*([\\d.,]+)\\s*([DC])"), // R$ 1,26 D
+      Pattern.compile("R\\$\\s*([\\d.,]+)([DC]?)"), // R$ 1,26 (sem DC)
+      Pattern.compile(
+          "([\\d]{1,3}(?:\\.[\\d]{3})*,[\\d]{2})([DC])"), // 1.000,00D (formato brasileiro)
+      Pattern.compile("([\\d.,]+)([DC])"), // 1,26D (sem R$)
+      Pattern.compile("([\\d.,]+)\\s*([DC])"), // 1,26 D (sem R$)
+      // Padrões especiais para transferências que podem ter quebra de linha
+      Pattern.compile("R\\$\\s*([\\d]{1,3}(?:\\.[\\d]{3})*,[\\d]{2})\\s*D"), // R$ 1.135,00D
+      Pattern.compile("([\\d]{1,3}(?:\\.[\\d]{3})*,[\\d]{2})\\s*D"), // 1.135,00D
+    };
+
+    boolean valueFound = false;
+    for (Pattern pattern : valuePatterns) {
+      Matcher flexibleMatcher = pattern.matcher(history);
+      if (flexibleMatcher.find()) {
+        try {
+          String valueStr = flexibleMatcher.group(1);
+          String typeStr = flexibleMatcher.groupCount() > 1 ? flexibleMatcher.group(2) : "";
+
+          if (valueStr == null
+              || valueStr.trim().isEmpty()
+              || valueStr.equals(".")
+              || valueStr.matches("^[.]+$")) {
+            continue;
+          }
+
+          if (typeStr.isEmpty()) {
+            if (history.toLowerCase().contains("créd")
+                || history.toLowerCase().contains("credit")
+                || history.toLowerCase().contains("liquidação")
+                || history.toLowerCase().contains("ted")) {
+              typeStr = "C";
+            } else {
+              typeStr = "D";
+            }
+          }
+
+          amount = TransactionUtil.parseAmount(valueStr, typeStr);
+          transactionType = TransactionUtil.determineTransactionType(typeStr);
+
+          cleanHistory = history.replaceFirst(Pattern.quote(flexibleMatcher.group()), "").trim();
+          valueFound = true;
+          break;
+        } catch (Exception e) {
+          System.out.println(
+              "    - Erro ao extrair valor com padrão: "
+                  + pattern.pattern()
+                  + " - "
+                  + e.getMessage());
+          continue;
+        }
+      }
+    }
+
+    if (!valueFound) {
+
+    } else {
+
+      if (cleanHistory != null && cleanHistory.length() > 100) {}
+    }
+
+    if (cleanHistory != null && cleanHistory.length() > 500) {
+      cleanHistory = cleanHistory.substring(0, 497) + "...";
+    }
+
+    Category category =
+        TransactionUtil.determineCategory(
+            cleanHistory.toLowerCase(), transactionType == TransactionType.CREDITO ? "C" : "D");
+
     Transaction transaction =
         transactionMapper.toTransaction(
             statement,
             "",
-            history,
-            BigDecimal.ZERO,
-            Category.FORNECEDOR,
-            TransactionType.DEBITO,
+            cleanHistory,
+            amount,
+            category,
+            transactionType,
             document,
             "",
             "",
@@ -184,13 +318,18 @@ public class TransactionSicoobService {
 
     String hash =
         TransactionUtil.generateTransactionHash(
-            date, document != null ? document : "", BigDecimal.ZERO, history);
+            date, document != null ? document : "", amount, cleanHistory);
     transaction.setHash(hash);
 
     return transaction;
   }
 
   private String cleanDescription(String description) {
-    return description.replaceAll("R\\$\\s*[\\d.,]+[DC]", "").trim();
+
+    String cleaned = description.replaceAll("R\\$\\s*[\\d.,]+[DC]", "").trim();
+
+    if (cleaned != null && cleaned.length() > 100) {}
+
+    return cleaned;
   }
 }

@@ -93,7 +93,6 @@ export default function CashFlow({ startDate, endDate, setStartDate, setEndDate 
 
   const fetchDashboardData = async () => {
     const data = await getDashboardData(startDate, endDate, selectedMonth, selectedYear);
-    console.log("Dashboard Data:", data);
     if (data) {
       setDashboardData(data);
     }

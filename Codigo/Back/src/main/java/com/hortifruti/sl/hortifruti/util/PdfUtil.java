@@ -12,6 +12,14 @@ import org.springframework.web.multipart.MultipartFile;
 public class PdfUtil {
   private PdfUtil() {}
 
+  // Novo método que recebe bytes diretamente
+  public static String extractPdfText(byte[] pdfBytes) throws IOException {
+    try (PDDocument document = Loader.loadPDF(pdfBytes)) {
+      return new PDFTextStripper().getText(document);
+    }
+  }
+
+  // Método original mantido para compatibilidade
   public static String extractPdfText(MultipartFile file) throws IOException {
     try (PDDocument document = Loader.loadPDF(file.getBytes())) {
       return new PDFTextStripper().getText(document);

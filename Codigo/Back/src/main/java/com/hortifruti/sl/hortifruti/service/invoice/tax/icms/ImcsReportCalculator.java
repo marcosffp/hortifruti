@@ -87,8 +87,7 @@ public class ImcsReportCalculator {
     totalContabil = totalContabil.add(taxDetails.valorTotal());
     totalBaseCalculo = totalBaseCalculo.add(taxDetails.icmsBaseCalculo());
     totalImpostoDebitado = totalImpostoDebitado.add(taxDetails.icmsValorTotal());
-    totalIsentasOuNaoTributadas =
-        totalIsentasOuNaoTributadas.add(BigDecimal.ZERO); // Ajuste conforme necessário
+    totalIsentasOuNaoTributadas = totalIsentasOuNaoTributadas.add(BigDecimal.ZERO);
     totalOutras = totalOutras.add(taxDetails.valorProdutos());
   }
 

@@ -54,8 +54,6 @@ public class BilletHttpClient {
       HttpHeaders headers = createHeaders();
 
       String jsonBody = objectMapper.writeValueAsString(body);
-      System.out.println("JSON enviado para Sicoob: " + jsonBody);
-
       HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
 
       ResponseEntity<String> response =

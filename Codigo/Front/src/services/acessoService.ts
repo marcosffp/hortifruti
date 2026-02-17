@@ -66,22 +66,18 @@ class BackupService {
     }));
   }
 
-  // Criar novo usuário
   async createUser(userData: UIUserRequest): Promise<UIUserResponse> {
     try {
-      // Converter dados da UI para formato do backend
       const backendUserData: UserRequest = {
-        username: userData.name, // Usando nome como username/login
+        username: userData.name, 
         password: userData.password,
         position: userData.cargo,
         role: userData.perfil === "Gestor" ? "MANAGER" : "EMPLOYEE",
       };
 
-      console.log("[DEBUG] UserRequest being sent:", backendUserData);
 
       const result = await userService.createUser(backendUserData);
 
-      // Converter resposta do backend para formato da UI
       return {
         id: result.id,
         nome: userData.name,
@@ -93,9 +89,8 @@ class BackupService {
     } catch (error) {
       console.warn("Erro ao criar usuário no backend:", error);
 
-      // Simula criação bem-sucedida para funcionamento offline
       return {
-        id: Date.now(), // ID temporário
+        id: Date.now(),
         nome: userData.name,
         cargo: userData.cargo,
         perfil: userData.perfil,
@@ -105,22 +100,15 @@ class BackupService {
     }
   }
 
-  // Atualizar usuário
   async updateUser(
     id: number,
     userData: Partial<UIUserRequest>
   ): Promise<UIUserResponse> {
     try {
-      // Buscar dados do usuário existente para preencher campos obrigatórios
       const existingUser = await this.getUserById(id);
-
-      console.log("Dados existentes do usuário:", existingUser);
-      console.log("Dados para atualização:", userData);
-
-      // Converter dados da UI para formato do backend (nome será usado como login)
       const backendUserData: UserRequest = {
-        username: userData.name || existingUser.nome, // Usar nome como username/login
-        password: userData.password || "", // Usar string vazia se não fornecida, o backend tratará isso
+        username: userData.name || existingUser.nome, 
+        password: userData.password || "",
         position: userData.cargo || existingUser.cargo,
         role: userData.perfil
           ? userData.perfil === "Gestor"
@@ -131,9 +119,6 @@ class BackupService {
           : "EMPLOYEE",
       };
 
-      console.log("Enviando para o backend (ID:", id, "):", backendUserData);
-
-      // Validar dados antes de enviar
       if (!backendUserData.username || !backendUserData.username.trim()) {
         throw new Error("Nome é obrigatório para atualização");
       }
@@ -144,9 +129,6 @@ class BackupService {
 
       const result = await userService.updateUserById(id, backendUserData);
 
-      console.log("Resposta do backend:", result);
-
-      // Converter resposta para formato da UI
       const uiResponse: UIUserResponse = {
         id: result.id,
         nome: userData.name || result.username,
@@ -158,8 +140,6 @@ class BackupService {
         cadastrado: new Date().toLocaleDateString("pt-BR"),
         status: "ativo" as const,
       };
-
-      console.log("Retornando resposta formatada:", uiResponse);
 
       return uiResponse;
     } catch (error) {

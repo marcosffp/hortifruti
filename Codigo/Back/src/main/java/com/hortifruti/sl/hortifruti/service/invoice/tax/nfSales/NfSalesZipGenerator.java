@@ -20,7 +20,6 @@ public class NfSalesZipGenerator {
       throws IOException {
     String folderName = formatFolderName(startDate, endDate);
 
-    // ✅ USAR DIRETÓRIO TEMPORÁRIO em vez de /app/
     Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
     Path folderPath = tempDir.resolve(folderName);
 
@@ -44,7 +43,7 @@ public class NfSalesZipGenerator {
     }
 
     String zipFileName = folderName + ".zip";
-    Path zipFilePath = tempDir.resolve(zipFileName); // ✅ ZIP também no temp dir
+    Path zipFilePath = tempDir.resolve(zipFileName);
 
     try (FileOutputStream fos = new FileOutputStream(zipFilePath.toFile());
         ZipOutputStream zos = new ZipOutputStream(fos)) {
@@ -70,7 +69,6 @@ public class NfSalesZipGenerator {
       throw new IOException("Erro ao criar o arquivo ZIP: " + zipFileName, e);
     }
 
-    // Limpeza dos arquivos temporários
     try {
       Files.walk(folderPath)
           .sorted((path1, path2) -> path2.compareTo(path1))
@@ -88,7 +86,7 @@ public class NfSalesZipGenerator {
       e.printStackTrace();
     }
 
-    return zipFilePath.toString(); // ✅ Retorna o caminho completo do ZIP
+    return zipFilePath.toString();
   }
 
   private String formatFolderName(LocalDate startDate, LocalDate endDate) {

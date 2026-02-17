@@ -109,7 +109,6 @@ public class CombinedScoreService {
     CombinedScore combinedScore =
         CombinedScore.builder().clientId(request.clientId()).totalValue(totalValue).build();
 
-    // Usa a data fornecida no request ou a data atual se não fornecida
     LocalDate confirmedDate =
         request.confirmedAt() != null
             ? request.confirmedAt()

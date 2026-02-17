@@ -37,13 +37,9 @@ public class BilletIssue {
       throws IOException {
     try {
       JsonNode boletoJson = createBilletJson(boleto);
-      System.out.println("JSON do boleto a ser enviado: " + boletoJson.toPrettyString());
       JsonNode resposta = httpClient.post(billetConstants.getBASE_URL() + "boletos", boletoJson);
-      System.out.println("Resposta da API: " + resposta.toPrettyString());
       JsonNode resultado = responseApi(resposta);
-      System.out.println("Resultado extraído da resposta: " + resultado.toPrettyString());
       Map<String, Object> responseMap = createResponseMap(resultado);
-      System.out.println("Mapa de resposta criado: " + responseMap);
       return ResponseEntity.ok(responseMap);
 
     } catch (HttpClientErrorException e) {
