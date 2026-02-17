@@ -109,48 +109,32 @@ public class ReportTaxService {
       byte[] paymentData = generatePaymentReport(startDate, endDate);
       if (paymentData != null && paymentData.length > 0) {
         saveFile(folderPath.resolve("Resumo_de_Vendas_por_Forma_de_Pagamento.pdf"), paymentData);
-      } else {
-        System.err.println("Relatório de pagamento está vazio");
       }
     } catch (Exception e) {
-      System.err.println("Erro ao gerar relatório de pagamento: " + e.getMessage());
-      throw e;
     }
 
     try {
       byte[] registerData = generateRegisterReport(startDate, endDate);
       if (registerData != null && registerData.length > 0) {
         saveFile(folderPath.resolve("Registro_de_saida_nf.pdf"), registerData);
-      } else {
-        System.err.println("Relatório de registro está vazio");
       }
     } catch (Exception e) {
-      System.err.println("Erro ao gerar relatório de registro: " + e.getMessage());
-      throw e;
     }
 
     try {
       byte[] salesData = generateSalesReport(startDate, endDate);
       if (salesData != null && salesData.length > 0) {
         saveFile(folderPath.resolve("Relacao_de_Vendas.pdf"), salesData);
-      } else {
-        System.err.println("Relatório de vendas está vazio");
       }
     } catch (Exception e) {
-      System.err.println("Erro ao gerar relatório de vendas: " + e.getMessage());
-      throw e;
     }
 
     try {
       byte[] icmsData = generateIcmsReport(startDate, endDate);
       if (icmsData != null && icmsData.length > 0) {
         saveFile(folderPath.resolve("Registro_Apuracao_ICMS.pdf"), icmsData);
-      } else {
-        System.err.println("Relatório de ICMS está vazio");
       }
     } catch (Exception e) {
-      System.err.println("Erro ao gerar relatório de ICMS: " + e.getMessage());
-      throw e;
     }
   }
 
