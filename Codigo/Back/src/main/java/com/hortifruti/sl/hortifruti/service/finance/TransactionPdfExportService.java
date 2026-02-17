@@ -57,26 +57,22 @@ public class TransactionPdfExportService {
 
   private void createPdfFromTransactions(PDDocument document, List<Transaction> transactions)
       throws IOException {
-    // Usar A4 em modo paisagem diretamente
     PDPage page =
         new PDPage(new PDRectangle(PDRectangle.A4.getHeight(), PDRectangle.A4.getWidth()));
     document.addPage(page);
 
     PDPageContentStream contentStream = new PDPageContentStream(document, page);
     try {
-      // Configurações para modo paisagem - agora corretas
-      float pageWidth = page.getMediaBox().getWidth(); // 842
-      float pageHeight = page.getMediaBox().getHeight(); // 595
+      float pageWidth = page.getMediaBox().getWidth();
+      float pageHeight = page.getMediaBox().getHeight();
       float margin = 30;
 
-      // Título
       contentStream.beginText();
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
       contentStream.newLineAtOffset(margin, pageHeight - 50);
       contentStream.showText("Relatório de Transações - Hortifruti Santa Luzia");
       contentStream.endText();
 
-      // Cabeçalho da tabela
       float yPosition = pageHeight - 100;
       float[] columnWidths = {70, 90, 80, 150, 80, 50, 80, 60, 120};
       String[] headers = {
@@ -93,13 +89,11 @@ public class TransactionPdfExportService {
 
       drawTableHeader(contentStream, margin, yPosition, columnWidths, headers, pageWidth);
 
-      // Dados da tabela
       yPosition -= 25;
       DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
       for (Transaction transaction : transactions) {
         if (yPosition < margin + 50) {
-          // Nova página se necessário
           contentStream.close();
           page = new PDPage(new PDRectangle(PDRectangle.A4.getHeight(), PDRectangle.A4.getWidth()));
           document.addPage(page);
@@ -126,18 +120,15 @@ public class TransactionPdfExportService {
       float pageWidth)
       throws IOException {
 
-    // Desenhar retângulo de fundo para o cabeçalho
     contentStream.setNonStrokingColor(0.8f, 0.8f, 0.8f);
     contentStream.addRect(margin, yPosition - 5, pageWidth - 2 * margin, 20);
     contentStream.fill();
 
-    // Desenhar bordas
     contentStream.setStrokingColor(0, 0, 0);
     contentStream.setLineWidth(1);
     contentStream.addRect(margin, yPosition - 5, pageWidth - 2 * margin, 20);
     contentStream.stroke();
 
-    // Texto do cabeçalho
     contentStream.setNonStrokingColor(0, 0, 0);
     contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
 
@@ -177,11 +168,10 @@ public class TransactionPdfExportService {
 
     float xPosition = margin + 5;
     for (int i = 0; i < rowData.length; i++) {
-      // Definir cor baseada no valor (vermelho para negativos)
       if (i == 6 && transaction.getAmount().doubleValue() < 0) {
-        contentStream.setNonStrokingColor(1, 0, 0); // Vermelho
+        contentStream.setNonStrokingColor(1, 0, 0);
       } else {
-        contentStream.setNonStrokingColor(0, 0, 0); // Preto
+        contentStream.setNonStrokingColor(0, 0, 0);
       }
 
       contentStream.beginText();

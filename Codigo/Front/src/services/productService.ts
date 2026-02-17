@@ -49,9 +49,7 @@ export interface WeatherForecast {
 }
 
 export const productService = {
-  // Buscar previsão do tempo para 5 dias
   async getWeatherForecast(): Promise<WeatherForecast> {
-    console.log('Buscando previsão do tempo em:', `${API_URL}/api/weather/forecast/5days`);
     const response = await fetchWithAuth(
       `${API_URL}/api/weather/forecast/5days`,
       {
@@ -68,13 +66,11 @@ export const productService = {
     }
 
     const data = await response.json();
-    console.log('Dados de previsão recebidos:', data);
     return data;
   },
 
   // Buscar recomendações por data
   async getRecommendationsByDate(date: string): Promise<ProductRecommendation[]> {
-    console.log('Buscando recomendações em:', `${API_URL}/api/recommendations/by-date?date=${date}`);
     const response = await fetchWithAuth(
       `${API_URL}/api/recommendations/by-date?date=${date}`,
       {
@@ -91,7 +87,6 @@ export const productService = {
     }
 
     const data = await response.json();
-    console.log('Dados de recomendações recebidos:', data);
     return data;
   },
 

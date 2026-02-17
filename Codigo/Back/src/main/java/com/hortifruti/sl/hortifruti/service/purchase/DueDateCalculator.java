@@ -21,7 +21,7 @@ public class DueDateCalculator {
 
   // Enum para tipos de ajuste de final de semana
   private enum WeekendAdjustment {
-    NONE, // Sem ajuste
+    NONE,
     PREVIOUS_FRIDAY, // Volta para sexta anterior
     NEXT_FRIDAY // Avança para próxima sexta
   }

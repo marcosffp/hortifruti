@@ -20,22 +20,35 @@ public class StatementService {
   private final TransactionProcessingService transactionProcessingService;
 
   public void saveAll(MultipartFile[] files) throws IOException {
+
+    if (files == null || files.length == 0) {
+      return;
+    }
+
     String nameFile = files[0].getOriginalFilename();
     Bank bankParam = Bank.parseBank(nameFile, files[0]);
 
     Arrays.stream(files)
-        .map(file -> saveStatementAndProcess(file, bankParam))
+        .map(
+            file -> {
+              return saveStatementAndProcess(file, bankParam);
+            })
         .collect(Collectors.toList());
   }
 
   private Statement saveStatementAndProcess(MultipartFile file, Bank bankParam) {
+
     try {
+      byte[] fileBytes = file.getBytes();
+      String fileName = file.getOriginalFilename();
+
       Statement statement = new Statement();
-      statement.setName(file.getOriginalFilename());
-      statement.setFilePath(file.getBytes());
+      statement.setName(fileName);
+      statement.setFilePath(fileBytes);
       statement.setBank(bankParam);
       Statement saved = statementRepository.save(statement);
-      transactionProcessingService.processFileAsync(file, saved);
+      transactionProcessingService.processFileAsync(fileBytes, fileName, saved);
+
       return saved;
     } catch (IOException e) {
       throw new StatementException("Erro ao processar o arquivo: " + file.getOriginalFilename(), e);

@@ -67,8 +67,6 @@ public class GroupedProductService {
 
   private String extractProductKey(InvoiceProduct product) {
     try {
-      // Para preços variáveis, agrupa apenas por código + nome
-      // Sem split, para funcionar com códigos simples (48, 13, 24)
       return product.getCode() + "-" + product.getName();
     } catch (Exception e) {
       throw new PurchaseException("Formato de código de produto inválido: " + product.getCode(), e);
@@ -113,7 +111,6 @@ public class GroupedProductService {
 
     InvoiceProduct firstProduct = productList.get(0);
 
-    // Calcular com alta precisão mantendo valores originais
     for (InvoiceProduct product : productList) {
       BigDecimal quantity = product.getQuantity();
       BigDecimal price = product.getPrice();
@@ -128,17 +125,14 @@ public class GroupedProductService {
       if (totalQuantityDecimal.compareTo(BigDecimal.ZERO) == 0) {
         weightedAvgPrice = BigDecimal.ZERO;
       } else {
-        // Usar precisão maior e arredondamento mais preciso
         weightedAvgPrice = totalValue.divide(totalQuantityDecimal, 10, RoundingMode.HALF_UP);
       }
     } catch (ArithmeticException e) {
       throw new PurchaseException("Erro ao calcular preço médio ponderado: " + e.getMessage(), e);
     }
 
-    // Validar se o cálculo está correto: preço * quantidade = total
     BigDecimal calculatedTotal = weightedAvgPrice.multiply(totalQuantityDecimal);
     if (calculatedTotal.subtract(totalValue).abs().compareTo(new BigDecimal("0.01")) > 0) {
-      // Se a diferença for maior que 1 centavo, ajustar o preço
       weightedAvgPrice = totalValue.divide(totalQuantityDecimal, 12, RoundingMode.HALF_UP);
     }
 

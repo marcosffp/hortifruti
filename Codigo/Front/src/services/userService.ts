@@ -17,17 +17,12 @@ interface UserResponse {
   role: "MANAGER" | "EMPLOYEE";
 }
 
-// Função auxiliar para obter os headers com autorização
 const getAuthHeaders = () => {
   const token = authService.getToken();
   
   if (token) {
-    console.log('[DEBUG] Token preview:', token.substring(0, 50) + '...');
     
-    // Verificar se o token está expirado
     if (authService.isTokenExpired(token)) {
-      console.log('[DEBUG] Token is expired!');
-      // Redirecionar para login se o token estiver expirado
       window.location.href = '/login';
       throw new Error('Token expirado. Redirecionando para login.');
     }

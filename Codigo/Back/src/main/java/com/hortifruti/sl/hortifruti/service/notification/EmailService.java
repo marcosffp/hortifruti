@@ -118,7 +118,6 @@ public class EmailService {
       }
 
     } catch (IOException ignored) {
-      // Sem log, sem erro → apenas não adiciona logo
     }
   }
 }

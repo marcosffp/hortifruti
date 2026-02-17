@@ -23,7 +23,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -35,41 +34,53 @@ public class TransactionProcessingService {
   private final TransactionMapper transactionMapper;
 
   @Async
-  public void processFileAsync(MultipartFile file, Statement statement) {
+  public void processFileAsync(byte[] fileBytes, String fileName, Statement statement) {
+
     try {
       if (statement.getBank() == Bank.SICOOB) {
-        importStatement(file, statement);
+        importStatement(fileBytes, fileName, statement);
       } else {
-        importStatement(file, statement);
+        importStatement(fileBytes, fileName, statement);
       }
     } catch (Exception e) {
+
+      if (e.getCause() != null) {
+        System.out.println(
+            "Causa raiz: "
+                + e.getCause().getClass().getSimpleName()
+                + " - "
+                + e.getCause().getMessage());
+      }
+      e.printStackTrace();
       throw new TransactionException("Erro ao processar o arquivo: " + e.getMessage(), e);
     }
   }
 
   /** Importa extrato de um arquivo fornecido. */
-  private void importStatement(MultipartFile file, Statement statement) throws IOException {
-    if (file == null || file.isEmpty()) {
+  private void importStatement(byte[] fileBytes, String fileName, Statement statement)
+      throws IOException {
+
+    if (fileBytes == null || fileBytes.length == 0) {
       throw new TransactionException("Nenhum arquivo foi fornecido para importação.");
     }
 
-    String fileName = file.getOriginalFilename();
     if (fileName == null) {
       throw new TransactionException("O arquivo não possui um nome válido.");
     }
 
-    processFileByType(statement.getBank(), file, statement);
+    processFileByType(statement.getBank(), fileBytes, fileName, statement);
   }
 
   /** Processa um arquivo com base no tipo especificado. */
-  private void processFileByType(Bank bank, MultipartFile arquivo, Statement statement)
+  private void processFileByType(Bank bank, byte[] fileBytes, String fileName, Statement statement)
       throws IOException {
+
     switch (bank) {
       case SICOOB:
-        transactionSicoobService.importStatement(arquivo, statement);
+        transactionSicoobService.importStatement(fileBytes, fileName, statement);
         break;
       case BANCO_DO_BRASIL:
-        transactionBBService.importStatement(arquivo, statement);
+        transactionBBService.importStatement(fileBytes, fileName, statement);
         break;
       default:
         throw new TransactionException("Tipo de arquivo não suportado: " + bank.toString());
@@ -111,6 +122,7 @@ public class TransactionProcessingService {
    */
   public Page<TransactionResponse> getAllTransactions(
       String search, String type, String category, int page, int size) {
+
     Pageable pageable = PageRequest.of(page, size, Sort.by("transactionDate").descending());
 
     Specification<Transaction> spec = Specification.allOf();
@@ -134,6 +146,7 @@ public class TransactionProcessingService {
             spec.and(
                 (root, query, criteriaBuilder) ->
                     criteriaBuilder.equal(root.get("transactionType"), transactionType));
+
       } catch (IllegalArgumentException e) {
         throw new TransactionException("Tipo de transação inválido: " + type, e);
       }
