@@ -81,8 +81,21 @@ public class InvoiceQuery {
 
     validateRequiredFields(requisicaoNode);
 
-    LocalDateTime dataEmissao =
-        OffsetDateTime.parse(requisicaoNode.path("data_emissao").asText()).toLocalDateTime();
+    String dataEmissaoStr = requisicaoNode.path("data_emissao").asText();
+    LocalDateTime dataEmissao;
+
+    try {
+      if (dataEmissaoStr == null || dataEmissaoStr.trim().isEmpty()) {
+        System.err.println("Data de emissão está vazia, usando data atual como fallback");
+        dataEmissao = LocalDateTime.now();
+      } else {
+        dataEmissao = OffsetDateTime.parse(dataEmissaoStr).toLocalDateTime();
+      }
+    } catch (Exception e) {
+      System.err.println(
+          "Erro ao converter data: " + dataEmissaoStr + " - usando data atual como fallback");
+      dataEmissao = LocalDateTime.now();
+    }
 
     return new InvoiceResponseSimplif(
         requisicaoNode.path("cnpj_destinatario").asText(),
@@ -161,7 +174,25 @@ public class InvoiceQuery {
     JsonNode requisicaoNode = rootNode.path("requisicao_nota_fiscal");
 
     String dataEmissaoStr = requisicaoNode.path("data_emissao").asText();
-    var dataEmissao = OffsetDateTime.parse(dataEmissaoStr).toLocalDateTime();
+    LocalDateTime dataEmissao;
+
+    try {
+      if (dataEmissaoStr == null || dataEmissaoStr.trim().isEmpty()) {
+        System.err.println(
+            "Data de emissão está vazia para ref: " + ref + ", usando data atual como fallback");
+        dataEmissao = LocalDateTime.now();
+      } else {
+        dataEmissao = OffsetDateTime.parse(dataEmissaoStr).toLocalDateTime();
+      }
+    } catch (Exception e) {
+      System.err.println(
+          "Erro ao converter data para ref: "
+              + ref
+              + " - data: "
+              + dataEmissaoStr
+              + " - usando data atual como fallback");
+      dataEmissao = LocalDateTime.now();
+    }
 
     List<ItemTaxDetails> items = new ArrayList<>();
     JsonNode itensNode = requisicaoNode.path("itens");
