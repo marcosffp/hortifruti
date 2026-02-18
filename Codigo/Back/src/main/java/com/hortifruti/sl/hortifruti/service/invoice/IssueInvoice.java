@@ -56,7 +56,9 @@ public class IssueInvoice {
       Client client = fetchClient(combinedScore.getClientId());
 
       RecipientRequest recipient = recipientService.createRecipientRequest(client.getId());
-      List<ItemRequest> items = invoiceItemService.createItems(combinedScore.getGroupedProducts(),recipient.endereco().uf());
+      List<ItemRequest> items =
+          invoiceItemService.createItems(
+              combinedScore.getGroupedProducts(), recipient.endereco().uf());
       IssueInvoiceRequest request =
           buildInvoiceRequest(recipient, items, combinedScore, dadosAdicionais);
 
