@@ -435,7 +435,7 @@ products:
     unidade_tributavel: "KG"
   - code: "91"  
     description: "AMEIXA NACIONAL"
-    ncm: "08094090"  
+    ncm: "08094000"  
     cfop: "5102"
     icms: "102"
     unidade_comercial: "KG"  
