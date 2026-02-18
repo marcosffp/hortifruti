@@ -61,7 +61,7 @@ public class Client {
 
   @Column(nullable = false)
   private String cideCode;
-  
+
   @Column(nullable = false)
   private LocalDateTime updatedAt;
 
