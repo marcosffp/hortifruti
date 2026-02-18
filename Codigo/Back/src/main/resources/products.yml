@@ -134,7 +134,7 @@ products:
     unidade_tributavel: "KG"
   - code: "146"
     description: "MANGA PALMER"
-    ncm: "08045000"
+    ncm: "08045020"
     cfop: "5102"
     icms: "102"
     unidade_comercial: "KG"
