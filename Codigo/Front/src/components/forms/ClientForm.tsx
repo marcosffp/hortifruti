@@ -34,6 +34,7 @@ export interface ClientFormData {
   variablePrice: string;
   stateRegistration: string;
   stateIndicator: string;
+  cideCode: string;
 }
 
 interface ClientFormProps {
@@ -69,6 +70,7 @@ export default function ClientForm({
     variablePrice: "false",
     stateRegistration: "",
     stateIndicator: "9", // Padrão: Não contribuinte
+    cideCode: "",
     ...initialData
   });
 
@@ -85,6 +87,7 @@ export default function ClientForm({
     cidade: "",
     estado: "",
     stateRegistration: "",
+    cideCode: "",
   });
 
   // Verifica se é CNPJ (empresa)
@@ -240,6 +243,14 @@ export default function ClientForm({
         //   }
         // }
         return "";
+      case "cideCode":
+        // Código CIDE é obrigatório apenas para CNPJ
+        const documento = formData.cpfCnpj.replace(/\D/g, "");
+        const isCNPJ = documento.length > 11;
+        if (isCNPJ && !value.trim()) {
+          return "Código CIDE é obrigatório para empresas (CNPJ)";
+        }
+        return "";
       default:
         return "";
     }
@@ -259,6 +270,7 @@ export default function ClientForm({
       cidade: validateField("cidade", formData.cidade),
       estado: validateField("estado", formData.estado),
       stateRegistration: validateField("stateRegistration", formData.stateRegistration),
+      cideCode: validateField("cideCode", formData.cideCode),
     };
     
     setFormErrors(errors);
@@ -435,6 +447,31 @@ export default function ClientForm({
                     {formData.stateIndicator === "1" 
                       ? "Obrigatório para contribuintes ICMS" 
                       : "Disponível apenas para contribuintes ICMS"}
+                  </p>
+                </div>
+                <div>
+                  <label htmlFor="cideCode" className="block text-sm font-medium text-gray-700 mb-1">
+                    Código do Município do Destinatário *
+                  </label>
+                  <input
+                    type="text"
+                    id="cideCode"
+                    name="cideCode"
+                    value={formData.cideCode}
+                    onChange={handleChange}
+                    onBlur={(e) => setFormErrors({...formErrors, cideCode: validateField("cideCode", e.target.value)})}
+                    required
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
+                      formErrors.cideCode ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="Digite o código CIDE"
+                    maxLength={20}
+                  />
+                  {formErrors.cideCode && (
+                    <p className="text-red-500 text-xs mt-1">{formErrors.cideCode}</p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Obrigatório para empresas (CNPJ)
                   </p>
                 </div>
               </div>

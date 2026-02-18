@@ -34,6 +34,7 @@ export default function NovoClientePage() {
         document: formData.cpfCnpj,
         stateRegistration: formData.stateRegistration || null,
         stateIndicator: formData.stateIndicator ? parseInt(formData.stateIndicator) : null,
+        cideCode: formData.cideCode || null,
       };
 
       await clientService.createClient(clientData);

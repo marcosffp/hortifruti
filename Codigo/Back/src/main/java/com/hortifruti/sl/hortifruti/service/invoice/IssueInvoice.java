@@ -50,14 +50,15 @@ public class IssueInvoice {
   private final FocusNfeApiClient focusNfeApiClient;
 
   @Transactional
-  public InvoiceResponse issueInvoice(Long combinedScoreId) {
+  public InvoiceResponse issueInvoice(Long combinedScoreId, String dadosAdicionais) {
     try {
       CombinedScore combinedScore = fetchCombinedScore(combinedScoreId);
       Client client = fetchClient(combinedScore.getClientId());
 
       RecipientRequest recipient = recipientService.createRecipientRequest(client.getId());
-      List<ItemRequest> items = invoiceItemService.createItems(combinedScore.getGroupedProducts());
-      IssueInvoiceRequest request = buildInvoiceRequest(recipient, items, combinedScore);
+      List<ItemRequest> items = invoiceItemService.createItems(combinedScore.getGroupedProducts(),recipient.endereco().uf());
+      IssueInvoiceRequest request =
+          buildInvoiceRequest(recipient, items, combinedScore, dadosAdicionais);
 
       String ref = UUID.randomUUID().toString();
       String payload = invoicePayloadService.buildFocusNfePayload(request, ref);
@@ -85,7 +86,18 @@ public class IssueInvoice {
   }
 
   private IssueInvoiceRequest buildInvoiceRequest(
-      RecipientRequest recipient, List<ItemRequest> items, CombinedScore combinedScore) {
+      RecipientRequest recipient,
+      List<ItemRequest> items,
+      CombinedScore combinedScore,
+      String dadosAdicionais) {
+    Client client = fetchClient(combinedScore.getClientId());
+
+    String firstName = client.getClientName().split("\\s+")[0].toUpperCase().trim();
+    String infoText = info;
+
+    if (firstName.contains("LLINEA")) {
+      infoText = "Numerações: " + dadosAdicionais;
+    }
 
     return new IssueInvoiceRequest(
         combinedScore.getId(),
@@ -97,7 +109,7 @@ public class IssueInvoice {
             .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
         recipient,
         items,
-        info);
+        infoText);
   }
 
   /*
