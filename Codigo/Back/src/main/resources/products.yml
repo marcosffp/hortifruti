@@ -442,7 +442,7 @@ products:
     unidade_tributavel: "KG"
   - code: "92"  
     description: "PÊSSEGO"
-    ncm: "08093090"  
+    ncm: "08093010"  
     cfop: "5102"
     icms: "102"
     unidade_comercial: "KG"  
