@@ -13,5 +13,6 @@ public record ClientResponse(
     boolean variablePrice,
     String stateRegistration,
     String stateIndicator,
+    String cideCode,
     LocalDate lastPurchaseDate,
     BigDecimal totalPurchaseValue) {}

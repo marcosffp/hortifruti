@@ -4,9 +4,15 @@ import { getAuthHeaders } from "@/utils/httpUtils";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export const invoiceService = {
-  async generateInvoice(combinedScoreId: number): Promise<InvoiceResponse> {
+  async generateInvoice(combinedScoreId: number, dadosAdicionais?: string): Promise<InvoiceResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/invoices/issue/${combinedScoreId}`, {
+      let url = `${API_BASE_URL}/invoices/issue/${combinedScoreId}`;
+      
+      if (dadosAdicionais && dadosAdicionais.trim()) {
+        url += `?dadosAdicionais=${encodeURIComponent(dadosAdicionais)}`;
+      }
+
+      const response = await fetch(url, {
         method: "POST",
         headers: getAuthHeaders(),
       });
