@@ -96,7 +96,7 @@ public class IssueInvoice {
     String infoText = info;
 
     if (firstName.contains("LLINEA")) {
-      infoText = "Numerações: " + dadosAdicionais;
+      infoText = "Numerações AF: " + dadosAdicionais;
     }
 
     return new IssueInvoiceRequest(
