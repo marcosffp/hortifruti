@@ -18,8 +18,8 @@ public class InvoiceService {
   private final InvoiceCancelService invoiceCancelService;
 
   @Transactional
-  public InvoiceResponse issueInvoice(Long combinedScoreId) {
-    return issueInvoiceService.issueInvoice(combinedScoreId);
+  public InvoiceResponse issueInvoice(Long combinedScoreId, String dadosAdicionais) {
+    return issueInvoiceService.issueInvoice(combinedScoreId, dadosAdicionais);
   }
 
   @Transactional

@@ -17,17 +17,22 @@ public class InvoiceItem {
   private final String COFINS = "01";
   private final String ICMS_ORIGEM = "0";
 
-  public List<ItemRequest> createItems(List<GroupedProduct> groupedProducts) {
+  public List<ItemRequest> createItems(List<GroupedProduct> groupedProducts,String ufDestinatario) {
     List<ItemRequest> items = new ArrayList<>();
     for (GroupedProduct product : groupedProducts) {
       Map<String, Object> productData = productService.findProductByCode(product.getCode());
+        String cfop = (String) productData.get("cfop");
 
+        // Se destinatário for de outro estado, troca série 5xxx → 6xxx
+        if (cfop != null && cfop.startsWith("5") && !"MG".equalsIgnoreCase(ufDestinatario)) {
+            cfop = "6" + cfop.substring(1);
+        }
       ItemRequest item =
           new ItemRequest(
               product.getCode(),
               product.getName(),
               (String) productData.get("ncm"),
-              (String) productData.get("cfop"),
+              cfop,
               (String) productData.get("unidade_comercial"),
               product.getQuantity(),
               product.getPrice(),

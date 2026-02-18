@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.HashMap;
@@ -121,6 +122,7 @@ public class MacroExportService {
   private void generateTaxReports(LocalDate startDate, LocalDate endDate, Path folderPath)
       throws IOException {
     try {
+      System.out.println("Iniciando geração de relatórios fiscais...");
       byte[] taxReportsZip = reportTaxService.generateMonthly(startDate, endDate);
 
       if (taxReportsZip != null && taxReportsZip.length > 0) {
@@ -128,12 +130,26 @@ public class MacroExportService {
             startDate.format(DateTimeFormatter.ofPattern("MMMM", Locale.of("pt", "BR")));
         String taxZipName = "Relatorios_Fiscais_" + capitalizeFirstLetter(monthName) + ".zip";
         saveFile(folderPath.resolve(taxZipName), taxReportsZip);
+        System.out.println("Relatórios fiscais gerados com sucesso");
       } else {
-        System.err.println("Relatórios fiscais estão vazios");
+        System.err.println("Relatórios fiscais estão vazios - continuando sem eles");
       }
     } catch (Exception e) {
       System.err.println("Erro ao gerar relatórios fiscais: " + e.getMessage());
-      throw e;
+      System.err.println("Continuando exportação sem relatórios fiscais...");
+
+      String avisoContent =
+          "AVISO: Os relatórios fiscais não puderam ser gerados devido a problemas com dados de notas fiscais.\n"
+              + "Erro: "
+              + e.getMessage()
+              + "\n"
+              + "Data: "
+              + LocalDateTime.now();
+      try {
+        saveFile(folderPath.resolve("AVISO_Relatorios_Fiscais.txt"), avisoContent.getBytes());
+      } catch (IOException ioEx) {
+        System.err.println("Não foi possível criar arquivo de aviso: " + ioEx.getMessage());
+      }
     }
   }
 

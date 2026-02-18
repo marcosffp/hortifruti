@@ -18,8 +18,11 @@ public class InvoiceController {
   private final InvoiceService invoiceService;
 
   @PostMapping("/issue/{combinedScoreId}")
-  public ResponseEntity<InvoiceResponse> issueInvoice(@PathVariable Long combinedScoreId) {
-    InvoiceResponse response = invoiceService.issueInvoice(combinedScoreId);
+  public ResponseEntity<InvoiceResponse> issueInvoice(
+      @PathVariable Long combinedScoreId,
+      @RequestParam(value = "dadosAdicionais", required = false, defaultValue = "")
+          String dadosAdicionais) {
+    InvoiceResponse response = invoiceService.issueInvoice(combinedScoreId, dadosAdicionais);
     return ResponseEntity.ok(response);
   }
 

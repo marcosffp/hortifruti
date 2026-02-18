@@ -59,7 +59,7 @@ public class ClientService {
     existingClient.setVariablePrice(clientRequest.variablePrice());
     existingClient.setStateRegistration(clientRequest.stateRegistration());
     existingClient.setStateIndicator(clientRequest.stateIndicator());
-
+    existingClient.setCideCode(clientRequest.cideCode());
     Client updatedClient = clientRepository.save(existingClient);
     return clientMapper.toClientResponse(updatedClient);
   }

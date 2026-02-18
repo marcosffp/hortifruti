@@ -8,11 +8,11 @@ export function useInvoice() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const generateInvoice = async (combinedScoreId: number) => {
+    const generateInvoice = async (combinedScoreId: number, dadosAdicionais?: string) => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await invoiceService.generateInvoice(combinedScoreId);
+            const response = await invoiceService.generateInvoice(combinedScoreId, dadosAdicionais);
             return response;
         } catch (err: any) {
             setError(err.message || "Erro ao gerar nota fiscal");
