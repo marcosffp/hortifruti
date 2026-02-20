@@ -36,7 +36,7 @@ products:
     unidade_tributavel: "UN"
   - code: "48"
     description: "CEBOLA BRANCA"
-    ncm: "07031000"
+    ncm: "07031090"
     cfop: "5102"
     icms: "102"
     unidade_comercial: "KG"
