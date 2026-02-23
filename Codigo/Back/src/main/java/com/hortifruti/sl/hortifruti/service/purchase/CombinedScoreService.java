@@ -99,7 +99,7 @@ public class CombinedScoreService {
     }
 
     List<GroupedProduct> groupedProducts =
-        productGrouper.groupProducts(purchases, client.isVariablePrice());
+        productGrouper.groupProducts(purchases, !client.isVariablePrice());
 
     BigDecimal totalValue =
         groupedProducts.stream()
