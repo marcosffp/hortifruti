@@ -162,7 +162,7 @@ products:
     unidade_tributavel: "KG"
   - code: "17"
     description: "HORTELÃ"
-    ncm: "07099900"
+    ncm: "07099990"
     cfop: "5102"
     icms: "102"
     unidade_comercial: "UN"
