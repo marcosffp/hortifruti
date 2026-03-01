@@ -246,7 +246,7 @@ products:
     unidade_tributavel: "KG"
   - code: "47"
     description: "CEBOLA ROXA"
-    ncm: "07031000"
+    ncm: "07031019"
     cfop: "5102"
     icms: "102"
     unidade_comercial: "KG"
