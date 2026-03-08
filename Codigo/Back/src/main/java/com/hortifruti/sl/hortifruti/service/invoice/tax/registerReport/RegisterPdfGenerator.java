@@ -25,131 +25,138 @@ public class RegisterPdfGenerator {
   private String companyCnpj;
 
   public byte[] generateRegisterReportPdf(
-      List<InvoiceSummaryDetails> invoiceSummaries, LocalDate startDate, LocalDate endDate)
+      List<InvoiceSummaryDetails> invoiceSummaries,
+      LocalDate startDate,
+      LocalDate endDate)
       throws IOException {
+
     String periodStart = startDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     String periodEnd = endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
+    float leftMargin = 50;
+    float tableWidth = 500;
+    float cellHeight = 25;
+    float lineHeight = 20;
+    float bottomMargin = 100;
+
+    String[] headers = {
+      "Espécie", "Série", "Dia", "UF", "Valor", "Cod. Fiscal", "Aliq.", "Outras"
+    };
+
     try (PDDocument document = new PDDocument()) {
+
       PDPage page = new PDPage();
       document.addPage(page);
 
-      try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
-        float yPosition = 750;
-        float leftMargin = 50;
-        float tableWidth = 500;
-        float cellHeight = 25;
-        float lineHeight = 20;
+      PDPageContentStream contentStream = new PDPageContentStream(document, page);
 
-        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
-        contentStream.beginText();
-        contentStream.newLineAtOffset(leftMargin, yPosition);
-        contentStream.showText("Livro de Registro de Saídas - RE - Modelo P 2/A");
-        contentStream.endText();
-        yPosition -= lineHeight * 2;
+      float yPosition = 750;
 
-        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 12);
-        addText(contentStream, leftMargin, yPosition, "FIRMA: " + companyName);
-        yPosition -= lineHeight;
-        addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
-        yPosition -= lineHeight;
-        addText(
-            contentStream, leftMargin, yPosition, "PERÍODO: " + periodStart + " a " + periodEnd);
-        yPosition -= lineHeight * 2;
+      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+      addText(contentStream, leftMargin, yPosition,
+          "Livro de Registro de Saídas - RE - Modelo P 2/A");
+      yPosition -= lineHeight * 2;
 
-        contentStream.setLineWidth(1);
-        contentStream.moveTo(leftMargin, yPosition);
-        contentStream.lineTo(leftMargin + tableWidth, yPosition);
-        contentStream.stroke();
-        yPosition -= lineHeight;
+      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 12);
+      addText(contentStream, leftMargin, yPosition, "FIRMA: " + companyName);
+      yPosition -= lineHeight;
 
-        drawTableHeader(
+      addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
+      yPosition -= lineHeight;
+
+      addText(contentStream, leftMargin, yPosition,
+          "PERÍODO: " + periodStart + " a " + periodEnd);
+      yPosition -= lineHeight * 2;
+
+      contentStream.setLineWidth(1);
+      contentStream.moveTo(leftMargin, yPosition);
+      contentStream.lineTo(leftMargin + tableWidth, yPosition);
+      contentStream.stroke();
+      yPosition -= lineHeight;
+
+      drawTableHeader(contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
+      yPosition -= cellHeight;
+
+      for (InvoiceSummaryDetails summary : invoiceSummaries) {
+
+        if (yPosition < bottomMargin) {
+
+          contentStream.close();
+
+          page = new PDPage();
+          document.addPage(page);
+
+          contentStream = new PDPageContentStream(document, page);
+
+          yPosition = 750;
+
+          drawTableHeader(contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
+          yPosition -= cellHeight;
+        }
+
+        drawTableRow(
             contentStream,
             leftMargin,
             yPosition,
             tableWidth,
             cellHeight,
             new String[] {
-              "Espécie", "Série", "Dia", "UF", "Valor", "Cod. Fiscal", "Aliq.", "Outras"
+              summary.especie(),
+              summary.serie(),
+              summary.dia(),
+              summary.uf(),
+              formatValue(summary.valor()),
+              summary.predominante(),
+              formatValue(summary.aliquota()),
+              formatValue(summary.valor())
             });
+
         yPosition -= cellHeight;
-
-        for (InvoiceSummaryDetails summary : invoiceSummaries) {
-          drawTableRow(
-              contentStream,
-              leftMargin,
-              yPosition,
-              tableWidth,
-              cellHeight,
-              new String[] {
-                summary.especie(),
-                summary.serie(),
-                summary.dia(),
-                summary.uf(),
-                formatValue(summary.valor()),
-                summary.predominante(),
-                formatValue(summary.aliquota()),
-                formatValue(summary.valor())
-              });
-          yPosition -= cellHeight;
-        }
-
-        yPosition -= lineHeight * 2;
-        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
-        addText(contentStream, leftMargin, yPosition, "Legenda:");
-        yPosition -= lineHeight;
-
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "Espécie: Tipo do documento fiscal emitido (ex.: NF-e, NFC-e, CF-e, etc.).");
-        yPosition -= lineHeight;
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "Série: Código que identifica a série da nota fiscal, usado para diferenciar numerações.");
-        yPosition -= lineHeight;
-        addText(
-            contentStream, leftMargin, yPosition, "Número: Número sequencial do documento fiscal.");
-        yPosition -= lineHeight;
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "Dia: Data de emissão do documento ou dia de ocorrência da operação.");
-        yPosition -= lineHeight;
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "UF: Unidade Federativa (estado) de destino da mercadoria ou serviço.");
-        yPosition -= lineHeight;
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "Valor: Valor total do documento fiscal registrado na contabilidade.");
-        yPosition -= lineHeight;
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "Cod.: Fiscal Código de classificação fiscal da operação (CFOP).");
-        yPosition -= lineHeight;
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "Aliq.: Alíquota aplicável do imposto (percentual de tributação).");
-        yPosition -= lineHeight;
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "Outras: Valores ou operações não enquadradas nas categorias principais (ex.: ajustes, descontos, etc.).");
       }
+
+      yPosition -= lineHeight * 2;
+
+      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+
+      addText(contentStream, leftMargin, yPosition, "Legenda:");
+      yPosition -= lineHeight;
+
+      addText(contentStream, leftMargin, yPosition,
+          "Espécie: Tipo do documento fiscal emitido (ex.: NF-e, NFC-e, CF-e, etc.).");
+      yPosition -= lineHeight;
+
+      addText(contentStream, leftMargin, yPosition,
+          "Série: Código que identifica a série da nota fiscal.");
+      yPosition -= lineHeight;
+
+      addText(contentStream, leftMargin, yPosition,
+          "Número: Número sequencial do documento fiscal.");
+      yPosition -= lineHeight;
+
+      addText(contentStream, leftMargin, yPosition,
+          "Dia: Data de emissão do documento.");
+      yPosition -= lineHeight;
+
+      addText(contentStream, leftMargin, yPosition,
+          "UF: Unidade Federativa de destino.");
+      yPosition -= lineHeight;
+
+      addText(contentStream, leftMargin, yPosition,
+          "Valor: Valor total do documento fiscal.");
+      yPosition -= lineHeight;
+
+      addText(contentStream, leftMargin, yPosition,
+          "Cod. Fiscal: Código CFOP da operação.");
+      yPosition -= lineHeight;
+
+      addText(contentStream, leftMargin, yPosition,
+          "Aliq.: Alíquota do imposto.");
+      yPosition -= lineHeight;
+
+      addText(contentStream, leftMargin, yPosition,
+          "Outras: Valores não enquadrados nas categorias principais.");
+
+      contentStream.close();
 
       try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
         document.save(outputStream);
@@ -160,6 +167,7 @@ public class RegisterPdfGenerator {
 
   private void addText(PDPageContentStream contentStream, float x, float y, String text)
       throws IOException {
+
     contentStream.beginText();
     contentStream.newLineAtOffset(x, y);
     contentStream.showText(text);
@@ -174,9 +182,11 @@ public class RegisterPdfGenerator {
       float height,
       String[] headers)
       throws IOException {
+
     float cellWidth = width / headers.length;
 
     for (int i = 0; i < headers.length; i++) {
+
       contentStream.addRect(x + (cellWidth * i), y, cellWidth, -height);
       contentStream.stroke();
 
@@ -196,9 +206,11 @@ public class RegisterPdfGenerator {
       float height,
       String[] values)
       throws IOException {
+
     float cellWidth = width / values.length;
 
     for (int i = 0; i < values.length; i++) {
+
       contentStream.addRect(x + (cellWidth * i), y, cellWidth, -height);
       contentStream.stroke();
 
@@ -213,6 +225,8 @@ public class RegisterPdfGenerator {
   private String formatValue(BigDecimal value) {
     return value == null
         ? "0,00"
-        : value.setScale(2, java.math.RoundingMode.HALF_UP).toString().replace(".", ",");
+        : value.setScale(2, java.math.RoundingMode.HALF_UP)
+            .toString()
+            .replace(".", ",");
   }
 }
