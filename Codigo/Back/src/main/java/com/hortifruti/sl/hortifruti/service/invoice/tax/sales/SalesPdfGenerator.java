@@ -27,76 +27,96 @@ public class SalesPdfGenerator {
   public byte[] generateSalesReportPdf(
       List<SalesSummaryDetails> salesSummaries, LocalDate startDate, LocalDate endDate)
       throws IOException {
+
     String periodStart = startDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     String periodEnd = endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
+    float leftMargin = 10;
+    float tableWidth = 500;
+    float cellHeight = 25;
+    float lineHeight = 20;
+    float bottomMargin = 100;
+
+    String[] headers = {
+      "Número",
+      "Mod",
+      "Data",
+      "Envio",
+      "Cliente",
+      "Subtotal",
+      "Desconto",
+      "Acréscimo",
+      "Total - R$"
+    };
+
     try (PDDocument document = new PDDocument()) {
+
       PDPage page = new PDPage();
       document.addPage(page);
 
-      try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
-        float yPosition = 750;
-        float leftMargin = 10;
-        float tableWidth = 500;
-        float cellHeight = 25;
-        float lineHeight = 20;
+      PDPageContentStream contentStream = new PDPageContentStream(document, page);
 
-        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
-        contentStream.beginText();
-        contentStream.newLineAtOffset(leftMargin, yPosition);
-        contentStream.showText("RELAÇÃO DE VENDAS");
-        contentStream.endText();
-        yPosition -= lineHeight * 2;
+      float yPosition = 750;
 
-        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
-        addText(contentStream, leftMargin, yPosition, "Filial: " + companyName);
-        yPosition -= lineHeight;
-        addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
-        yPosition -= lineHeight;
-        addText(
-            contentStream, leftMargin, yPosition, "Período: " + periodStart + " a " + periodEnd);
-        yPosition -= lineHeight * 2;
+      // Título
+      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+      addText(contentStream, leftMargin, yPosition, "RELAÇÃO DE VENDAS");
+      yPosition -= lineHeight * 2;
 
-        drawTableHeader(
+      // Informações empresa
+      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+      addText(contentStream, leftMargin, yPosition, "Filial: " + companyName);
+      yPosition -= lineHeight;
+
+      addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
+      yPosition -= lineHeight;
+
+      addText(contentStream, leftMargin, yPosition,
+          "Período: " + periodStart + " a " + periodEnd);
+      yPosition -= lineHeight * 2;
+
+      drawTableHeader(contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
+      yPosition -= cellHeight;
+
+      for (SalesSummaryDetails summary : salesSummaries) {
+
+        if (yPosition < bottomMargin) {
+
+          contentStream.close();
+
+          page = new PDPage();
+          document.addPage(page);
+
+          contentStream = new PDPageContentStream(document, page);
+
+          yPosition = 750;
+
+          drawTableHeader(contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
+          yPosition -= cellHeight;
+        }
+
+        drawTableRow(
             contentStream,
             leftMargin,
             yPosition,
             tableWidth,
             cellHeight,
             new String[] {
-              "Número",
-              "Mod",
-              "Data",
-              "Envio",
-              "Cliente",
-              "Subtotal",
-              "Desconto",
-              "Acréscimo",
-              "Total - R$"
+              summary.numero(),
+              "55",
+              summary.data(),
+              summary.envio(),
+              summary.cliente(),
+              formatValue(summary.subtotal()),
+              formatValue(summary.desconto()),
+              formatValue(summary.acrescimo()),
+              formatValue(summary.total())
             });
-        yPosition -= cellHeight;
 
-        for (SalesSummaryDetails summary : salesSummaries) {
-          drawTableRow(
-              contentStream,
-              leftMargin,
-              yPosition,
-              tableWidth,
-              cellHeight,
-              new String[] {
-                summary.numero(),
-                "55",
-                summary.data(),
-                summary.envio(),
-                summary.cliente(),
-                formatValue(summary.subtotal()),
-                formatValue(summary.desconto()),
-                formatValue(summary.acrescimo()),
-                formatValue(summary.total())
-              });
-          yPosition -= cellHeight;
-        }
+        yPosition -= cellHeight;
       }
+
+      contentStream.close();
 
       try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
         document.save(outputStream);
@@ -121,9 +141,11 @@ public class SalesPdfGenerator {
       float height,
       String[] headers)
       throws IOException {
+
     float[] columnWidths = {50, 40, 70, 70, 120, 60, 60, 60, 60};
 
     for (int i = 0; i < headers.length; i++) {
+
       contentStream.addRect(x, y, columnWidths[i], -height);
       contentStream.stroke();
 
@@ -145,9 +167,11 @@ public class SalesPdfGenerator {
       float height,
       String[] values)
       throws IOException {
+
     float[] columnWidths = {50, 40, 70, 70, 120, 60, 60, 60, 60};
 
     for (int i = 0; i < values.length; i++) {
+
       contentStream.addRect(x, y, columnWidths[i], -height);
       contentStream.stroke();
 
@@ -157,6 +181,7 @@ public class SalesPdfGenerator {
 
       String valueToShow =
           i == 4 && values[i].length() > 17 ? values[i].substring(0, 17) + "..." : values[i];
+
       contentStream.showText(valueToShow);
       contentStream.endText();
 
@@ -167,6 +192,8 @@ public class SalesPdfGenerator {
   private String formatValue(BigDecimal value) {
     return value == null
         ? "0,00"
-        : value.setScale(2, java.math.RoundingMode.HALF_UP).toString().replace(".", ",");
+        : value.setScale(2, java.math.RoundingMode.HALF_UP)
+            .toString()
+            .replace(".", ",");
   }
 }
