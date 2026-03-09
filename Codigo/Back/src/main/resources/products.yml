@@ -338,7 +338,7 @@ products:
   - code: "112"
     description: "COCA COLA 2L RETOR"
     ncm: "22021000"
-    cfop: "5405"
+    cfop: "6404"
     icms: "60"
     unidade_comercial: "UN"
     unidade_tributavel: "UN"
