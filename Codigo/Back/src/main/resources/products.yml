@@ -339,7 +339,7 @@ products:
     description: "COCA COLA 2L RETOR"
     ncm: "22021000"
     cfop: "5405"
-    icms: "6500"
+    icms: "60"
     unidade_comercial: "UN"
     unidade_tributavel: "UN"
   - code: "780"
