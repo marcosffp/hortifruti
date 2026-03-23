@@ -23,7 +23,8 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 @RequiredArgsConstructor
 @Service
 public class IssueInvoice {
@@ -49,31 +50,50 @@ public class IssueInvoice {
   private final String info = "Venda de produtos hortifrutigranjeiros frescos";
   private final FocusNfeApiClient focusNfeApiClient;
 
+
+  private static final Logger log = LoggerFactory.getLogger(IssueInvoice.class);
   @Transactional
   public InvoiceResponse issueInvoice(Long combinedScoreId, String dadosAdicionais) {
     try {
+      log.info("=== INICIANDO EMISSÃO DE NF - combinedScoreId: {} ===", combinedScoreId);
+
       CombinedScore combinedScore = fetchCombinedScore(combinedScoreId);
+      log.info("CombinedScore encontrado: id={}, clientId={}", combinedScore.getId(), combinedScore.getClientId());
+
       Client client = fetchClient(combinedScore.getClientId());
+      log.info("Cliente encontrado: id={}, nome={}", client.getId(), client.getClientName());
 
       RecipientRequest recipient = recipientService.createRecipientRequest(client.getId());
-      List<ItemRequest> items =
-          invoiceItemService.createItems(
-              combinedScore.getGroupedProducts(), recipient.endereco().uf());
-      IssueInvoiceRequest request =
-          buildInvoiceRequest(recipient, items, combinedScore, dadosAdicionais);
+      log.info("Destinatário criado: {}", recipient);
+
+      List<ItemRequest> items = invoiceItemService.createItems(
+          combinedScore.getGroupedProducts(), recipient.endereco().uf());
+      log.info("Itens criados: {} itens", items.size());
+      items.forEach(item -> log.info("  Item: {}", item));
+
+      IssueInvoiceRequest request = buildInvoiceRequest(recipient, items, combinedScore, dadosAdicionais);
+      log.info("Request montado: {}", request);
 
       String ref = UUID.randomUUID().toString();
       String payload = invoicePayloadService.buildFocusNfePayload(request, ref);
+      log.info("Payload gerado para ref {}: {}", ref, payload);
+
       String response = focusNfeApiClient.sendRequest(ref, payload);
+      log.info("Resposta da FocusNFe: {}", response);
 
       InvoiceResponse invoiceResponse = objectMapper.readValue(response, InvoiceResponse.class);
       updateCombinedScoreStatus(combinedScore, invoiceResponse);
 
+      log.info("=== NF EMITIDA COM SUCESSO - ref: {} ===", invoiceResponse.ref());
       return invoiceResponse;
+
     } catch (Exception e) {
+      log.error("=== ERRO AO EMITIR NF - combinedScoreId: {} ===", combinedScoreId);
+      log.error("Mensagem: {}", e.getMessage(), e);
       throw new InvoiceException("Erro ao emitir nota fiscal: " + e.getMessage(), e);
     }
   }
+
 
   private CombinedScore fetchCombinedScore(Long combinedScoreId) {
     return combinedScoreRepository
