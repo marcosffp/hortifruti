@@ -18,13 +18,12 @@ public class InvoicePayload {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   // Alíquotas 2026 — fase de transição (CBS 0,9% + IBS UF 0,1%)
-  private static final BigDecimal CBS_ALIQUOTA = new BigDecimal("0.009");
+  private static final BigDecimal CBS_ALIQUOTA  = new BigDecimal("0.009");
   private static final BigDecimal IBS_UF_ALIQUOTA = new BigDecimal("0.001");
-  private static final String CBS_ALIQUOTA_STR = "0.9";
+  private static final String CBS_ALIQUOTA_STR    = "0.9";
   private static final String IBS_UF_ALIQUOTA_STR = "0.1";
 
-  // Situação tributária padrão RT 2026 e classificação tributária padrão
-  private static final String IBS_CBS_SITUACAO_TRIBUTARIA = "000";
+  private static final String IBS_CBS_SITUACAO_TRIBUTARIA      = "000";
   private static final String IBS_CBS_CLASSIFICACAO_TRIBUTARIA = "000001";
 
   @Value("${focus.nfe.token}")
@@ -103,14 +102,17 @@ public class InvoicePayload {
       payload.put("modalidade_frete", "9");
 
       // =====================================================================
-      // Itens + acumulador de base total (Reforma Tributária — NT 2025.002)
+      // REGRA DE ARREDONDAMENTO (Rejeição 1091):
+      //   A SEFAZ valida: cbs_valor_total == soma dos cbs_valor dos itens
+      //   Por isso os totais da nota DEVEM ser a soma dos valores já
+      //   arredondados escritos em cada item — não um recálculo sobre a base.
       //
-      // REGRA DE ARREDONDAMENTO:
-      //   - cbs_valor / ibs_uf_valor por item: 4 casas decimais
-      //   - totais da nota: calculados sobre a BASE TOTAL (não soma dos itens)
-      //     para evitar rejeição 1091 por divergência de arredondamento acumulado
+      //   Cada cbs_valor/ibs_uf_valor por item: 4 casas decimais (HALF_UP)
+      //   Totais: soma acumulada desses mesmos valores arredondados
       // =====================================================================
-      BigDecimal totalBase = BigDecimal.ZERO;
+      BigDecimal totalCbs   = BigDecimal.ZERO;
+      BigDecimal totalIbsUf = BigDecimal.ZERO;
+      BigDecimal totalBase  = BigDecimal.ZERO;
 
       if (request.items() != null && !request.items().isEmpty()) {
         List<Map<String, Object>> items = new ArrayList<>();
@@ -151,7 +153,9 @@ public class InvoicePayload {
           itemMap.put("cofins_situacao_tributaria", item.cofinsSituacaoTributaria());
 
           // --- Grupo UB: IBS/CBS por item ---
-          BigDecimal base       = toBigDecimal(item.valorBruto());
+          BigDecimal base = toBigDecimal(item.valorBruto());
+
+          // Arredonda para 4 casas — este é o valor que vai no JSON do item
           BigDecimal cbsValor   = base.multiply(CBS_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
           BigDecimal ibsUfValor = base.multiply(IBS_UF_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
 
@@ -166,8 +170,12 @@ public class InvoicePayload {
           itemMap.put("ibs_mun_valor",                    "0");
           itemMap.put("ibs_valor_total",                  ibsUfValor.toPlainString());
 
-          // acumula apenas a base — totais calculados sobre ela depois
-          totalBase = totalBase.add(base);
+          // Acumula os valores JÁ ARREDONDADOS que foram escritos no item.
+          // Isso garante que cbs_valor_total == soma exata dos cbs_valor dos itens,
+          // que é exatamente o que a SEFAZ confere na rejeição 1091.
+          totalCbs   = totalCbs.add(cbsValor);
+          totalIbsUf = totalIbsUf.add(ibsUfValor);
+          totalBase  = totalBase.add(base);
 
           items.add(itemMap);
         }
@@ -175,14 +183,7 @@ public class InvoicePayload {
         payload.put("items", items);
       }
 
-      // =====================================================================
-      // Totais IBS/CBS calculados diretamente sobre a base total acumulada.
-      // Isso garante que o valor bate exatamente com o que a SEFAZ recalcula,
-      // evitando a rejeição 1091 causada por acúmulo de arredondamento por item.
-      // =====================================================================
-      BigDecimal totalCbs   = totalBase.multiply(CBS_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
-      BigDecimal totalIbsUf = totalBase.multiply(IBS_UF_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
-
+      // Totais: soma dos valores arredondados dos itens (não recalculado)
       payload.put("ibs_cbs_base_calculo",   totalBase);
       payload.put("cbs_valor_total",        totalCbs.toPlainString());
       payload.put("ibs_uf_valor_total",     totalIbsUf.toPlainString());
