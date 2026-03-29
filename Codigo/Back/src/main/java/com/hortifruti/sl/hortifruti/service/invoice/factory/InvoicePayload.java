@@ -26,13 +26,6 @@ public class InvoicePayload {
   private static final String IBS_CBS_SITUACAO_TRIBUTARIA      = "000";
   private static final String IBS_CBS_CLASSIFICACAO_TRIBUTARIA = "000001";
 
-  // Escala usada nos valores por item enviados ao FocusNFe / SEFAZ.
-  // Usar 10 casas elimina o drift de ±0.0001 que causava a Rejeição 1091:
-  // a SEFAZ recalcula cbs_valor internamente com alta precisão e soma;
-  // com 4 casas o arredondamento por item acumulava diferença de 0.0001
-  // em relação ao cbs_valor_total. Com 10 casas essa diferença desaparece.
-  private static final int ITEM_SCALE = 10;
-
   @Value("${focus.nfe.token}")
   private String focusNfeToken;
 
@@ -114,21 +107,26 @@ public class InvoicePayload {
       //   A SEFAZ valida: cbs_valor_total == soma dos cbs_valor dos itens
       //                   ibs_uf_valor_total == soma dos ibs_uf_valor dos itens
       //
-      //   Estratégia adotada (v2 — corrige rejeição 1091):
-      //   1. Cada cbs_valor / ibs_uf_valor do item é calculado com ITEM_SCALE
-      //      casas decimais (10) para minimizar o drift de arredondamento.
-      //      Com 4 casas, o arredondamento por item acumulava ±0.0001 em notas
-      //      com muitos itens, divergindo do total recalculado pela SEFAZ.
-      //   2. Os totais da nota são obtidos somando os BigDecimals parseados
-      //      a partir dessas mesmas Strings — garantindo que o total seja
-      //      EXATAMENTE igual à soma que a SEFAZ fará ao ler o XML.
-      //   3. Nenhum arredondamento intermediário é aplicado ao acumulador,
-      //      evitando drift entre iterações.
+      //   Estratégia adotada (v3 — corrige rejeição 1091 definitivamente):
+      //
+      //   O FocusNFe recebe nosso JSON e monta o XML internamente. Ao
+      //   enviarmos os campos de total (cbs_valor_total, ibs_uf_valor_total,
+      //   ibs_valor_total, ibs_cbs_is_valor_total), o FocusNFe os escreve no
+      //   XML com sua própria escala de casas decimais — que pode diferir da
+      //   soma dos itens, causando a rejeição 1091.
+      //
+      //   Solução: NÃO enviar os campos de total IBS/CBS.
+      //   Conforme documentação do FocusNFe: "Os campos serão calculados
+      //   apenas se eles não forem informados na API." O FocusNFe soma os
+      //   valores dos itens e garante consistência com o XML gerado.
+      //
+      //   Os valores por item são calculados com 4 casas (HALF_UP),
+      //   escala padrão do schema NF-e para campos de valor.
       // =====================================================================
-      BigDecimal totalBase = BigDecimal.ZERO;
 
       if (request.items() != null && !request.items().isEmpty()) {
         List<Map<String, Object>> items = new ArrayList<>();
+        BigDecimal totalBase = BigDecimal.ZERO;
 
         for (ItemRequest item : request.items()) {
           Map<String, Object> itemMap = new HashMap<>();
@@ -166,14 +164,12 @@ public class InvoicePayload {
           itemMap.put("cofins_situacao_tributaria", item.cofinsSituacaoTributaria());
 
           // --- Grupo UB: IBS/CBS por item ---
+          // Calcula com 4 casas (HALF_UP) — escala padrão do schema NF-e.
+          // Os totais da nota NÃO são enviados: o FocusNFe os calcula
+          // somando estes valores, garantindo consistência no XML.
           BigDecimal base = toBigDecimal(item.valorBruto());
-
-          // Calcula com ITEM_SCALE casas para evitar drift de arredondamento ao somar.
-          // A String serializada com alta precisão é a fonte da verdade:
-          // o total da nota é obtido somando essas Strings, replicando exatamente
-          // o que a SEFAZ faz ao validar cbs_valor_total == soma(cbs_valor dos itens).
-          BigDecimal cbsValor   = base.multiply(CBS_ALIQUOTA).setScale(ITEM_SCALE, RoundingMode.HALF_UP);
-          BigDecimal ibsUfValor = base.multiply(IBS_UF_ALIQUOTA).setScale(ITEM_SCALE, RoundingMode.HALF_UP);
+          BigDecimal cbsValor   = base.multiply(CBS_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
+          BigDecimal ibsUfValor = base.multiply(IBS_UF_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
 
           String cbsValorStr   = cbsValor.toPlainString();
           String ibsUfValorStr = ibsUfValor.toPlainString();
@@ -190,28 +186,17 @@ public class InvoicePayload {
           itemMap.put("ibs_valor_total",                  ibsUfValorStr);
 
           totalBase = totalBase.add(base);
-
           items.add(itemMap);
-        }
-
-        // Totais obtidos somando os valores já serializados nos itens.
-        // A SEFAZ soma os cbs_valor/ibs_uf_valor dos itens do XML e
-        // compara com esses campos — devem ser idênticos.
-        BigDecimal totalCbs   = BigDecimal.ZERO;
-        BigDecimal totalIbsUf = BigDecimal.ZERO;
-
-        for (Map<String, Object> itemMap : items) {
-          totalCbs   = totalCbs.add(new BigDecimal((String) itemMap.get("cbs_valor")));
-          totalIbsUf = totalIbsUf.add(new BigDecimal((String) itemMap.get("ibs_uf_valor")));
         }
 
         payload.put("items", items);
 
-        payload.put("ibs_cbs_base_calculo",   totalBase);
-        payload.put("cbs_valor_total",        totalCbs.toPlainString());
-        payload.put("ibs_uf_valor_total",     totalIbsUf.toPlainString());
-        payload.put("ibs_valor_total",        totalIbsUf.toPlainString());
-        payload.put("ibs_cbs_is_valor_total", totalCbs.add(totalIbsUf).toPlainString());
+        // Envia apenas a base de cálculo total.
+        // cbs_valor_total, ibs_uf_valor_total, ibs_valor_total e
+        // ibs_cbs_is_valor_total são OMITIDOS intencionalmente para que
+        // o FocusNFe os calcule automaticamente a partir dos itens,
+        // evitando divergência de escala entre o JSON enviado e o XML gerado.
+        payload.put("ibs_cbs_base_calculo", totalBase);
       }
 
       if (request.informacoesAdicionaisContribuinte() != null) {
