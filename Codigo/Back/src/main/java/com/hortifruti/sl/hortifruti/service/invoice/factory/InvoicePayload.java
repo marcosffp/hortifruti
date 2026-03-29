@@ -183,12 +183,16 @@ public class InvoicePayload {
         payload.put("items", items);
       }
 
-      // Totais: soma dos valores arredondados dos itens (não recalculado)
+      // Totais: soma dos valores arredondados dos itens, re-arredondada a 4 casas
+      // para garantir igualdade exata com a soma que a SEFAZ confere (rejeição 1091)
+      totalCbs   = totalCbs.setScale(4, RoundingMode.HALF_UP);
+      totalIbsUf = totalIbsUf.setScale(4, RoundingMode.HALF_UP);
+
       payload.put("ibs_cbs_base_calculo",   totalBase);
       payload.put("cbs_valor_total",        totalCbs.toPlainString());
       payload.put("ibs_uf_valor_total",     totalIbsUf.toPlainString());
       payload.put("ibs_valor_total",        totalIbsUf.toPlainString());
-      payload.put("ibs_cbs_is_valor_total", totalCbs.add(totalIbsUf).toPlainString());
+      payload.put("ibs_cbs_is_valor_total", totalCbs.add(totalIbsUf).setScale(4, RoundingMode.HALF_UP).toPlainString());
 
       if (request.informacoesAdicionaisContribuinte() != null) {
         payload.put(
