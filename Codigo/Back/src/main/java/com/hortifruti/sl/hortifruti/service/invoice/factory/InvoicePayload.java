@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.dto.invoice.IssueInvoiceRequest;
 import com.hortifruti.sl.hortifruti.dto.invoice.ItemRequest;
 import com.hortifruti.sl.hortifruti.exception.InvoiceException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,6 +16,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class InvoicePayload {
   private final ObjectMapper objectMapper = new ObjectMapper();
+
+  // Alíquotas 2026 — fase de transição (CBS 0,9% + IBS UF 0,1%)
+  private static final BigDecimal CBS_ALIQUOTA = new BigDecimal("0.009");
+  private static final BigDecimal IBS_UF_ALIQUOTA = new BigDecimal("0.001");
+  private static final String CBS_ALIQUOTA_STR = "0.9";
+  private static final String IBS_UF_ALIQUOTA_STR = "0.1";
+
+  // Situação tributária padrão RT 2026 e classificação tributária padrão
+  private static final String IBS_CBS_SITUACAO_TRIBUTARIA = "000";
+  private static final String IBS_CBS_CLASSIFICACAO_TRIBUTARIA = "000001";
 
   @Value("${focus.nfe.token}")
   private String focusNfeToken;
@@ -90,10 +102,20 @@ public class InvoicePayload {
 
       payload.put("modalidade_frete", "9");
 
+      // =====================================================================
+      // Itens + acumuladores IBS/CBS (Reforma Tributária — NT 2025.002)
+      // =====================================================================
+      BigDecimal totalCbs   = BigDecimal.ZERO;
+      BigDecimal totalIbsUf = BigDecimal.ZERO;
+      BigDecimal totalBase  = BigDecimal.ZERO;
+
       if (request.items() != null && !request.items().isEmpty()) {
         List<Map<String, Object>> items = new ArrayList<>();
+
         for (ItemRequest item : request.items()) {
           Map<String, Object> itemMap = new HashMap<>();
+
+          // --- campos existentes ---
           itemMap.put("numero_item", items.size() + 1);
           itemMap.put("codigo_produto", item.codigoProduto());
           itemMap.put("descricao", item.descricao());
@@ -125,10 +147,41 @@ public class InvoicePayload {
           itemMap.put("pis_situacao_tributaria", item.pisSituacaoTributaria());
           itemMap.put("cofins_situacao_tributaria", item.cofinsSituacaoTributaria());
 
+          // --- Grupo UB: IBS/CBS por item (obrigatório a partir de 01/04/2026) ---
+          BigDecimal base = toBigDecimal(item.valorBruto());
+          BigDecimal cbsValor   = base.multiply(CBS_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
+          BigDecimal ibsUfValor = base.multiply(IBS_UF_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
+
+          itemMap.put("ibs_cbs_situacao_tributaria",    IBS_CBS_SITUACAO_TRIBUTARIA);
+          itemMap.put("ibs_cbs_classificacao_tributaria", IBS_CBS_CLASSIFICACAO_TRIBUTARIA);
+          itemMap.put("ibs_cbs_base_calculo",           base);
+          itemMap.put("cbs_aliquota",                   CBS_ALIQUOTA_STR);
+          itemMap.put("cbs_valor",                      cbsValor.toPlainString());
+          itemMap.put("ibs_uf_aliquota",                IBS_UF_ALIQUOTA_STR);
+          itemMap.put("ibs_uf_valor",                   ibsUfValor.toPlainString());
+          itemMap.put("ibs_mun_aliquota",               "0");
+          itemMap.put("ibs_mun_valor",                  "0");
+          itemMap.put("ibs_valor_total",                ibsUfValor.toPlainString()); // municipal = 0
+
+          // acumuladores
+          totalCbs   = totalCbs.add(cbsValor);
+          totalIbsUf = totalIbsUf.add(ibsUfValor);
+          totalBase  = totalBase.add(base);
+
           items.add(itemMap);
         }
+
         payload.put("items", items);
       }
+
+      // =====================================================================
+      // Totais IBS/CBS da nota (campos obrigatórios no nível raiz)
+      // =====================================================================
+      payload.put("ibs_cbs_base_calculo",    totalBase);
+      payload.put("cbs_valor_total",         totalCbs.toPlainString());
+      payload.put("ibs_uf_valor_total",      totalIbsUf.toPlainString());
+      payload.put("ibs_valor_total",         totalIbsUf.toPlainString()); // municipal = 0
+      payload.put("ibs_cbs_is_valor_total",  totalCbs.add(totalIbsUf).toPlainString());
 
       if (request.informacoesAdicionaisContribuinte() != null) {
         payload.put(
@@ -138,6 +191,21 @@ public class InvoicePayload {
       return objectMapper.writeValueAsString(payload);
     } catch (Exception e) {
       throw new InvoiceException("Erro ao construir payload", e);
+    }
+  }
+
+  /**
+   * Converte o valor do item (que pode vir como Double, BigDecimal ou String)
+   * para BigDecimal de forma segura.
+   */
+  private BigDecimal toBigDecimal(Object value) {
+    if (value == null) return BigDecimal.ZERO;
+    if (value instanceof BigDecimal) return (BigDecimal) value;
+    if (value instanceof Number) return BigDecimal.valueOf(((Number) value).doubleValue());
+    try {
+      return new BigDecimal(value.toString());
+    } catch (NumberFormatException e) {
+      return BigDecimal.ZERO;
     }
   }
 }
