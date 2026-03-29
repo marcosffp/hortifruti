@@ -183,16 +183,17 @@ public class InvoicePayload {
         payload.put("items", items);
       }
 
-      // Totais: soma dos valores arredondados dos itens, re-arredondada a 4 casas
-      // para garantir igualdade exata com a soma que a SEFAZ confere (rejeição 1091)
-      totalCbs   = totalCbs.setScale(4, RoundingMode.HALF_UP);
-      totalIbsUf = totalIbsUf.setScale(4, RoundingMode.HALF_UP);
+      // SEFAZ calcula totais aplicando aliquota sobre a base total da nota,
+      // nao somando os cbs_valor arredondados por item (acumula drift de arredondamento).
+      // Ex: base 752.8932 x 0.9% = 6.7760 (nao 6.7761 que vem da soma dos itens)
+      BigDecimal cbsTotal   = totalBase.multiply(CBS_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
+      BigDecimal ibsUfTotal = totalBase.multiply(IBS_UF_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
 
       payload.put("ibs_cbs_base_calculo",   totalBase);
-      payload.put("cbs_valor_total",        totalCbs.toPlainString());
-      payload.put("ibs_uf_valor_total",     totalIbsUf.toPlainString());
-      payload.put("ibs_valor_total",        totalIbsUf.toPlainString());
-      payload.put("ibs_cbs_is_valor_total", totalCbs.add(totalIbsUf).setScale(4, RoundingMode.HALF_UP).toPlainString());
+      payload.put("cbs_valor_total",        cbsTotal.toPlainString());
+      payload.put("ibs_uf_valor_total",     ibsUfTotal.toPlainString());
+      payload.put("ibs_valor_total",        ibsUfTotal.toPlainString());
+      payload.put("ibs_cbs_is_valor_total", cbsTotal.add(ibsUfTotal).toPlainString());
 
       if (request.informacoesAdicionaisContribuinte() != null) {
         payload.put(
