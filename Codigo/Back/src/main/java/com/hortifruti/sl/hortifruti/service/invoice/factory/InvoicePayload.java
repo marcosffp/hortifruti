@@ -223,12 +223,19 @@ public class InvoicePayload {
   /**
    * Converte o valor do item (que pode vir como Double, BigDecimal ou String)
    * para BigDecimal de forma segura.
+   *
+   * IMPORTANTE: nunca usar BigDecimal.valueOf(double) nem new BigDecimal(double)
+   * pois ambos herdam a imprecisão binária do ponto flutuante.
+   * Ex: new BigDecimal(20.0598d) → 20.05979999999999971578290...
+   * A única forma segura é passar pela representação String, que reflete
+   * exatamente o valor decimal que o usuário informou.
    */
   private BigDecimal toBigDecimal(Object value) {
     if (value == null) return BigDecimal.ZERO;
     if (value instanceof BigDecimal) return (BigDecimal) value;
-    if (value instanceof Number) return BigDecimal.valueOf(((Number) value).doubleValue());
     try {
+      // toString() em qualquer Number (Double, Float, Integer…) produz
+      // a representação decimal canônica, sem acumular erro de IEEE 754.
       return new BigDecimal(value.toString());
     } catch (NumberFormatException e) {
       return BigDecimal.ZERO;
