@@ -103,11 +103,14 @@ public class InvoicePayload {
       payload.put("modalidade_frete", "9");
 
       // =====================================================================
-      // Itens + acumuladores IBS/CBS (Reforma Tributária — NT 2025.002)
+      // Itens + acumulador de base total (Reforma Tributária — NT 2025.002)
+      //
+      // REGRA DE ARREDONDAMENTO:
+      //   - cbs_valor / ibs_uf_valor por item: 4 casas decimais
+      //   - totais da nota: calculados sobre a BASE TOTAL (não soma dos itens)
+      //     para evitar rejeição 1091 por divergência de arredondamento acumulado
       // =====================================================================
-      BigDecimal totalCbs   = BigDecimal.ZERO;
-      BigDecimal totalIbsUf = BigDecimal.ZERO;
-      BigDecimal totalBase  = BigDecimal.ZERO;
+      BigDecimal totalBase = BigDecimal.ZERO;
 
       if (request.items() != null && !request.items().isEmpty()) {
         List<Map<String, Object>> items = new ArrayList<>();
@@ -147,26 +150,24 @@ public class InvoicePayload {
           itemMap.put("pis_situacao_tributaria", item.pisSituacaoTributaria());
           itemMap.put("cofins_situacao_tributaria", item.cofinsSituacaoTributaria());
 
-          // --- Grupo UB: IBS/CBS por item (obrigatório a partir de 01/04/2026) ---
-          BigDecimal base = toBigDecimal(item.valorBruto());
+          // --- Grupo UB: IBS/CBS por item ---
+          BigDecimal base       = toBigDecimal(item.valorBruto());
           BigDecimal cbsValor   = base.multiply(CBS_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
           BigDecimal ibsUfValor = base.multiply(IBS_UF_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
 
-          itemMap.put("ibs_cbs_situacao_tributaria",    IBS_CBS_SITUACAO_TRIBUTARIA);
+          itemMap.put("ibs_cbs_situacao_tributaria",      IBS_CBS_SITUACAO_TRIBUTARIA);
           itemMap.put("ibs_cbs_classificacao_tributaria", IBS_CBS_CLASSIFICACAO_TRIBUTARIA);
-          itemMap.put("ibs_cbs_base_calculo",           base);
-          itemMap.put("cbs_aliquota",                   CBS_ALIQUOTA_STR);
-          itemMap.put("cbs_valor",                      cbsValor.toPlainString());
-          itemMap.put("ibs_uf_aliquota",                IBS_UF_ALIQUOTA_STR);
-          itemMap.put("ibs_uf_valor",                   ibsUfValor.toPlainString());
-          itemMap.put("ibs_mun_aliquota",               "0");
-          itemMap.put("ibs_mun_valor",                  "0");
-          itemMap.put("ibs_valor_total",                ibsUfValor.toPlainString()); // municipal = 0
+          itemMap.put("ibs_cbs_base_calculo",             base);
+          itemMap.put("cbs_aliquota",                     CBS_ALIQUOTA_STR);
+          itemMap.put("cbs_valor",                        cbsValor.toPlainString());
+          itemMap.put("ibs_uf_aliquota",                  IBS_UF_ALIQUOTA_STR);
+          itemMap.put("ibs_uf_valor",                     ibsUfValor.toPlainString());
+          itemMap.put("ibs_mun_aliquota",                 "0");
+          itemMap.put("ibs_mun_valor",                    "0");
+          itemMap.put("ibs_valor_total",                  ibsUfValor.toPlainString());
 
-          // acumuladores
-          totalCbs   = totalCbs.add(cbsValor);
-          totalIbsUf = totalIbsUf.add(ibsUfValor);
-          totalBase  = totalBase.add(base);
+          // acumula apenas a base — totais calculados sobre ela depois
+          totalBase = totalBase.add(base);
 
           items.add(itemMap);
         }
@@ -175,13 +176,18 @@ public class InvoicePayload {
       }
 
       // =====================================================================
-      // Totais IBS/CBS da nota (campos obrigatórios no nível raiz)
+      // Totais IBS/CBS calculados diretamente sobre a base total acumulada.
+      // Isso garante que o valor bate exatamente com o que a SEFAZ recalcula,
+      // evitando a rejeição 1091 causada por acúmulo de arredondamento por item.
       // =====================================================================
-      payload.put("ibs_cbs_base_calculo",    totalBase);
-      payload.put("cbs_valor_total",         totalCbs.toPlainString());
-      payload.put("ibs_uf_valor_total",      totalIbsUf.toPlainString());
-      payload.put("ibs_valor_total",         totalIbsUf.toPlainString()); // municipal = 0
-      payload.put("ibs_cbs_is_valor_total",  totalCbs.add(totalIbsUf).toPlainString());
+      BigDecimal totalCbs   = totalBase.multiply(CBS_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
+      BigDecimal totalIbsUf = totalBase.multiply(IBS_UF_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
+
+      payload.put("ibs_cbs_base_calculo",   totalBase);
+      payload.put("cbs_valor_total",        totalCbs.toPlainString());
+      payload.put("ibs_uf_valor_total",     totalIbsUf.toPlainString());
+      payload.put("ibs_valor_total",        totalIbsUf.toPlainString());
+      payload.put("ibs_cbs_is_valor_total", totalCbs.add(totalIbsUf).toPlainString());
 
       if (request.informacoesAdicionaisContribuinte() != null) {
         payload.put(
