@@ -18,13 +18,20 @@ public class InvoicePayload {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   // Alíquotas 2026 — fase de transição (CBS 0,9% + IBS UF 0,1%)
-  private static final BigDecimal CBS_ALIQUOTA     = new BigDecimal("0.009");
-  private static final BigDecimal IBS_UF_ALIQUOTA  = new BigDecimal("0.001");
+  private static final BigDecimal CBS_ALIQUOTA        = new BigDecimal("0.009");
+  private static final BigDecimal IBS_UF_ALIQUOTA     = new BigDecimal("0.001");
   private static final String     CBS_ALIQUOTA_STR    = "0.9";
   private static final String     IBS_UF_ALIQUOTA_STR = "0.1";
 
   private static final String IBS_CBS_SITUACAO_TRIBUTARIA      = "000";
   private static final String IBS_CBS_CLASSIFICACAO_TRIBUTARIA = "000001";
+
+  // Escala usada nos valores por item enviados ao FocusNFe / SEFAZ.
+  // Usar 10 casas elimina o drift de ±0.0001 que causava a Rejeição 1091:
+  // a SEFAZ recalcula cbs_valor internamente com alta precisão e soma;
+  // com 4 casas o arredondamento por item acumulava diferença de 0.0001
+  // em relação ao cbs_valor_total. Com 10 casas essa diferença desaparece.
+  private static final int ITEM_SCALE = 10;
 
   @Value("${focus.nfe.token}")
   private String focusNfeToken;
@@ -107,9 +114,11 @@ public class InvoicePayload {
       //   A SEFAZ valida: cbs_valor_total == soma dos cbs_valor dos itens
       //                   ibs_uf_valor_total == soma dos ibs_uf_valor dos itens
       //
-      //   Estratégia adotada:
-      //   1. Cada cbs_valor / ibs_uf_valor do item é arredondado para 4 casas
-      //      (HALF_UP) e serializado como String no JSON do item.
+      //   Estratégia adotada (v2 — corrige rejeição 1091):
+      //   1. Cada cbs_valor / ibs_uf_valor do item é calculado com ITEM_SCALE
+      //      casas decimais (10) para minimizar o drift de arredondamento.
+      //      Com 4 casas, o arredondamento por item acumulava ±0.0001 em notas
+      //      com muitos itens, divergindo do total recalculado pela SEFAZ.
       //   2. Os totais da nota são obtidos somando os BigDecimals parseados
       //      a partir dessas mesmas Strings — garantindo que o total seja
       //      EXATAMENTE igual à soma que a SEFAZ fará ao ler o XML.
@@ -159,12 +168,13 @@ public class InvoicePayload {
           // --- Grupo UB: IBS/CBS por item ---
           BigDecimal base = toBigDecimal(item.valorBruto());
 
-          // Arredonda para 4 casas — este é o valor exato que vai no XML do item.
-          // A String serializada é a fonte da verdade para o cálculo do total.
-          BigDecimal cbsValor   = base.multiply(CBS_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
-          BigDecimal ibsUfValor = base.multiply(IBS_UF_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
+          // Calcula com ITEM_SCALE casas para evitar drift de arredondamento ao somar.
+          // A String serializada com alta precisão é a fonte da verdade:
+          // o total da nota é obtido somando essas Strings, replicando exatamente
+          // o que a SEFAZ faz ao validar cbs_valor_total == soma(cbs_valor dos itens).
+          BigDecimal cbsValor   = base.multiply(CBS_ALIQUOTA).setScale(ITEM_SCALE, RoundingMode.HALF_UP);
+          BigDecimal ibsUfValor = base.multiply(IBS_UF_ALIQUOTA).setScale(ITEM_SCALE, RoundingMode.HALF_UP);
 
-          // Serializa como String e guarda no item
           String cbsValorStr   = cbsValor.toPlainString();
           String ibsUfValorStr = ibsUfValor.toPlainString();
 
@@ -179,16 +189,14 @@ public class InvoicePayload {
           itemMap.put("ibs_mun_valor",                    "0");
           itemMap.put("ibs_valor_total",                  ibsUfValorStr);
 
-          // Acumula parseando de volta as Strings serializadas.
-          // Dessa forma totalCbs/totalIbsUf são EXATAMENTE a soma
-          // dos valores que a SEFAZ vai ler no XML — sem drift de
-          // arredondamento intermediário.
-          totalBase  = totalBase.add(base);
+          totalBase = totalBase.add(base);
 
           items.add(itemMap);
         }
 
-        // Recalcula os totais somando os valores já serializados nos itens
+        // Totais obtidos somando os valores já serializados nos itens.
+        // A SEFAZ soma os cbs_valor/ibs_uf_valor dos itens do XML e
+        // compara com esses campos — devem ser idênticos.
         BigDecimal totalCbs   = BigDecimal.ZERO;
         BigDecimal totalIbsUf = BigDecimal.ZERO;
 
@@ -199,9 +207,6 @@ public class InvoicePayload {
 
         payload.put("items", items);
 
-        // Totais escritos como a soma exata dos valores dos itens.
-        // A SEFAZ soma os cbs_valor/ibs_uf_valor dos itens do XML e
-        // compara com esses campos — devem ser idênticos.
         payload.put("ibs_cbs_base_calculo",   totalBase);
         payload.put("cbs_valor_total",        totalCbs.toPlainString());
         payload.put("ibs_uf_valor_total",     totalIbsUf.toPlainString());
