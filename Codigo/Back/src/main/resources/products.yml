@@ -533,7 +533,7 @@ products:
     unidade_tributavel: "UN"
   - code: "51"
     description: "CARÁ"
-    ncm: "07149090"
+    ncm: "07143000"
     cfop: "5102"
     icms: "102"
     unidade_comercial: "KG"
