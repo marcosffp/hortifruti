@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.dto.invoice.IssueInvoiceRequest;
 import com.hortifruti.sl.hortifruti.dto.invoice.ItemRequest;
 import com.hortifruti.sl.hortifruti.exception.InvoiceException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,15 +41,32 @@ import org.springframework.stereotype.Component;
  *
  * <h3>✅ SOLUÇÃO ADOTADA</h3>
  *
- * - Nunca adicionar esses campos manualmente
+ * - Nunca adicionar esses campos manualmente no nível raiz
  * - Remover explicitamente do payload (fail-safe)
+ * - Calcular CBS e IBS por item com 4 casas decimais (HALF_UP)
  *
  * Isso garante consistência entre:
  * - XML gerado
  * - validação da SEFAZ
+ *
+ * <h3>📋 REFORMA TRIBUTÁRIA (obrigatório a partir de 01/04/2026)</h3>
+ *
+ * Campos incluídos por item:
+ * - ibs_cbs_situacao_tributaria  → "000" (tributado normalmente)
+ * - ibs_cbs_classificacao_tributaria → "000001"
+ * - ibs_cbs_base_calculo         → valor bruto do item
+ * - cbs_aliquota / cbs_valor     → 0,9% federal
+ * - ibs_uf_aliquota / ibs_uf_valor → 0,1% estadual
+ * - ibs_mun_aliquota / ibs_mun_valor → 0,0% municipal (sem alíquota definida)
+ * - ibs_valor_total              → soma ibs_uf + ibs_mun
  */
 @Component
 public class InvoicePayload {
+
+  private static final BigDecimal CBS_ALIQUOTA = new BigDecimal("0.9");
+  private static final BigDecimal IBS_UF_ALIQUOTA = new BigDecimal("0.1");
+  private static final BigDecimal IBS_MUN_ALIQUOTA = BigDecimal.ZERO;
+  private static final BigDecimal CEM = new BigDecimal("100");
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -188,6 +207,42 @@ public class InvoicePayload {
           itemMap.put("pis_situacao_tributaria", item.pisSituacaoTributaria());
           itemMap.put("cofins_situacao_tributaria", item.cofinsSituacaoTributaria());
 
+          // =========================
+          // IBS / CBS — Reforma Tributária
+          // Obrigatório a partir de 01/04/2026 (NT 2025.002)
+          // Calculado aqui com 4 casas (HALF_UP).
+          // Os totais do nível raiz NÃO são enviados — o FocusNFe
+          // os calcula automaticamente, evitando divergência na SEFAZ.
+          // =========================
+          BigDecimal base = item.valorBruto() != null
+              ? item.valorBruto()
+              : item.quantidadeComercial().multiply(item.valorUnitarioComercial());
+
+          BigDecimal cbsValor = base
+              .multiply(CBS_ALIQUOTA)
+              .divide(CEM, 4, RoundingMode.HALF_UP);
+
+          BigDecimal ibsUfValor = base
+              .multiply(IBS_UF_ALIQUOTA)
+              .divide(CEM, 4, RoundingMode.HALF_UP);
+
+          BigDecimal ibsMunValor = base
+              .multiply(IBS_MUN_ALIQUOTA)
+              .divide(CEM, 4, RoundingMode.HALF_UP);
+
+          BigDecimal ibsValorTotal = ibsUfValor.add(ibsMunValor);
+
+          itemMap.put("ibs_cbs_situacao_tributaria",      "000");
+          itemMap.put("ibs_cbs_classificacao_tributaria", "000001");
+          itemMap.put("ibs_cbs_base_calculo",             base);
+          itemMap.put("cbs_aliquota",                     CBS_ALIQUOTA);
+          itemMap.put("cbs_valor",                        cbsValor);
+          itemMap.put("ibs_uf_aliquota",                  IBS_UF_ALIQUOTA);
+          itemMap.put("ibs_uf_valor",                     ibsUfValor);
+          itemMap.put("ibs_mun_aliquota",                 IBS_MUN_ALIQUOTA);
+          itemMap.put("ibs_mun_valor",                    ibsMunValor);
+          itemMap.put("ibs_valor_total",                  ibsValorTotal);
+
           items.add(itemMap);
         }
 
@@ -205,8 +260,10 @@ public class InvoicePayload {
 
       // =========================
       // 🔥 FAIL-SAFE CRÍTICO (IBS/CBS)
+      // Garante que nenhum total de nível raiz seja enviado,
+      // seja por serialização acidental de DTOs, putAll ou
+      // qualquer outro caminho não previsto.
       // =========================
-      // Garante que nenhum total seja enviado acidentalmente
       payload.remove("ibs_cbs_base_calculo");
       payload.remove("cbs_valor_total");
       payload.remove("ibs_uf_valor_total");
