@@ -170,11 +170,11 @@ public class InvoicePayload {
           itemMap.put("ibs_mun_valor",                    "0");
           itemMap.put("ibs_valor_total",                  ibsUfValor.toPlainString());
 
-          // Acumula os valores JÁ ARREDONDADOS que foram escritos no item.
-          // Isso garante que cbs_valor_total == soma exata dos cbs_valor dos itens,
-          // que é exatamente o que a SEFAZ confere na rejeição 1091.
-          totalCbs   = totalCbs.add(cbsValor);
-          totalIbsUf = totalIbsUf.add(ibsUfValor);
+          // Acumula os valores JA ARREDONDADOS que foram escritos no item.
+          // A SEFAZ soma os cbs_valor/ibs_uf_valor dos itens e compara com os totais.
+          // Mantemos a escala fixa em 4 casas para evitar crescimento de precisao.
+          totalCbs   = totalCbs.add(cbsValor).setScale(4, RoundingMode.HALF_UP);
+          totalIbsUf = totalIbsUf.add(ibsUfValor).setScale(4, RoundingMode.HALF_UP);
           totalBase  = totalBase.add(base);
 
           items.add(itemMap);
@@ -183,17 +183,15 @@ public class InvoicePayload {
         payload.put("items", items);
       }
 
-      // SEFAZ calcula totais aplicando aliquota sobre a base total da nota,
-      // nao somando os cbs_valor arredondados por item (acumula drift de arredondamento).
-      // Ex: base 752.8932 x 0.9% = 6.7760 (nao 6.7761 que vem da soma dos itens)
-      BigDecimal cbsTotal   = totalBase.multiply(CBS_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
-      BigDecimal ibsUfTotal = totalBase.multiply(IBS_UF_ALIQUOTA).setScale(4, RoundingMode.HALF_UP);
-
+      // Totais: soma exata dos valores ja arredondados escritos em cada item.
+      // A SEFAZ soma os cbs_valor/ibs_uf_valor que estao nos itens do XML
+      // e compara com esses totais (rejeição 1091 / 1092).
+      // NAO recalcular sobre a base total — isso gera drift diferente da soma dos itens.
       payload.put("ibs_cbs_base_calculo",   totalBase);
-      payload.put("cbs_valor_total",        cbsTotal.toPlainString());
-      payload.put("ibs_uf_valor_total",     ibsUfTotal.toPlainString());
-      payload.put("ibs_valor_total",        ibsUfTotal.toPlainString());
-      payload.put("ibs_cbs_is_valor_total", cbsTotal.add(ibsUfTotal).toPlainString());
+      payload.put("cbs_valor_total",        totalCbs.toPlainString());
+      payload.put("ibs_uf_valor_total",     totalIbsUf.toPlainString());
+      payload.put("ibs_valor_total",        totalIbsUf.toPlainString());
+      payload.put("ibs_cbs_is_valor_total", totalCbs.add(totalIbsUf).toPlainString());
 
       if (request.informacoesAdicionaisContribuinte() != null) {
         payload.put(
