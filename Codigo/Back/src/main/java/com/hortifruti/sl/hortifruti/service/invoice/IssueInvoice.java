@@ -21,11 +21,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-@Slf4j
 @RequiredArgsConstructor
 @Service
 public class IssueInvoice {
@@ -53,81 +51,68 @@ public class IssueInvoice {
 
   @Transactional
   public InvoiceResponse issueInvoice(Long combinedScoreId, String dadosAdicionais) {
-    log.info("[IssueInvoice] Iniciando emissão de NF-e para combinedScoreId={}, dadosAdicionais={}",
-        combinedScoreId, dadosAdicionais);
+    System.out.println("[IssueInvoice] Iniciando emissão. combinedScoreId=" + combinedScoreId + ", dadosAdicionais=" + dadosAdicionais);
     try {
       CombinedScore combinedScore = fetchCombinedScore(combinedScoreId);
-      log.info("[IssueInvoice] CombinedScore encontrado: id={}, clientId={}, confirmedAt={}, hasInvoice={}",
-          combinedScore.getId(), combinedScore.getClientId(),
-          combinedScore.getConfirmedAt(), combinedScore.isHasInvoice());
+      System.out.println("[IssueInvoice] CombinedScore encontrado: id=" + combinedScore.getId() + ", clientId=" + combinedScore.getClientId() + ", confirmedAt=" + combinedScore.getConfirmedAt() + ", hasInvoice=" + combinedScore.isHasInvoice());
 
       Client client = fetchClient(combinedScore.getClientId());
-      log.info("[IssueInvoice] Cliente encontrado: id={}, nome={}",
-          client.getId(), client.getClientName());
+      System.out.println("[IssueInvoice] Cliente encontrado: id=" + client.getId() + ", nome=" + client.getClientName());
 
-      log.info("[IssueInvoice] Criando destinatário para clientId={}", client.getId());
+      System.out.println("[IssueInvoice] Criando destinatário para clientId=" + client.getId());
       RecipientRequest recipient = recipientService.createRecipientRequest(client.getId());
-      log.info("[IssueInvoice] Destinatário criado: cpfCnpj={}, uf={}",
-          recipient.cpf_cnpj(), recipient.endereco() != null ? recipient.endereco().uf() : "NULL");
+      System.out.println("[IssueInvoice] Destinatário criado: cpf_cnpj=" + recipient.cpf_cnpj() + ", uf=" + (recipient.endereco() != null ? recipient.endereco().uf() : "NULL"));
 
-      log.info("[IssueInvoice] Criando itens da NF-e. Produtos agrupados: {}",
-          combinedScore.getGroupedProducts());
+      System.out.println("[IssueInvoice] Produtos agrupados: " + combinedScore.getGroupedProducts());
       List<ItemRequest> items =
           invoiceItemService.createItems(
               combinedScore.getGroupedProducts(), recipient.endereco().uf());
-      log.info("[IssueInvoice] {} item(s) criado(s)", items.size());
-      items.forEach(item -> log.debug("[IssueInvoice] Item: {}", item));
+      System.out.println("[IssueInvoice] Itens criados: " + items.size());
+      items.forEach(item -> System.out.println("[IssueInvoice] Item: " + item));
 
-      log.info("[IssueInvoice] Construindo payload da requisição...");
       IssueInvoiceRequest request =
           buildInvoiceRequest(recipient, items, combinedScore, dadosAdicionais);
-      log.info("[IssueInvoice] IssueInvoiceRequest construído: {}", request);
+      System.out.println("[IssueInvoice] IssueInvoiceRequest: " + request);
 
       String ref = UUID.randomUUID().toString();
-      log.info("[IssueInvoice] Referência UUID gerada: {}", ref);
+      System.out.println("[IssueInvoice] Ref gerada: " + ref);
 
       String payload = invoicePayloadService.buildFocusNfePayload(request, ref);
-      log.info("[IssueInvoice] Payload Focus NF-e gerado:\n{}", payload);
+      System.out.println("[IssueInvoice] Payload enviado:\n" + payload);
 
-      log.info("[IssueInvoice] Enviando requisição para Focus NF-e (ref={})...", ref);
       String response = focusNfeApiClient.sendRequest(ref, payload);
-      log.info("[IssueInvoice] Resposta recebida da Focus NF-e:\n{}", response);
+      System.out.println("[IssueInvoice] Resposta bruta da Focus NF-e:\n" + response);
 
       InvoiceResponse invoiceResponse = objectMapper.readValue(response, InvoiceResponse.class);
-      log.info("[IssueInvoice] InvoiceResponse deserializado: ref={}, status={}",
-          invoiceResponse.ref(), invoiceResponse.status());
+      System.out.println("[IssueInvoice] InvoiceResponse: ref=" + invoiceResponse.ref() + ", status=" + invoiceResponse.status());
 
       updateCombinedScoreStatus(combinedScore, invoiceResponse);
-      log.info("[IssueInvoice] NF-e emitida com sucesso. ref={}", invoiceResponse.ref());
+      System.out.println("[IssueInvoice] NF-e emitida com sucesso. ref=" + invoiceResponse.ref());
 
       return invoiceResponse;
-    } catch (InvoiceException e) {
-      log.error("[IssueInvoice] Erro de negócio ao emitir NF-e para combinedScoreId={}: {}",
-          combinedScoreId, e.getMessage(), e);
-      throw e;
     } catch (Exception e) {
-      log.error("[IssueInvoice] Erro inesperado ao emitir NF-e para combinedScoreId={}: {}",
-          combinedScoreId, e.getMessage(), e);
+      System.out.println("[IssueInvoice] ERRO: " + e.getClass().getName() + " - " + e.getMessage());
+      e.printStackTrace();
       throw new InvoiceException("Erro ao emitir nota fiscal: " + e.getMessage(), e);
     }
   }
 
   private CombinedScore fetchCombinedScore(Long combinedScoreId) {
-    log.debug("[IssueInvoice] Buscando CombinedScore id={}", combinedScoreId);
+    System.out.println("[IssueInvoice] Buscando CombinedScore id=" + combinedScoreId);
     return combinedScoreRepository
         .findById(combinedScoreId)
         .orElseThrow(() -> {
-          log.error("[IssueInvoice] CombinedScore não encontrado para id={}", combinedScoreId);
+          System.out.println("[IssueInvoice] CombinedScore NAO encontrado para id=" + combinedScoreId);
           return new InvoiceException("ID da compra não encontrado");
         });
   }
 
   private Client fetchClient(Long clientId) {
-    log.debug("[IssueInvoice] Buscando Client id={}", clientId);
+    System.out.println("[IssueInvoice] Buscando Client id=" + clientId);
     return clientRepository
         .findById(clientId)
         .orElseThrow(() -> {
-          log.error("[IssueInvoice] Client não encontrado para id={}", clientId);
+          System.out.println("[IssueInvoice] Client NAO encontrado para id=" + clientId);
           return new InvoiceException("ID do cliente não encontrado");
         });
   }
@@ -140,12 +125,12 @@ public class IssueInvoice {
 
     Client client = fetchClient(combinedScore.getClientId());
     String firstName = client.getClientName().split("\\s+")[0].toUpperCase().trim();
-    log.debug("[IssueInvoice] Primeiro nome do cliente: '{}'", firstName);
+    System.out.println("[IssueInvoice] Primeiro nome: '" + firstName + "'");
 
     String infoText = info;
     if (firstName.contains("LLINEA")) {
       infoText = "Numerações AF: " + dadosAdicionais;
-      log.info("[IssueInvoice] Cliente LLINEA detectado. infoText ajustado para: '{}'", infoText);
+      System.out.println("[IssueInvoice] Cliente LLINEA detectado. infoText=" + infoText);
     }
 
     String dataHoraEmissao = combinedScore
@@ -154,7 +139,7 @@ public class IssueInvoice {
         .atZone(ZoneId.of("America/Sao_Paulo"))
         .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 
-    log.debug("[IssueInvoice] Data/hora de emissão calculada: {}", dataHoraEmissao);
+    System.out.println("[IssueInvoice] Data/hora emissão: " + dataHoraEmissao);
 
     return new IssueInvoiceRequest(
         combinedScore.getId(),
@@ -165,13 +150,26 @@ public class IssueInvoice {
         infoText);
   }
 
+  /*
+   * private IssueInvoiceRequest buildInvoiceRequest(
+   * Long combinedScoreId, RecipientRequest recipient, List<ItemRequest> items) {
+   * return new IssueInvoiceRequest(
+   * combinedScoreId,
+   * NATUREZA_OPERACAO,
+   * ZonedDateTime.of(2026, 1, 22, 0, 0, 0, 0, ZoneId.of("America/Sao_Paulo"))
+   * .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+   * recipient,
+   * items,
+   * info);
+   * }
+   */
+
   private void updateCombinedScoreStatus(
       CombinedScore combinedScore, InvoiceResponse invoiceResponse) {
-    log.info("[IssueInvoice] Atualizando status do CombinedScore id={} com ref={}",
-        combinedScore.getId(), invoiceResponse.ref());
+    System.out.println("[IssueInvoice] Atualizando CombinedScore id=" + combinedScore.getId() + " com ref=" + invoiceResponse.ref());
     combinedScore.setHasInvoice(true);
     combinedScore.setInvoiceRef(invoiceResponse.ref());
     combinedScoreRepository.save(combinedScore);
-    log.info("[IssueInvoice] CombinedScore atualizado com sucesso.");
+    System.out.println("[IssueInvoice] CombinedScore salvo com sucesso.");
   }
 }
