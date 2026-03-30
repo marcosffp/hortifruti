@@ -86,11 +86,16 @@ public InvoiceResponse issueInvoice(Long combinedScoreId, String dadosAdicionais
     System.out.println("[IssueInvoice] Status atualizado com sucesso. ref=" + invoiceResponse.ref());
 
     return invoiceResponse;
-  } catch (Exception e) {
-    System.out.println("[IssueInvoice] ERRO ao emitir NF para combinedScoreId=" + combinedScoreId + ": " + e.getMessage());
+ } catch (Exception e) {
+    System.out.println("[IssueInvoice] ERRO CLASSE: " + e.getClass().getName());
+    System.out.println("[IssueInvoice] ERRO MENSAGEM: " + e.getMessage());
+    if (e.getCause() != null) {
+        System.out.println("[IssueInvoice] CAUSA: " + e.getCause().getMessage());
+        System.out.println("[IssueInvoice] CAUSA CLASSE: " + e.getCause().getClass().getName());
+    }
     e.printStackTrace();
     throw new InvoiceException("Erro ao emitir nota fiscal: " + e.getMessage(), e);
-  }
+}
 }
 
 private IssueInvoiceRequest buildInvoiceRequest(
