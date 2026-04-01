@@ -26,26 +26,26 @@ import org.springframework.stereotype.Component;
  *
  * <h3>Regra de cálculo — evita erros 1076 e 1080</h3>
  *
- * A SEFAZ valida DUAS coisas:
- *   1) ibs_cbs_base_calculo (raiz) == soma dos ibs_cbs_base_calculo (itens)  → erro 1076
- *   2) ibs_uf_valor_total   (raiz) == soma dos ibs_uf_valor         (itens)  → erro 1080
- *      cbs_valor_total      (raiz) == soma dos cbs_valor             (itens)  → idem
+ * A SEFAZ faz duas validações simultâneas:
+ *   1) total_raiz == soma_base_itens × alíquota          (erro 1076 se falhar)
+ *   2) total_raiz == soma dos valores de imposto dos itens (erro 1080 se falhar)
  *
- * Portanto TODOS os campos do nível raiz devem ser a SOMA LITERAL
- * dos valores já calculados por item. Nunca recalcular sobre a base total.
+ * O problema: a soma dos arredondamentos por item nem sempre bate com
+ * o cálculo global (base_total × alíquota). A diferença é tipicamente
+ * ±0.0001 devido à acumulação de arredondamentos.
  *
- * <h3>Fluxo por item</h3>
- *   1. base = valor_bruto arredondado para 2 casas (HALF_UP)
- *   2. cbs_valor    = base × 0,9 / 100  → 4 casas (HALF_UP)
- *   3. ibs_uf_valor = base × 0,1 / 100  → 4 casas (HALF_UP)
- *   4. ibs_mun_valor = base × 0,0 / 100 → 4 casas (HALF_UP)
+ * <h3>Solução: ajuste no último item</h3>
  *
- * <h3>Totais do raiz</h3>
- *   ibs_cbs_base_calculo  = Σ base(item)
- *   cbs_valor_total       = Σ cbs_valor(item)
- *   ibs_uf_valor_total    = Σ ibs_uf_valor(item)
- *   ibs_valor_total       = Σ ibs_valor_total(item)   (= ibs_uf + ibs_mun)
- *   ibs_cbs_is_valor_total = cbs_valor_total + ibs_valor_total
+ * 1. Calcular tributos normalmente em cada item (4 casas, HALF_UP)
+ * 2. Calcular totais do raiz como: base_total × alíquota (4 casas)
+ * 3. Comparar soma dos itens com total do raiz
+ * 4. Se houver diferença, ajustar o ÚLTIMO item para compensar
+ *
+ * Isso garante que:
+ *   soma(ibs_uf_valor dos itens) == ibs_uf_valor_total (raiz)
+ *   base_raiz × alíquota         == ibs_uf_valor_total (raiz)
+ *
+ * O ajuste é de no máximo ±0.0001 por tributo, perfeitamente aceitável.
  */
 @Component
 public class InvoicePayload {
@@ -151,21 +151,14 @@ public class InvoicePayload {
       payload.put("modalidade_frete", "9");
 
       // =========================
-      // ITENS + ACUMULADORES PARA TOTAIS DO RAIZ
+      // ITENS
       // =========================
-      //
-      // ⚠️ REGRA CRÍTICA — EVITA ERROS 1076 E 1080:
-      //
-      // Todos os totais do nível raiz DEVEM ser a soma literal
-      // dos valores calculados por item. Nunca recalcular aplicando
-      // alíquota sobre a base total — a acumulação de arredondamentos
-      // gera divergência.
-      // =========================
+      BigDecimal totalBaseExata = BigDecimal.ZERO;
 
-      BigDecimal somaBase       = BigDecimal.ZERO;
-      BigDecimal somaCbsValor   = BigDecimal.ZERO;
-      BigDecimal somaIbsUfValor = BigDecimal.ZERO;
-      BigDecimal somaIbsMunValor = BigDecimal.ZERO;
+      // Acumuladores da soma dos valores por item (antes do ajuste)
+      BigDecimal somaCbsItens    = BigDecimal.ZERO;
+      BigDecimal somaIbsUfItens  = BigDecimal.ZERO;
+      BigDecimal somaIbsMunItens = BigDecimal.ZERO;
 
       if (request.items() != null && !request.items().isEmpty()) {
         List<Map<String, Object>> items = new ArrayList<>();
@@ -184,7 +177,6 @@ public class InvoicePayload {
           itemMap.put("valor_unitario_comercial", item.valorUnitarioComercial());
           itemMap.put("valor_bruto",              item.valorBruto());
 
-          // Tributável (fallback automático)
           itemMap.put(
               "unidade_tributavel",
               item.unidadeTributavel() != null
@@ -210,13 +202,12 @@ public class InvoicePayload {
 
           // =========================
           // IBS / CBS por item
-          // Base: arredondada para 2 casas (HALF_UP)
+          // Base: valor_bruto SEM arredondar (mantém precisão original)
           // Valores: 4 casas decimais (HALF_UP)
           // =========================
           BigDecimal base = item.valorBruto() != null
               ? item.valorBruto()
               : item.quantidadeComercial().multiply(item.valorUnitarioComercial());
-          base = base.setScale(2, RoundingMode.HALF_UP);
 
           BigDecimal cbsValor    = base.multiply(CBS_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
           BigDecimal ibsUfValor  = base.multiply(IBS_UF_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
@@ -234,33 +225,60 @@ public class InvoicePayload {
           itemMap.put("ibs_mun_valor",                    ibsMunValor);
           itemMap.put("ibs_valor_total",                  ibsValorTotal);
 
-          // ⚠️ Acumula TODOS os valores para os totais do raiz
-          somaBase        = somaBase.add(base);
-          somaCbsValor    = somaCbsValor.add(cbsValor);
-          somaIbsUfValor  = somaIbsUfValor.add(ibsUfValor);
-          somaIbsMunValor = somaIbsMunValor.add(ibsMunValor);
+          totalBaseExata  = totalBaseExata.add(base);
+          somaCbsItens    = somaCbsItens.add(cbsValor);
+          somaIbsUfItens  = somaIbsUfItens.add(ibsUfValor);
+          somaIbsMunItens = somaIbsMunItens.add(ibsMunValor);
 
           items.add(itemMap);
         }
 
+        // =========================================================
+        // TOTAIS DO RAIZ = base_total × alíquota
+        // (é assim que a SEFAZ recalcula — erro 1076)
+        // =========================================================
+        BigDecimal cbsTotalRaiz    = totalBaseExata.multiply(CBS_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
+        BigDecimal ibsUfTotalRaiz  = totalBaseExata.multiply(IBS_UF_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
+        BigDecimal ibsMunTotalRaiz = totalBaseExata.multiply(IBS_MUN_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
+
+        // =========================================================
+        // AJUSTE DE ARREDONDAMENTO NO ÚLTIMO ITEM
+        //
+        // A SEFAZ também valida: soma(valor_itens) == total_raiz (erro 1080)
+        //
+        // A soma dos arredondamentos por item pode divergir ±0.0001
+        // do cálculo global. Ajustamos o último item para compensar.
+        // =========================================================
+        BigDecimal diffCbs    = cbsTotalRaiz.subtract(somaCbsItens);
+        BigDecimal diffIbsUf  = ibsUfTotalRaiz.subtract(somaIbsUfItens);
+        BigDecimal diffIbsMun = ibsMunTotalRaiz.subtract(somaIbsMunItens);
+
+        if (diffCbs.signum() != 0 || diffIbsUf.signum() != 0 || diffIbsMun.signum() != 0) {
+          Map<String, Object> ultimoItem = items.get(items.size() - 1);
+
+          BigDecimal cbsAjustado    = ((BigDecimal) ultimoItem.get("cbs_valor")).add(diffCbs);
+          BigDecimal ibsUfAjustado  = ((BigDecimal) ultimoItem.get("ibs_uf_valor")).add(diffIbsUf);
+          BigDecimal ibsMunAjustado = ((BigDecimal) ultimoItem.get("ibs_mun_valor")).add(diffIbsMun);
+          BigDecimal ibsTotalAjustado = ibsUfAjustado.add(ibsMunAjustado);
+
+          ultimoItem.put("cbs_valor",       cbsAjustado);
+          ultimoItem.put("ibs_uf_valor",    ibsUfAjustado);
+          ultimoItem.put("ibs_mun_valor",   ibsMunAjustado);
+          ultimoItem.put("ibs_valor_total", ibsTotalAjustado);
+        }
+
+        // Totais do raiz
+        BigDecimal ibsTotalRaiz    = ibsUfTotalRaiz.add(ibsMunTotalRaiz);
+        BigDecimal ibsCbsTotalRaiz = cbsTotalRaiz.add(ibsTotalRaiz);
+
+        payload.put("ibs_cbs_base_calculo",   totalBaseExata);
+        payload.put("cbs_valor_total",        cbsTotalRaiz);
+        payload.put("ibs_uf_valor_total",     ibsUfTotalRaiz);
+        payload.put("ibs_valor_total",        ibsTotalRaiz);
+        payload.put("ibs_cbs_is_valor_total", ibsCbsTotalRaiz);
+
         payload.put("items", items);
       }
-
-      // =========================
-      // TOTAIS IBS/CBS — NÍVEL RAIZ
-      //
-      // Todos os campos são SOMA DIRETA dos valores dos itens.
-      // Isso garante consistência com a validação da SEFAZ que
-      // compara raiz vs soma dos itens (erros 1076 e 1080).
-      // =========================
-      BigDecimal somaIbsTotal    = somaIbsUfValor.add(somaIbsMunValor);
-      BigDecimal somaIbsCbsTotal = somaCbsValor.add(somaIbsTotal);
-
-      payload.put("ibs_cbs_base_calculo",   somaBase);
-      payload.put("cbs_valor_total",        somaCbsValor);
-      payload.put("ibs_uf_valor_total",     somaIbsUfValor);
-      payload.put("ibs_valor_total",        somaIbsTotal);
-      payload.put("ibs_cbs_is_valor_total", somaIbsCbsTotal);
 
       // =========================
       // INFORMAÇÕES ADICIONAIS
