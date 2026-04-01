@@ -31,19 +31,15 @@ import org.springframework.stereotype.Component;
  *      E total_raiz == base_raiz × alíquota                        → erro 1076
  *   2) total_raiz == soma dos valores de imposto dos itens          → erro 1080
  *
- * O desafio: a soma dos arredondamentos por item pode divergir ±0.0001
- * do cálculo global (base_total × alíquota).
- *
  * <h3>Solução em 3 passos</h3>
  *
  * 1. Base de cada item = valor_bruto arredondado para 2 casas (HALF_UP)
- *    → A SEFAZ espera bases com 2 casas decimais.
- *
- * 2. Totais do raiz = soma_bases × alíquota (4 casas, HALF_UP)
- *    → Reproduz o cálculo exato da SEFAZ (evita 1076).
- *
- * 3. Ajustar o último item para que soma(valores_itens) == total_raiz
- *    → A diferença é no máximo ±0.0002. Técnica padrão fiscal (evita 1080).
+ * 2. Valor imposto por item = base × alíquota / 100, arredondado para 2 casas
+ *    → A SEFAZ compara valores com 2 casas decimais.
+ * 3. Totais do raiz = soma dos valores dos itens (bottom-up)
+ *    → Garante que soma(itens) == total_raiz (evita 1080).
+ *    Verificação cruzada: se base_total × alíquota (2 casas) divergir,
+ *    ajusta o último item para satisfazer ambas as validações.
  */
 @Component
 public class InvoicePayload {
@@ -151,7 +147,7 @@ public class InvoicePayload {
       // =========================
       // ITENS
       // =========================
-      BigDecimal somaBase      = BigDecimal.ZERO;
+      BigDecimal somaBase        = BigDecimal.ZERO;
       BigDecimal somaCbsItens    = BigDecimal.ZERO;
       BigDecimal somaIbsUfItens  = BigDecimal.ZERO;
       BigDecimal somaIbsMunItens = BigDecimal.ZERO;
@@ -199,10 +195,10 @@ public class InvoicePayload {
           // =========================
           // IBS / CBS por item
           //
-          // ⚠️ PASSO 1: Base arredondada para 2 casas decimais
-          // A SEFAZ exige ibs_cbs_base_calculo com 2 casas.
-          // Se enviar com 4 casas, a soma das bases dos itens
-          // diverge do raiz → erro 1076.
+          // ⚠️ PASSO 1: Base e valores arredondados para 2 casas decimais
+          // A SEFAZ trabalha com 2 casas tanto na base quanto nos valores.
+          // Se enviar com 4 casas, o FocusNFe/SEFAZ re-arredonda para 2,
+          // perdendo o ajuste fino do Passo 3 → erro 1080.
           // =========================
           BigDecimal baseOriginal = item.valorBruto() != null
               ? item.valorBruto()
@@ -210,9 +206,10 @@ public class InvoicePayload {
 
           BigDecimal base = baseOriginal.setScale(2, RoundingMode.HALF_UP);
 
-          BigDecimal cbsValor    = base.multiply(CBS_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
-          BigDecimal ibsUfValor  = base.multiply(IBS_UF_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
-          BigDecimal ibsMunValor = base.multiply(IBS_MUN_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
+          // ⚠️ MUDANÇA PRINCIPAL: escala 2 (não 4) nos valores de imposto
+          BigDecimal cbsValor    = base.multiply(CBS_ALIQUOTA).divide(CEM, 2, RoundingMode.HALF_UP);
+          BigDecimal ibsUfValor  = base.multiply(IBS_UF_ALIQUOTA).divide(CEM, 2, RoundingMode.HALF_UP);
+          BigDecimal ibsMunValor = base.multiply(IBS_MUN_ALIQUOTA).divide(CEM, 2, RoundingMode.HALF_UP);
           BigDecimal ibsValorTotal = ibsUfValor.add(ibsMunValor);
 
           itemMap.put("ibs_cbs_situacao_tributaria",      "000");
@@ -235,24 +232,19 @@ public class InvoicePayload {
         }
 
         // =========================================================
-        // ⚠️ PASSO 2: Totais do raiz = somaBase × alíquota
+        // ⚠️ PASSO 2: Totais do raiz = somaBase × alíquota (2 casas)
         //
-        // A SEFAZ recalcula: base_raiz × alíquota e compara
-        // com o valor enviado no raiz → erro 1076 se diferir.
+        // Calcula o valor "oficial" que a SEFAZ espera no raiz.
         // =========================================================
-        BigDecimal cbsTotalRaiz    = somaBase.multiply(CBS_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
-        BigDecimal ibsUfTotalRaiz  = somaBase.multiply(IBS_UF_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
-        BigDecimal ibsMunTotalRaiz = somaBase.multiply(IBS_MUN_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
+        BigDecimal cbsTotalRaiz    = somaBase.multiply(CBS_ALIQUOTA).divide(CEM, 2, RoundingMode.HALF_UP);
+        BigDecimal ibsUfTotalRaiz  = somaBase.multiply(IBS_UF_ALIQUOTA).divide(CEM, 2, RoundingMode.HALF_UP);
+        BigDecimal ibsMunTotalRaiz = somaBase.multiply(IBS_MUN_ALIQUOTA).divide(CEM, 2, RoundingMode.HALF_UP);
 
         // =========================================================
         // ⚠️ PASSO 3: Ajuste de arredondamento no último item
         //
-        // A SEFAZ também valida: soma(valor_itens) == total_raiz
-        // → erro 1080 se diferir.
-        //
-        // A soma dos arredondamentos por item pode divergir ±0.0002
-        // do cálculo global. Ajustamos o último item para compensar.
-        // Técnica padrão em sistemas fiscais brasileiros.
+        // Garante: soma(valor_itens) == total_raiz (evita 1080)
+        // Com valores em 2 casas, o ajuste é ±0.01 no máximo.
         // =========================================================
         BigDecimal diffCbs    = cbsTotalRaiz.subtract(somaCbsItens);
         BigDecimal diffIbsUf  = ibsUfTotalRaiz.subtract(somaIbsUfItens);
@@ -272,15 +264,15 @@ public class InvoicePayload {
           ultimoItem.put("ibs_valor_total", ibsTotalAjustado);
         }
 
-        // Totais do raiz (base com 2 casas, valores com 4 casas)
+        // Totais do raiz
         BigDecimal ibsTotalRaiz    = ibsUfTotalRaiz.add(ibsMunTotalRaiz);
         BigDecimal ibsCbsTotalRaiz = cbsTotalRaiz.add(ibsTotalRaiz);
 
-        payload.put("ibs_cbs_base_calculo",   somaBase);         // 2 casas (soma das bases 2 casas)
-        payload.put("cbs_valor_total",        cbsTotalRaiz);      // 4 casas
-        payload.put("ibs_uf_valor_total",     ibsUfTotalRaiz);    // 4 casas
-        payload.put("ibs_valor_total",        ibsTotalRaiz);      // 4 casas
-        payload.put("ibs_cbs_is_valor_total", ibsCbsTotalRaiz);   // 4 casas
+        payload.put("ibs_cbs_base_calculo",   somaBase);
+        payload.put("cbs_valor_total",        cbsTotalRaiz);
+        payload.put("ibs_uf_valor_total",     ibsUfTotalRaiz);
+        payload.put("ibs_valor_total",        ibsTotalRaiz);
+        payload.put("ibs_cbs_is_valor_total", ibsCbsTotalRaiz);
 
         payload.put("items", items);
       }
