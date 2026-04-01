@@ -33,10 +33,8 @@ public class BackupService {
    */
   public BackupResponse performBackupForPeriod(LocalDateTime startDate, LocalDateTime endDate) {
     try {
-      // Gerar arquivos CSV
       List<String> csvFiles = csvGeneratorService.generateCSVsForPeriod(startDate, endDate);
 
-      // Fazer upload dos arquivos
       for (String filePath : csvFiles) {
         String fileName = filePath.substring(filePath.lastIndexOf("\\") + 1);
 
@@ -58,8 +56,6 @@ public class BackupService {
       return new BackupResponse(
           "Backup para o período " + startDate + " a " + endDate + " concluído com sucesso.");
     } catch (BackupException e) {
-      // Re-lançar exceções de autorização para serem tratadas no método
-      // handleBackupRequestWithAuthLink
       if (e.getMessage() != null && e.getMessage().startsWith("AUTHORIZATION_REQUIRED:")) {
         throw e;
       }
@@ -82,7 +78,6 @@ public class BackupService {
     try {
       if (startDate != null && endDate != null) {
 
-        // Ajusta o formato das datas para evitar duplicação
         String formattedStartDate = startDate.contains("T") ? startDate : startDate + "T00:00:00";
         String formattedEndDate = endDate.contains("T") ? endDate : endDate + "T23:59:59";
 

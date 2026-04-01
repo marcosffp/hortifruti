@@ -11,8 +11,10 @@ import ShowBilletModal from "@/components/modals/ShowBilletModal";
 import ShowBilletDataModal from "@/components/modals/ShowBilletDataModal";
 import ShowInvoiceModal from "@/components/modals/ShowInvoiceModal";
 import ShowInvoiceDataModal from "@/components/modals/ShowInvoiceDataModal";
+import AdditionalDataModal from "@/components/modals/AdditionalDataModal";
 import { useBillet } from "@/hooks/useBillet";
 import { useInvoice } from "@/hooks/useInvoice";
+import { useClient } from "@/hooks/useClient";
 import ClientNumberModal from "../modals/ClientNumberModal";
 import { showError, showInfo, showSuccess } from "@/services/notificationService";
 
@@ -42,9 +44,12 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
     const [showInvoiceModal, setShowInvoiceModal] = useState(false);
     const [showInvoiceDataModal, setShowInvoiceDataModal] = useState(false);
     const [invoicePdf, setInvoicePdf] = useState<Blob | null>(null);
+    const [showAdditionalDataModal, setShowAdditionalDataModal] = useState(false);
+    const [pendingInvoiceScore, setPendingInvoiceScore] = useState<ScoreWithBilletInfo | null>(null);
 
     const { generateBillet, getBilletInfo } = useBillet();
     const { generateInvoice, getInvoiceInfo, getDanfe } = useInvoice();
+    const { getClientById } = useClient();
 
     const fetchScores = async () => {
         if (!clientId) {
@@ -156,7 +161,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
         setShowModalProducts(true);
     };
 
-    const handleGenerateBillet = async (scoreId: number, clientNumber: string) => {
+    const handleGenerateBillet = async (scoreId: number, clientNumber: string, dueDate?: string) => {
         try {
             const score = scores.find(s => s.id === scoreId);
             if (!score) {
@@ -164,7 +169,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                 return;
             }
 
-            const pdfBlob = await generateBillet(scoreId, clientNumber);
+            const pdfBlob = await generateBillet(scoreId, clientNumber, dueDate);
 
             setSelectedScore(score);
             setClientNumber(clientNumber);
@@ -198,7 +203,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
         }
     };
 
-    const handleGenerateInvoice = async (scoreId: number) => {
+    const handleGenerateInvoice = async (scoreId: number, dadosAdicionais?: string) => {
         try {
             const score = scores.find(s => s.id === scoreId);
             if (!score) {
@@ -207,34 +212,52 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
             }
 
             showInfo("Gerando nota fiscal... Isso pode levar alguns segundos.");
-            const response = await generateInvoice(scoreId);
+            const response = await generateInvoice(scoreId, dadosAdicionais);
 
             if (response.ref) {
                 try {
-                    // Buscar o DANFE para exibir
                     const danfeBlob = await getDanfe(response.ref);
                     
-                    setSelectedScore({ ...score, invoiceRef: response.ref });
+                    const invoiceInfo = await getInvoiceInfo(response.ref);
+                    
+                    setSelectedScore({ 
+                        ...score, 
+                        invoiceRef: response.ref,
+                        invoiceInfo: invoiceInfo
+                    });
                     setInvoicePdf(danfeBlob);
                     setShowInvoiceModal(true);
 
                     showSuccess("Nota fiscal gerada com sucesso!");
                     fetchScores();
                 } catch (danfeError: any) {
-                    // Nota fiscal foi criada, mas DANFE ainda não está disponível
-                    console.log("DANFE ainda não disponível:", danfeError);
                     
-                    // Atualiza a lista para mostrar o botão "Ver NF"
                     fetchScores();
                     
-                    // Mostra mensagem amigável
                     showInfo("Nota fiscal gerada! O documento está sendo processado e estará disponível em alguns instantes. Clique em 'Ver NF' para visualizar.");
                 }
             }
         } catch (error: any) {
-            // Erro na criação da nota fiscal
             showError(error?.response?.data?.message || "Erro ao gerar nota fiscal");
             console.error(error);
+        }
+    };
+
+    const handleInvoiceButtonClick = async (score: ScoreWithBilletInfo) => {
+        try {
+            const clientData = await getClientById(score.clientId);
+            const firstName = clientData.clientName?.split("\\s+")[0]?.toUpperCase()?.trim() || "";
+            const isLlineaClient = firstName.includes("LLINEA");
+
+            if (isLlineaClient) {
+                setPendingInvoiceScore(score);
+                setShowAdditionalDataModal(true);
+            } else {
+                handleGenerateInvoice(score.id);
+            }
+        } catch (error) {
+            console.error("Erro ao verificar cliente:", error);
+            handleGenerateInvoice(score.id);
         }
     };
 
@@ -433,7 +456,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                             </button>
                                         ) : (
                                             <button
-                                                onClick={() => handleGenerateInvoice(score.id)}
+                                                onClick={() => handleInvoiceButtonClick(score)}
                                                 className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
                                             >
                                                 <FileText className="w-3 h-3" />
@@ -542,9 +565,9 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
             <ClientNumberModal
                 open={clientNumberModal.state}
                 onClose={() => setClientNumberModal({ state: false, groupId: -1 })}
-                onConfirm={(number) => {
+                onConfirm={(number, dueDate) => {
                     setClientNumberModal({ state: false, groupId: -1 });
-                    handleGenerateBillet(clientNumberModal.groupId, number);
+                    handleGenerateBillet(clientNumberModal.groupId, number, dueDate);
                 }}
             />
 
@@ -560,6 +583,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                     invoiceData={invoicePdf}
                     scoreNumber={selectedScore.number || selectedScore.id}
                     ref={selectedScore.invoiceRef || ""}
+                    invoiceNumber={selectedScore.invoiceInfo?.number}
                 />
             )}
 
@@ -574,6 +598,25 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                     onInvoiceCancelled={() => {
                         fetchScores(); // Recarrega os dados após cancelamento
                     }}
+                />
+            )}
+
+            {/* Modal de Dados Adicionais */}
+            {showAdditionalDataModal && pendingInvoiceScore && (
+                <AdditionalDataModal
+                    isOpen={showAdditionalDataModal}
+                    onClose={() => {
+                        setShowAdditionalDataModal(false);
+                        setPendingInvoiceScore(null);
+                    }}
+                    onConfirm={(dadosAdicionais) => {
+                        setShowAdditionalDataModal(false);
+                        if (pendingInvoiceScore) {
+                            handleGenerateInvoice(pendingInvoiceScore.id, dadosAdicionais);
+                        }
+                        setPendingInvoiceScore(null);
+                    }}
+                    scoreNumber={pendingInvoiceScore.number || pendingInvoiceScore.id}
                 />
             )}
         </div>

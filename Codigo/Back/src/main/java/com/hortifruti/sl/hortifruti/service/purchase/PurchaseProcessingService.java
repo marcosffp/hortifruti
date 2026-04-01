@@ -28,7 +28,7 @@ public class PurchaseProcessingService {
   @Transactional
   protected Purchase processPurchaseFile(MultipartFile file) throws IOException {
     try {
-      if (file.isEmpty()) {
+      if (file == null || file.isEmpty()) {
         throw new PurchaseException("O arquivo enviado está vazio.");
       }
 
@@ -37,12 +37,14 @@ public class PurchaseProcessingService {
         throw new PurchaseException("O conteúdo do arquivo PDF está vazio ou inválido.");
       }
 
-      String clientName = PdfUtil.findValueByKeyword(pdfText, "CLIENTE");
+      String clientName = PdfUtil.findValueByKeyword(pdfText, "CTE");
+
       if (clientName == null || clientName.isBlank()) {
         throw new PurchaseException("O nome do cliente não foi encontrado no arquivo.");
       }
 
       String purchaseDateString = PdfUtil.findValueByKeyword(pdfText, "DATA");
+
       if (purchaseDateString == null || purchaseDateString.isBlank()) {
         throw new PurchaseException("A data da compra não foi encontrada no arquivo.");
       }
@@ -57,9 +59,8 @@ public class PurchaseProcessingService {
 
       BigDecimal total =
           invoiceProducts.stream()
-              .filter(product -> product.getQuantity() > 0)
-              .map(
-                  product -> product.getPrice().multiply(BigDecimal.valueOf(product.getQuantity())))
+              .filter(product -> product.getQuantity().compareTo(BigDecimal.ZERO) > 0)
+              .map(product -> product.getPrice().multiply(product.getQuantity()))
               .reduce(BigDecimal.ZERO, BigDecimal::add);
 
       if (total.compareTo(BigDecimal.ZERO) <= 0) {
@@ -75,15 +76,14 @@ public class PurchaseProcessingService {
 
       purchase = purchaseRepository.save(purchase);
 
-      List<InvoiceProduct> productsToSave =
-          invoiceProducts.stream().filter(product -> product.getQuantity() > 0).toList();
-
       List<InvoiceProduct> savedProducts = new ArrayList<>();
 
-      for (InvoiceProduct product : productsToSave) {
-        product.setPurchase(purchase);
-        InvoiceProduct savedProduct = invoiceProductRepository.save(product);
-        savedProducts.add(savedProduct);
+      for (InvoiceProduct product : invoiceProducts) {
+        if (product.getQuantity().compareTo(BigDecimal.ZERO) > 0) {
+          product.setPurchase(purchase);
+          InvoiceProduct savedProduct = invoiceProductRepository.save(product);
+          savedProducts.add(savedProduct);
+        }
       }
 
       purchase.setInvoiceProducts(savedProducts);
@@ -91,7 +91,7 @@ public class PurchaseProcessingService {
 
       return purchase;
     } catch (PurchaseException e) {
-      throw e; // Exceções específicas já tratadas
+      throw e;
     } catch (IOException e) {
       throw new PurchaseException("Erro ao processar arquivo PDF: " + e.getMessage(), e);
     } catch (Exception e) {
@@ -101,8 +101,20 @@ public class PurchaseProcessingService {
 
   private LocalDate parsePurchaseDate(String purchaseDate) {
     try {
+      String cleanDate = purchaseDate.trim();
+
+      if (cleanDate.contains("TOTAL:")) {
+        cleanDate = cleanDate.substring(0, cleanDate.indexOf("TOTAL:")).trim();
+      }
+
+      if (cleanDate.contains("R$")) {
+        cleanDate = cleanDate.substring(0, cleanDate.indexOf("R$")).trim();
+      }
+
+      cleanDate = cleanDate.replaceAll("\\s+", "");
+
       DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yy");
-      return LocalDate.parse(purchaseDate, formatter);
+      return LocalDate.parse(cleanDate, formatter);
     } catch (Exception e) {
       throw new PurchaseException("Formato de data inválido: " + purchaseDate);
     }
@@ -118,7 +130,7 @@ public class PurchaseProcessingService {
 
       if (line.contains("COD")
           && line.contains("PRODUTO")
-          && line.contains("QUANT")
+          && line.contains("QTD")
           && line.contains("KG")) {
         isProductSection = true;
         continue;
@@ -127,9 +139,11 @@ public class PurchaseProcessingService {
       if (!isProductSection) continue;
 
       if (line.matches("^\\d+\\s+.*")) {
-        InvoiceProduct product = parseProductLine(line);
-        if (product != null) {
-          products.add(product);
+        if (hasValidQuantity(line)) {
+          InvoiceProduct product = parseProductLine(line);
+          if (product != null) {
+            products.add(product);
+          }
         }
       }
     }
@@ -141,16 +155,40 @@ public class PurchaseProcessingService {
     return products;
   }
 
-  private InvoiceProduct parseProductLine(String line) {
+  private boolean hasValidQuantity(String line) {
     try {
       String[] parts = line.split("\\s+");
+
+      if (parts.length < 3) return false;
+
+      String name = extractProductName(parts);
+      int quantityIndex = name.split("\\s+").length + 1;
+
+      if (quantityIndex < parts.length - 1) {
+        String quantityStr = parts[quantityIndex];
+        return !quantityStr.trim().isEmpty()
+            && quantityStr.matches("\\d+([,.]\\d+)?")
+            && !quantityStr.contains("R$");
+      }
+
+      return false;
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  private InvoiceProduct parseProductLine(String line) {
+    try {
+
+      String[] parts = line.split("\\s+");
+
       if (parts.length < 2) return null;
 
       String code = parts[0];
       String name = extractProductName(parts);
       int currentIndex = name.split("\\s+").length + 1;
 
-      Integer quantity = parseQuantity(parts, currentIndex);
+      BigDecimal quantity = parseQuantity(parts, currentIndex);
       BigDecimal unitPrice = parseUnitPrice(parts, currentIndex + 1);
 
       return InvoiceProduct.builder()
@@ -177,16 +215,20 @@ public class PurchaseProcessingService {
     return nameBuilder.toString().trim();
   }
 
-  private Integer parseQuantity(String[] parts, int index) {
-    if (index < parts.length && parts[index].matches("\\d+")) {
-      return Integer.parseInt(parts[index]);
+  private BigDecimal parseQuantity(String[] parts, int index) {
+    if (index < parts.length && parts[index].matches("\\d+([,.]\\d+)?")) {
+      String quantityStr = parts[index].replace(",", ".");
+      BigDecimal quantity = new BigDecimal(quantityStr);
+      return quantity;
     }
     throw new PurchaseException("Quantidade inválida encontrada na linha do produto.");
   }
 
   private BigDecimal parseUnitPrice(String[] parts, int index) {
     if (index < parts.length && parts[index].matches("\\d+([,.]\\d+)?")) {
-      return new BigDecimal(parts[index].replace(",", "."));
+      String priceStr = parts[index].replace(",", ".");
+      BigDecimal price = new BigDecimal(priceStr);
+      return price;
     }
     throw new PurchaseException("Preço unitário inválido encontrado na linha do produto.");
   }

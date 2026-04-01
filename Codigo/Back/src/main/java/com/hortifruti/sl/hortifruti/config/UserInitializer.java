@@ -31,12 +31,26 @@ public class UserInitializer implements CommandLineRunner {
 
   @Override
   public void run(String... args) throws Exception {
-    decodeBase64Files(); // Decodifica os arquivos Base64 primeiro
+    decodeBase64Files();
     initializeUsers();
     initializeFreightConfig();
+    repopulateProductsIfNeeded();
   }
 
-  // Decodifica os arquivos Base64 necessários
+  private void repopulateProductsIfNeeded() {
+    long productsWithEmptyLists =
+        productRepository.findAll().stream()
+            .filter(p -> p.getPeakSalesMonths() == null || p.getPeakSalesMonths().isEmpty())
+            .count();
+
+    if (productsWithEmptyLists > 0) {
+      log.info("Detectado produtos com listas vazias. Repopulando...");
+      productRepository.deleteAll();
+      createSampleProducts();
+      log.info("Produtos repopulados com sucesso!");
+    }
+  }
+
   private void decodeBase64Files() {
     try {
       log.info("Decodificando arquivos Base64...");
@@ -326,7 +340,6 @@ public class UserInitializer implements CommandLineRunner {
             .position(position)
             .build();
     userRepository.save(user);
-    System.out.println("Usuário " + username + " criado com sucesso!");
   }
 
   // Inicializa a configuração de frete padrão

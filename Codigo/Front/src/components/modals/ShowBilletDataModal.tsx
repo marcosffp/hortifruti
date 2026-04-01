@@ -39,7 +39,7 @@ export default function ShowBilletDataModal({
             const url = window.URL.createObjectURL(pdfBlob);
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `BOL-${clientNumber}_${combinedScoreId}_SEGUNDA_VIA.pdf`);
+            link.setAttribute('download', `BOL-${clientNumber}_SEGUNDA_VIA.pdf`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -108,7 +108,7 @@ export default function ShowBilletDataModal({
                 {/* Header */}
                 <div className="sticky top-0 bg-white border-b border-gray-300 p-6 flex justify-between items-center">
                     <h2 className="text-xl font-semibold">
-                        BOL-{clientNumber || "Agrupamento"}_{combinedScoreId}
+                        BOL-{clientNumber || "Agrupamento"}
                     </h2>
                     <button
                         onClick={onClose}

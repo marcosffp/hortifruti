@@ -49,6 +49,7 @@ export default function EditarClientePageContent({ id }: EditarClientePageProps)
           variablePrice: clientData.variablePrice ? "true" : "false",
           stateRegistration: clientData.stateRegistration || "",
           stateIndicator: clientData.stateIndicator?.toString() || "9",
+          cideCode: clientData.cideCode || "",
         });
       } catch (error) {
         console.error("Erro ao carregar dados do cliente:", error);
@@ -87,6 +88,7 @@ export default function EditarClientePageContent({ id }: EditarClientePageProps)
         document: formData.cpfCnpj,
         stateRegistration: formData.stateRegistration || null,
         stateIndicator: formData.stateIndicator ? parseInt(formData.stateIndicator) : null,
+        cideCode: formData.cideCode || null,
       };
 
       await clientService.updateClient(clientId, clientData);

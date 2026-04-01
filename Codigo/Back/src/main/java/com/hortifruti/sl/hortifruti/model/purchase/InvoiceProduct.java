@@ -29,14 +29,14 @@ public class InvoiceProduct {
   @Column(nullable = false)
   private String name;
 
-  @Column(nullable = false)
+  @Column(nullable = false, precision = 10, scale = 4)
   private BigDecimal price;
 
   @Column(nullable = false)
   private String unitType;
 
-  @Column(nullable = false)
-  private Integer quantity;
+  @Column(nullable = false, precision = 10, scale = 4)
+  private BigDecimal quantity;
 
   @Column(name = "update_at", nullable = false)
   private LocalDateTime updatedAt;
@@ -46,7 +46,7 @@ public class InvoiceProduct {
 
   @ManyToOne
   @JoinColumn(name = "purchase_id", nullable = false)
-  @JsonIgnore // Ignora a relação inversa ao serializar
+  @JsonIgnore
   private Purchase purchase;
 
   @PrePersist

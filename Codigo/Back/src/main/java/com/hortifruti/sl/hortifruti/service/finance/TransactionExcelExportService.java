@@ -57,7 +57,7 @@ public class TransactionExcelExportService {
 
       String currentMonth =
           LocalDate.now().getMonth().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pt-BR"));
-      String excelFileName = "Planilha-Hortifruti-Santa-Luzia-" + currentMonth + ".xlsx";
+      String excelFileName = "HORTIFRUTI_SANTA_LUZIA-" + currentMonth + ".xlsx";
 
       HttpHeaders headers = new HttpHeaders();
       headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + excelFileName);

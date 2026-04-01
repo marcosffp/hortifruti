@@ -5,21 +5,16 @@ import com.hortifruti.sl.hortifruti.exception.BilletException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.security.KeyStore;
-import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManagerFactory;
 import lombok.RequiredArgsConstructor;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.config.TlsConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
-import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.apache.hc.core5.http.message.BasicHeader;
-import org.apache.hc.core5.ssl.SSLContexts;
-import org.apache.hc.core5.ssl.TrustStrategy;
+import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,61 +38,45 @@ public class BilletSSLConfig {
       if (!pfxFile.exists() || !pfxFile.isFile()) {
         throw new BilletException("Arquivo PFX não encontrado no caminho especificado");
       }
+
       KeyStore keyStore = KeyStore.getInstance("PKCS12");
       try (FileInputStream instream = new FileInputStream(pfxFile)) {
         keyStore.load(instream, pfxPassword.toCharArray());
-        System.out.println("[DEBUG] Certificado PFX carregado com sucesso!");
       }
 
-      TrustManagerFactory tmf =
-          TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-      tmf.init((KeyStore) null);
-
-      SSLContext sslContext =
-          SSLContexts.custom()
-              .loadKeyMaterial(keyStore, pfxPassword.toCharArray())
-              .loadTrustMaterial(
-                  null,
-                  new TrustStrategy() {
-                    @Override
-                    public boolean isTrusted(X509Certificate[] chain, String authType) {
-                      try {
-                        String subjectName = chain[0].getSubjectX500Principal().getName();
-                        return subjectName.contains("sicoob.com.br");
-                      } catch (Exception e) {
-                        return false;
-                      }
-                    }
-                  })
+      TlsConfig tlsConfig =
+          TlsConfig.custom()
+              .setHandshakeTimeout(Timeout.ofSeconds(30))
+              .setSupportedProtocols("TLSv1.2", "TLSv1.3")
               .build();
 
-      SSLConnectionSocketFactory socketFactory =
-          new SSLConnectionSocketFactory(
-              sslContext,
-              new String[] {"TLSv1.2"},
-              null,
-              new HostnameVerifier() {
-                @Override
-                public boolean verify(String hostname, SSLSession session) {
-                  return hostname.endsWith("sicoob.com.br");
-                }
-              });
       PoolingHttpClientConnectionManager connectionManager =
           PoolingHttpClientConnectionManagerBuilder.create()
-              .setSSLSocketFactory(socketFactory)
+              .setDefaultTlsConfig(tlsConfig)
+              .setMaxConnTotal(20)
+              .setMaxConnPerRoute(10)
+              .build();
+
+      RequestConfig requestConfig =
+          RequestConfig.custom()
+              .setConnectionRequestTimeout(Timeout.ofSeconds(30))
+              .setResponseTimeout(Timeout.ofSeconds(30))
+              .setConnectionKeepAlive(Timeout.ofMinutes(2))
               .build();
 
       CloseableHttpClient httpClient =
           HttpClients.custom()
               .setConnectionManager(connectionManager)
-              .setDefaultHeaders(Arrays.asList(new BasicHeader("Accept", "application/json")))
+              .setDefaultHeaders(
+                  Arrays.asList(
+                      new BasicHeader("Accept", "application/json"),
+                      new BasicHeader("Content-Type", "application/json"),
+                      new BasicHeader("User-Agent", "Hortifruti-SL/1.0")))
+              .setDefaultRequestConfig(requestConfig)
               .build();
 
       HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
       factory.setHttpClient(httpClient);
-      factory.setConnectTimeout(30000);
-      factory.setConnectionRequestTimeout(30000);
-      factory.setReadTimeout(30000);
 
       return new RestTemplate(factory);
 

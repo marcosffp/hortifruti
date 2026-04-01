@@ -5,6 +5,8 @@ import com.hortifruti.sl.hortifruti.dto.invoice.RecipientRequest;
 import com.hortifruti.sl.hortifruti.exception.InvoiceException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +15,7 @@ import org.springframework.stereotype.Component;
 public class Recipient {
   private final ClientRepository clientRepository;
 
-  private final String CIDE_CODE = "3157807";
+  // private final String CIDE_CODE = "3157807";
   private final String COUNTRY_CODE = "1058";
   private final String COUNTRY_NAME = "Brazil";
 
@@ -24,7 +26,7 @@ public class Recipient {
             .orElseThrow(
                 () -> new InvoiceException("Cliente com id " + clientId + " não encontrado"));
 
-    AddressRequest addressDto = parseAddress(client.getAddress());
+    AddressRequest addressDto = parseAddress(client.getAddress(), client);
 
     // Remove formatação do documento (pontos, traços, barras)
     String documentoLimpo = client.getDocument().replaceAll("[^0-9]", "");
@@ -46,54 +48,88 @@ public class Recipient {
         client.getStateIndicator());
   }
 
-  private AddressRequest parseAddress(String address) {
+  private AddressRequest parseAddress(String address, Client client) {
+
     String street = "Rua não informada";
-    String number = "N/A";
+    String number = "S/N";
     String neighborhood = "Bairro não informado";
     String city = "Cidade não informada";
-    String state = "MG";
+    String state;
     String zipCode = "";
+    String cideCode = client.getCideCode().trim();
 
     try {
-      // Extrai o CEP primeiro
-      String[] addressAndZip = address.split(",?\\s*CEP:\\s*");
+      // ===== Validação do código IBGE =====
+      if (cideCode.length() != 7) {
+        throw new RuntimeException("Código IBGE inválido: " + cideCode);
+      }
+
+      // ===== Normalização do endereço =====
+      String cleanAddress = address.replaceAll("\\r?\\n", " ").replaceAll("\\s+", " ").trim();
+
+      // ===== Extração do CEP =====
+      String[] addressAndZip = cleanAddress.split(",?\\s*CEP:\\s*");
       String addressWithoutZip = addressAndZip[0].trim();
+
       if (addressAndZip.length > 1) {
-        zipCode = addressAndZip[1].trim().replaceAll("\\D", "");
+        zipCode = addressAndZip[1].replaceAll("\\D", "");
       }
 
+      // ===== Quebra por vírgulas =====
       String[] parts = addressWithoutZip.split("\\s*,\\s*");
+      parts =
+          java.util.Arrays.stream(parts)
+              .map(String::trim)
+              .filter(p -> !p.isEmpty())
+              .toArray(String[]::new);
 
+      // ===== Rua =====
       if (parts.length >= 1) {
-        // Primeira parte: Rua
-        street = parts[0].trim();
-        street = truncateIfNeeded(street, 60);
+        street = truncateIfNeeded(parts[0], 60);
       }
 
-      if (parts.length >= 2) {
-        // Segunda parte: Número
-        number = parts[1].trim();
+      // ===== Número =====
+      if (parts.length >= 2 && !parts[1].isBlank()) {
+        number = parts[1];
       }
 
+      // ===== UF =====
+      Pattern ufPattern = Pattern.compile("-\\s*([A-Z]{2})(?:\\s*,|$)");
+      Matcher ufMatcher = ufPattern.matcher(addressWithoutZip);
+
+      if (ufMatcher.find()) {
+        state = ufMatcher.group(1).toUpperCase();
+      } else {
+        throw new InvoiceException("UF não encontrada no endereço: " + address);
+      }
+
+      // ===== Cidade =====
+      Pattern cityPattern = Pattern.compile("([^,]+)\\s*-\\s*" + state);
+      Matcher cityMatcher = cityPattern.matcher(addressWithoutZip);
+
+      if (cityMatcher.find()) {
+        city = cityMatcher.group(1).trim();
+      }
+      // ===== Bairro =====
       if (parts.length >= 3) {
-        // Terceira parte: Bairro
-        neighborhood = parts[2].trim();
+        neighborhood = parts[parts.length - 3];
       }
 
-      if (parts.length >= 4) {
-        // Quarta parte: Cidade - Estado
-        String cityAndState = parts[3].trim();
-        String[] cityAndStateParts = cityAndState.split("\\s*-\\s*");
-        if (cityAndStateParts.length >= 1) {
-          city = cityAndStateParts[0].trim();
-        }
-        if (cityAndStateParts.length >= 2) {
-          state = cityAndStateParts[1].trim().toUpperCase();
-        }
+      // ===== Regra especial APTA =====
+      String firstName = client.getClientName().split("\\s+")[0].toUpperCase();
+      if (firstName.contains("APTA")) {
+        state = "SP";
+      }
+
+      // ===== Validação final =====
+      if (!state.matches("[A-Z]{2}")) {
+        throw new InvoiceException("UF inválida após parse: " + state);
       }
 
     } catch (Exception e) {
-      throw new InvoiceException("Erro ao analisar o endereço do cliente: " + address, e);
+      throw new InvoiceException(
+          "Erro ao analisar o endereço do cliente: " + address + " | Detalhes: " + e.getMessage(),
+          e);
     }
 
     return new AddressRequest(
@@ -104,7 +140,7 @@ public class Recipient {
         city,
         state,
         zipCode,
-        CIDE_CODE,
+        cideCode,
         COUNTRY_CODE,
         COUNTRY_NAME);
   }

@@ -10,18 +10,24 @@ interface ShowInvoiceModalProps {
     invoiceData: Blob;
     scoreNumber?: string | number | null;
     ref: string;
+    invoiceNumber?: string;
 }
 
-export default function ShowInvoiceModal({ isOpen, onClose, invoiceData, scoreNumber, ref }: ShowInvoiceModalProps) {
+export default function ShowInvoiceModal({ 
+    isOpen, 
+    onClose, 
+    invoiceData, 
+    scoreNumber, 
+    ref, 
+    invoiceNumber 
+}: ShowInvoiceModalProps) {
     const [pdfUrl, setPdfUrl] = useState<string>("");
 
     useEffect(() => {
         if (invoiceData && isOpen) {
-            // Cria URL do blob para exibir o PDF
             const url = URL.createObjectURL(invoiceData);
             setPdfUrl(url);
 
-            // Cleanup: revoga o URL quando o componente desmontar
             return () => {
                 URL.revokeObjectURL(url);
             };
@@ -30,10 +36,13 @@ export default function ShowInvoiceModal({ isOpen, onClose, invoiceData, scoreNu
 
     const handleDownload = () => {
         try {
+            
             const url = URL.createObjectURL(invoiceData);
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `DANFE-${ref}.pdf`);
+            const fileName = invoiceNumber ? `NF-${invoiceNumber}.pdf` : `NF-${scoreNumber || ref}.pdf`;
+            
+            link.setAttribute('download', fileName);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

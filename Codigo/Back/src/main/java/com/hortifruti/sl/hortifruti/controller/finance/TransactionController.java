@@ -3,6 +3,7 @@ package com.hortifruti.sl.hortifruti.controller.finance;
 import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequest;
 import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequestDate;
 import com.hortifruti.sl.hortifruti.dto.transaction.TransactionResponse;
+import com.hortifruti.sl.hortifruti.service.finance.MacroExportService;
 import com.hortifruti.sl.hortifruti.service.finance.TransactionExcelExportService;
 import com.hortifruti.sl.hortifruti.service.finance.TransactionProcessingService;
 import jakarta.validation.Valid;
@@ -35,6 +36,7 @@ public class TransactionController {
 
   private final TransactionProcessingService transactionProcessingService;
   private final TransactionExcelExportService transactionExcelExportService;
+  private final MacroExportService macroExportService;
 
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/revenue")
@@ -79,7 +81,7 @@ public class TransactionController {
       @RequestParam(required = false) String type,
       @RequestParam(required = false) String category,
       @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "10") int size) {
+      @RequestParam(defaultValue = "20") int size) {
     Page<TransactionResponse> transactions =
         transactionProcessingService.getAllTransactions(search, type, category, page, size);
     return ResponseEntity.ok(transactions);
@@ -114,5 +116,18 @@ public class TransactionController {
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + excelFileName)
         .contentType(MediaType.APPLICATION_OCTET_STREAM)
         .body(excelFile);
+  }
+
+  @PreAuthorize("hasRole('MANAGER')")
+  @PostMapping(value = "/export-complete", produces = "application/zip")
+  public ResponseEntity<byte[]> exportTransactionsComplete() throws IOException {
+    Map<String, byte[]> zipData = macroExportService.exportMacroReports();
+    String zipFileName = zipData.keySet().iterator().next();
+    byte[] zipFile = zipData.get(zipFileName);
+
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + zipFileName)
+        .contentType(MediaType.parseMediaType("application/zip"))
+        .body(zipFile);
   }
 }

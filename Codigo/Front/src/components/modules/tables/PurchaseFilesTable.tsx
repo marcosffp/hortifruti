@@ -34,6 +34,10 @@ export default function PurchaseFilesTable({ clientId, refreshKey, onGroupingCre
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         return lastDay.toISOString().split('T')[0];
     });
+    const [confirmedAt, setConfirmedAt] = useState(() => {
+        const now = new Date();
+        return now.toISOString().split('T')[0];
+    });
 
     // Debounce refs
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -151,6 +155,7 @@ export default function PurchaseFilesTable({ clientId, refreshKey, onGroupingCre
                 clientId,
                 startDate,
                 endDate,
+                confirmedAt,
             });
             showSuccess("Agrupamento criado com sucesso! Veja na aba 'Produtos Agrupados'");
             setShowGroupingModal(false);
@@ -352,6 +357,21 @@ export default function PurchaseFilesTable({ clientId, refreshKey, onGroupingCre
                                         }`}
                                     />
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Data de Confirmação
+                                </label>
+                                <input
+                                    type="date"
+                                    value={confirmedAt}
+                                    onChange={(e) => setConfirmedAt(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Data que será registrada como confirmação do agrupamento. Deixe como hoje se não tiver preferência.
+                                </p>
                             </div>
 
                             {/* Info sobre o período selecionado */}

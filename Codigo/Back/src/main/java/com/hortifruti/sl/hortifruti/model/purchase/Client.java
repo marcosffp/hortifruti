@@ -59,6 +59,12 @@ public class Client {
   @Column(nullable = true)
   private Integer stateIndicator;
 
+  @Column(nullable = true)
+  private String cideCode;
+
+  @Column(nullable = false)
+  private String cideCode;
+
   @Column(nullable = false)
   private LocalDateTime updatedAt;
 
@@ -66,7 +72,7 @@ public class Client {
   private LocalDateTime createdAt;
 
   @OneToMany(mappedBy = "client", cascade = CascadeType.ALL)
-  @JsonIgnore // Adiciona essa anotação para evitar a serialização dessa coleção
+  @JsonIgnore
   private List<Purchase> purchases;
 
   @Column(nullable = true)
@@ -81,6 +87,10 @@ public class Client {
     this.updatedAt = LocalDateTime.now();
     this.totalPurchaseValue = BigDecimal.ZERO;
     this.lastPurchaseDate = null;
+
+    if (this.cideCode == null) {
+      this.cideCode = "";
+    }
   }
 
   @PreUpdate

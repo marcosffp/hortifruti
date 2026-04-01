@@ -33,14 +33,21 @@ public class ReportTaxService {
       String zipFilePath = generateMonthlyReports(startDate, endDate);
       zipPath = Paths.get(zipFilePath);
 
-      byte[] zipBytes = Files.readAllBytes(zipPath);
+      if (!Files.exists(zipPath) || Files.size(zipPath) == 0) {
+        throw new RuntimeException("Arquivo ZIP não foi gerado corretamente ou está vazio");
+      }
 
+      byte[] zipBytes = Files.readAllBytes(zipPath);
       return zipBytes;
-    } catch (Exception e) {
+    } catch (IOException e) {
+      System.err.println("Erro de I/O durante geração de relatórios: " + e.getMessage());
       e.printStackTrace();
-      return null;
+      throw new RuntimeException("Erro ao processar arquivos", e);
+    } catch (Exception e) {
+      System.err.println("Erro geral durante geração de relatórios: " + e.getMessage());
+      e.printStackTrace();
+      throw new RuntimeException("Erro interno durante geração de relatórios", e);
     } finally {
-      // Remove o arquivo ZIP gerado
       if (zipPath != null && Files.exists(zipPath)) {
         try {
           Files.delete(zipPath);
@@ -98,14 +105,37 @@ public class ReportTaxService {
 
   private void generateAndSaveReports(LocalDate startDate, LocalDate endDate, Path folderPath)
       throws IOException {
-    saveFile(
-        folderPath.resolve("Resumo_de_Vendas_por_Forma_de_Pagamento.pdf"),
-        generatePaymentReport(startDate, endDate));
-    saveFile(
-        folderPath.resolve("Registro_de_saida_nf.pdf"), generateRegisterReport(startDate, endDate));
-    saveFile(folderPath.resolve("Relacao_de_Vendas.pdf"), generateSalesReport(startDate, endDate));
-    saveFile(
-        folderPath.resolve("Registro_Apuracao_ICMS.pdf"), generateIcmsReport(startDate, endDate));
+    try {
+      byte[] paymentData = generatePaymentReport(startDate, endDate);
+      if (paymentData != null && paymentData.length > 0) {
+        saveFile(folderPath.resolve("Resumo_de_Vendas_por_Forma_de_Pagamento.pdf"), paymentData);
+      }
+    } catch (Exception e) {
+    }
+
+    try {
+      byte[] registerData = generateRegisterReport(startDate, endDate);
+      if (registerData != null && registerData.length > 0) {
+        saveFile(folderPath.resolve("Registro_de_saida_nf.pdf"), registerData);
+      }
+    } catch (Exception e) {
+    }
+
+    try {
+      byte[] salesData = generateSalesReport(startDate, endDate);
+      if (salesData != null && salesData.length > 0) {
+        saveFile(folderPath.resolve("Relacao_de_Vendas.pdf"), salesData);
+      }
+    } catch (Exception e) {
+    }
+
+    try {
+      byte[] icmsData = generateIcmsReport(startDate, endDate);
+      if (icmsData != null && icmsData.length > 0) {
+        saveFile(folderPath.resolve("Registro_Apuracao_ICMS.pdf"), icmsData);
+      }
+    } catch (Exception e) {
+    }
   }
 
   private void generateAndMoveNfSalesZip(LocalDate startDate, LocalDate endDate, Path folderPath)
@@ -116,12 +146,10 @@ public class ReportTaxService {
 
     Path targetPath = folderPath.resolve(nfSalesZipName);
 
-    // Verifica se o arquivo já existe e exclui, se necessário
     if (Files.exists(targetPath)) {
-      Files.delete(targetPath); // Remove o arquivo existente
+      Files.delete(targetPath);
     }
 
-    // Move o arquivo para o destino
     Files.move(Path.of(nfSalesZipPath), targetPath);
   }
 

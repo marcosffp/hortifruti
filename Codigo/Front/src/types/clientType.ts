@@ -5,6 +5,9 @@ export interface ClientRequest {
     phoneNumber: string;
     email: string;
     address: string;
+    stateRegistration?: string | null;
+    stateIndicator?: number | null;
+    cideCode?: string | null;
 }
 
 export interface ClientResponse {
@@ -17,6 +20,7 @@ export interface ClientResponse {
     email: string;
     stateRegistration: string | null;
     stateIndicator: number | null;
+    cideCode: string | null;
 }
 
 export interface ClientSelectionInfo {

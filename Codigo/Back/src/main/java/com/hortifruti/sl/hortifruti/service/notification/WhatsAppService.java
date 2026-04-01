@@ -67,7 +67,6 @@ public class WhatsAppService {
       return "+55319" + cleanNumber;
     }
 
-    // Se não conseguiu formatar, lança exceção
     throw new IllegalArgumentException(
         "Formato de número de telefone não reconhecido: " + phoneNumber);
   }
@@ -87,7 +86,6 @@ public class WhatsAppService {
       HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
       ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
-      // Verificar se tem erro na resposta
       String responseBody = response.getBody();
       boolean hasError = responseBody != null && responseBody.contains("\"error\"");
 
@@ -107,7 +105,6 @@ public class WhatsAppService {
       HttpHeaders headers = new HttpHeaders();
       headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-      // Converter documento para base64
       String documentBase64 = java.util.Base64.getEncoder().encodeToString(document);
 
       MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
@@ -121,7 +118,6 @@ public class WhatsAppService {
       HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
       ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
-      // Verificar se tem erro na resposta
       String responseBody = response.getBody();
       boolean hasError = responseBody != null && responseBody.contains("\"error\"");
 
@@ -140,7 +136,6 @@ public class WhatsAppService {
   public boolean sendMultipleDocuments(
       String phoneNumber, String message, List<byte[]> documents, List<String> fileNames) {
 
-    // Validação de entrada
     if (documents == null || fileNames == null) {
       throw new NotificationException("Listas de documentos ou nomes são nulas!");
     }

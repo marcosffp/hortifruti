@@ -10,9 +10,8 @@ public record CombinedScoreResponse(
     BigDecimal totalValue,
     LocalDate dueDate,
     LocalDate confirmedAt,
-    Status status, // Novo campo
-    boolean hasBillet, // Novo campo
-    boolean hasInvoice, // Novo campo
-    String yourNumber, // Novo campo
-    String invoiceRef // Novo campo - Referência da nota fiscal
-    ) {}
+    Status status,
+    boolean hasBillet,
+    boolean hasInvoice,
+    String yourNumber,
+    String invoiceRef) {}

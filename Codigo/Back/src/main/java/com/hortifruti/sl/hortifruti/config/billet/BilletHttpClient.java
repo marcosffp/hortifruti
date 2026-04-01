@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -24,9 +25,12 @@ public class BilletHttpClient {
   @Value("${sicoob.api.url}")
   private String apiUrl;
 
+  @Qualifier("billetRestTemplate")
   private final RestTemplate restTemplate;
+
   private final SicoobToken sicoobToken;
-  private final ObjectMapper objectMapper = new ObjectMapper();
+
+  private final ObjectMapper objectMapper;
 
   public JsonNode get(String endpoint) throws IOException {
     try {
@@ -48,13 +52,17 @@ public class BilletHttpClient {
   public JsonNode post(String endpoint, Object body) throws IOException {
     try {
       HttpHeaders headers = createHeaders();
-      HttpEntity<Object> entity = new HttpEntity<>(body, headers);
+
+      String jsonBody = objectMapper.writeValueAsString(body);
+      HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
 
       ResponseEntity<String> response =
           restTemplate.postForEntity(apiUrl + endpoint, entity, String.class);
 
       return processResponse(response);
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
+      System.err.println("Erro HTTP - Status: " + ex.getStatusCode());
+      System.err.println("Resposta do servidor: " + ex.getResponseBodyAsString());
       throw new BilletException(
           "Erro ao realizar requisição POST: " + ex.getResponseBodyAsString(), ex);
     } catch (Exception ex) {
@@ -65,7 +73,8 @@ public class BilletHttpClient {
   public JsonNode postCancel(String endpoint, Object body) throws IOException {
     try {
       HttpHeaders headers = createHeaders();
-      HttpEntity<Object> entity = new HttpEntity<>(body, headers);
+      String jsonBody = objectMapper.writeValueAsString(body);
+      HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
 
       ResponseEntity<String> response =
           restTemplate.postForEntity(apiUrl + endpoint, entity, String.class);
@@ -86,7 +95,8 @@ public class BilletHttpClient {
   public ResponseEntity<String> put(String endpoint, Object body) throws IOException {
     try {
       HttpHeaders headers = createHeaders();
-      HttpEntity<Object> entity = new HttpEntity<>(body, headers);
+      String jsonBody = objectMapper.writeValueAsString(body);
+      HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
 
       return restTemplate.exchange(apiUrl + endpoint, HttpMethod.PUT, entity, String.class);
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
@@ -116,7 +126,19 @@ public class BilletHttpClient {
       HttpHeaders headers = createHeaders();
       HttpEntity<String> entity = new HttpEntity<>(headers);
 
-      return restTemplate.exchange(apiUrl + endpoint, HttpMethod.GET, entity, JsonNode.class);
+      ResponseEntity<String> stringResponse =
+          restTemplate.exchange(apiUrl + endpoint, HttpMethod.GET, entity, String.class);
+
+      if (stringResponse.getBody() == null) {
+        throw new BilletException("A resposta da API está nula.");
+      }
+
+      JsonNode jsonNode = objectMapper.readTree(stringResponse.getBody());
+
+      return ResponseEntity.status(stringResponse.getStatusCode())
+          .headers(stringResponse.getHeaders())
+          .body(jsonNode);
+
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
       throw new BilletException(
           "Erro ao realizar requisição GET: " + ex.getResponseBodyAsString(), ex);
@@ -129,6 +151,7 @@ public class BilletHttpClient {
     HttpHeaders headers = new HttpHeaders();
     headers.setBearerAuth(sicoobToken.getAccessToken());
     headers.setContentType(MediaType.APPLICATION_JSON);
+    headers.set("Accept", "application/json");
     return headers;
   }
 

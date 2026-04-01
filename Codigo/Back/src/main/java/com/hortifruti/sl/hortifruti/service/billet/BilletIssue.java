@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.billet;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.config.billet.BilletHttpClient;
@@ -36,13 +37,9 @@ public class BilletIssue {
       throws IOException {
     try {
       JsonNode boletoJson = createBilletJson(boleto);
-
       JsonNode resposta = httpClient.post(billetConstants.getBASE_URL() + "boletos", boletoJson);
-
       JsonNode resultado = responseApi(resposta);
-
       Map<String, Object> responseMap = createResponseMap(resultado);
-
       return ResponseEntity.ok(responseMap);
 
     } catch (HttpClientErrorException e) {
@@ -95,7 +92,11 @@ public class BilletIssue {
 
   private JsonNode createBilletJson(BilletRequestSimplified boleto) {
     BilletRequest boletoCompleto = billetFactory.createCompleteBoletoRequest(boleto);
+
     ObjectMapper mapper = new ObjectMapper();
+    mapper.setDefaultPropertyInclusion(
+        JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_EMPTY));
+
     return mapper.valueToTree(boletoCompleto);
   }
 

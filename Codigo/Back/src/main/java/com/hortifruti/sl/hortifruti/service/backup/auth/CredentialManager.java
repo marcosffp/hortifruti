@@ -75,7 +75,6 @@ public class CredentialManager {
     String authorizationUrl =
         flow.newAuthorizationUrl().setRedirectUri(config.getRedirectUri()).build();
 
-    // Retornar uma credencial fictícia com o link de autorização embutido
     return new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
         .setTransport(httpTransport)
         .setJsonFactory(JSON_FACTORY)

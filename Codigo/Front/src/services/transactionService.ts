@@ -129,17 +129,32 @@ export const transactionService = {
     const queryString = params.toString();
     const url = `${API_BASE_URL}/transactions${queryString ? `?${queryString}` : ""}`;
 
+
+
     const response = await fetch(url, {
       method: "GET",
       headers: getAuthHeaders(),
     });
+    
     if (!response.ok) {
       throw new Error(
         `Erro ao buscar todas as transações: ${response.statusText}`,
       );
     }
+    
     const data = await response.json();
-    return data; // data.content, data.totalPages, data.totalElements, etc.
+
+    
+    const result: PageResult<TransactionResponse> = {
+      content: data.content || [],
+      totalPages: data.totalPages || data.page?.totalPages || 0,
+      totalElements: data.totalElements || data.page?.totalElements || 0,
+      size: data.size || data.page?.size || 0,
+      number: data.number || data.page?.number || 0
+    };
+    
+    
+    return result;
   },
 
   async updateTransaction(
@@ -195,6 +210,23 @@ export const transactionService = {
       return blob;
     } catch (error) {
       console.error("Erro ao exportar transações:", error);
+      throw error;
+    }
+  },
+
+  async exportTransactionsComplete(): Promise<Blob> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/transactions/export-complete`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) {
+        throw new Error(`Erro ao exportar relatório completo: ${response.statusText}`);
+      }
+      const blob = await response.blob();
+      return blob;
+    } catch (error) {
+      console.error("Erro ao exportar relatório completo:", error);
       throw error;
     }
   },

@@ -89,7 +89,12 @@ export default function GroupedProductsModal({
                     <tr key={`${product.code}-${index}`} className="border-gray-300 border-b hover:bg-gray-50">
                       <td className="p-3">{product.code}</td>
                       <td className="p-3">{product.name}</td>
-                      <td className="p-3 text-right">{product.quantity}</td>
+                      <td className="p-3 text-right">
+                        {new Intl.NumberFormat("pt-BR", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 3,
+                        }).format(parseFloat(product.quantity.toString()))}
+                      </td>
                       <td className="p-3 text-right">{formatCurrency(product.price)}</td>
                       <td className="p-3 text-right font-semibold">
                         {formatCurrency(product.totalValue)}

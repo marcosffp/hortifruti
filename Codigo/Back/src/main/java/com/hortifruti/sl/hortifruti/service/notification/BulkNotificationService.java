@@ -40,7 +40,6 @@ public class BulkNotificationService {
       String destinationType,
       String customMessage) {
     try {
-      // Validações
       if (files == null || files.isEmpty()) {
         throw new NotificationException("Pelo menos um arquivo deve ser fornecido");
       }
@@ -49,7 +48,6 @@ public class BulkNotificationService {
         throw new NotificationException("Pelo menos um canal deve ser selecionado");
       }
 
-      // Converter arquivos para bytes
       List<byte[]> fileContents = new ArrayList<>();
       List<String> fileNames = new ArrayList<>();
 
@@ -58,12 +56,10 @@ public class BulkNotificationService {
         fileNames.add(file.getOriginalFilename());
       }
 
-      // Determinar canais
       boolean sendEmail = channels.contains("email");
       boolean sendWhatsApp = channels.contains("whatsapp");
       NotificationChannel channel = determineChannel(sendEmail, sendWhatsApp);
 
-      // Enviar para contabilidade ou clientes
       if ("contabilidade".equalsIgnoreCase(destinationType)) {
         return sendToAccounting(fileContents, fileNames, customMessage, channel);
       } else {
@@ -157,7 +153,6 @@ public class BulkNotificationService {
 
         Client client = clientOpt.get();
 
-        // Validar se o cliente tem os contatos necessários
         if (channel == NotificationChannel.EMAIL
             && (client.getEmail() == null || client.getEmail().isEmpty())) {
           failedRecipients.add(client.getClientName() + " (sem e-mail)");
@@ -178,7 +173,6 @@ public class BulkNotificationService {
           }
         }
 
-        // Enviar notificação
         String subject = String.format("Documentos - %s", client.getClientName());
         String emailBody = buildClientMessage(client, fileContents.size(), customMessage);
 
@@ -210,7 +204,6 @@ public class BulkNotificationService {
       }
     }
 
-    // Construir resposta
     if (successCount == 0) {
       return BulkNotificationResponse.failure(
           "Nenhuma notificação foi enviada com sucesso", failedRecipients);
@@ -249,7 +242,6 @@ public class BulkNotificationService {
     variables.put("CLIENT_NAME", client.getClientName());
     variables.put("FILES_COUNT", String.valueOf(filesCount));
 
-    // Adicionar data atual
     java.time.LocalDate today = java.time.LocalDate.now();
     java.time.format.DateTimeFormatter formatter =
         java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");

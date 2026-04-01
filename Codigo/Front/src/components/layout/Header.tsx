@@ -37,13 +37,6 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
             <MenuIcon className="text-gray-100 cursor-pointer " size={25} />
           </div>
           <span className="text-gray-100 text-sm">(31) 3649-7064</span>
-          {/* Notification icon with badge */}
-          <div className="relative" title="Notificações">
-            <Bell className="text-gray-100" size={20} />
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-              4
-            </span>
-          </div>
           {/* User avatar and name */}
           <div className="flex items-center gap-2" title="Perfil">
             <Link href="/perfil" className="flex items-center gap-2">

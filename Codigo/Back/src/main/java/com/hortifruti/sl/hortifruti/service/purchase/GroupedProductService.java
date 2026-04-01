@@ -67,7 +67,7 @@ public class GroupedProductService {
 
   private String extractProductKey(InvoiceProduct product) {
     try {
-      return product.getCode().split("-")[0] + "-" + product.getName();
+      return product.getCode() + "-" + product.getName();
     } catch (Exception e) {
       throw new PurchaseException("Formato de código de produto inválido: " + product.getCode(), e);
     }
@@ -81,11 +81,14 @@ public class GroupedProductService {
 
     InvoiceProduct firstProduct = productList.get(0);
 
-    int totalQuantity = productList.stream().mapToInt(InvoiceProduct::getQuantity).sum();
+    BigDecimal totalQuantity =
+        productList.stream()
+            .map(InvoiceProduct::getQuantity)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     BigDecimal price = firstProduct.getPrice();
 
-    BigDecimal totalValue = price.multiply(BigDecimal.valueOf(totalQuantity));
+    BigDecimal totalValue = price.multiply(totalQuantity);
 
     return GroupedProduct.builder()
         .code(firstProduct.getCode())
@@ -105,34 +108,39 @@ public class GroupedProductService {
 
     BigDecimal totalValue = BigDecimal.ZERO;
     BigDecimal totalQuantityDecimal = BigDecimal.ZERO;
-    int totalQuantity = 0;
 
     InvoiceProduct firstProduct = productList.get(0);
 
     for (InvoiceProduct product : productList) {
-      int quantity = product.getQuantity();
-      totalQuantity += quantity;
+      BigDecimal quantity = product.getQuantity();
+      BigDecimal price = product.getPrice();
+      BigDecimal productTotal = price.multiply(quantity);
 
-      BigDecimal quantityBD = BigDecimal.valueOf(quantity);
-      totalQuantityDecimal = totalQuantityDecimal.add(quantityBD);
-      totalValue = totalValue.add(product.getPrice().multiply(quantityBD));
+      totalQuantityDecimal = totalQuantityDecimal.add(quantity);
+      totalValue = totalValue.add(productTotal);
     }
 
     BigDecimal weightedAvgPrice;
     try {
-      weightedAvgPrice =
-          totalQuantityDecimal.compareTo(BigDecimal.ZERO) == 0
-              ? BigDecimal.ZERO
-              : totalValue.divide(totalQuantityDecimal, 4, RoundingMode.HALF_EVEN);
+      if (totalQuantityDecimal.compareTo(BigDecimal.ZERO) == 0) {
+        weightedAvgPrice = BigDecimal.ZERO;
+      } else {
+        weightedAvgPrice = totalValue.divide(totalQuantityDecimal, 10, RoundingMode.HALF_UP);
+      }
     } catch (ArithmeticException e) {
       throw new PurchaseException("Erro ao calcular preço médio ponderado: " + e.getMessage(), e);
+    }
+
+    BigDecimal calculatedTotal = weightedAvgPrice.multiply(totalQuantityDecimal);
+    if (calculatedTotal.subtract(totalValue).abs().compareTo(new BigDecimal("0.01")) > 0) {
+      weightedAvgPrice = totalValue.divide(totalQuantityDecimal, 12, RoundingMode.HALF_UP);
     }
 
     return GroupedProduct.builder()
         .code(firstProduct.getCode())
         .name(firstProduct.getName())
         .price(weightedAvgPrice)
-        .quantity(totalQuantity)
+        .quantity(totalQuantityDecimal)
         .totalValue(totalValue)
         .build();
   }

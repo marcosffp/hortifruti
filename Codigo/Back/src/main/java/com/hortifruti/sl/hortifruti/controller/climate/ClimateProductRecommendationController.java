@@ -80,7 +80,6 @@ public class ClimateProductRecommendationController {
       throw new RecommendationException("Data não pode ser vazia.");
     }
 
-    // Validação básica do formato da data
     if (!date.matches("\\d{4}-\\d{2}-\\d{2}")) {
       throw new RecommendationException("Formato de data inválido. Use o formato YYYY-MM-DD.");
     }

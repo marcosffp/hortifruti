@@ -20,14 +20,12 @@ public interface TransactionMapper {
 
   void updateTransaction(@MappingTarget Transaction target, Transaction source);
 
-  // Atualiza a entidade Transaction a partir do TransactionRequest
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
   @Mapping(target = "hash", ignore = true)
   void updateTransactionFromRequest(@MappingTarget Transaction target, TransactionRequest source);
 
-  // Método para criar uma Transaction com parâmetros individuais
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)

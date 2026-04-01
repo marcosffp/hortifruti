@@ -18,6 +18,8 @@ import com.hortifruti.sl.hortifruti.repository.purchase.GroupedProductRepository
 import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -97,7 +99,7 @@ public class CombinedScoreService {
     }
 
     List<GroupedProduct> groupedProducts =
-        productGrouper.groupProducts(purchases, client.isVariablePrice());
+        productGrouper.groupProducts(purchases, !client.isVariablePrice());
 
     BigDecimal totalValue =
         groupedProducts.stream()
@@ -106,6 +108,16 @@ public class CombinedScoreService {
 
     CombinedScore combinedScore =
         CombinedScore.builder().clientId(request.clientId()).totalValue(totalValue).build();
+
+    LocalDate confirmedDate =
+        request.confirmedAt() != null
+            ? request.confirmedAt()
+            : ZonedDateTime.now(ZoneId.of("America/Sao_Paulo")).toLocalDate();
+    combinedScore.setConfirmedAt(confirmedDate);
+    combinedScore.setDueDate(DueDateCalculator.calculate(client, combinedScore.getConfirmedAt()));
+    combinedScore.setStatus(Status.PENDENTE);
+    combinedScore.setHasBillet(false);
+    combinedScore.setHasInvoice(false);
 
     CombinedScore savedCombinedScore = combinedScoreRepository.saveAndFlush(combinedScore);
 

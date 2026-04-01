@@ -20,14 +20,19 @@ public class BilletController {
   /**
    * Emite um boleto e retorna o PDF.
    *
-   * @param boleto Dados do boleto a ser emitido.
+   * @param combinedScoreId ID do CombinedScore
+   * @param number Número identificador do cliente
+   * @param dueDate Data de vencimento opcional (formato yyyy-MM-dd)
    * @return PDF do boleto emitido.
    */
   @GetMapping("/generate/{combinedScoreId}")
-  public ResponseEntity<byte[]> generateBillet(@PathVariable Long combinedScoreId, String number)
+  public ResponseEntity<byte[]> generateBillet(
+      @PathVariable Long combinedScoreId,
+      @RequestParam String number,
+      @RequestParam(required = false) String dueDate)
       throws IOException {
     try {
-      return billetService.generateBillet(combinedScoreId, number);
+      return billetService.generateBillet(combinedScoreId, number, dueDate);
     } catch (Exception e) {
       e.printStackTrace();
       return ResponseEntity.badRequest()
@@ -82,14 +87,12 @@ public class BilletController {
     } catch (BilletException e) {
       e.printStackTrace();
 
-      // Mensagem mais precisa para o erro específico
       String errorMessage = e.getMessage();
       if (errorMessage.contains("Título em processo de baixa/liquidação")) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
             .body("O boleto já está em processo de cancelamento ou já foi liquidado");
       }
 
-      // Para outros erros da API
       if (errorMessage.contains("Erro na requisição")) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body("Erro ao cancelar boleto: " + extractErrorMessage(errorMessage));
@@ -108,7 +111,6 @@ public class BilletController {
   private String extractErrorMessage(String errorJson) {
     try {
       if (errorJson != null && errorJson.contains("mensagem")) {
-        // Formato simples para extrair a primeira mensagem de erro
         int start = errorJson.indexOf("\"mensagem\":\"") + 12;
         int end = errorJson.indexOf("\"", start);
         if (start > 12 && end > start) {
@@ -134,8 +136,7 @@ public class BilletController {
       return ResponseEntity.ok(billet);
     } catch (Exception e) {
       e.printStackTrace();
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body(null); // Return a default error response
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
   }
 }

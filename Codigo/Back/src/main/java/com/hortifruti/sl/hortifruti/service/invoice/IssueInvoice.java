@@ -15,8 +15,8 @@ import com.hortifruti.sl.hortifruti.service.invoice.factory.InvoiceItem;
 import com.hortifruti.sl.hortifruti.service.invoice.factory.InvoicePayload;
 import com.hortifruti.sl.hortifruti.service.invoice.factory.Recipient;
 import jakarta.transaction.Transactional;
+import java.time.LocalTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
@@ -36,9 +36,6 @@ public class IssueInvoice {
   @Value("${focus.nfe.api.url}")
   private String focusNfeApiUrl;
 
-  @Value("${focus.nfe.environment:homologacao}")
-  private String focusNfeEnvironment;
-
   @Value("${focus.nfe.cnpj.emitente}")
   private String focusNfeCnpjEmitente;
 
@@ -53,26 +50,97 @@ public class IssueInvoice {
   private final FocusNfeApiClient focusNfeApiClient;
 
   @Transactional
-  public InvoiceResponse issueInvoice(Long combinedScoreId) {
+  public InvoiceResponse issueInvoice(Long combinedScoreId, String dadosAdicionais) {
     try {
+      System.out.println(
+          "[IssueInvoice] Iniciando emissão de NF para combinedScoreId: " + combinedScoreId);
+
       CombinedScore combinedScore = fetchCombinedScore(combinedScoreId);
+      System.out.println(
+          "[IssueInvoice] CombinedScore encontrado: id="
+              + combinedScore.getId()
+              + ", clientId="
+              + combinedScore.getClientId());
+
       Client client = fetchClient(combinedScore.getClientId());
+      System.out.println(
+          "[IssueInvoice] Cliente encontrado: id="
+              + client.getId()
+              + ", nome="
+              + client.getClientName());
 
       RecipientRequest recipient = recipientService.createRecipientRequest(client.getId());
-      List<ItemRequest> items = invoiceItemService.createItems(combinedScore.getGroupedProducts());
-      IssueInvoiceRequest request = buildInvoiceRequest(combinedScoreId, recipient, items);
+      System.out.println("[IssueInvoice] Recipient criado: " + recipient);
+
+      List<ItemRequest> items =
+          invoiceItemService.createItems(
+              combinedScore.getGroupedProducts(), recipient.endereco().uf());
+      System.out.println("[IssueInvoice] Itens criados: quantidade=" + items.size());
+      items.forEach(item -> System.out.println("[IssueInvoice] Item: " + item));
+
+      IssueInvoiceRequest request =
+          buildInvoiceRequest(recipient, items, combinedScore, dadosAdicionais);
+      System.out.println("[IssueInvoice] Request construído: " + request);
 
       String ref = UUID.randomUUID().toString();
+      System.out.println("[IssueInvoice] Ref gerada: " + ref);
+
       String payload = invoicePayloadService.buildFocusNfePayload(request, ref);
+      System.out.println("[IssueInvoice] Payload gerado:\n" + payload);
+
       String response = focusNfeApiClient.sendRequest(ref, payload);
+      System.out.println("[IssueInvoice] Resposta da FocusNFe: " + response);
 
       InvoiceResponse invoiceResponse = objectMapper.readValue(response, InvoiceResponse.class);
+      System.out.println("[IssueInvoice] InvoiceResponse desserializado: " + invoiceResponse);
+
       updateCombinedScoreStatus(combinedScore, invoiceResponse);
+      System.out.println(
+          "[IssueInvoice] Status atualizado com sucesso. ref=" + invoiceResponse.ref());
 
       return invoiceResponse;
     } catch (Exception e) {
+      System.out.println("[IssueInvoice] ERRO CLASSE: " + e.getClass().getName());
+      System.out.println("[IssueInvoice] ERRO MENSAGEM: " + e.getMessage());
+      if (e.getCause() != null) {
+        System.out.println("[IssueInvoice] CAUSA: " + e.getCause().getMessage());
+        System.out.println("[IssueInvoice] CAUSA CLASSE: " + e.getCause().getClass().getName());
+      }
+      e.printStackTrace();
       throw new InvoiceException("Erro ao emitir nota fiscal: " + e.getMessage(), e);
     }
+  }
+
+  private IssueInvoiceRequest buildInvoiceRequest(
+      RecipientRequest recipient,
+      List<ItemRequest> items,
+      CombinedScore combinedScore,
+      String dadosAdicionais) {
+
+    System.out.println(
+        "[buildInvoiceRequest] Construindo request para clientId=" + combinedScore.getClientId());
+
+    Client client = fetchClient(combinedScore.getClientId());
+    String firstName = client.getClientName().split("\\s+")[0].toUpperCase().trim();
+    System.out.println(
+        "[buildInvoiceRequest] firstName=" + firstName + ", dadosAdicionais=" + dadosAdicionais);
+
+    String infoText = info;
+    if (firstName.contains("LLINEA")) {
+      infoText = "Numerações AF: " + dadosAdicionais;
+      System.out.println("[buildInvoiceRequest] Cliente LLINEA detectado, infoText=" + infoText);
+    }
+
+    String dataHora =
+        combinedScore
+            .getConfirmedAt()
+            .atTime(LocalTime.now(ZoneId.of("America/Sao_Paulo")))
+            .atZone(ZoneId.of("America/Sao_Paulo"))
+            .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    System.out.println("[buildInvoiceRequest] dataHora da NF=" + dataHora);
+
+    return new IssueInvoiceRequest(
+        combinedScore.getId(), NATUREZA_OPERACAO, dataHora, recipient, items, infoText);
   }
 
   private CombinedScore fetchCombinedScore(Long combinedScoreId) {
@@ -87,17 +155,19 @@ public class IssueInvoice {
         .orElseThrow(() -> new InvoiceException("ID do cliente não encontrado"));
   }
 
-  private IssueInvoiceRequest buildInvoiceRequest(
-      Long combinedScoreId, RecipientRequest recipient, List<ItemRequest> items) {
-    return new IssueInvoiceRequest(
-        combinedScoreId,
-        NATUREZA_OPERACAO,
-        ZonedDateTime.now(ZoneId.of("America/Sao_Paulo"))
-            .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-        recipient,
-        items,
-        info);
-  }
+  /*
+   * private IssueInvoiceRequest buildInvoiceRequest(
+   * Long combinedScoreId, RecipientRequest recipient, List<ItemRequest> items) {
+   * return new IssueInvoiceRequest(
+   * combinedScoreId,
+   * NATUREZA_OPERACAO,
+   * ZonedDateTime.of(2026, 1, 22, 0, 0, 0, 0, ZoneId.of("America/Sao_Paulo"))
+   * .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+   * recipient,
+   * items,
+   * info);
+   * }
+   */
 
   private void updateCombinedScoreStatus(
       CombinedScore combinedScore, InvoiceResponse invoiceResponse) {

@@ -56,7 +56,7 @@ public class BilletFactory {
    * @param combinedScoreId ID do CombinedScore
    * @param pagador Objeto Pagador
    * @param number Seu número (identificador do boleto)
-   * @return Objeto BilletRequestSimplified
+   * @retu rn Objeto BilletRequestSimplified
    */
   public BilletRequestSimplified createBilletRequest(
       CombinedScore combinedScore, Long combinedScoreId, Pagador pagador, String number) {
@@ -67,6 +67,16 @@ public class BilletFactory {
         combinedScore.getDueDate().toString(),
         pagador);
   }
+
+  /*public BilletRequestSimplified createBilletRequest(
+      CombinedScore combinedScore, Long combinedScoreId, Pagador pagador, String number) {
+    return new BilletRequestSimplified(
+        LocalDate.of(2025, 12, 11).toString(),
+        number,
+        combinedScore.getTotalValue(),
+        LocalDate.of(2026, 1, 30).toString(),
+        pagador);
+  }*/
 
   /**
    * Cria o objeto Pagador a partir dos dados do cliente.

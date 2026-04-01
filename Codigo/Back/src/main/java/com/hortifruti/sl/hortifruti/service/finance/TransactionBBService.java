@@ -19,7 +19,6 @@ import java.util.regex.Pattern;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @AllArgsConstructor
@@ -32,9 +31,11 @@ public class TransactionBBService {
       Pattern.compile(
           "^(\\d{2}/\\d{2}/\\d{4})\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(.+?)\\s+([\\d.,]+)\\s+([CD])(?:\\s+([\\d.,]+)\\s+([CD]))?$");
 
-  protected List<Transaction> importStatement(MultipartFile file, Statement statement)
+  public List<Transaction> importStatement(byte[] fileBytes, String fileName, Statement statement)
       throws IOException {
-    String text = PdfUtil.extractPdfText(file);
+
+    String text = PdfUtil.extractPdfText(fileBytes);
+
     List<Transaction> transactions = parseBancoBrasil(text, statement);
 
     List<Transaction> newTransactions =
@@ -48,7 +49,8 @@ public class TransactionBBService {
       List<Transaction> savedTransactions = transactionRepository.saveAll(newTransactions);
       return savedTransactions;
     } catch (DataIntegrityViolationException e) {
-      return saveTransactionsIndividually(newTransactions);
+      List<Transaction> savedTransactions = saveTransactionsIndividually(newTransactions);
+      return savedTransactions;
     }
   }
 
@@ -80,6 +82,7 @@ public class TransactionBBService {
       Matcher matcher = TRANSACTION_PATTERN.matcher(currentLine);
 
       if (matcher.find()) {
+
         String description = matcher.group(5).trim();
         String nextLineDescription = "";
 
@@ -121,6 +124,7 @@ public class TransactionBBService {
 
   private Transaction createTransaction(
       Matcher matcher, String history, String value, String balanceType, Statement statement) {
+
     LocalDate transactionDate = TransactionUtil.parseDate(matcher.group(1));
     String codHistory = matcher.group(4);
     BigDecimal amount = TransactionUtil.parseAmount(value, balanceType);

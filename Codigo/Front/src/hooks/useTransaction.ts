@@ -153,7 +153,7 @@ export function useTransaction() {
       const link = document.createElement("a");
       link.href = url;
       const { month, year } = getPreviousMonth();
-      link.setAttribute("download", `Hortifruti_Santa_Luzia_${month}/${year}.xlsx`);
+      link.setAttribute("download", `HORTIFRUTI_SANTA_LUZIA_${month}/${year}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -161,6 +161,29 @@ export function useTransaction() {
       return data;
     } catch (err: any) {
       setError(err.message || "Erro ao exportar transações.");
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const exportTransactionsComplete = async (): Promise<Blob | undefined> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await transactionService.exportTransactionsComplete();
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      const { month, year } = getPreviousMonth();
+      link.setAttribute("download", `Relatorio-Hortifruti-Santa-Luzia-${month}-${year}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      return data;
+    } catch (err: any) {
+      setError(err.message || "Erro ao exportar relatório completo.");
       throw err;
     } finally {
       setIsLoading(false);
@@ -189,6 +212,7 @@ export function useTransaction() {
     updateTransaction,
     deleteTransaction,
     exportTransactionsAsExcel,
+    exportTransactionsComplete, // Novo método
     getAllCategories,
   };
 }

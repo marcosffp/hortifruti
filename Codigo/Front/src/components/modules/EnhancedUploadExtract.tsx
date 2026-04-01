@@ -35,6 +35,10 @@ export default function EnhancedUploadExtract() {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       handleFileUpload(selectedFile);
+      // Limpar o input para permitir reenvio do mesmo arquivo
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 

@@ -12,18 +12,18 @@ export function useBillet() {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `BOL-${number}_${combinedScoreId}.pdf`);
+        link.setAttribute('download', `BOL-${number}.pdf`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
     };
 
-    const generateBillet = async (combinedScoreId: number, number: string) => {
+    const generateBillet = async (combinedScoreId: number, number: string, dueDate?: string) => {
         setIsLoading(true);
         setError(null);
         try {
-            const blob = await billetService.generateBillet(combinedScoreId, number);
+            const blob = await billetService.generateBillet(combinedScoreId, number, dueDate);
             downloadBillet(blob, combinedScoreId, number);
             return blob;
         } catch (err: any) {
