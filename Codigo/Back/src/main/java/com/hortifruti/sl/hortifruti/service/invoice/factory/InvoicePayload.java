@@ -211,6 +211,7 @@ public class InvoicePayload {
           BigDecimal base = item.valorBruto() != null
               ? item.valorBruto()
               : item.quantidadeComercial().multiply(item.valorUnitarioComercial());
+          base = base.setScale(2, RoundingMode.HALF_UP);
 
           BigDecimal cbsValor    = base.multiply(CBS_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
           BigDecimal ibsUfValor  = base.multiply(IBS_UF_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
