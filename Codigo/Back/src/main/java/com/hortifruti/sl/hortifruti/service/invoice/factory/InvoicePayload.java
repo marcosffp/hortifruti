@@ -16,57 +16,35 @@ import org.springframework.stereotype.Component;
 /**
  * Responsável por montar o payload enviado para a API do FocusNFe.
  *
- * <h2>⚠️ PROBLEMA IMPORTANTE (IBS/CBS)</h2>
+ * <h2>IBS/CBS — Reforma Tributária (NT 2025.002)</h2>
  *
- * A SEFAZ rejeita a nota quando há divergência entre:
- * - o total informado no XML
- * - a soma dos valores dos itens
+ * Obrigatório a partir de 01/04/2026.
+ * Alíquotas vigentes em 2026:
+ * - CBS (federal): 0,9%
+ * - IBS UF (estadual): 0,1%
+ * - IBS Mun (municipal): 0,0%
  *
- * Isso ocorre porque:
- * - O FocusNFe escreve alguns totais com 2 casas decimais
- * - Os itens podem estar com 4 casas decimais
- * - A SEFAZ valida a soma exata → qualquer diferença gera rejeição
+ * <h3>Estratégia de cálculo para evitar rejeição SEFAZ 1076</h3>
  *
- * <h3>🚨 REGRA CRÍTICA</h3>
+ * O erro 1076 ocorre quando o total informado no XML diverge da soma dos itens.
+ * O FocusNFe NÃO calcula os totais automaticamente — ele usa exatamente
+ * o que é enviado no payload.
  *
- * NÃO enviar os seguintes campos no nível raiz:
+ * Solução adotada:
+ * 1. Calcular CBS e IBS por item com 4 casas decimais (HALF_UP).
+ * 2. Somar os valores dos itens para obter os totais do nível raiz.
+ * 3. Enviar os totais do nível raiz como a soma exata dos itens.
  *
- * - ibs_cbs_base_calculo
- * - cbs_valor_total
- * - ibs_uf_valor_total
- * - ibs_valor_total
- * - ibs_cbs_is_valor_total
- *
- * Esses valores DEVEM ser calculados pelo próprio FocusNFe.
- *
- * <h3>✅ SOLUÇÃO ADOTADA</h3>
- *
- * - Nunca adicionar esses campos manualmente no nível raiz
- * - Remover explicitamente do payload (fail-safe)
- * - Calcular CBS e IBS por item com 4 casas decimais (HALF_UP)
- *
- * Isso garante consistência entre:
- * - XML gerado
- * - validação da SEFAZ
- *
- * <h3>📋 REFORMA TRIBUTÁRIA (obrigatório a partir de 01/04/2026)</h3>
- *
- * Campos incluídos por item:
- * - ibs_cbs_situacao_tributaria  → "000" (tributado normalmente)
- * - ibs_cbs_classificacao_tributaria → "000001"
- * - ibs_cbs_base_calculo         → valor bruto do item
- * - cbs_aliquota / cbs_valor     → 0,9% federal
- * - ibs_uf_aliquota / ibs_uf_valor → 0,1% estadual
- * - ibs_mun_aliquota / ibs_mun_valor → 0,0% municipal (sem alíquota definida)
- * - ibs_valor_total              → soma ibs_uf + ibs_mun
+ * Dessa forma, o FocusNFe escreve no XML exatamente o que foi enviado,
+ * e a SEFAZ encontra consistência entre itens e totais.
  */
 @Component
 public class InvoicePayload {
 
-  private static final BigDecimal CBS_ALIQUOTA = new BigDecimal("0.9");
-  private static final BigDecimal IBS_UF_ALIQUOTA = new BigDecimal("0.1");
+  private static final BigDecimal CBS_ALIQUOTA     = new BigDecimal("0.9");
+  private static final BigDecimal IBS_UF_ALIQUOTA  = new BigDecimal("0.1");
   private static final BigDecimal IBS_MUN_ALIQUOTA = BigDecimal.ZERO;
-  private static final BigDecimal CEM = new BigDecimal("100");
+  private static final BigDecimal CEM              = new BigDecimal("100");
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -133,10 +111,10 @@ public class InvoicePayload {
                 request.destinatario().endereco().complemento());
           }
 
-          payload.put("bairro_destinatario", request.destinatario().endereco().bairro());
+          payload.put("bairro_destinatario",    request.destinatario().endereco().bairro());
           payload.put("municipio_destinatario", request.destinatario().endereco().municipio());
-          payload.put("uf_destinatario", request.destinatario().endereco().uf());
-          payload.put("cep_destinatario", request.destinatario().endereco().cep());
+          payload.put("uf_destinatario",        request.destinatario().endereco().uf());
+          payload.put("cep_destinatario",       request.destinatario().endereco().cep());
 
           if (request.destinatario().endereco().codigoMunicipio() != null) {
             payload.put(
@@ -164,24 +142,29 @@ public class InvoicePayload {
       payload.put("modalidade_frete", "9");
 
       // =========================
-      // ITENS
+      // ITENS + ACUMULADORES IBS/CBS
       // =========================
+      BigDecimal totalBase   = BigDecimal.ZERO;
+      BigDecimal totalCbs    = BigDecimal.ZERO;
+      BigDecimal totalIbsUf  = BigDecimal.ZERO;
+      BigDecimal totalIbsMun = BigDecimal.ZERO;
+
       if (request.items() != null && !request.items().isEmpty()) {
         List<Map<String, Object>> items = new ArrayList<>();
 
         for (ItemRequest item : request.items()) {
           Map<String, Object> itemMap = new HashMap<>();
 
-          itemMap.put("numero_item", items.size() + 1);
-          itemMap.put("codigo_produto", item.codigoProduto());
-          itemMap.put("descricao", item.descricao());
-          itemMap.put("codigo_ncm", item.ncm());
-          itemMap.put("cfop", item.cfop());
+          itemMap.put("numero_item",              items.size() + 1);
+          itemMap.put("codigo_produto",            item.codigoProduto());
+          itemMap.put("descricao",                 item.descricao());
+          itemMap.put("codigo_ncm",                item.ncm());
+          itemMap.put("cfop",                      item.cfop());
 
-          itemMap.put("unidade_comercial", item.unidadeComercial());
-          itemMap.put("quantidade_comercial", item.quantidadeComercial());
-          itemMap.put("valor_unitario_comercial", item.valorUnitarioComercial());
-          itemMap.put("valor_bruto", item.valorBruto());
+          itemMap.put("unidade_comercial",         item.unidadeComercial());
+          itemMap.put("quantidade_comercial",      item.quantidadeComercial());
+          itemMap.put("valor_unitario_comercial",  item.valorUnitarioComercial());
+          itemMap.put("valor_bruto",               item.valorBruto());
 
           // Tributável (fallback automático)
           itemMap.put(
@@ -202,34 +185,24 @@ public class InvoicePayload {
                   ? item.valorUnitarioTributavel()
                   : item.valorUnitarioComercial());
 
-          itemMap.put("icms_situacao_tributaria", item.icmsSituacaoTributaria());
-          itemMap.put("icms_origem", item.icmsOrigem());
-          itemMap.put("pis_situacao_tributaria", item.pisSituacaoTributaria());
+          itemMap.put("icms_situacao_tributaria",  item.icmsSituacaoTributaria());
+          itemMap.put("icms_origem",               item.icmsOrigem());
+          itemMap.put("pis_situacao_tributaria",   item.pisSituacaoTributaria());
           itemMap.put("cofins_situacao_tributaria", item.cofinsSituacaoTributaria());
 
           // =========================
-          // IBS / CBS — Reforma Tributária
-          // Obrigatório a partir de 01/04/2026 (NT 2025.002)
-          // Calculado aqui com 4 casas (HALF_UP).
-          // Os totais do nível raiz NÃO são enviados — o FocusNFe
-          // os calcula automaticamente, evitando divergência na SEFAZ.
+          // IBS / CBS por item
+          // 4 casas decimais (HALF_UP) para máxima precisão.
+          // Os totais do nível raiz serão a soma exata desses valores,
+          // garantindo consistência com o XML e aprovação na SEFAZ.
           // =========================
           BigDecimal base = item.valorBruto() != null
               ? item.valorBruto()
               : item.quantidadeComercial().multiply(item.valorUnitarioComercial());
 
-          BigDecimal cbsValor = base
-              .multiply(CBS_ALIQUOTA)
-              .divide(CEM, 2, RoundingMode.HALF_UP);
-
-          BigDecimal ibsUfValor = base
-              .multiply(IBS_UF_ALIQUOTA)
-              .divide(CEM, 2, RoundingMode.HALF_UP);
-
-          BigDecimal ibsMunValor = base
-              .multiply(IBS_MUN_ALIQUOTA)
-              .divide(CEM, 4, RoundingMode.HALF_UP);
-
+          BigDecimal cbsValor    = base.multiply(CBS_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
+          BigDecimal ibsUfValor  = base.multiply(IBS_UF_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
+          BigDecimal ibsMunValor = base.multiply(IBS_MUN_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
           BigDecimal ibsValorTotal = ibsUfValor.add(ibsMunValor);
 
           itemMap.put("ibs_cbs_situacao_tributaria",      "000");
@@ -243,11 +216,34 @@ public class InvoicePayload {
           itemMap.put("ibs_mun_valor",                    ibsMunValor);
           itemMap.put("ibs_valor_total",                  ibsValorTotal);
 
+          // Acumular para os totais do nível raiz
+          totalBase   = totalBase.add(base);
+          totalCbs    = totalCbs.add(cbsValor);
+          totalIbsUf  = totalIbsUf.add(ibsUfValor);
+          totalIbsMun = totalIbsMun.add(ibsMunValor);
+
           items.add(itemMap);
         }
 
         payload.put("items", items);
       }
+
+      // =========================
+      // TOTAIS IBS/CBS — NÍVEL RAIZ
+      //
+      // São a soma exata dos valores calculados por item.
+      // O FocusNFe usa esses valores diretamente no XML —
+      // não os recalcula — portanto precisam ser enviados.
+      // Manter consistência com os itens elimina a rejeição 1076.
+      // =========================
+      BigDecimal totalIbs    = totalIbsUf.add(totalIbsMun);
+      BigDecimal totalIbsCbs = totalCbs.add(totalIbs);
+
+      payload.put("ibs_cbs_base_calculo",   totalBase.setScale(2, RoundingMode.HALF_UP));
+      payload.put("cbs_valor_total",        totalCbs.setScale(4, RoundingMode.HALF_UP));
+      payload.put("ibs_uf_valor_total",     totalIbsUf.setScale(4, RoundingMode.HALF_UP));
+      payload.put("ibs_valor_total",        totalIbs.setScale(4, RoundingMode.HALF_UP));
+      payload.put("ibs_cbs_is_valor_total", totalIbsCbs.setScale(4, RoundingMode.HALF_UP));
 
       // =========================
       // INFORMAÇÕES ADICIONAIS
@@ -257,18 +253,6 @@ public class InvoicePayload {
             "informacoes_adicionais_contribuinte",
             request.informacoesAdicionaisContribuinte());
       }
-
-      // =========================
-      // 🔥 FAIL-SAFE CRÍTICO (IBS/CBS)
-      // Garante que nenhum total de nível raiz seja enviado,
-      // seja por serialização acidental de DTOs, putAll ou
-      // qualquer outro caminho não previsto.
-      // =========================
-      payload.remove("ibs_cbs_base_calculo");
-      payload.remove("cbs_valor_total");
-      payload.remove("ibs_uf_valor_total");
-      payload.remove("ibs_valor_total");
-      payload.remove("ibs_cbs_is_valor_total");
 
       return objectMapper.writeValueAsString(payload);
 
