@@ -24,19 +24,33 @@ import org.springframework.stereotype.Component;
  * - IBS UF (estadual): 0,1%
  * - IBS Mun (municipal): 0,0%
  *
- * <h3>Estratégia de cálculo para evitar rejeição SEFAZ 1076</h3>
+ * <h3>Por que o erro 1076 ocorria (análise das 3 tentativas)</h3>
  *
- * O erro 1076 ocorre quando o total informado no XML diverge da soma dos itens.
- * O FocusNFe NÃO calcula os totais automaticamente — ele usa exatamente
- * o que é enviado no payload.
+ * Tentativa 1 — itens com 4 casas, sem totais no raiz:
+ *   FocusNFe não calcula totais automaticamente → raiz ficava zerado → rejeição.
  *
- * Solução adotada:
- * 1. Calcular CBS e IBS por item com 4 casas decimais (HALF_UP).
- * 2. Somar os valores dos itens para obter os totais do nível raiz.
- * 3. Enviar os totais do nível raiz como a soma exata dos itens.
+ * Tentativa 2 — itens com 2 casas, sem totais no raiz:
+ *   Mesma causa, mais arredondamento.
  *
- * Dessa forma, o FocusNFe escreve no XML exatamente o que foi enviado,
- * e a SEFAZ encontra consistência entre itens e totais.
+ * Tentativa 3 — itens com 4 casas, totais = soma dos arredondamentos por item:
+ *   A SEFAZ recalcula os totais fazendo: sum(base_item) × alíquota
+ *   Com base_raiz arredondada para 2 casas (996.88), o resultado divergia:
+ *     IBS esperado: 996.88 × 0,1% = 0.9969
+ *     IBS enviado (soma de itens): 0.9968  ← divergência de 0.0001 → rejeição.
+ *
+ * <h3>Solução definitiva</h3>
+ *
+ * A SEFAZ valida: totalBase × alíquota == total_raiz
+ *
+ * Portanto os totais do nível raiz devem ser calculados aplicando
+ * a alíquota sobre a soma EXATA das bases (sem arredondar a base):
+ *
+ *   totalBaseExata       = sum(base_item)                        — sem arredondar
+ *   ibs_cbs_base_calculo = totalBaseExata                        — enviado sem arredondar
+ *   cbs_valor_total      = totalBaseExata × 0,9% (4 casas HALF_UP)
+ *   ibs_valor_total      = totalBaseExata × 0,1% (4 casas HALF_UP)
+ *
+ * Isso garante que a SEFAZ reproduza exatamente os mesmos totais.
  */
 @Component
 public class InvoicePayload {
@@ -87,9 +101,9 @@ public class InvoicePayload {
           payload.put("cnpj_destinatario", request.destinatario().cnpj());
         }
 
-        payload.put("nome_destinatario", request.destinatario().nome());
+        payload.put("nome_destinatario",     request.destinatario().nome());
         payload.put("telefone_destinatario", request.destinatario().telefone());
-        payload.put("email_destinatario", request.destinatario().email());
+        payload.put("email_destinatario",    request.destinatario().email());
 
         payload.put(
             "indicador_inscricao_estadual_destinatario",
@@ -103,7 +117,7 @@ public class InvoicePayload {
 
         if (request.destinatario().endereco() != null) {
           payload.put("logradouro_destinatario", request.destinatario().endereco().logradouro());
-          payload.put("numero_destinatario", request.destinatario().endereco().numero());
+          payload.put("numero_destinatario",     request.destinatario().endereco().numero());
 
           if (request.destinatario().endereco().complemento() != null) {
             payload.put(
@@ -142,12 +156,13 @@ public class InvoicePayload {
       payload.put("modalidade_frete", "9");
 
       // =========================
-      // ITENS + ACUMULADORES IBS/CBS
+      // ITENS + ACUMULADOR DA BASE EXATA
       // =========================
-      BigDecimal totalBase   = BigDecimal.ZERO;
-      BigDecimal totalCbs    = BigDecimal.ZERO;
-      BigDecimal totalIbsUf  = BigDecimal.ZERO;
-      BigDecimal totalIbsMun = BigDecimal.ZERO;
+
+      // ⚠️ CRÍTICO: acumular a base SEM nenhum arredondamento.
+      // Os totais do nível raiz serão calculados sobre este valor exato,
+      // reproduzindo o mesmo cálculo da SEFAZ e evitando o erro 1076.
+      BigDecimal totalBaseExata = BigDecimal.ZERO;
 
       if (request.items() != null && !request.items().isEmpty()) {
         List<Map<String, Object>> items = new ArrayList<>();
@@ -155,16 +170,16 @@ public class InvoicePayload {
         for (ItemRequest item : request.items()) {
           Map<String, Object> itemMap = new HashMap<>();
 
-          itemMap.put("numero_item",              items.size() + 1);
-          itemMap.put("codigo_produto",            item.codigoProduto());
-          itemMap.put("descricao",                 item.descricao());
-          itemMap.put("codigo_ncm",                item.ncm());
-          itemMap.put("cfop",                      item.cfop());
+          itemMap.put("numero_item",             items.size() + 1);
+          itemMap.put("codigo_produto",           item.codigoProduto());
+          itemMap.put("descricao",                item.descricao());
+          itemMap.put("codigo_ncm",               item.ncm());
+          itemMap.put("cfop",                     item.cfop());
 
-          itemMap.put("unidade_comercial",         item.unidadeComercial());
-          itemMap.put("quantidade_comercial",      item.quantidadeComercial());
-          itemMap.put("valor_unitario_comercial",  item.valorUnitarioComercial());
-          itemMap.put("valor_bruto",               item.valorBruto());
+          itemMap.put("unidade_comercial",        item.unidadeComercial());
+          itemMap.put("quantidade_comercial",     item.quantidadeComercial());
+          itemMap.put("valor_unitario_comercial", item.valorUnitarioComercial());
+          itemMap.put("valor_bruto",              item.valorBruto());
 
           // Tributável (fallback automático)
           itemMap.put(
@@ -185,16 +200,13 @@ public class InvoicePayload {
                   ? item.valorUnitarioTributavel()
                   : item.valorUnitarioComercial());
 
-          itemMap.put("icms_situacao_tributaria",  item.icmsSituacaoTributaria());
-          itemMap.put("icms_origem",               item.icmsOrigem());
-          itemMap.put("pis_situacao_tributaria",   item.pisSituacaoTributaria());
+          itemMap.put("icms_situacao_tributaria",   item.icmsSituacaoTributaria());
+          itemMap.put("icms_origem",                item.icmsOrigem());
+          itemMap.put("pis_situacao_tributaria",    item.pisSituacaoTributaria());
           itemMap.put("cofins_situacao_tributaria", item.cofinsSituacaoTributaria());
 
           // =========================
-          // IBS / CBS por item
-          // 4 casas decimais (HALF_UP) para máxima precisão.
-          // Os totais do nível raiz serão a soma exata desses valores,
-          // garantindo consistência com o XML e aprovação na SEFAZ.
+          // IBS / CBS por item — 4 casas decimais (HALF_UP)
           // =========================
           BigDecimal base = item.valorBruto() != null
               ? item.valorBruto()
@@ -216,11 +228,8 @@ public class InvoicePayload {
           itemMap.put("ibs_mun_valor",                    ibsMunValor);
           itemMap.put("ibs_valor_total",                  ibsValorTotal);
 
-          // Acumular para os totais do nível raiz
-          totalBase   = totalBase.add(base);
-          totalCbs    = totalCbs.add(cbsValor);
-          totalIbsUf  = totalIbsUf.add(ibsUfValor);
-          totalIbsMun = totalIbsMun.add(ibsMunValor);
+          // ⚠️ Acumula a base SEM arredondar — imprescindível
+          totalBaseExata = totalBaseExata.add(base);
 
           items.add(itemMap);
         }
@@ -231,19 +240,29 @@ public class InvoicePayload {
       // =========================
       // TOTAIS IBS/CBS — NÍVEL RAIZ
       //
-      // São a soma exata dos valores calculados por item.
-      // O FocusNFe usa esses valores diretamente no XML —
-      // não os recalcula — portanto precisam ser enviados.
-      // Manter consistência com os itens elimina a rejeição 1076.
+      // ⚠️ REGRA CRÍTICA — EVITA ERRO 1076:
+      //
+      // A SEFAZ recalcula os totais fazendo: sum(base_item) × alíquota
+      // e compara com o que foi enviado no nível raiz.
+      //
+      // Por isso os totais devem ser calculados sobre a BASE EXATA
+      // (sem arredondar), e o campo ibs_cbs_base_calculo deve ser
+      // enviado também sem arredondamento.
+      //
+      // NÃO calcule os totais somando os cbs_valor/ibs_valor por item —
+      // a acumulação de arredondamentos gera divergência de 0.0001.
       // =========================
-      BigDecimal totalIbs    = totalIbsUf.add(totalIbsMun);
-      BigDecimal totalIbsCbs = totalCbs.add(totalIbs);
+      BigDecimal cbsTotal    = totalBaseExata.multiply(CBS_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
+      BigDecimal ibsUfTotal  = totalBaseExata.multiply(IBS_UF_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
+      BigDecimal ibsMunTotal = totalBaseExata.multiply(IBS_MUN_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
+      BigDecimal ibsTotal    = ibsUfTotal.add(ibsMunTotal);
+      BigDecimal ibsCbsTotal = cbsTotal.add(ibsTotal);
 
-      payload.put("ibs_cbs_base_calculo",   totalBase.setScale(2, RoundingMode.HALF_UP));
-      payload.put("cbs_valor_total",        totalCbs.setScale(4, RoundingMode.HALF_UP));
-      payload.put("ibs_uf_valor_total",     totalIbsUf.setScale(4, RoundingMode.HALF_UP));
-      payload.put("ibs_valor_total",        totalIbs.setScale(4, RoundingMode.HALF_UP));
-      payload.put("ibs_cbs_is_valor_total", totalIbsCbs.setScale(4, RoundingMode.HALF_UP));
+      payload.put("ibs_cbs_base_calculo",   totalBaseExata);  // ← SEM arredondar para 2 casas
+      payload.put("cbs_valor_total",        cbsTotal);
+      payload.put("ibs_uf_valor_total",     ibsUfTotal);
+      payload.put("ibs_valor_total",        ibsTotal);
+      payload.put("ibs_cbs_is_valor_total", ibsCbsTotal);
 
       // =========================
       // INFORMAÇÕES ADICIONAIS
