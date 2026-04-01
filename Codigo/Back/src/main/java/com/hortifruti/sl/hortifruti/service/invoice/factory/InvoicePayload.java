@@ -220,11 +220,11 @@ public class InvoicePayload {
 
           BigDecimal cbsValor = base
               .multiply(CBS_ALIQUOTA)
-              .divide(CEM, 4, RoundingMode.HALF_UP);
+              .divide(CEM, 2, RoundingMode.HALF_UP);
 
           BigDecimal ibsUfValor = base
               .multiply(IBS_UF_ALIQUOTA)
-              .divide(CEM, 4, RoundingMode.HALF_UP);
+              .divide(CEM, 2, RoundingMode.HALF_UP);
 
           BigDecimal ibsMunValor = base
               .multiply(IBS_MUN_ALIQUOTA)
