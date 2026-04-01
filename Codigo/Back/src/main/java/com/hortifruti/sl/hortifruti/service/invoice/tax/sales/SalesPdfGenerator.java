@@ -38,15 +38,7 @@ public class SalesPdfGenerator {
     float bottomMargin = 100;
 
     String[] headers = {
-      "Número",
-      "Mod",
-      "Data",
-      "Envio",
-      "Cliente",
-      "Subtotal",
-      "Desconto",
-      "Acréscimo",
-      "Total - R$"
+      "Número", "Mod", "Data", "Envio", "Cliente", "Subtotal", "Desconto", "Acréscimo", "Total - R$"
     };
 
     try (PDDocument document = new PDDocument()) {
@@ -71,8 +63,7 @@ public class SalesPdfGenerator {
       addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
-          "Período: " + periodStart + " a " + periodEnd);
+      addText(contentStream, leftMargin, yPosition, "Período: " + periodStart + " a " + periodEnd);
       yPosition -= lineHeight * 2;
 
       drawTableHeader(contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
@@ -192,8 +183,6 @@ public class SalesPdfGenerator {
   private String formatValue(BigDecimal value) {
     return value == null
         ? "0,00"
-        : value.setScale(2, java.math.RoundingMode.HALF_UP)
-            .toString()
-            .replace(".", ",");
+        : value.setScale(2, java.math.RoundingMode.HALF_UP).toString().replace(".", ",");
   }
 }

@@ -25,9 +25,7 @@ public class RegisterPdfGenerator {
   private String companyCnpj;
 
   public byte[] generateRegisterReportPdf(
-      List<InvoiceSummaryDetails> invoiceSummaries,
-      LocalDate startDate,
-      LocalDate endDate)
+      List<InvoiceSummaryDetails> invoiceSummaries, LocalDate startDate, LocalDate endDate)
       throws IOException {
 
     String periodStart = startDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
@@ -39,9 +37,7 @@ public class RegisterPdfGenerator {
     float lineHeight = 20;
     float bottomMargin = 100;
 
-    String[] headers = {
-      "Espécie", "Série", "Dia", "UF", "Valor", "Cod. Fiscal", "Aliq.", "Outras"
-    };
+    String[] headers = {"Espécie", "Série", "Dia", "UF", "Valor", "Cod. Fiscal", "Aliq.", "Outras"};
 
     try (PDDocument document = new PDDocument()) {
 
@@ -53,8 +49,8 @@ public class RegisterPdfGenerator {
       float yPosition = 750;
 
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
-      addText(contentStream, leftMargin, yPosition,
-          "Livro de Registro de Saídas - RE - Modelo P 2/A");
+      addText(
+          contentStream, leftMargin, yPosition, "Livro de Registro de Saídas - RE - Modelo P 2/A");
       yPosition -= lineHeight * 2;
 
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 12);
@@ -64,8 +60,7 @@ public class RegisterPdfGenerator {
       addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
-          "PERÍODO: " + periodStart + " a " + periodEnd);
+      addText(contentStream, leftMargin, yPosition, "PERÍODO: " + periodStart + " a " + periodEnd);
       yPosition -= lineHeight * 2;
 
       contentStream.setLineWidth(1);
@@ -121,39 +116,43 @@ public class RegisterPdfGenerator {
       addText(contentStream, leftMargin, yPosition, "Legenda:");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
           "Espécie: Tipo do documento fiscal emitido (ex.: NF-e, NFC-e, CF-e, etc.).");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
           "Série: Código que identifica a série da nota fiscal.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
-          "Número: Número sequencial do documento fiscal.");
+      addText(
+          contentStream, leftMargin, yPosition, "Número: Número sequencial do documento fiscal.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
-          "Dia: Data de emissão do documento.");
+      addText(contentStream, leftMargin, yPosition, "Dia: Data de emissão do documento.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
-          "UF: Unidade Federativa de destino.");
+      addText(contentStream, leftMargin, yPosition, "UF: Unidade Federativa de destino.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
-          "Valor: Valor total do documento fiscal.");
+      addText(contentStream, leftMargin, yPosition, "Valor: Valor total do documento fiscal.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
-          "Cod. Fiscal: Código CFOP da operação.");
+      addText(contentStream, leftMargin, yPosition, "Cod. Fiscal: Código CFOP da operação.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
-          "Aliq.: Alíquota do imposto.");
+      addText(contentStream, leftMargin, yPosition, "Aliq.: Alíquota do imposto.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
           "Outras: Valores não enquadrados nas categorias principais.");
 
       contentStream.close();
@@ -225,8 +224,6 @@ public class RegisterPdfGenerator {
   private String formatValue(BigDecimal value) {
     return value == null
         ? "0,00"
-        : value.setScale(2, java.math.RoundingMode.HALF_UP)
-            .toString()
-            .replace(".", ",");
+        : value.setScale(2, java.math.RoundingMode.HALF_UP).toString().replace(".", ",");
   }
 }

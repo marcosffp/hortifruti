@@ -24,9 +24,8 @@ public class PaymentPdfGenerator {
   private String companyCnpj;
 
   public byte[] generateSummaryByPaymentPdf(
-      Map<String, BigDecimal> paymentSummary,
-      LocalDate startDate,
-      LocalDate endDate) throws IOException {
+      Map<String, BigDecimal> paymentSummary, LocalDate startDate, LocalDate endDate)
+      throws IOException {
 
     String periodStart = startDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     String periodEnd = endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
@@ -47,26 +46,29 @@ public class PaymentPdfGenerator {
       float yPosition = 750;
 
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
-      addText(contentStream, leftMargin, yPosition,
-          "RESUMO DE VENDAS POR FORMA DE PAGAMENTO");
+      addText(contentStream, leftMargin, yPosition, "RESUMO DE VENDAS POR FORMA DE PAGAMENTO");
       yPosition -= lineHeight * 2;
 
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
 
-      addText(contentStream, leftMargin, yPosition,
-          "Filial \"igual\": 1 " + companyName);
+      addText(contentStream, leftMargin, yPosition, "Filial \"igual\": 1 " + companyName);
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
           "Data Envio \"entre\": " + periodStart + " a " + periodEnd);
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
           "Modelo \"iniciado por\": 55 NOTA FISCAL ELETRÔNICA - NF-E");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
-          "Situação \"igual\": ATIVAS");
+      addText(contentStream, leftMargin, yPosition, "Situação \"igual\": ATIVAS");
       yPosition -= lineHeight * 2;
 
       contentStream.setLineWidth(1);
@@ -117,10 +119,7 @@ public class PaymentPdfGenerator {
             yPosition,
             tableWidth,
             cellHeight,
-            new String[] {
-              entry.getKey(),
-              formatValue(entry.getValue())
-            });
+            new String[] {entry.getKey(), formatValue(entry.getValue())});
 
         totalAmount = totalAmount.add(entry.getValue());
         recordCount++;
@@ -134,10 +133,7 @@ public class PaymentPdfGenerator {
           yPosition,
           tableWidth,
           cellHeight,
-          new String[] {
-            "Registros: " + recordCount,
-            "TOTAL: " + formatValue(totalAmount)
-          });
+          new String[] {"Registros: " + recordCount, "TOTAL: " + formatValue(totalAmount)});
 
       yPosition -= cellHeight * 2;
 
@@ -178,11 +174,8 @@ public class PaymentPdfGenerator {
     }
   }
 
-  private void addText(
-      PDPageContentStream contentStream,
-      float x,
-      float y,
-      String text) throws IOException {
+  private void addText(PDPageContentStream contentStream, float x, float y, String text)
+      throws IOException {
 
     contentStream.beginText();
     contentStream.newLineAtOffset(x, y);
@@ -196,7 +189,8 @@ public class PaymentPdfGenerator {
       float y,
       float width,
       float height,
-      String[] headers) throws IOException {
+      String[] headers)
+      throws IOException {
 
     float cellWidth = width / headers.length;
 
@@ -206,12 +200,8 @@ public class PaymentPdfGenerator {
       contentStream.stroke();
 
       contentStream.beginText();
-      contentStream.setFont(
-          new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD),
-          10);
-      contentStream.newLineAtOffset(
-          x + (cellWidth * i) + 15,
-          y - height + 10);
+      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
+      contentStream.newLineAtOffset(x + (cellWidth * i) + 15, y - height + 10);
       contentStream.showText(headers[i]);
       contentStream.endText();
     }
@@ -223,28 +213,21 @@ public class PaymentPdfGenerator {
       float y,
       float width,
       float height,
-      String[] values) throws IOException {
+      String[] values)
+      throws IOException {
 
     float cellWidth = width / values.length;
 
     for (int i = 0; i < values.length; i++) {
 
-      contentStream.addRect(
-          x + (cellWidth * i),
-          y,
-          cellWidth,
-          -height);
+      contentStream.addRect(x + (cellWidth * i), y, cellWidth, -height);
 
       contentStream.stroke();
 
       contentStream.beginText();
-      contentStream.setFont(
-          new PDType1Font(Standard14Fonts.FontName.HELVETICA),
-          10);
+      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
 
-      contentStream.newLineAtOffset(
-          x + (cellWidth * i) + 15,
-          y - height + 10);
+      contentStream.newLineAtOffset(x + (cellWidth * i) + 15, y - height + 10);
 
       contentStream.showText(values[i]);
       contentStream.endText();
@@ -254,9 +237,6 @@ public class PaymentPdfGenerator {
   private String formatValue(BigDecimal value) {
     return value == null
         ? "0,00"
-        : value
-            .setScale(2, java.math.RoundingMode.HALF_UP)
-            .toString()
-            .replace(".", ",");
+        : value.setScale(2, java.math.RoundingMode.HALF_UP).toString().replace(".", ",");
   }
 }

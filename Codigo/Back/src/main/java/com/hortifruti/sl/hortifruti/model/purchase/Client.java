@@ -85,8 +85,8 @@ public class Client {
     this.totalPurchaseValue = BigDecimal.ZERO;
     this.lastPurchaseDate = null;
 
-        if (this.cideCode == null) {
-      this.cideCode = ""; 
+    if (this.cideCode == null) {
+      this.cideCode = "";
     }
   }
 

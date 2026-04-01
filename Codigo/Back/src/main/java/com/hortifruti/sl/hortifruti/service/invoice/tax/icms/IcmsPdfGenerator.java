@@ -67,8 +67,7 @@ public class IcmsPdfGenerator {
       addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
-          "PERÍODO: " + periodStart + " a " + periodEnd);
+      addText(contentStream, leftMargin, yPosition, "PERÍODO: " + periodStart + " a " + periodEnd);
       yPosition -= lineHeight * 2;
 
       contentStream.setLineWidth(1);
@@ -109,7 +108,7 @@ public class IcmsPdfGenerator {
             yPosition,
             tableWidth,
             cellHeight,
-            new String[]{
+            new String[] {
               entry.getKey(),
               formatValue(entry.getValue()),
               "0",
@@ -128,13 +127,8 @@ public class IcmsPdfGenerator {
           yPosition,
           tableWidth,
           cellHeight,
-          new String[]{
-            "Subtotal",
-            formatValue(subtotalOutras),
-            "0",
-            "0",
-            "0",
-            formatValue(subtotalOutras)
+          new String[] {
+            "Subtotal", formatValue(subtotalOutras), "0", "0", "0", formatValue(subtotalOutras)
           });
 
       yPosition -= cellHeight;
@@ -145,13 +139,8 @@ public class IcmsPdfGenerator {
           yPosition,
           tableWidth,
           cellHeight,
-          new String[]{
-            "Total Geral",
-            formatValue(subtotalOutras),
-            "0",
-            "0",
-            "0",
-            formatValue(subtotalOutras)
+          new String[] {
+            "Total Geral", formatValue(subtotalOutras), "0", "0", "0", formatValue(subtotalOutras)
           });
 
       yPosition -= cellHeight * 2;
@@ -161,35 +150,51 @@ public class IcmsPdfGenerator {
       addText(contentStream, leftMargin, yPosition, "Legenda:");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
           "CFOP: Código que identifica o tipo de operação fiscal.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
           "Valores Contábeis: Valor total registrado da operação.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
           "Base de Cálculo: Valor sobre o qual o ICMS é calculado.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
-          "Imposto Debitado: Valor do ICMS devido.");
+      addText(contentStream, leftMargin, yPosition, "Imposto Debitado: Valor do ICMS devido.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
           "Isentas ou Não Tributadas: Operações sem incidência de ICMS.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
           "Outras: Valores que não entram na base de cálculo.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
-          "Subtotal: Soma parcial das operações.");
+      addText(contentStream, leftMargin, yPosition, "Subtotal: Soma parcial das operações.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition,
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
           "Total Geral: Soma total das operações do período.");
 
       contentStream.close();
