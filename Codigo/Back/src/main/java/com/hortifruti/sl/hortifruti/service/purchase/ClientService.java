@@ -80,27 +80,36 @@ public class ClientService {
   }
 
   public Client findMatchingClient(String clientName) {
-    String firstName = clientName.split("\\s+")[0].toUpperCase().trim();
+    String cleanInputName = clientName.toUpperCase().trim();
+    String inputFirstName = cleanInputName.split("\\s+")[0];
+
     List<Client> clients = clientRepository.findAll();
 
-    Optional<Client> clientOptional =
+    Optional<Client> exactMatch =
+        clients.stream()
+            .filter(client -> client.getClientName().toUpperCase().trim().equals(cleanInputName))
+            .findFirst();
+
+    if (exactMatch.isPresent()) {
+      return exactMatch.get();
+    }
+
+    Optional<Client> firstNameMatch =
         clients.stream()
             .filter(
                 client -> {
                   String clientFirstName =
                       client.getClientName().split("\\s+")[0].toUpperCase().trim();
-                  return clientFirstName.equals(firstName)
-                      || clientFirstName.replace("L", "").equals(firstName.replace("L", ""))
-                      || clientFirstName.contains(firstName)
-                      || firstName.contains(clientFirstName);
+                  return clientFirstName.equals(inputFirstName)
+                      || clientFirstName.replace("L", "").equals(inputFirstName.replace("L", ""));
                 })
             .findFirst();
 
-    if (clientOptional.isEmpty()) {
+    if (firstNameMatch.isEmpty()) {
       throw new PurchaseException("Cliente não encontrado: " + clientName);
     }
 
-    return clientOptional.get();
+    return firstNameMatch.get();
   }
 
   public List<ClientWithLastPurchaseResponse> getClientsWithLastPurchase() {
