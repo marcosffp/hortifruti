@@ -59,7 +59,7 @@ public class Client {
   @Column(nullable = true)
   private Integer stateIndicator;
 
-  @Column(nullable = false)
+  @Column(nullable = true)
   private String cideCode;
 
   @Column(nullable = false)
