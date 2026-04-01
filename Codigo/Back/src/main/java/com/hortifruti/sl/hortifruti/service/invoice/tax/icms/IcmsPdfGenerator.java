@@ -29,75 +29,76 @@ public class IcmsPdfGenerator {
 
   public byte[] generateIcmsReportPdf(IcmsSalesReport report, LocalDate start, LocalDate end)
       throws IOException {
+
     String periodStart = start.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     String periodEnd = end.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+
+    float leftMargin = 50;
+    float tableWidth = 500;
+    float cellHeight = 25;
+    float lineHeight = 20;
+    float bottomMargin = 100;
+
+    String[] headers = {
+      "CFOP", "Valores Cont.", "Base de Cál.", "Imposto Deb.", "Isen ou N/Trib.", "Outras"
+    };
+
     try (PDDocument document = new PDDocument()) {
+
       PDPage page = new PDPage();
       document.addPage(page);
 
-      try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
-        float yPosition = 750;
-        float leftMargin = 50;
-        float tableWidth = 500;
-        float cellHeight = 25;
-        float lineHeight = 20;
+      PDPageContentStream contentStream = new PDPageContentStream(document, page);
 
-        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
-        contentStream.beginText();
-        contentStream.newLineAtOffset(leftMargin, yPosition);
-        contentStream.showText("Registro de Apuração de ICMS");
-        contentStream.endText();
-        yPosition -= lineHeight * 2;
+      float yPosition = 750;
 
-        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
-        addText(contentStream, leftMargin, yPosition, "FIRMA: " + companyName);
-        yPosition -= lineHeight;
-        addText(contentStream, leftMargin, yPosition, "INSCRIÇÃO ESTADUAL: " + stateRegistration);
-        yPosition -= lineHeight;
-        addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
-        yPosition -= lineHeight;
-        addText(
-            contentStream, leftMargin, yPosition, "PERÍODO: " + periodStart + " a " + periodEnd);
-        yPosition -= lineHeight * 2;
+      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+      addText(contentStream, leftMargin, yPosition, "Registro de Apuração de ICMS");
+      yPosition -= lineHeight * 2;
 
-        contentStream.setLineWidth(1);
-        contentStream.moveTo(leftMargin, yPosition);
-        contentStream.lineTo(leftMargin + tableWidth, yPosition);
-        contentStream.stroke();
-        yPosition -= lineHeight;
+      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
 
-        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 14);
-        addText(contentStream, leftMargin, yPosition, "SAÍDAS");
-        yPosition -= lineHeight;
+      addText(contentStream, leftMargin, yPosition, "FIRMA: " + companyName);
+      yPosition -= lineHeight;
 
-        drawTableHeader(
-            contentStream,
-            leftMargin,
-            yPosition,
-            tableWidth,
-            cellHeight,
-            new String[] {
-              "CFOP", "Valores Cont.", "Base de Cál.", "Imposto Deb.", "Isen ou N/Trib.", "Outras"
-            });
-        yPosition -= cellHeight;
+      addText(contentStream, leftMargin, yPosition, "INSCRIÇÃO ESTADUAL: " + stateRegistration);
+      yPosition -= lineHeight;
 
-        BigDecimal subtotalOutras = BigDecimal.ZERO;
-        for (Map.Entry<String, BigDecimal> entry : report.valoresPorCfop().entrySet()) {
-          drawTableRow(
-              contentStream,
-              leftMargin,
-              yPosition,
-              tableWidth,
-              cellHeight,
-              new String[] {
-                entry.getKey(),
-                formatValue(entry.getValue()),
-                "0",
-                "0",
-                "0",
-                formatValue(entry.getValue())
-              });
-          subtotalOutras = subtotalOutras.add(entry.getValue());
+      addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
+      yPosition -= lineHeight;
+
+      addText(contentStream, leftMargin, yPosition, "PERÍODO: " + periodStart + " a " + periodEnd);
+      yPosition -= lineHeight * 2;
+
+      contentStream.setLineWidth(1);
+      contentStream.moveTo(leftMargin, yPosition);
+      contentStream.lineTo(leftMargin + tableWidth, yPosition);
+      contentStream.stroke();
+      yPosition -= lineHeight;
+
+      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 14);
+      addText(contentStream, leftMargin, yPosition, "SAÍDAS");
+      yPosition -= lineHeight;
+
+      drawTableHeader(contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
+      yPosition -= cellHeight;
+
+      BigDecimal subtotalOutras = BigDecimal.ZERO;
+
+      for (Map.Entry<String, BigDecimal> entry : report.valoresPorCfop().entrySet()) {
+
+        if (yPosition < bottomMargin) {
+
+          contentStream.close();
+
+          page = new PDPage();
+          document.addPage(page);
+
+          contentStream = new PDPageContentStream(document, page);
+
+          yPosition = 750;
+
+          drawTableHeader(contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
           yPosition -= cellHeight;
         }
 
@@ -108,72 +109,95 @@ public class IcmsPdfGenerator {
             tableWidth,
             cellHeight,
             new String[] {
-              "Subtotal", formatValue(subtotalOutras), "0", "0", "0", formatValue(subtotalOutras)
+              entry.getKey(),
+              formatValue(entry.getValue()),
+              "0",
+              "0",
+              "0",
+              formatValue(entry.getValue())
             });
+
+        subtotalOutras = subtotalOutras.add(entry.getValue());
         yPosition -= cellHeight;
-
-        drawTableRow(
-            contentStream,
-            leftMargin,
-            yPosition,
-            tableWidth,
-            cellHeight,
-            new String[] {
-              "Total Geral", formatValue(subtotalOutras), "0", "0", "0", formatValue(subtotalOutras)
-            });
-        yPosition -= cellHeight * 2;
-
-        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
-        addText(contentStream, leftMargin, yPosition, "Legenda:");
-        yPosition -= lineHeight;
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "CFOP: Código que identifica o tipo de operação fiscal (ex.: venda, devolução, transferência).");
-        yPosition -= lineHeight;
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "Valores Contábeis: Valor total registrado da operação.");
-        yPosition -= lineHeight;
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "Base de Cálculo: Valor sobre o qual o ICMS é calculado.");
-        yPosition -= lineHeight;
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "Imposto Debitado: Valor do ICMS devido sobre as operações de saída.");
-        yPosition -= lineHeight;
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "Isentas ou Não Tributadas: Operações que não geram cobrança de ICMS por isenção ou não incidência.");
-        yPosition -= lineHeight;
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "Outras: Valores que não entram na base de cálculo do imposto, mas são informados para controle.");
-        yPosition -= lineHeight;
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "Subtotal: Soma parcial das operações de um mesmo grupo (ex.: dentro do estado).");
-        yPosition -= lineHeight;
-        addText(
-            contentStream,
-            leftMargin,
-            yPosition,
-            "Total Geral: Soma total de todas as operações apuradas no período.");
       }
+
+      drawTableRow(
+          contentStream,
+          leftMargin,
+          yPosition,
+          tableWidth,
+          cellHeight,
+          new String[] {
+            "Subtotal", formatValue(subtotalOutras), "0", "0", "0", formatValue(subtotalOutras)
+          });
+
+      yPosition -= cellHeight;
+
+      drawTableRow(
+          contentStream,
+          leftMargin,
+          yPosition,
+          tableWidth,
+          cellHeight,
+          new String[] {
+            "Total Geral", formatValue(subtotalOutras), "0", "0", "0", formatValue(subtotalOutras)
+          });
+
+      yPosition -= cellHeight * 2;
+
+      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+
+      addText(contentStream, leftMargin, yPosition, "Legenda:");
+      yPosition -= lineHeight;
+
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
+          "CFOP: Código que identifica o tipo de operação fiscal.");
+      yPosition -= lineHeight;
+
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
+          "Valores Contábeis: Valor total registrado da operação.");
+      yPosition -= lineHeight;
+
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
+          "Base de Cálculo: Valor sobre o qual o ICMS é calculado.");
+      yPosition -= lineHeight;
+
+      addText(contentStream, leftMargin, yPosition, "Imposto Debitado: Valor do ICMS devido.");
+      yPosition -= lineHeight;
+
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
+          "Isentas ou Não Tributadas: Operações sem incidência de ICMS.");
+      yPosition -= lineHeight;
+
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
+          "Outras: Valores que não entram na base de cálculo.");
+      yPosition -= lineHeight;
+
+      addText(contentStream, leftMargin, yPosition, "Subtotal: Soma parcial das operações.");
+      yPosition -= lineHeight;
+
+      addText(
+          contentStream,
+          leftMargin,
+          yPosition,
+          "Total Geral: Soma total das operações do período.");
+
+      contentStream.close();
 
       try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
         document.save(outputStream);
@@ -184,6 +208,7 @@ public class IcmsPdfGenerator {
 
   private void addText(PDPageContentStream contentStream, float x, float y, String text)
       throws IOException {
+
     contentStream.beginText();
     contentStream.newLineAtOffset(x, y);
     contentStream.showText(text);
@@ -198,9 +223,11 @@ public class IcmsPdfGenerator {
       float height,
       String[] headers)
       throws IOException {
+
     float cellWidth = width / headers.length;
 
     for (int i = 0; i < headers.length; i++) {
+
       contentStream.addRect(x + (cellWidth * i), y, cellWidth, -height);
       contentStream.stroke();
 
@@ -220,9 +247,11 @@ public class IcmsPdfGenerator {
       float height,
       String[] values)
       throws IOException {
+
     float cellWidth = width / values.length;
 
     for (int i = 0; i < values.length; i++) {
+
       contentStream.addRect(x + (cellWidth * i), y, cellWidth, -height);
       contentStream.stroke();
 
@@ -235,13 +264,16 @@ public class IcmsPdfGenerator {
   }
 
   private String formatValue(Object value) {
+
     if (value == null) {
       return "0";
     }
+
     if (value instanceof BigDecimal) {
       BigDecimal bd = (BigDecimal) value;
       return bd.compareTo(BigDecimal.ZERO) == 0 ? "0" : bd.toString();
     }
+
     return value.toString();
   }
 }
