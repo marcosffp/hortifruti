@@ -24,33 +24,28 @@ import org.springframework.stereotype.Component;
  * - IBS UF (estadual): 0,1%
  * - IBS Mun (municipal): 0,0%
  *
- * <h3>Por que o erro 1076 ocorria (análise das 3 tentativas)</h3>
+ * <h3>Regra de cálculo — evita erros 1076 e 1080</h3>
  *
- * Tentativa 1 — itens com 4 casas, sem totais no raiz:
- *   FocusNFe não calcula totais automaticamente → raiz ficava zerado → rejeição.
+ * A SEFAZ valida DUAS coisas:
+ *   1) ibs_cbs_base_calculo (raiz) == soma dos ibs_cbs_base_calculo (itens)  → erro 1076
+ *   2) ibs_uf_valor_total   (raiz) == soma dos ibs_uf_valor         (itens)  → erro 1080
+ *      cbs_valor_total      (raiz) == soma dos cbs_valor             (itens)  → idem
  *
- * Tentativa 2 — itens com 2 casas, sem totais no raiz:
- *   Mesma causa, mais arredondamento.
+ * Portanto TODOS os campos do nível raiz devem ser a SOMA LITERAL
+ * dos valores já calculados por item. Nunca recalcular sobre a base total.
  *
- * Tentativa 3 — itens com 4 casas, totais = soma dos arredondamentos por item:
- *   A SEFAZ recalcula os totais fazendo: sum(base_item) × alíquota
- *   Com base_raiz arredondada para 2 casas (996.88), o resultado divergia:
- *     IBS esperado: 996.88 × 0,1% = 0.9969
- *     IBS enviado (soma de itens): 0.9968  ← divergência de 0.0001 → rejeição.
+ * <h3>Fluxo por item</h3>
+ *   1. base = valor_bruto arredondado para 2 casas (HALF_UP)
+ *   2. cbs_valor    = base × 0,9 / 100  → 4 casas (HALF_UP)
+ *   3. ibs_uf_valor = base × 0,1 / 100  → 4 casas (HALF_UP)
+ *   4. ibs_mun_valor = base × 0,0 / 100 → 4 casas (HALF_UP)
  *
- * <h3>Solução definitiva</h3>
- *
- * A SEFAZ valida: totalBase × alíquota == total_raiz
- *
- * Portanto os totais do nível raiz devem ser calculados aplicando
- * a alíquota sobre a soma EXATA das bases (sem arredondar a base):
- *
- *   totalBaseExata       = sum(base_item)                        — sem arredondar
- *   ibs_cbs_base_calculo = totalBaseExata                        — enviado sem arredondar
- *   cbs_valor_total      = totalBaseExata × 0,9% (4 casas HALF_UP)
- *   ibs_valor_total      = totalBaseExata × 0,1% (4 casas HALF_UP)
- *
- * Isso garante que a SEFAZ reproduza exatamente os mesmos totais.
+ * <h3>Totais do raiz</h3>
+ *   ibs_cbs_base_calculo  = Σ base(item)
+ *   cbs_valor_total       = Σ cbs_valor(item)
+ *   ibs_uf_valor_total    = Σ ibs_uf_valor(item)
+ *   ibs_valor_total       = Σ ibs_valor_total(item)   (= ibs_uf + ibs_mun)
+ *   ibs_cbs_is_valor_total = cbs_valor_total + ibs_valor_total
  */
 @Component
 public class InvoicePayload {
@@ -156,13 +151,21 @@ public class InvoicePayload {
       payload.put("modalidade_frete", "9");
 
       // =========================
-      // ITENS + ACUMULADOR DA BASE EXATA
+      // ITENS + ACUMULADORES PARA TOTAIS DO RAIZ
+      // =========================
+      //
+      // ⚠️ REGRA CRÍTICA — EVITA ERROS 1076 E 1080:
+      //
+      // Todos os totais do nível raiz DEVEM ser a soma literal
+      // dos valores calculados por item. Nunca recalcular aplicando
+      // alíquota sobre a base total — a acumulação de arredondamentos
+      // gera divergência.
       // =========================
 
-      // ⚠️ CRÍTICO: acumular a base SEM nenhum arredondamento.
-      // Os totais do nível raiz serão calculados sobre este valor exato,
-      // reproduzindo o mesmo cálculo da SEFAZ e evitando o erro 1076.
-      BigDecimal totalBaseExata = BigDecimal.ZERO;
+      BigDecimal somaBase       = BigDecimal.ZERO;
+      BigDecimal somaCbsValor   = BigDecimal.ZERO;
+      BigDecimal somaIbsUfValor = BigDecimal.ZERO;
+      BigDecimal somaIbsMunValor = BigDecimal.ZERO;
 
       if (request.items() != null && !request.items().isEmpty()) {
         List<Map<String, Object>> items = new ArrayList<>();
@@ -206,7 +209,9 @@ public class InvoicePayload {
           itemMap.put("cofins_situacao_tributaria", item.cofinsSituacaoTributaria());
 
           // =========================
-          // IBS / CBS por item — 4 casas decimais (HALF_UP)
+          // IBS / CBS por item
+          // Base: arredondada para 2 casas (HALF_UP)
+          // Valores: 4 casas decimais (HALF_UP)
           // =========================
           BigDecimal base = item.valorBruto() != null
               ? item.valorBruto()
@@ -229,8 +234,11 @@ public class InvoicePayload {
           itemMap.put("ibs_mun_valor",                    ibsMunValor);
           itemMap.put("ibs_valor_total",                  ibsValorTotal);
 
-          // ⚠️ Acumula a base SEM arredondar — imprescindível
-          totalBaseExata = totalBaseExata.add(base);
+          // ⚠️ Acumula TODOS os valores para os totais do raiz
+          somaBase        = somaBase.add(base);
+          somaCbsValor    = somaCbsValor.add(cbsValor);
+          somaIbsUfValor  = somaIbsUfValor.add(ibsUfValor);
+          somaIbsMunValor = somaIbsMunValor.add(ibsMunValor);
 
           items.add(itemMap);
         }
@@ -241,29 +249,18 @@ public class InvoicePayload {
       // =========================
       // TOTAIS IBS/CBS — NÍVEL RAIZ
       //
-      // ⚠️ REGRA CRÍTICA — EVITA ERRO 1076:
-      //
-      // A SEFAZ recalcula os totais fazendo: sum(base_item) × alíquota
-      // e compara com o que foi enviado no nível raiz.
-      //
-      // Por isso os totais devem ser calculados sobre a BASE EXATA
-      // (sem arredondar), e o campo ibs_cbs_base_calculo deve ser
-      // enviado também sem arredondamento.
-      //
-      // NÃO calcule os totais somando os cbs_valor/ibs_valor por item —
-      // a acumulação de arredondamentos gera divergência de 0.0001.
+      // Todos os campos são SOMA DIRETA dos valores dos itens.
+      // Isso garante consistência com a validação da SEFAZ que
+      // compara raiz vs soma dos itens (erros 1076 e 1080).
       // =========================
-      BigDecimal cbsTotal    = totalBaseExata.multiply(CBS_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
-      BigDecimal ibsUfTotal  = totalBaseExata.multiply(IBS_UF_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
-      BigDecimal ibsMunTotal = totalBaseExata.multiply(IBS_MUN_ALIQUOTA).divide(CEM, 4, RoundingMode.HALF_UP);
-      BigDecimal ibsTotal    = ibsUfTotal.add(ibsMunTotal);
-      BigDecimal ibsCbsTotal = cbsTotal.add(ibsTotal);
+      BigDecimal somaIbsTotal    = somaIbsUfValor.add(somaIbsMunValor);
+      BigDecimal somaIbsCbsTotal = somaCbsValor.add(somaIbsTotal);
 
-      payload.put("ibs_cbs_base_calculo",   totalBaseExata);  // ← SEM arredondar para 2 casas
-      payload.put("cbs_valor_total",        cbsTotal);
-      payload.put("ibs_uf_valor_total",     ibsUfTotal);
-      payload.put("ibs_valor_total",        ibsTotal);
-      payload.put("ibs_cbs_is_valor_total", ibsCbsTotal);
+      payload.put("ibs_cbs_base_calculo",   somaBase);
+      payload.put("cbs_valor_total",        somaCbsValor);
+      payload.put("ibs_uf_valor_total",     somaIbsUfValor);
+      payload.put("ibs_valor_total",        somaIbsTotal);
+      payload.put("ibs_cbs_is_valor_total", somaIbsCbsTotal);
 
       // =========================
       // INFORMAÇÕES ADICIONAIS
