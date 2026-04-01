@@ -84,6 +84,10 @@ public class Client {
     this.updatedAt = LocalDateTime.now();
     this.totalPurchaseValue = BigDecimal.ZERO;
     this.lastPurchaseDate = null;
+
+        if (this.cideCode == null) {
+      this.cideCode = ""; 
+    }
   }
 
   @PreUpdate
