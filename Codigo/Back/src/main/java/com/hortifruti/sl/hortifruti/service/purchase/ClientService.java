@@ -45,7 +45,7 @@ public class ClientService {
     return clientMapper.toClientResponse(client);
   }
 
-  public ClientResponse updateClient(Long id, ClientRequest clientRequest) {
+    public ClientResponse updateClient(Long id, ClientRequest clientRequest) {
     Client existingClient =
         clientRepository
             .findById(id)
@@ -59,7 +59,14 @@ public class ClientService {
     existingClient.setVariablePrice(clientRequest.variablePrice());
     existingClient.setStateRegistration(clientRequest.stateRegistration());
     existingClient.setStateIndicator(clientRequest.stateIndicator());
-    existingClient.setCideCode(clientRequest.cideCode());
+    
+    // Tratativa para o Cide Code vazio/nulo:
+    if (clientRequest.cideCode() == null) {
+      existingClient.setCideCode(""); // Valor default para evitar erro de banco
+    } else {
+      existingClient.setCideCode(clientRequest.cideCode());
+    }
+
     Client updatedClient = clientRepository.save(existingClient);
     return clientMapper.toClientResponse(updatedClient);
   }
