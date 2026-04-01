@@ -33,13 +33,15 @@ import org.springframework.stereotype.Component;
  *
  * <h3>Solução em 3 passos</h3>
  *
- * 1. Base de cada item = valor_bruto arredondado para 2 casas (HALF_UP)
- * 2. Valor imposto por item = base × alíquota / 100, arredondado para 2 casas
+ * 1. Base de cada item = valor_bruto arredondado para 2 casas (HALF_UP).
+ * 2. Valor imposto por item = base × alíquota / 100, arredondado para 2 casas.
  *    → A SEFAZ compara valores com 2 casas decimais.
- * 3. Totais do raiz = soma dos valores dos itens (bottom-up)
- *    → Garante que soma(itens) == total_raiz (evita 1080).
- *    Verificação cruzada: se base_total × alíquota (2 casas) divergir,
- *    ajusta o último item para satisfazer ambas as validações.
+ * 3. Totais do raiz = somaBase × alíquota (2 casas).
+ *    Distribuição do arredondamento via "largest remainder":
+ *    se soma(itens) != total_raiz, distribui ±0,01 de trás para frente,
+ *    um centavo por item, até zerar o diff.
+ *    → Garante: soma(itens) == total_raiz (evita 1080)
+ *      E cada item varia no máximo ±0,01 (evita rejeição por item).
  */
 @Component
 public class InvoicePayload {
@@ -48,6 +50,7 @@ public class InvoicePayload {
   private static final BigDecimal IBS_UF_ALIQUOTA  = new BigDecimal("0.1");
   private static final BigDecimal IBS_MUN_ALIQUOTA = BigDecimal.ZERO;
   private static final BigDecimal CEM              = new BigDecimal("100");
+  private static final BigDecimal CENTAVO          = new BigDecimal("0.01");
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -195,10 +198,8 @@ public class InvoicePayload {
           // =========================
           // IBS / CBS por item
           //
-          // ⚠️ PASSO 1: Base e valores arredondados para 2 casas decimais
+          // PASSO 1: Base e valores arredondados para 2 casas decimais.
           // A SEFAZ trabalha com 2 casas tanto na base quanto nos valores.
-          // Se enviar com 4 casas, o FocusNFe/SEFAZ re-arredonda para 2,
-          // perdendo o ajuste fino do Passo 3 → erro 1080.
           // =========================
           BigDecimal baseOriginal = item.valorBruto() != null
               ? item.valorBruto()
@@ -206,7 +207,6 @@ public class InvoicePayload {
 
           BigDecimal base = baseOriginal.setScale(2, RoundingMode.HALF_UP);
 
-          // ⚠️ MUDANÇA PRINCIPAL: escala 2 (não 4) nos valores de imposto
           BigDecimal cbsValor    = base.multiply(CBS_ALIQUOTA).divide(CEM, 2, RoundingMode.HALF_UP);
           BigDecimal ibsUfValor  = base.multiply(IBS_UF_ALIQUOTA).divide(CEM, 2, RoundingMode.HALF_UP);
           BigDecimal ibsMunValor = base.multiply(IBS_MUN_ALIQUOTA).divide(CEM, 2, RoundingMode.HALF_UP);
@@ -232,36 +232,61 @@ public class InvoicePayload {
         }
 
         // =========================================================
-        // ⚠️ PASSO 2: Totais do raiz = somaBase × alíquota (2 casas)
-        //
-        // Calcula o valor "oficial" que a SEFAZ espera no raiz.
+        // PASSO 2: Totais do raiz = somaBase × alíquota (2 casas).
+        // Estes são os valores "oficiais" que a SEFAZ espera no raiz.
         // =========================================================
         BigDecimal cbsTotalRaiz    = somaBase.multiply(CBS_ALIQUOTA).divide(CEM, 2, RoundingMode.HALF_UP);
         BigDecimal ibsUfTotalRaiz  = somaBase.multiply(IBS_UF_ALIQUOTA).divide(CEM, 2, RoundingMode.HALF_UP);
         BigDecimal ibsMunTotalRaiz = somaBase.multiply(IBS_MUN_ALIQUOTA).divide(CEM, 2, RoundingMode.HALF_UP);
 
         // =========================================================
-        // ⚠️ PASSO 3: Ajuste de arredondamento no último item
+        // PASSO 3: Distribuição do arredondamento — "largest remainder".
         //
-        // Garante: soma(valor_itens) == total_raiz (evita 1080)
-        // Com valores em 2 casas, o ajuste é ±0.01 no máximo.
+        // Distribui a diferença ±0,01 de trás para frente, um centavo
+        // por item, até zerar o diff.
+        //
+        // Garante:
+        //   • soma(valor_itens) == total_raiz           → evita erro 1080
+        //   • cada item varia no máximo ±0,01           → evita rejeição por item
         // =========================================================
         BigDecimal diffCbs    = cbsTotalRaiz.subtract(somaCbsItens);
         BigDecimal diffIbsUf  = ibsUfTotalRaiz.subtract(somaIbsUfItens);
         BigDecimal diffIbsMun = ibsMunTotalRaiz.subtract(somaIbsMunItens);
 
-        if (diffCbs.signum() != 0 || diffIbsUf.signum() != 0 || diffIbsMun.signum() != 0) {
-          Map<String, Object> ultimoItem = items.get(items.size() - 1);
+        // — CBS —
+        if (diffCbs.signum() != 0) {
+          int steps = diffCbs.abs().divide(CENTAVO).intValue();
+          BigDecimal step = diffCbs.signum() > 0 ? CENTAVO : CENTAVO.negate();
+          for (int i = items.size() - 1; i >= 0 && steps > 0; i--, steps--) {
+            Map<String, Object> it = items.get(i);
+            it.put("cbs_valor", ((BigDecimal) it.get("cbs_valor")).add(step));
+          }
+        }
 
-          BigDecimal cbsAjustado    = ((BigDecimal) ultimoItem.get("cbs_valor")).add(diffCbs);
-          BigDecimal ibsUfAjustado  = ((BigDecimal) ultimoItem.get("ibs_uf_valor")).add(diffIbsUf);
-          BigDecimal ibsMunAjustado = ((BigDecimal) ultimoItem.get("ibs_mun_valor")).add(diffIbsMun);
-          BigDecimal ibsTotalAjustado = ibsUfAjustado.add(ibsMunAjustado);
+        // — IBS UF —
+        if (diffIbsUf.signum() != 0) {
+          int steps = diffIbsUf.abs().divide(CENTAVO).intValue();
+          BigDecimal step = diffIbsUf.signum() > 0 ? CENTAVO : CENTAVO.negate();
+          for (int i = items.size() - 1; i >= 0 && steps > 0; i--, steps--) {
+            Map<String, Object> it = items.get(i);
+            BigDecimal novoUf  = ((BigDecimal) it.get("ibs_uf_valor")).add(step);
+            BigDecimal novoMun = (BigDecimal) it.get("ibs_mun_valor");
+            it.put("ibs_uf_valor",    novoUf);
+            it.put("ibs_valor_total", novoUf.add(novoMun));
+          }
+        }
 
-          ultimoItem.put("cbs_valor",       cbsAjustado);
-          ultimoItem.put("ibs_uf_valor",    ibsUfAjustado);
-          ultimoItem.put("ibs_mun_valor",   ibsMunAjustado);
-          ultimoItem.put("ibs_valor_total", ibsTotalAjustado);
+        // — IBS Mun (alíquota 0 em 2026, mas protegido para o futuro) —
+        if (diffIbsMun.signum() != 0) {
+          int steps = diffIbsMun.abs().divide(CENTAVO).intValue();
+          BigDecimal step = diffIbsMun.signum() > 0 ? CENTAVO : CENTAVO.negate();
+          for (int i = items.size() - 1; i >= 0 && steps > 0; i--, steps--) {
+            Map<String, Object> it = items.get(i);
+            BigDecimal novoMun = ((BigDecimal) it.get("ibs_mun_valor")).add(step);
+            BigDecimal novoUf  = (BigDecimal) it.get("ibs_uf_valor");
+            it.put("ibs_mun_valor",   novoMun);
+            it.put("ibs_valor_total", novoUf.add(novoMun));
+          }
         }
 
         // Totais do raiz
