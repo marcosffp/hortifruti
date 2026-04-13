@@ -27,10 +27,11 @@ public class ProductNFService {
     }
   }
 
-  public Map<String, Object> findProductByCode(String code) {
+public Map<String, Object> findProductByCode(String code) {
     return products.stream()
-        .filter(product -> product.get("code").equals(code))
+        .filter(product -> String.valueOf(product.get("code")).equals(code))
         .findFirst()
         .orElseThrow(() -> new RuntimeException("Produto não encontrado para o código: " + code));
-  }
+}
+  
 }
