@@ -37,7 +37,7 @@ public class InvoiceItem {
               (String) productData.get("unidade_comercial"),
               product.getQuantity(),
               product.getPrice(),
-              product.getTotalValue(),
+              product.getTotalValue().setScale(2, java.math.RoundingMode.HALF_UP),
               (String) productData.get("unidade_tributavel"),
               product.getQuantity(),
               product.getPrice(),
