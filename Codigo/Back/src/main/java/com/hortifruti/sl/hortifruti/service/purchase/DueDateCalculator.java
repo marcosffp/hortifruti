@@ -22,8 +22,9 @@ public class DueDateCalculator {
   // Enum para tipos de ajuste de final de semana
   private enum WeekendAdjustment {
     NONE,
-    PREVIOUS_FRIDAY, // Volta para sexta anterior
-    NEXT_FRIDAY      // Avança para próxima sexta
+    PREVIOUS_FRIDAY,   // Volta para sexta anterior
+    PREVIOUS_THURSDAY, // Volta para quinta anterior
+    NEXT_FRIDAY        // Avança para próxima sexta
   }
 
   // Classe interna para definir uma regra
@@ -59,7 +60,7 @@ public class DueDateCalculator {
   static {
     // Configuração das regras específicas por nome (CNPJ)
     // IMPORTANTE: Os nomes devem estar EXATAMENTE como aparecem no banco de dados
-    CNPJ_RULES_BY_NAME.put("LLINEA",    new DueDateRule(20, WeekendAdjustment.PREVIOUS_FRIDAY));
+    CNPJ_RULES_BY_NAME.put("LLINEA",    new DueDateRule(20, WeekendAdjustment.PREVIOUS_THURSDAY));
     CNPJ_RULES_BY_NAME.put("APTA",      new DueDateRule(15, WeekendAdjustment.PREVIOUS_FRIDAY));
     CNPJ_RULES_BY_NAME.put("INDUSTRIA", new DueDateRule(20, WeekendAdjustment.NEXT_FRIDAY));
     CNPJ_RULES_BY_NAME.put("ROCA",      new DueDateRule(15, WeekendAdjustment.NONE, true)); // 15 dias úteis
@@ -176,6 +177,9 @@ public class DueDateCalculator {
       case PREVIOUS_FRIDAY:
         return adjustToPreviousFriday(date);
 
+      case PREVIOUS_THURSDAY:
+        return adjustToPreviousThursday(date);
+
       case NEXT_FRIDAY:
         return adjustToNextFriday(date);
 
@@ -194,6 +198,23 @@ public class DueDateCalculator {
         return date.minusDays(1);
       case SUNDAY:
         return date.minusDays(2);
+      default:
+        return date;
+    }
+  }
+
+  /**
+   * Ajusta a data para a quinta-feira anterior se cair em final de semana.
+   * Sábado → volta 2 dias (quinta). Domingo → volta 3 dias (quinta).
+   */
+  private static LocalDate adjustToPreviousThursday(LocalDate date) {
+    DayOfWeek dayOfWeek = date.getDayOfWeek();
+
+    switch (dayOfWeek) {
+      case SATURDAY:
+        return date.minusDays(2);
+      case SUNDAY:
+        return date.minusDays(3);
       default:
         return date;
     }
