@@ -38,7 +38,7 @@ public class CombinedScoreController {
   public ResponseEntity<Page<CombinedScoreResponse>> listGroupings(
       @RequestParam(required = false) Long clientId,
       @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "10") int size) {
+      @RequestParam(defaultValue = "20") int size) {
 
     Pageable pageable = PageRequest.of(page, size);
     Page<CombinedScoreResponse> response = combinedScoreService.listGroupings(clientId, pageable);

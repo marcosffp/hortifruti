@@ -42,7 +42,7 @@ public class SicoobToken {
    * @return Token de acesso válido
    * @throws BilletException Se houver erro ao obter ou processar o token
    */
-  public String getAccessToken() {
+  public synchronized String getAccessToken() {
     try {
       if (accessToken != null && System.currentTimeMillis() < tokenExpiresAt - 30000) {
         return accessToken;
@@ -62,13 +62,9 @@ public class SicoobToken {
 
       ResponseEntity<String> response = restTemplate.postForEntity(authUrl, request, String.class);
 
-      String token = processTokenResponse(response);
+      processTokenResponse(response);
 
-      accessToken = token;
-
-      tokenExpiresAt = System.currentTimeMillis() + (55 * 60 * 1000);
-
-      return token;
+      return accessToken;
 
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
       throw new BilletException(
@@ -78,15 +74,19 @@ public class SicoobToken {
     }
   }
 
+  public synchronized void invalidateToken() {
+    this.accessToken = null;
+    this.tokenExpiresAt = 0;
+  }
+
   /**
-   * Processa a resposta da API para extrair o token de acesso.
+   * Processa a resposta da API para extrair o token de acesso e o TTL real.
    *
    * @param response Resposta da API
-   * @return Token de acesso
    * @throws IOException Se houver erro ao processar a resposta
    * @throws BilletException Se o token não for encontrado ou a resposta for inválida
    */
-  private String processTokenResponse(ResponseEntity<String> response) throws IOException {
+  private void processTokenResponse(ResponseEntity<String> response) throws IOException {
     if (response.getBody() == null || response.getBody().trim().isEmpty()) {
       throw new BilletException("Resposta de token vazia do servidor.");
     }
@@ -98,6 +98,11 @@ public class SicoobToken {
       throw new BilletException("Token de acesso não encontrado na resposta.");
     }
 
-    return jsonResponse.get("access_token").asText();
+    this.accessToken = jsonResponse.get("access_token").asText();
+
+    // Usa o expires_in retornado pela API; se ausente, assume 55 minutos como fallback
+    long expiresInSeconds =
+        jsonResponse.has("expires_in") ? jsonResponse.get("expires_in").asLong(3300) : 3300;
+    this.tokenExpiresAt = System.currentTimeMillis() + (expiresInSeconds * 1000);
   }
 }
