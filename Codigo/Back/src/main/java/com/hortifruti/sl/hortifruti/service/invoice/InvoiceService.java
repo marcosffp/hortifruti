@@ -1,8 +1,11 @@
 package com.hortifruti.sl.hortifruti.service.invoice;
 
+import com.hortifruti.sl.hortifruti.dto.invoice.FiscalNoteXmlStorageResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
 import jakarta.transaction.Transactional;
+import java.time.LocalDate;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +19,7 @@ public class InvoiceService {
   private final InvoiceQuery invoiceQueryService;
   private final DanfeXmlService danfeXmlService;
   private final InvoiceCancelService invoiceCancelService;
+  private final FiscalNoteXmlStorageService fiscalNoteXmlStorageService;
 
   @Transactional
   public InvoiceResponse issueInvoice(Long combinedScoreId, String dadosAdicionais) {
@@ -40,5 +44,15 @@ public class InvoiceService {
   @Transactional
   public String cancelInvoice(String ref, String justificativa) {
     return invoiceCancelService.cancelInvoice(ref, justificativa);
+  }
+
+  @Transactional
+  public List<FiscalNoteXmlStorageResponse> findFiscalNoteXmlsByPeriod(
+      LocalDate startDate, LocalDate endDate) {
+    return fiscalNoteXmlStorageService.findByPeriod(startDate, endDate);
+  }
+
+  public byte[] getStoredXmlContent(String ref) {
+    return fiscalNoteXmlStorageService.getXmlContent(ref);
   }
 }

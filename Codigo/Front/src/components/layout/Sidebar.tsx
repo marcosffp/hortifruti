@@ -5,6 +5,7 @@ import {
   ChevronDown,
   Database,
   BadgeDollarSign,
+  FileCode,
   Home,
   type LucideIcon,
   ShoppingBasket,
@@ -67,7 +68,13 @@ const menu: MenuItem[] = [
         icon: BarChart,
         href: "/comercio/recomendacoes",
         roles: ["MANAGER"],
-      }
+      },
+      {
+        label: "Consulta de XMLs NF",
+        icon: FileCode,
+        href: "/comercio/nota-fiscal-xml",
+        roles: ["MANAGER"],
+      },
     ],
   },
   {

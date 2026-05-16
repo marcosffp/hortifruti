@@ -8,7 +8,7 @@ import {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export const combinedScoreService = {
-  async fetchCombinedScores(clientId?: number, page = 0, size = 10): Promise<CombinedScoreResponse> {
+  async fetchCombinedScores(clientId?: number, page = 0, size = 20): Promise<CombinedScoreResponse> {
     let url = `${API_BASE_URL}/combined-scores?page=${page}&size=${size}`;
     if (clientId) url += `&clientId=${clientId}`;
     

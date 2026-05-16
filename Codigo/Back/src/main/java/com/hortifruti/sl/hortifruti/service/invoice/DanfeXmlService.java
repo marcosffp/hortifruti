@@ -28,6 +28,7 @@ public class DanfeXmlService {
 
   private final WebClient webClient;
   private final FocusNfeApiClient focusNfeApiClient;
+  private final FiscalNoteXmlStorageService fiscalNoteXmlStorageService;
   private final int COMPLETE = 1;
 
   @Value("${focus.nfe.api.url}")
@@ -181,7 +182,17 @@ public class DanfeXmlService {
 
   @Transactional
   protected ResponseEntity<Resource> downloadXml(String ref) {
-    return downloadWithRetry(ref, "xml", MediaType.APPLICATION_XML, "nota-fiscal", 0);
+    ResponseEntity<Resource> result =
+        downloadWithRetry(ref, "xml", MediaType.APPLICATION_XML, "nota-fiscal", 0);
+    try {
+      if (result.getBody() != null) {
+        byte[] xmlBytes = ((ByteArrayResource) result.getBody()).getByteArray();
+        fiscalNoteXmlStorageService.saveIfAbsent(ref, xmlBytes);
+      }
+    } catch (Exception e) {
+      System.err.println("[DanfeXmlService] Falha ao salvar XML no banco para ref=" + ref + ": " + e.getMessage());
+    }
+    return result;
   }
 
   @Transactional
