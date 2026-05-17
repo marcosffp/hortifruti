@@ -48,6 +48,7 @@ public class IssueInvoice {
   private final InvoicePayload invoicePayloadService;
   private final String info = "Venda de produtos hortifrutigranjeiros frescos";
   private final FocusNfeApiClient focusNfeApiClient;
+  private final FiscalNoteXmlStorageService fiscalNoteXmlStorageService;
 
   @Transactional
   public InvoiceResponse issueInvoice(Long combinedScoreId, String dadosAdicionais) {
@@ -97,6 +98,8 @@ public class IssueInvoice {
       updateCombinedScoreStatus(combinedScore, invoiceResponse);
       System.out.println(
           "[IssueInvoice] Status atualizado com sucesso. ref=" + invoiceResponse.ref());
+
+      fiscalNoteXmlStorageService.triggerSaveAfterIssuance(invoiceResponse.ref());
 
       return invoiceResponse;
     } catch (Exception e) {

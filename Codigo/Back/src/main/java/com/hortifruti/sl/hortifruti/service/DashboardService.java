@@ -219,7 +219,7 @@ public class DashboardService {
     Map<String, Object> combinedScoreData = new HashMap<>();
 
     List<CombinedScore> combinedScores =
-        combinedScoreRepository.findAllByOrderByConfirmedAtDesc(Pageable.unpaged()).stream()
+        combinedScoreRepository.findAllByOrderByIdDesc(Pageable.unpaged()).stream()
             .filter(
                 cs -> {
                   if (cs.getConfirmedAt() == null) {
@@ -253,7 +253,7 @@ public class DashboardService {
    */
   public List<Map<String, Object>> getTopSellingProducts(LocalDate startDate, LocalDate endDate) {
     List<CombinedScore> combinedScores =
-        combinedScoreRepository.findAllByOrderByConfirmedAtDesc(Pageable.unpaged()).stream()
+        combinedScoreRepository.findAllByOrderByIdDesc(Pageable.unpaged()).stream()
             .filter(
                 cs -> {
                   if (cs.getConfirmedAt() == null) {
@@ -314,7 +314,7 @@ public class DashboardService {
   public List<Map<String, Object>> getTopProductsByQuantity(
       LocalDate startDate, LocalDate endDate) {
     List<CombinedScore> combinedScores =
-        combinedScoreRepository.findAllByOrderByConfirmedAtDesc(Pageable.unpaged()).stream()
+        combinedScoreRepository.findAllByOrderByIdDesc(Pageable.unpaged()).stream()
             .filter(
                 cs -> {
                   if (cs.getConfirmedAt() == null) {

@@ -190,12 +190,19 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
         try {
             setSelectedScore(score);
 
-            // Se já tem as informações do boleto, abre o modal de dados
-            showInfo("Buscando boleto...");
             if (score.billetInfo) {
                 setShowBilletDataModal(true);
+                return;
+            }
+
+            // billetInfo não foi carregado no fetchScores — tenta buscar agora
+            showInfo("Buscando informações do boleto...");
+            const billetInfo = await getBilletInfo(score.id);
+            if (billetInfo) {
+                setSelectedScore({ ...score, billetInfo });
+                setShowBilletDataModal(true);
             } else {
-                setClientNumberModal({ state: true, groupId: score.id }); // Abre modal para inserir número do cliente
+                showError("Não foi possível buscar as informações do boleto");
             }
         } catch (error) {
             showError("Erro ao buscar boleto");

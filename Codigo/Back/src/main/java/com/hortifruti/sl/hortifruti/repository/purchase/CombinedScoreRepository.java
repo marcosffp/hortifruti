@@ -22,9 +22,9 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
       "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = 'PENDENTE' ORDER BY cs.dueDate ASC")
   List<CombinedScore> findAllPendingByClient(@Param("clientId") Long clientId);
 
-  Page<CombinedScore> findByClientIdOrderByConfirmedAtDesc(Long clientId, Pageable pageable);
+  Page<CombinedScore> findByClientIdOrderByIdDesc(Long clientId, Pageable pageable);
 
-  Page<CombinedScore> findAllByOrderByConfirmedAtDesc(Pageable pageable);
+  Page<CombinedScore> findAllByOrderByIdDesc(Pageable pageable);
 
   /** Busca CombinedScores vencidos que ainda não foram pagos (confirmedAt is null) */
   @Query(
