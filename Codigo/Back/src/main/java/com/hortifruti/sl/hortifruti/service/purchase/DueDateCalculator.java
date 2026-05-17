@@ -237,3 +237,4 @@ public class DueDateCalculator {
     return date.plusDays(daysUntilFriday);
   }
 }
+
