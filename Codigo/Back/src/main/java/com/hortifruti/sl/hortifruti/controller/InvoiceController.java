@@ -1,11 +1,18 @@
 package com.hortifruti.sl.hortifruti.controller;
 
+import com.hortifruti.sl.hortifruti.dto.invoice.FiscalNoteXmlStorageResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
 import com.hortifruti.sl.hortifruti.service.invoice.InvoiceService;
+import java.time.LocalDate;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -53,5 +60,26 @@ public class InvoiceController {
       return ResponseEntity.internalServerError()
           .body("Erro ao cancelar a NF-e: " + e.getMessage());
     }
+  }
+
+  @GetMapping("/xml-storage")
+  public ResponseEntity<List<FiscalNoteXmlStorageResponse>> getFiscalNoteXmlsByPeriod(
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+    List<FiscalNoteXmlStorageResponse> result =
+        invoiceService.findFiscalNoteXmlsByPeriod(startDate, endDate);
+    return ResponseEntity.ok(result);
+  }
+
+  @GetMapping("/xml-storage/{ref}/download")
+  public ResponseEntity<Resource> downloadStoredXml(@PathVariable String ref) {
+    byte[] xmlBytes = invoiceService.getStoredXmlContent(ref);
+    Resource resource = new ByteArrayResource(xmlBytes);
+    return ResponseEntity.ok()
+        .contentType(MediaType.APPLICATION_XML)
+        .header(
+            HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=\"nota-fiscal-" + ref + ".xml\"")
+        .body(resource);
   }
 }

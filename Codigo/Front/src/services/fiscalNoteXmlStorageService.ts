@@ -1,0 +1,37 @@
+import { FiscalNoteXmlStorageResponse } from "@/types/fiscalNoteXmlStorageType";
+import { getAuthHeaders } from "@/utils/httpUtils";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+export const fiscalNoteXmlStorageService = {
+  async getByPeriod(
+    startDate: string,
+    endDate: string
+  ): Promise<FiscalNoteXmlStorageResponse[]> {
+    const response = await fetch(
+      `${API_BASE_URL}/invoices/xml-storage?startDate=${startDate}&endDate=${endDate}`,
+      { method: "GET", headers: getAuthHeaders() }
+    );
+    if (!response.ok) {
+      throw new Error(`Erro ao buscar XMLs: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  async downloadXml(ref: string, nfNumber: string): Promise<void> {
+    const response = await fetch(
+      `${API_BASE_URL}/invoices/xml-storage/${ref}/download`,
+      { method: "GET", headers: getAuthHeaders() }
+    );
+    if (!response.ok) {
+      throw new Error(`Erro ao baixar XML: ${response.status}`);
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${nfNumber}.xml`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+};

@@ -1,4 +1,3 @@
-# Divulgação: Apresentação do Projeto
+# Divulgação: Apresentação do Projeto - Hortifruti SL
 
-Nesta pasta inclua arquivos de slides que foram produzidos para apresentações do projeto e de seus resultados.
-
+Este diretório contém os materiais de apresentação do sistema de gestão do Hortifruti Santa Luzia LTDA.
