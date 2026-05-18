@@ -59,7 +59,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
 
         setLoading(true);
         try {
-            const data = await combinedScoreService.fetchCombinedScores(clientId, page, 10);
+            const data = await combinedScoreService.fetchCombinedScores(clientId, page, 20);
 
             // Para cada score que tem boleto ou nota fiscal, busca as informações
             const scoresWithInfo = await Promise.all(
