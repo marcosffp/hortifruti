@@ -560,7 +560,7 @@ products:
     unidade_comercial: "UN"
     unidade_tributavel: "UN"
   - code: "495"
-    description: "ÁGUA MINERAL EM COPO"
+    description: "ÁGUA MINERAL COPO"
     ncm: "22011000"
     cfop: "5102"
     icms: "102"
