@@ -1,6 +1,8 @@
+<img width="1600" style="height:auto; border-radius: 12px;" alt="banner" src="Documentacao/images/banner.png" />
+
 # Hortifruti SL
 
-Este trabalho aborda o desenvolvimento de um sistema de gestão para o Hortifruti Santa Luzia LTDA, focado em automatizar processos manuais críticos: conciliação bancária via extração de dados de PDF e agrupamento de vendas por cliente. O software visa eliminar tarefas repetitivas, centralizar informações e fornecer controle operacional, modernizando a gestão do negócio e promovendo eficiência.
+> Sistema de gestão para o Hortifruti Santa Luzia LTDA, focado em automatizar processos manuais críticos: conciliação bancária via extração de dados de PDF e agrupamento de vendas por cliente. O software visa eliminar tarefas repetitivas, centralizar informações e fornecer controle operacional, modernizando a gestão do negócio e promovendo eficiência.
 
 ## 🌐 Acesso ao Sistema
 
@@ -19,13 +21,13 @@ Este trabalho aborda o desenvolvimento de um sistema de gestão para o Hortifrut
 ## Alunos integrantes da equipe
 
 * Bernado Souza Alvim
-* Carlos José Gomes Batista Figueiredo 
+* Carlos José Gomes Batista Figueiredo
 * Gabriela Alvarenga Cardoso
 * Marcos Alberto Ferreira Pinto
 * Mateus Araujo Santos
 * Rafael Ganascini de Moura
 
-## Professores responsáveis
+### Professores responsáveis
 
 * Soraia Lúcia da Silva
 * Lucila Ishitani
