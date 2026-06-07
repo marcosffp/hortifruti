@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <img width="1600" style="height:auto; border-radius: 12px;" alt="banner" src="images/banner.png" />
 
 # 📚 Documentação — Hortifruti SL
@@ -17,6 +18,13 @@ Documentacao/
 ```
 
 ## 📄 Conteúdo
+=======
+# Documentação do Projeto - Hortifruti SL
+
+Este diretório contém a documentação formal do projeto de desenvolvimento do sistema de gestão para o Hortifruti Santa Luzia LTDA.
+
+## Conteúdo
+>>>>>>> origin/prod
 
 ### Hortifruti SL - Documentação.pdf
 
