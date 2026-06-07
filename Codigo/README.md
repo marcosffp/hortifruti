@@ -1,49 +1,57 @@
-# Código do Projeto - Hortifruti SL
+<img width="1600" style="height:auto; border-radius: 12px;" alt="banner" src="../Documentacao/images/banner.png" />
 
-Este diretório contém o código-fonte do sistema de gestão do Hortifruti Santa Luzia LTDA.
+# 💻 Código — Hortifruti SL
 
-## Estrutura
+> [⬅ Voltar ao README principal](../README.md)
 
-### `/Back` - Backend (Spring Boot)
-API REST desenvolvida em Java com Spring Boot.
+Este diretório contém o código-fonte do sistema de gestão do Hortifruti Santa Luzia LTDA, dividido em duas aplicações independentes que se comunicam via API REST.
 
-**Tecnologias:**
-- Java 21
-- Spring Boot 3.x
-- Spring Security com JWT
-- Spring Data JPA
-- MySQL 8.0
-- Maven
+## 🗂️ Estrutura
+
+```
+Codigo/
+├── Back/      # API REST — Java + Spring Boot
+└── Front/     # Aplicação web — Next.js + TypeScript
+```
+
+## ⚙️ `/Back` — Backend ([README completo](Back/README.md))
+
+API REST desenvolvida em **Java 21** com **Spring Boot 4**, responsável por toda a regra de negócio, persistência e integrações externas.
+
+**Stack principal:** Spring Boot (Web, Security, Data JPA) · MySQL + HikariCP · JWT (Auth0) · MapStruct · Springdoc OpenAPI · Maven
 
 **Principais funcionalidades:**
-- Autenticação e autorização de usuários
-- Gerenciamento de clientes e produtos
-- Processamento de extratos bancários (PDF)
-- Integração com APIs externas (Sicoob, Google Maps, SendGrid, etc.)
-- Geração e gestão de boletos
-- Sistema de notificações (WhatsApp e E-mail)
-- Backup automatizado
-- Chatbot de atendimento
+- Autenticação JWT e gerenciamento de usuários, clientes e produtos
+- Conciliação bancária — processamento de extratos em PDF
+- Agrupamento de vendas por cliente e geração de boletos (Sicoob)
+- Emissão de notas fiscais eletrônicas (Focus NFe)
+- Cálculo de frete (Google Maps), recomendações de compra por clima (OpenWeather)
+- Notificações por e-mail (SendGrid) e WhatsApp (Ultramsg)
+- Backup automatizado no Google Drive e chatbot de atendimento
 
-### `/Front` - Frontend (Next.js)
-Interface web desenvolvida com Next.js e TypeScript.
+## 🎨 `/Front` — Frontend ([README completo](Front/README.md))
 
-**Tecnologias:**
-- Next.js 14 (App Router)
-- TypeScript
-- Tailwind CSS
-- Shadcn/ui
+Interface web (SPA) desenvolvida com **Next.js 15 (App Router)**, **React 19** e **TypeScript**.
+
+**Stack principal:** Tailwind CSS · Material UI · Chart.js · Leaflet/OSRM · Axios · Biome
 
 **Principais módulos:**
-- Dashboard com visão geral do negócio
-- Gerenciamento de usuários e clientes
-- Upload e visualização de extratos
-- Cálculo de frete com integração Google Maps
-- Agrupamento de vendas por cliente
-- Geração de boletos
-- Sistema de notificações
-- Relatórios e recomendações de compra
+- Dashboard com visão financeira consolidada (gráficos)
+- Gerenciamento de usuários, clientes e papéis de acesso
+- Upload e visualização de extratos e notas de compra
+- Cálculo de frete com mapa interativo (Google Maps/Leaflet)
+- Agrupamento de vendas, geração de boletos e notas fiscais
+- Central de notificações, backup e relatórios
 
-## Como Executar
+## 🚀 Como executar
 
-Consulte as instruções detalhadas no [README principal](../README.md) do projeto.
+Consulte as instruções rápidas no [README principal](../README.md#-instalação-e-execução) ou as instruções completas — incluindo variáveis de ambiente, scripts e deploy — em cada subprojeto: [`Back/README.md`](Back/README.md) e [`Front/README.md`](Front/README.md).
+
+---
+
+<div align="center">
+  <img width="70%" alt="pucminas" src="../Documentacao/images/banner-institucional.svg"/>
+</div>
+<p align="center">Fonte do banner: <a href="https://github.com/joaopauloaramuni">João Paulo Carneiro Aramuni</a></p>
+
+---

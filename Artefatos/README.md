@@ -1,8 +1,23 @@
-# Artefatos do Projeto - Hortifruti SL
+<img width="1600" style="height:auto; border-radius: 12px;" alt="banner" src="../Documentacao/images/banner.png" />
 
-Este diretório contém os artefatos produzidos durante o desenvolvimento do sistema de gestão para o Hortifruti Santa Luzia LTDA.
+# 🗃️ Artefatos — Hortifruti SL
 
-## Estrutura de Diretórios
+> [⬅ Voltar ao README principal](../README.md)
+
+Este diretório contém os artefatos produzidos durante o desenvolvimento do sistema de gestão para o Hortifruti Santa Luzia LTDA: atas, modelagem, planejamento de sprints e protótipos de telas.
+
+## 🗂️ Estrutura de Diretórios
+
+```
+Artefatos/
+├── Atas/                  # Acordos, termos e atas de reuniões
+│   └── Reuniões/
+├── Modelagem/             # Diagramas ER, casos de uso e classes
+├── Planejamento/          # Planejamento das Sprints 1 a 5
+├── Protótipo-Telas/       # Protótipos das interfaces do sistema
+├── Requisitos - Hortifruti SL.pdf
+└── Questionario_Pesquisa_Final.pdf
+```
 
 ### `/Atas`
 Documentos formais e atas de reuniões do projeto.
@@ -55,3 +70,12 @@ Protótipos das interfaces do sistema.
 
 * **Requisitos - Hortifruti SL.pdf**: Documento de requisitos funcionais e não funcionais
 * **Questionario_Pesquisa_Final.pdf**: Questionário de avaliação aplicado aos usuários
+
+---
+
+<div align="center">
+  <img width="70%" alt="pucminas" src="../Documentacao/images/banner-institucional.svg"/>
+</div>
+<p align="center">Fonte do banner: <a href="https://github.com/joaopauloaramuni">João Paulo Carneiro Aramuni</a></p>
+
+---
