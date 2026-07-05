@@ -38,14 +38,20 @@ public class UserInitializer implements CommandLineRunner {
   }
 
   private void repopulateProductsIfNeeded() {
-    long productsWithEmptyLists =
-        productRepository.findAll().stream()
-            .filter(p -> p.getPeakSalesMonths() == null || p.getPeakSalesMonths().isEmpty())
-            .count();
+    boolean needsRepopulation;
+    try {
+      needsRepopulation =
+          productRepository.findAll().stream()
+              .anyMatch(p -> p.getPeakSalesMonths() == null || p.getPeakSalesMonths().isEmpty());
+    } catch (Exception e) {
+      log.error(
+          "Falha ao ler produtos existentes (dados corrompidos?). Repopulando do zero...", e);
+      needsRepopulation = true;
+    }
 
-    if (productsWithEmptyLists > 0) {
-      log.info("Detectado produtos com listas vazias. Repopulando...");
-      productRepository.deleteAll();
+    if (needsRepopulation) {
+      log.info("Detectado produtos com listas vazias ou inválidas. Repopulando...");
+      productRepository.deleteAllInBatch();
       createSampleProducts();
       log.info("Produtos repopulados com sucesso!");
     }
