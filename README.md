@@ -8,9 +8,9 @@
 
 ## 🛠️ Stack Principal
 
-![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.2-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
-![Next.js](https://img.shields.io/badge/Next.js-15.5-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![Java](https://img.shields.io/badge/Java-25-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1.0-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16.2-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-19.1-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
@@ -42,8 +42,8 @@ O sistema é dividido em duas aplicações independentes que se comunicam via AP
 
 | Aplicação | Stack | Documentação |
 |---|---|---|
-| **Backend** | Java 21 + Spring Boot 4 + MySQL | [`Codigo/Back/README.md`](Codigo/Back/README.md) |
-| **Frontend** | Next.js 15 + React 19 + TypeScript + Tailwind CSS | [`Codigo/Front/README.md`](Codigo/Front/README.md) |
+| **Backend** | Java 25 + Spring Boot 4.1 + MySQL | [`Codigo/Back/README.md`](Codigo/Back/README.md) |
+| **Frontend** | Next.js 16 + React 19 + TypeScript + Tailwind CSS | [`Codigo/Front/README.md`](Codigo/Front/README.md) |
 
 ---
 
@@ -135,7 +135,7 @@ A equipe elaborou os slides da apresentação final e conduziu avaliação pelos
 
 ### Pré-requisitos
 
-- **Java 21** (JDK)
+- **Java 25** (JDK)
 - **Maven 3.9+**
 - **Node.js 20+** e **npm**
 - **MySQL 8.0+**
@@ -223,8 +223,8 @@ As instruções completas de configuração — incluindo todas as variáveis de
 
 | Camada | Tecnologias principais |
 |---|---|
-| **Backend** | Java 21 · Spring Boot 4 (Web, Security, Data JPA) · MySQL + HikariCP · JWT (Auth0) · MapStruct · Springdoc OpenAPI · Apache PDFBox/POI · Bucket4J · Docker |
-| **Frontend** | Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Material UI · Chart.js · Leaflet/OSRM · Axios · Biome |
+| **Backend** | Java 25 · Spring Boot 4.1 (Web, Security, Data JPA) · MySQL + HikariCP · JWT (Auth0) · MapStruct · Springdoc OpenAPI · Apache PDFBox/POI · Bucket4J · Docker |
+| **Frontend** | Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Material UI · Chart.js · Leaflet/OSRM · Axios · Biome |
 | **Infraestrutura** | MySQL 8.0 · Docker (multi-stage) · Railway (backend) · Vercel (frontend) |
 | **Qualidade** | Spotless + Google Java Format (backend) · Biome (frontend) |
 
