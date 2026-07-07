@@ -8,15 +8,15 @@
 
 ## 🛠️ Stack Principal
 
-![Next.js](https://img.shields.io/badge/Next.js-15.5-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16.2-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-19.1-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
 ![MUI](https://img.shields.io/badge/MUI-7.3-007FFF?style=for-the-badge&logo=mui&logoColor=white)
 ![Chart.js](https://img.shields.io/badge/Chart.js-4.5-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white)
 ![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?style=for-the-badge&logo=leaflet&logoColor=white)
-![Axios](https://img.shields.io/badge/Axios-1.12-5A29E4?style=for-the-badge&logo=axios&logoColor=white)
-![Biome](https://img.shields.io/badge/Biome-2.2-60A5FA?style=for-the-badge&logo=biome&logoColor=white)
+![Axios](https://img.shields.io/badge/Axios-1.18-5A29E4?style=for-the-badge&logo=axios&logoColor=white)
+![Biome](https://img.shields.io/badge/Biome-2.5-60A5FA?style=for-the-badge&logo=biome&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-Deploy-000000?style=for-the-badge&logo=vercel&logoColor=white)
 
 ---
@@ -286,17 +286,17 @@ npm run format    # biome format --write — formata o código
 
 | Categoria | Tecnologia | Versão |
 |---|---|---|
-| Framework | Next.js (App Router) | 15.5 |
+| Framework | Next.js (App Router) | 16.2 |
 | Biblioteca de UI | React | 19.1 |
 | Linguagem | TypeScript | 5 |
 | Estilização | Tailwind CSS | 4 |
 | Componentes de UI | Material UI (MUI) + Emotion | 7.3 |
 | Ícones | Lucide React + React Icons | — |
 | Gráficos | Chart.js + react-chartjs-2 | 4.5 / 5.3 |
-| Mapas | Leaflet + react-leaflet + MapLibre GL | 1.9 / 5.0 / 5.7 |
-| HTTP Client | Axios + `fetch` (wrapper próprio em `httpUtils`) | 1.12 |
+| Mapas | Leaflet + react-leaflet + MapLibre GL | 1.9 / 5.0 / 5.24 |
+| HTTP Client | Axios + `fetch` (wrapper próprio em `httpUtils`) | 1.18 |
 | Notificações (toast) | React Toastify | 11.0 |
-| Lint & Format | Biome | 2.2 |
+| Lint & Format | Biome | 2.5 |
 | Build | npm + Turbopack (via Next.js) | — |
 | Deploy | Vercel | — |
 
