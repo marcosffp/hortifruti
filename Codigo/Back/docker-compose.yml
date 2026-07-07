@@ -1,0 +1,42 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: hortifruti-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQLPASSWORD}
+      MYSQL_DATABASE: ${MYSQLDATABASE}
+    ports:
+      - "${MYSQLPORT:-3306}:3306"
+    volumes:
+      - hortifruti_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQLPASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hortifruti-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Dentro da rede do Compose o MySQL é acessado pelo nome do serviço, não localhost
+      MYSQLHOST: mysql
+      MYSQLPORT: 3306
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - hortifruti_backend_temp:/app/temp
+
+volumes:
+  hortifruti_mysql_data:
+  hortifruti_backend_temp:

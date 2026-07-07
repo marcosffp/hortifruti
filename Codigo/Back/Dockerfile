@@ -1,5 +1,5 @@
 # Etapa 1: Build da aplicação
-FROM maven:3.9.5-eclipse-temurin-21 AS builder
+FROM maven:3.9.16-eclipse-temurin-25 AS builder
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Etapa 2: Imagem final
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:25-jre-jammy
 
 # Usa usuário não-root para segurança
 RUN addgroup --system --gid 1000 appuser && \
