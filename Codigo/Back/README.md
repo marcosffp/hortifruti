@@ -8,7 +8,7 @@
 
 ## 🛠️ Stack Principal
 
-![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Java](https://img.shields.io/badge/Java-25-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.2-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
 ![Maven](https://img.shields.io/badge/Maven-3.9-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white)
@@ -124,7 +124,7 @@ Back/
 │       └── resources/
 │           ├── application.properties
 │           └── products.yml         # Catálogo de produtos para recomendação climática
-├── Dockerfile                       # Build multi-stage (Maven → Eclipse Temurin JRE 21)
+├── Dockerfile                       # Build multi-stage (Maven → Eclipse Temurin JRE 25)
 ├── format.sh / format.bat           # Atalhos para formatação via Spotless
 ├── pom.xml
 └── .env                             # Nunca versionar em produção
@@ -294,7 +294,7 @@ OVERDUE_NOTIFICATION_EMAILS=email1@empresa.com,email2@empresa.com
 
 ### Pré-requisitos
 
-- Java 21+
+- Java 25+
 - Maven 3.9+
 - MySQL 8.0+
 - Docker (opcional, para build containerizado)
@@ -322,7 +322,7 @@ O servidor sobe em `http://localhost:8080` e cria/atualiza o banco `hortifruti_s
 # Gerar o JAR
 ./mvnw clean package -DskipTests
 
-# Build da imagem Docker (multi-stage: Maven builder + Eclipse Temurin 21 JRE)
+# Build da imagem Docker (multi-stage: Maven builder + Eclipse Temurin 25 JRE)
 docker build -t hortifruti-backend .
 ```
 
@@ -338,13 +338,13 @@ docker build -t hortifruti-backend .
 
 ## 🌐 Deploy em nuvem
 
-A aplicação é empacotada via **Docker multi-stage** (build com Maven + runtime em Eclipse Temurin 21 JRE, executando como usuário não-root) e publicada no **Railway**, que injeta a variável `PORT` dinamicamente.
+A aplicação é empacotada via **Docker multi-stage** (build com Maven + runtime em Eclipse Temurin 25 JRE, executando como usuário não-root) e publicada no **Railway**, que injeta a variável `PORT` dinamicamente.
 
 ```
-Build (Maven 3.9 + Temurin 21)
+Build (Maven 3.9 + Temurin 25)
     │  mvn clean package -DskipTests
     ▼
-Runtime (Eclipse Temurin 21 JRE · usuário não-root)
+Runtime (Eclipse Temurin 25 JRE · usuário não-root)
     │  JAVA_OPTS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC
     │  SPRING_PROFILES_ACTIVE=prod
     ▼
@@ -353,8 +353,8 @@ java -Dserver.port=$PORT -jar app.jar     ← Railway injeta $PORT
 
 | Item | Configuração |
 |---|---|
-| Imagem base (build) | `maven:3.9.5-eclipse-temurin-21` |
-| Imagem base (runtime) | `eclipse-temurin:21-jre-jammy` |
+| Imagem base (build) | `maven:3.9.16-eclipse-temurin-25` |
+| Imagem base (runtime) | `eclipse-temurin:25-jre-jammy` |
 | Usuário | `appuser` (não-root, uid/gid 1000) |
 | Diretórios voláteis | `/app/temp/{cert,google,notifications}` |
 | Variável injetada pela plataforma | `PORT` |
@@ -397,7 +397,7 @@ O projeto usa **Google Java Format** via **Spotless**, com atalhos prontos:
 
 | Categoria | Tecnologia | Versão |
 |---|---|---|
-| Linguagem | Java | 21 |
+| Linguagem | Java | 25 |
 | Framework | Spring Boot (Web, WebFlux, WebSocket, Validation, Security, Data JPA) | 4.0.2 |
 | Banco relacional | MySQL + HikariCP | 8.0 |
 | Segurança JWT | java-jwt (Auth0) | 4.4.0 |
