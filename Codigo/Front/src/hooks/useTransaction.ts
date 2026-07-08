@@ -144,16 +144,25 @@ export function useTransaction() {
     }
   };
 
-  const exportTransactionsAsExcel = async (): Promise<Blob | undefined> => {
+  const exportTransactionsAsExcel = async (
+    startDate?: string,
+    endDate?: string,
+  ): Promise<Blob | undefined> => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await transactionService.exportTransactionsAsExcel();
+      const data = await transactionService.exportTransactionsAsExcel(startDate, endDate);
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement("a");
       link.href = url;
-      const { month, year } = getPreviousMonth();
-      link.setAttribute("download", `HORTIFRUTI_SANTA_LUZIA_${month}/${year}.xlsx`);
+      const fileName =
+        startDate && endDate
+          ? `HORTIFRUTI_SANTA_LUZIA_${startDate}_a_${endDate}.xlsx`
+          : (() => {
+              const { month, year } = getPreviousMonth();
+              return `HORTIFRUTI_SANTA_LUZIA_${month}/${year}.xlsx`;
+            })();
+      link.setAttribute("download", fileName);
       document.body.appendChild(link);
       link.click();
       link.remove();

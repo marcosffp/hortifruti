@@ -155,18 +155,51 @@ public class InvoiceQuery {
         ref);
   }
 
+  private static final int MAX_TAX_DETAILS_ATTEMPTS = 3;
+  private static final long INITIAL_TAX_DETAILS_RETRY_DELAY_MS = 3000;
+
   @Transactional
   public InvoiceTaxDetails extractInvoiceTaxDetails(String ref) {
+    long retryDelay = INITIAL_TAX_DETAILS_RETRY_DELAY_MS;
+    Exception lastError = null;
+
+    for (int attempt = 1; attempt <= MAX_TAX_DETAILS_ATTEMPTS; attempt++) {
+      try {
+        String response = fetchInvoiceData(ref);
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode rootNode = mapper.readTree(response);
+
+        return extractInvoiceData(rootNode, ref);
+      } catch (Exception e) {
+        lastError = e;
+        log.warn(
+            "Tentativa {}/{} falhou ao consultar dados fiscais da nota ref={}: {}",
+            attempt,
+            MAX_TAX_DETAILS_ATTEMPTS,
+            ref,
+            e.getMessage());
+        if (attempt < MAX_TAX_DETAILS_ATTEMPTS) {
+          sleepBeforeRetry(retryDelay);
+          retryDelay += 2000;
+        }
+      }
+    }
+
+    throw new InvoiceException(
+        "Erro ao consultar a nota fiscal com referência: "
+            + ref
+            + " após "
+            + MAX_TAX_DETAILS_ATTEMPTS
+            + " tentativas",
+        lastError);
+  }
+
+  private void sleepBeforeRetry(long milliseconds) {
     try {
-      String response = fetchInvoiceData(ref);
-      ObjectMapper mapper = new ObjectMapper();
-      JsonNode rootNode = mapper.readTree(response);
-
-      InvoiceTaxDetails dto = extractInvoiceData(rootNode, ref);
-      return dto;
-
-    } catch (Exception e) {
-      throw new InvoiceException("Erro ao consultar a nota fiscal com referência: " + ref, e);
+      Thread.sleep(milliseconds);
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      throw new InvoiceException("Interrompido ao aguardar nova tentativa de consulta", ie);
     }
   }
 

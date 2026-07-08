@@ -197,12 +197,20 @@ export const transactionService = {
     }
   },
 
-  async exportTransactionsAsExcel(): Promise<Blob> {
+  async exportTransactionsAsExcel(startDate?: string, endDate?: string): Promise<Blob> {
     try {
-      const response = await fetch(`${API_BASE_URL}/transactions/export`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-      });
+      const params = new URLSearchParams();
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
+      const query = params.toString();
+
+      const response = await fetch(
+        `${API_BASE_URL}/transactions/export${query ? `?${query}` : ""}`,
+        {
+          method: "POST",
+          headers: getAuthHeaders(),
+        },
+      );
       if (!response.ok) {
         throw new Error(`Erro ao exportar transações: ${response.statusText}`);
       }
