@@ -17,6 +17,7 @@ import {
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import { clientService } from "@/services/clientService";
+import { combinedScoreService } from "@/services/combinedScoreService";
 import { showError, showSuccess } from "@/services/notificationService";
 import ClientCard from "@/components/modules/ClientCard";
 
@@ -30,6 +31,12 @@ interface ClienteUI {
   status: "preco-fixo" | "preco-variavel";
   ultimaCompra?: string;
   totalCompras?: number;
+}
+
+function formatLastPurchaseDate(dateString: string | null): string {
+  if (!dateString) return "-";
+  const [year, month, day] = dateString.split("T")[0].split("-");
+  return `${day}/${month}/${year}`;
 }
 
 export default function ClientesPage() {
@@ -51,19 +58,29 @@ export default function ClientesPage() {
     const fetchClientes = async () => {
       try {
         setIsLoading(true);
-        const clientesResponse = await clientService.getAllClients();
+        const [clientesResponse, lastGroupings] = await Promise.all([
+          clientService.getAllClients(),
+          combinedScoreService.fetchLastGroupingPerClient(),
+        ]);
+
+        const lastGroupingByClientId = new Map(
+          lastGroupings.map((grouping) => [grouping.clientId, grouping])
+        );
 
         // Transformar os dados do backend para o formato da UI
-        const clientesUI: ClienteUI[] = clientesResponse.map((client) => ({
-          id: client.id,
-          nome: client.clientName,
-          email: client.email || "",
-          telefone: client.phoneNumber || "",
-          endereco: client.address || "",
-          status: client.variablePrice ? "preco-variavel" : "preco-fixo", // Usar variablePrice para determinar o tipo de preço
-          ultimaCompra: "-", // Estes dados ainda não estão disponíveis no backend
-          totalCompras: 0, // Estes dados ainda não estão disponíveis no backend
-        }));
+        const clientesUI: ClienteUI[] = clientesResponse.map((client) => {
+          const lastGrouping = lastGroupingByClientId.get(client.id);
+          return {
+            id: client.id,
+            nome: client.clientName,
+            email: client.email || "",
+            telefone: client.phoneNumber || "",
+            endereco: client.address || "",
+            status: client.variablePrice ? "preco-variavel" : "preco-fixo", // Usar variablePrice para determinar o tipo de preço
+            ultimaCompra: formatLastPurchaseDate(lastGrouping?.confirmedAt ?? null),
+            totalCompras: lastGrouping?.totalValue ?? 0,
+          };
+        });
 
         setClientes(clientesUI);
       } catch (error) {

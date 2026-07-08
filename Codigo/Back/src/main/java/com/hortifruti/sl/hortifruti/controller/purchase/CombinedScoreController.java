@@ -3,6 +3,8 @@ package com.hortifruti.sl.hortifruti.controller.purchase;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.WildcardBilletRequest;
+import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientLastGroupingResponse;
 import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -33,6 +35,17 @@ public class CombinedScoreController {
     return ResponseEntity.ok("Agrupamento criado com sucesso.");
   }
 
+  /**
+   * Cria um agrupamento avulso com o produto coringa (R$1/kg), para clientes configurados como
+   * "somente boleto".
+   */
+  @PostMapping("/create-wildcard-billet")
+  public ResponseEntity<Long> createWildcardBillet(
+      @Valid @RequestBody WildcardBilletRequest request) {
+    Long combinedScoreId = combinedScoreService.createWildcardCombinedScore(request);
+    return ResponseEntity.ok(combinedScoreId);
+  }
+
   /** Lista os agrupamentos de compras, com suporte a paginação. */
   @GetMapping
   public ResponseEntity<Page<CombinedScoreResponse>> listGroupings(
@@ -43,6 +56,12 @@ public class CombinedScoreController {
     Pageable pageable = PageRequest.of(page, size);
     Page<CombinedScoreResponse> response = combinedScoreService.listGroupings(clientId, pageable);
     return ResponseEntity.ok(response);
+  }
+
+  /** Lista o agrupamento mais recente de cada cliente (data e valor). */
+  @GetMapping("/last-per-client")
+  public ResponseEntity<List<ClientLastGroupingResponse>> getLastGroupingPerClient() {
+    return ResponseEntity.ok(combinedScoreService.getLastGroupingPerClient());
   }
 
   /** Cancela um agrupamento de compras pelo ID. */

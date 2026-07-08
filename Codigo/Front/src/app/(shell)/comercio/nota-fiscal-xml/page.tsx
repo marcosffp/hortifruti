@@ -5,15 +5,14 @@ import { Download, FileX, Search } from "lucide-react";
 import { fiscalNoteXmlStorageService } from "@/services/fiscalNoteXmlStorageService";
 import { FiscalNoteXmlStorageResponse } from "@/types/fiscalNoteXmlStorageType";
 import { showError } from "@/services/notificationService";
+import { todaySaoPaulo } from "@/utils/dateUtils";
 
 export default function FiscalNoteXmlPage() {
     const [startDate, setStartDate] = useState(() => {
-        const now = new Date();
-        return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+        const today = todaySaoPaulo();
+        return `${today.slice(0, 7)}-01`;
     });
-    const [endDate, setEndDate] = useState(() => {
-        return new Date().toISOString().split("T")[0];
-    });
+    const [endDate, setEndDate] = useState(() => todaySaoPaulo());
     const [records, setRecords] = useState<FiscalNoteXmlStorageResponse[]>([]);
     const [loading, setLoading] = useState(false);
     const [searched, setSearched] = useState(false);

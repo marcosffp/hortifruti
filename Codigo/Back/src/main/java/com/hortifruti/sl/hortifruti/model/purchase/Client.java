@@ -53,6 +53,9 @@ public class Client {
   @Column(nullable = false)
   private boolean variablePrice;
 
+  @Column(nullable = false)
+  private boolean onlyBillet;
+
   @Column(nullable = true)
   private String stateRegistration;
 

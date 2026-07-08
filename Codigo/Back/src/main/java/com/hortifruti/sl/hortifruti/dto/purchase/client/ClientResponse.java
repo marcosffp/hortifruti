@@ -14,5 +14,6 @@ public record ClientResponse(
     String stateRegistration,
     String stateIndicator,
     String cideCode,
+    boolean onlyBillet,
     LocalDate lastPurchaseDate,
     BigDecimal totalPurchaseValue) {}

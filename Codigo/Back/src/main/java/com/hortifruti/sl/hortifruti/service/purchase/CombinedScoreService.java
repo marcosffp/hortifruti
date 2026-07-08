@@ -3,6 +3,8 @@ package com.hortifruti.sl.hortifruti.service.purchase;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.WildcardBilletRequest;
+import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientLastGroupingResponse;
 import com.hortifruti.sl.hortifruti.exception.ClientException;
 import com.hortifruti.sl.hortifruti.exception.CombinedScoreException;
 import com.hortifruti.sl.hortifruti.exception.PurchaseException;
@@ -31,6 +33,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @AllArgsConstructor
 public class CombinedScoreService {
+
+  private static final String WILDCARD_PRODUCT_CODE = "113";
+  private static final String WILDCARD_PRODUCT_NAME = "PRODUTO CORINGA";
+  private static final BigDecimal WILDCARD_PRODUCT_PRICE = new BigDecimal("1.00");
 
   private final CombinedScoreRepository combinedScoreRepository;
   private final CombinedScoreMapper combinedScoreMapper;
@@ -127,6 +133,47 @@ public class CombinedScoreService {
   }
 
   @Transactional
+  public Long createWildcardCombinedScore(WildcardBilletRequest request) {
+    Client client =
+        clientRepository
+            .findById(request.clientId())
+            .orElseThrow(
+                () ->
+                    new ClientException(
+                        "Cliente com ID " + request.clientId() + " não encontrado."));
+
+    if (!client.isOnlyBillet()) {
+      throw new ClientException("Cliente não está configurado para boleto avulso.");
+    }
+
+    LocalDate confirmedDate = ZonedDateTime.now(ZoneId.of("America/Sao_Paulo")).toLocalDate();
+
+    CombinedScore combinedScore =
+        CombinedScore.builder().clientId(request.clientId()).totalValue(request.value()).build();
+    combinedScore.setConfirmedAt(confirmedDate);
+    combinedScore.setDueDate(DueDateCalculator.calculate(client, confirmedDate));
+    combinedScore.setStatus(Status.PENDENTE);
+    combinedScore.setHasBillet(false);
+    combinedScore.setHasInvoice(false);
+
+    CombinedScore savedCombinedScore = combinedScoreRepository.saveAndFlush(combinedScore);
+
+    GroupedProduct wildcardProduct =
+        GroupedProduct.builder()
+            .code(WILDCARD_PRODUCT_CODE)
+            .name(WILDCARD_PRODUCT_NAME)
+            .price(WILDCARD_PRODUCT_PRICE)
+            .quantity(request.value())
+            .totalValue(request.value())
+            .combinedScore(savedCombinedScore)
+            .build();
+
+    productGrouperRepository.save(wildcardProduct);
+
+    return savedCombinedScore.getId();
+  }
+
+  @Transactional
   public void confirmPayment(Long id) {
     CombinedScore combinedScore =
         combinedScoreRepository
@@ -180,6 +227,15 @@ public class CombinedScoreService {
 
     combinedScore.setStatus(Status.CANCELADO);
     combinedScoreRepository.save(combinedScore);
+  }
+
+  @Transactional(readOnly = true)
+  public List<ClientLastGroupingResponse> getLastGroupingPerClient() {
+    return combinedScoreRepository.findLastGroupingPerClient().stream()
+        .map(
+            cs ->
+                new ClientLastGroupingResponse(cs.getClientId(), cs.getConfirmedAt(), cs.getTotalValue()))
+        .toList();
   }
 
   @Transactional(readOnly = true)

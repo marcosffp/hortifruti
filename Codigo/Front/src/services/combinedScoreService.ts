@@ -3,6 +3,7 @@ import {
   CombinedScoreResponse,
   GroupedProductType,
   CombinedScoreRequest,
+  ClientLastGroupingType,
 } from "@/types/combinedScoreType";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -14,7 +15,18 @@ export const combinedScoreService = {
     
     const response = await fetch(url, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error("Erro ao buscar agrupamentos");
-    return await response.json();
+    const data = await response.json();
+
+    // O backend serializa Page via PagedModel (VIA_DTO), aninhando os metadados em "page"
+    return {
+      content: data.content || [],
+      totalElements: data.totalElements ?? data.page?.totalElements ?? 0,
+      totalPages: data.totalPages ?? data.page?.totalPages ?? 0,
+      number: data.number ?? data.page?.number ?? 0,
+      size: data.size ?? data.page?.size ?? 0,
+      first: data.first ?? (data.page?.number ?? 0) === 0,
+      last: data.last ?? (data.page?.number ?? 0) >= (data.page?.totalPages ?? 1) - 1,
+    };
   },
 
   async createCombinedScore(request: CombinedScoreRequest): Promise<string> {
@@ -68,6 +80,24 @@ export const combinedScoreService = {
       { headers: getAuthHeaders() }
     );
     if (!response.ok) throw new Error("Erro ao buscar produtos agrupados");
+    return await response.json();
+  },
+
+  async fetchLastGroupingPerClient(): Promise<ClientLastGroupingType[]> {
+    const response = await fetch(`${API_BASE_URL}/combined-scores/last-per-client`, {
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Erro ao buscar últimos agrupamentos");
+    return await response.json();
+  },
+
+  async createWildcardBillet(clientId: number, value: number): Promise<number> {
+    const response = await fetch(`${API_BASE_URL}/combined-scores/create-wildcard-billet`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ clientId, value }),
+    });
+    if (!response.ok) throw new Error("Erro ao criar boleto avulso");
     return await response.json();
   },
 };

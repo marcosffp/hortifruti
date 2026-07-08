@@ -8,6 +8,7 @@ export interface ClientRequest {
     stateRegistration?: string | null;
     stateIndicator?: number | null;
     cideCode?: string | null;
+    onlyBillet: boolean;
 }
 
 export interface ClientResponse {
@@ -21,6 +22,9 @@ export interface ClientResponse {
     stateRegistration: string | null;
     stateIndicator: number | null;
     cideCode: string | null;
+    onlyBillet: boolean;
+    lastPurchaseDate: string | null;
+    totalPurchaseValue: number | null;
 }
 
 export interface ClientSelectionInfo {
