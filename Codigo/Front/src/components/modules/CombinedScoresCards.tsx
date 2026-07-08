@@ -12,9 +12,11 @@ import ShowBilletDataModal from "@/components/modals/ShowBilletDataModal";
 import ShowInvoiceModal from "@/components/modals/ShowInvoiceModal";
 import ShowInvoiceDataModal from "@/components/modals/ShowInvoiceDataModal";
 import AdditionalDataModal from "@/components/modals/AdditionalDataModal";
+import WildcardBilletModal from "@/components/modals/WildcardBilletModal";
 import { useBillet } from "@/hooks/useBillet";
 import { useInvoice } from "@/hooks/useInvoice";
 import { useClient } from "@/hooks/useClient";
+import { ClientResponse } from "@/types/clientType";
 import ClientNumberModal from "../modals/ClientNumberModal";
 import { showError, showInfo, showSuccess } from "@/services/notificationService";
 
@@ -46,6 +48,8 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
     const [invoicePdf, setInvoicePdf] = useState<Blob | null>(null);
     const [showAdditionalDataModal, setShowAdditionalDataModal] = useState(false);
     const [pendingInvoiceScore, setPendingInvoiceScore] = useState<ScoreWithBilletInfo | null>(null);
+    const [client, setClient] = useState<ClientResponse | null>(null);
+    const [showWildcardBilletModal, setShowWildcardBilletModal] = useState(false);
 
     const { generateBillet, getBilletInfo } = useBillet();
     const { generateInvoice, getInvoiceInfo, getDanfe } = useInvoice();
@@ -127,6 +131,19 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
         fetchScores();
     }, [clientId, page, refreshKey]);
 
+    useEffect(() => {
+        if (!clientId) {
+            setClient(null);
+            return;
+        }
+        getClientById(clientId)
+            .then(setClient)
+            .catch((error) => {
+                console.error("Erro ao buscar cliente:", error);
+                setClient(null);
+            });
+    }, [clientId]);
+
     const handleDelete = async (id: number, number: string) => {
         if (!confirm(`Tem certeza que deseja deletar o agrupamento ${number || id}?`)) return;
 
@@ -179,6 +196,36 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
 
             showSuccess("Boleto gerado com sucesso!");
 
+            fetchScores();
+        } catch (error) {
+            showError("Erro ao gerar boleto");
+            console.error(error);
+        }
+    };
+
+    const handleGenerateWildcardBillet = async (number: string, value: number, dueDate?: string) => {
+        if (!clientId) return;
+
+        try {
+            const newScoreId = await combinedScoreService.createWildcardBillet(clientId, value);
+            const pdfBlob = await generateBillet(newScoreId, number, dueDate);
+
+            setSelectedScore({
+                id: newScoreId,
+                clientId,
+                totalValue: value,
+                dueDate: dueDate || null,
+                confirmedAt: new Date().toISOString(),
+                status: "PENDENTE",
+                hasBillet: true,
+                hasInvoice: false,
+                number,
+            });
+            setClientNumber(number);
+            setBilletPdf(pdfBlob);
+            setShowBilletModal(true);
+
+            showSuccess("Boleto gerado com sucesso!");
             fetchScores();
         } catch (error) {
             showError("Erro ao gerar boleto");
@@ -366,6 +413,18 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
 
     return (
         <div className="space-y-6">
+            {client?.onlyBillet && (
+                <div className="flex justify-end">
+                    <button
+                        onClick={() => setShowWildcardBilletModal(true)}
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm cursor-pointer"
+                    >
+                        <FileText className="w-4 h-4" />
+                        Gerar Boleto
+                    </button>
+                </div>
+            )}
+
             {/* Loading state */}
             {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -434,7 +493,7 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                     </button>
 
                                     {/* Botões de Boleto e Nota Fiscal */}
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className={`grid gap-2 ${client?.onlyBillet ? "grid-cols-1" : "grid-cols-2"}`}>
                                         {score.hasBillet ? (
                                             <button
                                                 onClick={() => handleShowBillet(score)}
@@ -453,22 +512,24 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                                             </button>
                                         )}
 
-                                        {score.hasInvoice ? (
-                                            <button
-                                                onClick={() => handleShowInvoice(score)}
-                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs cursor-pointer"
-                                            >
-                                                <Info className="w-3 h-3" />
-                                                Ver NF
-                                            </button>
-                                        ) : (
-                                            <button
-                                                onClick={() => handleInvoiceButtonClick(score)}
-                                                className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
-                                            >
-                                                <FileText className="w-3 h-3" />
-                                                Gerar NF
-                                            </button>
+                                        {!client?.onlyBillet && (
+                                            score.hasInvoice ? (
+                                                <button
+                                                    onClick={() => handleShowInvoice(score)}
+                                                    className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs cursor-pointer"
+                                                >
+                                                    <Info className="w-3 h-3" />
+                                                    Ver NF
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleInvoiceButtonClick(score)}
+                                                    className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
+                                                >
+                                                    <FileText className="w-3 h-3" />
+                                                    Gerar NF
+                                                </button>
+                                            )
                                         )}
                                     </div>
 
@@ -536,6 +597,15 @@ export default function CombinedScoresCards({ clientId, refreshKey }: CombinedSc
                     }}
                 />
             )}
+
+            <WildcardBilletModal
+                open={showWildcardBilletModal}
+                onClose={() => setShowWildcardBilletModal(false)}
+                onConfirm={(number, value, dueDate) => {
+                    setShowWildcardBilletModal(false);
+                    handleGenerateWildcardBillet(number, value, dueDate);
+                }}
+            />
 
             {/* Modal de boleto */}
             {showBilletModal && billetPdf && selectedScore && (

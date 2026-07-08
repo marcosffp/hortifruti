@@ -50,6 +50,7 @@ export default function EditarClientePageContent({ id }: EditarClientePageProps)
           stateRegistration: clientData.stateRegistration || "",
           stateIndicator: clientData.stateIndicator?.toString() || "9",
           cideCode: clientData.cideCode || "",
+          onlyBillet: clientData.onlyBillet ? "true" : "false",
         });
       } catch (error) {
         console.error("Erro ao carregar dados do cliente:", error);
@@ -89,6 +90,7 @@ export default function EditarClientePageContent({ id }: EditarClientePageProps)
         stateRegistration: formData.stateRegistration || null,
         stateIndicator: formData.stateIndicator ? parseInt(formData.stateIndicator) : null,
         cideCode: formData.cideCode || null,
+        onlyBillet: formData.onlyBillet === "true",
       };
 
       await clientService.updateClient(clientId, clientData);

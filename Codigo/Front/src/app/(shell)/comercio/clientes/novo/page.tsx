@@ -35,6 +35,7 @@ export default function NovoClientePage() {
         stateRegistration: formData.stateRegistration || null,
         stateIndicator: formData.stateIndicator ? parseInt(formData.stateIndicator) : null,
         cideCode: formData.cideCode || null,
+        onlyBillet: formData.onlyBillet === "true",
       };
 
       await clientService.createClient(clientData);

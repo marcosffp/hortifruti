@@ -14,6 +14,7 @@ public interface ClientMapper {
   @Mapping(source = "stateRegistration", target = "stateRegistration")
   @Mapping(source = "stateIndicator", target = "stateIndicator")
   @Mapping(source = "cideCode", target = "cideCode")
+  @Mapping(source = "onlyBillet", target = "onlyBillet")
   Client toClient(ClientRequest clientRequest);
 
   @Mapping(source = "id", target = "id")
@@ -26,6 +27,7 @@ public interface ClientMapper {
   @Mapping(source = "cideCode", target = "cideCode")
   @Mapping(source = "stateRegistration", target = "stateRegistration")
   @Mapping(source = "stateIndicator", target = "stateIndicator")
+  @Mapping(source = "onlyBillet", target = "onlyBillet")
   @Mapping(source = "lastPurchaseDate", target = "lastPurchaseDate")
   @Mapping(source = "totalPurchaseValue", target = "totalPurchaseValue")
   ClientResponse toClientResponse(Client client);

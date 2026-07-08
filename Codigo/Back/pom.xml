@@ -35,7 +35,7 @@
         <springdoc.version>3.0.3</springdoc.version>
         <javajwt.version>4.5.2</javajwt.version>
         <mapstruct.version>1.6.3</mapstruct.version>
-        <dotenv.version>5.0.1</dotenv.version>
+        <dotenv.version>5.1.0</dotenv.version>
         <lombokmapstruct.version>0.2.0</lombokmapstruct.version>
         <spotless.version>3.8.0</spotless.version>
         <googleformat.version>1.28.0</googleformat.version>
@@ -44,9 +44,7 @@
         <pdfbox.version>3.0.7</pdfbox.version>
         <json.version>20260522</json.version>
         <httpclient5.version>5.6.1</httpclient5.version>
-        <plugin-saucelabs.version>5.13.0</plugin-saucelabs.version>
         <google.api.client.version>2.8.1</google.api.client.version>
-        <google.oauth-client.version>1.34.1</google.oauth-client.version>
         <google.oauth-client-jetty.version>1.39.0</google.oauth-client-jetty.version>
         <google-api-services-drive.version>v3-rev20220815-2.0.0</google-api-services-drive.version>
         <commons-csv.version>1.14.1</commons-csv.version>
@@ -70,10 +68,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
         <dependency>
             <groupId>com.mysql</groupId>
@@ -166,18 +160,8 @@
             <version>${httpclient5.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.epam.reportportal</groupId>
-            <artifactId>plugin-saucelabs</artifactId>
-            <version>${plugin-saucelabs.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.github.vladimir-bukhtoyarov</groupId>
             <artifactId>bucket4j-core</artifactId>
-            <version>${bucket4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.vladimir-bukhtoyarov</groupId>
-            <artifactId>bucket4j-jcache</artifactId>
             <version>${bucket4j.version}</version>
         </dependency>
         <dependency>
