@@ -153,7 +153,7 @@ public class DueDateCalculator {
   }
 
   /**
-   * Soma dias úteis (pula sábados e domingos) a partir de uma data base.
+   * Soma dias úteis (pula sábados, domingos e feriados nacionais) a partir de uma data base.
    * O dia de início (confirmedAt) não é contado — começa a contar a partir do dia seguinte.
    */
   private static LocalDate addBusinessDays(LocalDate startDate, int businessDays) {
@@ -162,8 +162,7 @@ public class DueDateCalculator {
 
     while (added < businessDays) {
       date = date.plusDays(1);
-      DayOfWeek dow = date.getDayOfWeek();
-      if (dow != DayOfWeek.SATURDAY && dow != DayOfWeek.SUNDAY) {
+      if (!isNonBusinessDay(date)) {
         added++;
       }
     }
@@ -171,22 +170,48 @@ public class DueDateCalculator {
     return date;
   }
 
-  /** Aplica o ajuste de final de semana conforme a estratégia definida. */
+  /**
+   * Aplica o ajuste de final de semana conforme a estratégia definida e, em seguida,
+   * garante que a data final não caia em final de semana nem em feriado nacional.
+   */
   private static LocalDate applyWeekendAdjustment(LocalDate date, WeekendAdjustment adjustment) {
     switch (adjustment) {
       case PREVIOUS_FRIDAY:
-        return adjustToPreviousFriday(date);
+        return skipNonBusinessDays(adjustToPreviousFriday(date), -1);
 
       case PREVIOUS_THURSDAY:
-        return adjustToPreviousThursday(date);
+        return skipNonBusinessDays(adjustToPreviousThursday(date), -1);
 
       case NEXT_FRIDAY:
-        return adjustToNextFriday(date);
+        return skipNonBusinessDays(adjustToNextFriday(date), 1);
 
       case NONE:
       default:
-        return date;
+        return skipNonBusinessDays(date, 1);
     }
+  }
+
+  /**
+   * Anda em direção a datas passadas (direction = -1) ou futuras (direction = 1)
+   * até encontrar um dia que não seja final de semana nem feriado nacional.
+   */
+  private static LocalDate skipNonBusinessDays(LocalDate date, int direction) {
+    LocalDate result = date;
+    while (isNonBusinessDay(result)) {
+      result = result.plusDays(direction);
+    }
+    return result;
+  }
+
+  /** Indica se a data cai em final de semana ou em feriado nacional brasileiro. */
+  private static boolean isNonBusinessDay(LocalDate date) {
+    return isWeekend(date) || BrazilianHolidays.isHoliday(date);
+  }
+
+  /** Indica se a data cai em sábado ou domingo. */
+  private static boolean isWeekend(LocalDate date) {
+    DayOfWeek dow = date.getDayOfWeek();
+    return dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY;
   }
 
   /** Ajusta a data para a sexta-feira anterior se cair em final de semana. */
