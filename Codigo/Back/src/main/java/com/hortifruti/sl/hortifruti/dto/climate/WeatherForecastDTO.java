@@ -7,7 +7,6 @@ import java.util.List;
 public record WeatherForecastDTO(
     String city, String country, List<DailyForecastDTO> dailyForecasts) {
 
-  /** DTO para cada dia da previsão */
   public record DailyForecastDTO(
       LocalDate date,
       double minTemp,

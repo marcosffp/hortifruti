@@ -6,7 +6,6 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class TokenCleaner {
 
-  /** Limpa o diretório de tokens */
   protected static void cleanTokenDirectory(String tokensDirectoryPath) {
     java.io.File tokensDir = new java.io.File(tokensDirectoryPath);
     if (tokensDir.exists()) {
@@ -14,7 +13,6 @@ public class TokenCleaner {
     }
   }
 
-  /** Exclui diretório recursivamente */
   private static void deleteDirectoryRecursively(File directory) {
     if (directory.isDirectory()) {
       File[] files = directory.listFiles();

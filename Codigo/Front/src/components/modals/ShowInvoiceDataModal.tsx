@@ -133,7 +133,6 @@ export default function ShowInvoiceDataModal({
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-auto">
-                {/* Header */}
                 <div className="sticky top-0 bg-white border-b border-gray-300 p-6 flex justify-between items-center">
                     <h2 className="text-xl font-semibold">Informações da Nota Fiscal</h2>
                     <button
@@ -144,10 +143,8 @@ export default function ShowInvoiceDataModal({
                     </button>
                 </div>
 
-                {/* Body - Card Style (igual ao boleto) */}
                 <div className="p-6">
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 space-y-4">
-                        {/* Status Badge */}
                         <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-600">Status:</span>
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(invoiceData.status)}`}>
@@ -155,7 +152,6 @@ export default function ShowInvoiceDataModal({
                             </span>
                         </div>
 
-                        {/* Cliente / Número / Referência */}
                         <div className="py-3 border-t border-gray-200">
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-600">Cliente</span>
@@ -178,7 +174,6 @@ export default function ShowInvoiceDataModal({
                             </div>
                         </div>
 
-                        {/* Valor */}
                         <div className="flex items-center gap-3 py-3 border-t border-gray-200">
                             <div className="flex-1">
                                 <span className="text-sm text-gray-600">Valor Total</span>
@@ -186,7 +181,6 @@ export default function ShowInvoiceDataModal({
                             </div>
                         </div>
 
-                        {/* Data de Emissão */}
                         <div className="flex items-center gap-3 py-3 border-t border-gray-200">
                             <div>
                                 <span className="text-sm text-gray-600">Data de Emissão</span>
@@ -196,7 +190,6 @@ export default function ShowInvoiceDataModal({
                     </div>
                 </div>
 
-                {/* Footer com botões de ação */}
                 <div className="sticky bottom-0 bg-white border-t border-gray-300 p-6 flex justify-end gap-3">
                     <button
                         onClick={handleDownloadDanfe}
@@ -226,7 +219,6 @@ export default function ShowInvoiceDataModal({
                 </div>
             </div>
 
-            {/* Modal de Cancelamento */}
             {showCancelModal && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-md">

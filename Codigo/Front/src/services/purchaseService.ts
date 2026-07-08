@@ -5,7 +5,6 @@ import { getAuthHeadersForFormData, getAuthHeaders } from "@/utils/httpUtils";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export const purchaseService = {
-  // Upload de notas fiscais
   async uploadPurchases(files: File[]): Promise<{ message: string }> {
     const formData = new FormData();
     formData.append("file", files[files.length - 1]);
@@ -92,7 +91,6 @@ export const purchaseService = {
     return await response.json();
   },
 
-  // ADICIONADO: implementação para atualizar um invoice product via API (PUT /invoice-products/{id})
   async updateInvoiceProduct(
     id: number,
     update: InvoiceProductUpdate
@@ -105,7 +103,6 @@ export const purchaseService = {
     });
 
     if (!response.ok) {
-      // tentativa de obter mensagem de erro do backend
       const errorData = await response.json().catch(() => null);
       throw new Error(errorData?.error || `Erro ao atualizar produto (status ${response.status})`);
     }

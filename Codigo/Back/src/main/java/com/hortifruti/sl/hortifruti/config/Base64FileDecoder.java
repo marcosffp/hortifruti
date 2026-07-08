@@ -24,12 +24,6 @@ public class Base64FileDecoder {
   @Value("${google.temp.directory}")
   private String googleTempDirectory;
 
-  /**
-   * Decodifica o arquivo Google Drive Credentials e o salva no diretório configurado.
-   *
-   * @return O arquivo decodificado.
-   * @throws IOException Se ocorrer um erro ao salvar o arquivo.
-   */
   public File decodeGoogleDriveCredentials() throws IOException {
     if (googleDriveCredentials == null || googleDriveCredentials.isEmpty()) {
       throw new BackupException(
@@ -41,12 +35,6 @@ public class Base64FileDecoder {
     return decodedFile;
   }
 
-  /**
-   * Decodifica o arquivo Sicoob PFX e o salva no diretório configurado.
-   *
-   * @return O arquivo decodificado.
-   * @throws IOException Se ocorrer um erro ao salvar o arquivo.
-   */
   public File decodePfx() throws IOException {
     if (pfx == null || pfx.isEmpty()) {
       throw new BilletException("A propriedade 'document.pfx' está vazia ou não foi configurada.");
@@ -63,14 +51,6 @@ public class Base64FileDecoder {
     return decodedFile;
   }
 
-  /**
-   * Método genérico para decodificar uma string Base64 e salvar como arquivo.
-   *
-   * @param base64 A string codificada em Base64.
-   * @param outputPath O caminho onde o arquivo será salvo.
-   * @return O arquivo decodificado.
-   * @throws IOException Se ocorrer um erro ao salvar o arquivo.
-   */
   private File decodeBase64ToFile(String base64, String outputPath) throws IOException {
     byte[] decodedBytes = Base64.getDecoder().decode(base64);
     File outputFile = new File(outputPath);
@@ -83,21 +63,11 @@ public class Base64FileDecoder {
     return outputFile;
   }
 
-  /**
-   * Verifica se o arquivo Google Drive Credentials já existe no diretório configurado.
-   *
-   * @return O arquivo, se existir; caso contrário, null.
-   */
   public File getGoogleDriveCredentialsFile() {
     File file = new File(googleTempDirectory + "/drive_credentials.json");
     return file.exists() ? file : null;
   }
 
-  /**
-   * Verifica se o arquivo Sicoob PFX já existe no diretório configurado.
-   *
-   * @return O arquivo, se existir; caso contrário, null.
-   */
   public File getPfxFile() {
     File file = new File(pfxTempDirectory + "/HORTIFRUTISANTALUZIALTDA275409060001552025.pfx");
     return file.exists() ? file : null;

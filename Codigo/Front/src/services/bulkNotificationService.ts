@@ -24,26 +24,20 @@ export interface BulkNotificationResponse {
 }
 
 export const bulkNotificationService = {
-  /**
-   * Envia notificações em massa para múltiplos destinatários
-   */
   async sendBulkNotifications(
     request: BulkNotificationRequest
   ): Promise<BulkNotificationResponse> {
     try {
-      // Obter token de autenticação
       const token = authService.getToken();
       const headers: HeadersInit = {};
-      
+
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      // Se for para CONTABILIDADE - usar endpoint accounting/generic-files
       if (request.destinationType === "contabilidade") {
         return await this.sendToAccounting(request, headers);
-      } 
-      // Se for para CLIENTES - usar endpoint client/documents para cada cliente
+      }
       else if (request.destinationType === "clientes") {
         return await this.sendToClients(request, headers);
       }
@@ -65,17 +59,14 @@ export const bulkNotificationService = {
   ): Promise<BulkNotificationResponse> {
     const formData = new FormData();
 
-    // Adicionar arquivos
     request.files.forEach((file) => {
       formData.append("files", file);
     });
 
-    // Adicionar mensagem personalizada (se houver)
     if (request.customMessage) {
       formData.append("customMessage", request.customMessage);
     }
 
-    // Adicionar campos financeiros para contabilidade (se houver)
     if (request.cardValue) {
       formData.append("cardValue", request.cardValue);
     }
@@ -123,7 +114,6 @@ export const bulkNotificationService = {
       failedRecipients: [] as string[],
     };
 
-    // Determinar o canal correto baseado nos canais selecionados
     let channel = "EMAIL";
     if (request.channels.includes("email") && request.channels.includes("whatsapp")) {
       channel = "BOTH";
@@ -131,21 +121,17 @@ export const bulkNotificationService = {
       channel = "WHATSAPP";
     }
 
-    // Enviar para cada cliente
     for (const clientId of request.clientIds) {
       try {
         const formData = new FormData();
 
-        // Adicionar arquivos
         request.files.forEach((file) => {
           formData.append("files", file);
         });
 
-        // Adicionar dados do cliente
         formData.append("clientId", clientId.toString());
         formData.append("channel", channel);
 
-        // Adicionar mensagem personalizada (se houver)
         if (request.customMessage) {
           formData.append("customMessage", request.customMessage);
         }
@@ -190,20 +176,17 @@ export const bulkNotificationService = {
     };
   },
 
-  /**
-   * Testa se o serviço de notificações está ativo
-   */
   async testService(): Promise<boolean> {
     try {
       const token = authService.getToken();
       const headers: HeadersInit = {
         "Content-Type": "application/json",
       };
-      
+
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
-      
+
       const response = await fetch(
         `${API_BASE_URL}/api/notifications/test`,
         {

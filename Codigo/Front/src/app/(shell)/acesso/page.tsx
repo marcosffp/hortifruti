@@ -15,7 +15,6 @@ import Link from "next/link";
 import { showError, showSuccess } from "@/services/notificationService";
 import { backupService } from "@/services/acessoService";
 
-// Tipo para os dados do usuário adaptado para exibição na UI
 interface UsuarioUI {
   id: number;
   nome: string;
@@ -33,8 +32,7 @@ export default function AcessoPage() {
     null
   );
   const [viewMode, setViewMode] = useState<"lista" | "cards">("lista");
-  
-  // Carregar preferência de visualização salva
+
   useEffect(() => {
     const savedViewMode = localStorage.getItem("accessViewMode");
     if (savedViewMode === "cards" || savedViewMode === "lista") {
@@ -42,7 +40,6 @@ export default function AcessoPage() {
     }
   }, []);
 
-  // Função para carregar usuários do backend
   const fetchUsuarios = async () => {
     try {
       setIsLoading(true);
@@ -57,7 +54,6 @@ export default function AcessoPage() {
     }
   };
 
-  // Carregar usuários na primeira vez
   useEffect(() => {
     fetchUsuarios();
   }, []);
@@ -74,7 +70,6 @@ export default function AcessoPage() {
       }
     };
 
-    // Verificar se há um flag indicando que precisa recarregar
     const checkReloadFlag = () => {
       const shouldReload = localStorage.getItem("shouldReloadUsers");
       if (shouldReload) {
@@ -83,14 +78,11 @@ export default function AcessoPage() {
       }
     };
 
-    // Verificar imediatamente ao montar o componente
     checkReloadFlag();
 
-    // Adicionar listeners
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
-    // Verificar periodicamente por flags de reload
     const interval = setInterval(checkReloadFlag, 500);
 
     return () => {
@@ -100,7 +92,6 @@ export default function AcessoPage() {
     };
   }, []);
 
-  // Filtrar usuários com base no termo de busca
   const filteredUsuarios = usuarios.filter(
     (usuario) =>
       (usuario.nome ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -108,19 +99,16 @@ export default function AcessoPage() {
       (usuario.perfil ?? "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Calcular estatísticas
   const totalUsuarios = usuarios.length;
   const totalGestores = usuarios.filter((u) => u.perfil === "Gestor").length;
   const totalFuncionarios = usuarios.filter(
     (u) => u.perfil === "Funcionário"
   ).length;
 
-  // Função para excluir usuário
   const handleExcluirUsuario = async (id: number) => {
     setUsuarioParaExcluir(id);
   };
 
-  // Função para confirmar exclusão
   const confirmarEExcluirUsuario = async () => {
     if (!usuarioParaExcluir) return;
 
@@ -128,7 +116,6 @@ export default function AcessoPage() {
       const sucesso = await backupService.deleteUser(usuarioParaExcluir);
 
       if (sucesso) {
-        // Recarregar a lista de usuários do servidor após a exclusão
         await fetchUsuarios();
         showSuccess("Usuário excluído com sucesso!");
       } else {
@@ -142,7 +129,6 @@ export default function AcessoPage() {
     }
   };
 
-  // Função para cancelar exclusão
   const cancelarExclusao = () => {
     setUsuarioParaExcluir(null);
   };
@@ -150,7 +136,6 @@ export default function AcessoPage() {
   return (
     <main className="flex-1 p-4 sm:p-6 bg-gray-50 overflow-auto">
       <div className="flex flex-col max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-6 text-center sm:text-left">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
             Módulo Acesso
@@ -160,7 +145,6 @@ export default function AcessoPage() {
           </p>
         </div>
 
-        {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-gray-200 flex flex-col items-center sm:items-start">
             <User className="h-8 w-8 text-gray-600 mb-2 sm:mb-0" />
@@ -198,7 +182,6 @@ export default function AcessoPage() {
           </div>
         </div>
 
-        {/* Barra de busca e controles */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
           <div className="flex w-full max-w-md gap-2">
             <div className="relative flex-grow">
@@ -211,8 +194,7 @@ export default function AcessoPage() {
               />
               <Search className="absolute left-3 top-3 text-gray-400" size={18} />
             </div>
-            
-            {/* Alternador de visualização (lista/cards) */}
+
             <div className="flex border border-gray-300 rounded-lg overflow-hidden">
               <button
                 onClick={() => {
@@ -258,7 +240,7 @@ export default function AcessoPage() {
               </button>
             </div>
           </div>
-          
+
           <Link href="/acesso/novo">
             <Button
               variant="primary"
@@ -270,7 +252,6 @@ export default function AcessoPage() {
           </Link>
         </div>
 
-        {/* Usuários do Sistema */}
         <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-800">
@@ -280,11 +261,9 @@ export default function AcessoPage() {
               Gerencie os usuários e seus perfis de acesso
             </span>
           </div>
-          
-          {/* Vista em Lista */}
+
           {viewMode === "lista" && (
             <>
-              {/* Cabeçalho da tabela */}
               <div className="flex justify-between gap-4 px-6 py-3 border-b bg-gray-50 font-medium text-gray-700">
                 <div className="col-span-3">Nome</div>
                 <div className="col-span-2">Cargo</div>
@@ -293,7 +272,6 @@ export default function AcessoPage() {
                 <div className="col-span-3 text-right">Ações</div>
               </div>
 
-              {/* Conteúdo da lista */}
               <div className="overflow-x-auto">
                 {isLoading ? (
                   <div className="flex justify-center items-center h-64">
@@ -324,7 +302,6 @@ export default function AcessoPage() {
                             : "bg-orange-50"
                         } transition-colors`}
                       >
-                        {/* Nome */}
                         <div className="col-span-3 flex items-center gap-2">
                           <span
                             className={`${
@@ -349,12 +326,10 @@ export default function AcessoPage() {
                           <div className="truncate">{usuario.nome}</div>
                         </div>
 
-                        {/* Cargo */}
                         <div className="col-span-2 text-gray-700 truncate min-w-[80px]">
                           {usuario.cargo}
                         </div>
 
-                        {/* Perfil */}
                         <div className="col-span-2 flex items-center gap-2">
                           <span
                             className={`inline-flex items-center gap-1 ${
@@ -372,12 +347,10 @@ export default function AcessoPage() {
                           </span>
                         </div>
 
-                        {/* Cadastrado */}
                         <div className="col-span-2 text-gray-600 truncate">
                           {usuario.cadastrado}
                         </div>
 
-                        {/* Ações */}
                         <div className="col-span-3 flex justify-end space-x-2">
                           <Link href={`/acesso/editar/${usuario.id}`}>
                             <button className="inline-flex items-center gap-1 text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-colors cursor-pointer">
@@ -401,7 +374,6 @@ export default function AcessoPage() {
             </>
           )}
 
-          {/* Vista em Cards */}
           {viewMode === "cards" && (
             <div className="p-4">
               {isLoading ? (
@@ -510,7 +482,6 @@ export default function AcessoPage() {
         </div>
       </div>
 
-      {/* Modal de confirmação de exclusão */}
       {usuarioParaExcluir !== null && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">

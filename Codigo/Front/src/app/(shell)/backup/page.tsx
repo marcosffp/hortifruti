@@ -40,7 +40,6 @@ export default function BackupPage() {
       <div className="flex-1 p-6 sm:p-8 w-full max-w-6xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Backup do Sistema</h1>
 
-        {/* Status de armazenamento */}
         <div className="bg-white rounded-lg shadow-md p-5 mb-6">
           <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -77,7 +76,6 @@ export default function BackupPage() {
           </div>
         </div>
 
-        {/* Ações de Backup */}
         <div className="bg-white rounded-lg shadow-md p-5">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Executar Backup</h2>
 
@@ -129,7 +127,6 @@ export default function BackupPage() {
           </div>
         </div>
 
-        {/* Atualizar apenas a seção de mensagens */}
         <div className="mt-4 space-y-2">
           {error && (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>

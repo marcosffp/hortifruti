@@ -1,6 +1,5 @@
 import { Pageable, Sort } from "./PagesType";
 
-// Representa uma compra/purchase individual
 export interface PurchaseType {
   id: number;
   purchaseDate: string;
@@ -8,7 +7,6 @@ export interface PurchaseType {
   updatedAt: string;
 }
 
-// Resposta paginada de compras
 export interface PurchaseResponse {
   content: PurchaseType[];
   pageable: Pageable;

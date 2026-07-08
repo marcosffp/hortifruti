@@ -26,40 +26,31 @@ public class DashboardService {
   private final CombinedScoreRepository combinedScoreRepository;
 
   @Transactional(readOnly = true)
-  /** Método principal público que retorna um objeto com todas as informações do dashboard. */
   public Map<String, Object> getDashboardData(
       LocalDate startDate, LocalDate endDate, Month month, int year) {
     Map<String, Object> dashboardData = new HashMap<>();
 
-    // Divisória 1: Totais de receita, custo e margem de lucro
     Map<String, BigDecimal> totals = new HashMap<>();
     totals.put("TotalReceita", calculateTotalRevenue(startDate, endDate));
     totals.put("TotalCusto", calculateTotalCost(startDate, endDate));
     totals.put("MargemLucro", calculateProfitMarginPercentage(startDate, endDate));
     dashboardData.put("Totais", totals);
 
-    // Divisória 2: Receitas por tipo de venda
     Map<String, BigDecimal> salesRevenue = new HashMap<>();
     salesRevenue.put("VendasCartao", calculateCardSalesRevenue(startDate, endDate));
     salesRevenue.put("VendasPix", calculatePixSalesRevenue(startDate, endDate));
     dashboardData.put("ReceitasPorTipo", salesRevenue);
 
-    // Divisória 3: Fluxo de caixa por mês
     dashboardData.put("FluxoDeCaixa", getCashFlowData(startDate, endDate));
 
-    // Divisória 4: Porcentagem por categoria
     dashboardData.put("PorcentagemPorCategoria", getCategoryPercentageData(startDate, endDate));
 
-    // Divisória 5: Ranking de categorias de gastos
     dashboardData.put("RankingCategoriasGastos", getExpenseCategoryRanking(month, year));
 
-    // Divisória 6: Fluxo de vendas (Combined Score)
     dashboardData.put("Fluxo de Vendas", getCombinedScoreData(startDate, endDate));
 
-    // Divisória 7: Produtos em alta
     dashboardData.put("Produtos em Alta", getTopSellingProducts(startDate, endDate));
 
-    // Divisória 8: Top 10 produtos por quantidade
     dashboardData.put("Top10ProdutosPorQuantidade", getTopProductsByQuantity(startDate, endDate));
 
     return dashboardData;

@@ -21,7 +21,6 @@ import { combinedScoreService } from "@/services/combinedScoreService";
 import { showError, showSuccess } from "@/services/notificationService";
 import ClientCard from "@/components/modules/ClientCard";
 
-// Tipo para os dados do cliente adaptado para exibição na UI
 interface ClienteUI {
   id: number;
   nome: string;
@@ -44,8 +43,7 @@ export default function ClientesPage() {
   const [clientes, setClientes] = useState<ClienteUI[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
-  
-  // Carregar a preferência de visualização salva
+
   useEffect(() => {
     const savedViewMode = localStorage.getItem("clientesViewMode");
     if (savedViewMode === "list" || savedViewMode === "grid") {
@@ -53,7 +51,6 @@ export default function ClientesPage() {
     }
   }, []);
 
-  // Carregar clientes do backend
   useEffect(() => {
     const fetchClientes = async () => {
       try {
@@ -67,7 +64,6 @@ export default function ClientesPage() {
           lastGroupings.map((grouping) => [grouping.clientId, grouping])
         );
 
-        // Transformar os dados do backend para o formato da UI
         const clientesUI: ClienteUI[] = clientesResponse.map((client) => {
           const lastGrouping = lastGroupingByClientId.get(client.id);
           return {
@@ -76,7 +72,7 @@ export default function ClientesPage() {
             email: client.email || "",
             telefone: client.phoneNumber || "",
             endereco: client.address || "",
-            status: client.variablePrice ? "preco-variavel" : "preco-fixo", // Usar variablePrice para determinar o tipo de preço
+            status: client.variablePrice ? "preco-variavel" : "preco-fixo",
             ultimaCompra: formatLastPurchaseDate(lastGrouping?.confirmedAt ?? null),
             totalCompras: lastGrouping?.totalValue ?? 0,
           };
@@ -95,7 +91,6 @@ export default function ClientesPage() {
     fetchClientes();
   }, []);
 
-  // Filtrar clientes com base no termo de busca
   const filteredClientes = clientes.filter(
     (cliente) =>
       cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -103,40 +98,34 @@ export default function ClientesPage() {
       cliente.telefone.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  // State para controlar a confirmação de exclusão
   const [clienteParaExcluir, setClienteParaExcluir] = useState<number | null>(
     null,
   );
 
-  // Função para abrir modal de confirmação
   const confirmarExclusao = (id: number) => {
     setClienteParaExcluir(id);
   };
 
-  // Função para excluir cliente
   const handleExcluirCliente = async (id: number) => {
     confirmarExclusao(id);
   };
 
-  // Função para confirmar exclusão
   const confirmarEExcluirCliente = async () => {
     if (!clienteParaExcluir) return;
 
     try {
       await clientService.deleteClient(clienteParaExcluir);
-      // Atualiza a lista de clientes após a exclusão
       setClientes(
         clientes.filter((cliente) => cliente.id !== clienteParaExcluir),
       );
       showSuccess("Cliente excluído com sucesso!");
-      setClienteParaExcluir(null); // Fecha o modal
+      setClienteParaExcluir(null);
     } catch (error) {
       showError("Erro ao excluir cliente");
       console.error("Erro ao excluir cliente:", error);
     }
   };
 
-  // Função para cancelar exclusão
   const cancelarExclusao = () => {
     setClienteParaExcluir(null);
   };
@@ -145,7 +134,6 @@ export default function ClientesPage() {
     <>
       <main className="flex-1 p-8 bg-gray-50 overflow-auto">
         <div className="flex flex-col max-w-7xl mx-auto">
-          {/* Cabeçalho da página */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-800">
               Gestão de Clientes
@@ -156,7 +144,6 @@ export default function ClientesPage() {
             </p>
           </div>
 
-          {/* Barra de pesquisa e botão novo cliente */}
           <div className="flex justify-between flex-wrap gap-3 items-center mb-6">
             <div className="flex items-center gap-4">
               <div className="relative w-full max-w-md">
@@ -208,7 +195,6 @@ export default function ClientesPage() {
             </Link>
           </div>
 
-          {/* Lista de Clientes */}
           <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
             <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
               <div className="flex items-center">
@@ -262,7 +248,6 @@ export default function ClientesPage() {
               </div>
             )}
 
-            {/* Conteúdo da lista */}
             {isLoading && (
               <div className="py-16 text-center">
                 <div className="flex justify-center mb-4">
@@ -376,7 +361,6 @@ export default function ClientesPage() {
         </div>
       </main>
 
-      {/* Modal de confirmação de exclusão */}
       {clienteParaExcluir !== null && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">

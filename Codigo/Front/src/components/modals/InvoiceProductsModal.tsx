@@ -22,7 +22,6 @@ export default function InvoiceProductsModal({
   const [loading, setLoading] = useState(false);
   const [confirmDeleteModal, setConfirmDeleteModal] = useState({ state: false, productId: -1 });
 
-  // ADICIONADOS: estados para edição inline
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<InvoiceProductType>>({});
 
@@ -55,7 +54,6 @@ export default function InvoiceProductsModal({
     }
   };
 
-  // Funções de edição
   const startEdit = (product: InvoiceProductType) => {
     setEditingProductId(product.id);
     setEditForm({
@@ -89,7 +87,6 @@ export default function InvoiceProductsModal({
         unitType: editForm.unitType,
       };
       const updated = await purchaseService.updateInvoiceProduct(editingProductId, payload);
-      // atualizar lista local sem refetch completo
       setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
       toast.success("Produto atualizado com sucesso");
       setEditingProductId(null);
@@ -117,7 +114,6 @@ export default function InvoiceProductsModal({
   return (
     <div className="fixed inset-0 h-full bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-300">
           <h2 className="text-xl font-semibold">Produtos da Compra #{purchaseId}</h2>
           <button
@@ -128,7 +124,6 @@ export default function InvoiceProductsModal({
           </button>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
             <div className="space-y-2">

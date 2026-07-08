@@ -23,7 +23,6 @@ public class ChatSessionService {
 
   private final ChatSessionRepository sessionRepository;
 
-  /** Obtém ou cria uma nova sessão para um número de telefone */
   @Transactional
   public ChatSession getOrCreateSession(String phoneNumber) {
     Optional<ChatSession> existingSession =
@@ -32,14 +31,12 @@ public class ChatSessionService {
     return existingSession.orElseGet(() -> createNewSession(phoneNumber));
   }
 
-  /** Cria uma nova sessão de chat */
   @Transactional
   public ChatSession createNewSession(String phoneNumber) {
     return sessionRepository.save(
         ChatSession.builder().phoneNumber(phoneNumber).status(SessionStatus.MENU).build());
   }
 
-  /** Atualiza o status da sessão */
   @Transactional
   public ChatSession updateSessionStatus(Long sessionId, SessionStatus newStatus) {
     ChatSession session =
@@ -51,7 +48,6 @@ public class ChatSessionService {
     return sessionRepository.save(session);
   }
 
-  /** Define o contexto da sessão */
   @Transactional
   public ChatSession setSessionContext(Long sessionId, SessionContext context) {
     ChatSession session =
@@ -63,7 +59,6 @@ public class ChatSessionService {
     return sessionRepository.save(session);
   }
 
-  /** Associa um cliente à sessão */
   @Transactional
   public ChatSession associateClient(Long sessionId, Long clientId) {
     ChatSession session =
@@ -88,7 +83,6 @@ public class ChatSessionService {
     return sessionRepository.save(session);
   }
 
-  /** Pausa o bot para um número de telefone */
   @Transactional
   public void pauseBotForPhone(String phoneNumber, int hours) {
     Optional<ChatSession> sessionOpt =
@@ -102,7 +96,6 @@ public class ChatSessionService {
     }
   }
 
-  /** Remove a pausa do bot */
   @Transactional
   public ChatSession unpauseBot(Long sessionId) {
     ChatSession session =
@@ -121,7 +114,6 @@ public class ChatSessionService {
     sessionRepository.deleteById(sessionId);
   }
 
-  /** Verifica se o bot está pausado para um telefone */
   public boolean isBotPausedForPhone(String phoneNumber) {
     Optional<ChatSession> sessionOpt =
         sessionRepository.findActiveSessionByPhoneNumber(phoneNumber);
@@ -129,7 +121,6 @@ public class ChatSessionService {
     return sessionOpt.map(ChatSession::isPaused).orElse(false);
   }
 
-  /** Busca sessões aguardando atendimento humano */
   public List<ChatSession> getSessionsAwaitingHuman() {
     return sessionRepository.findSessionsAwaitingHuman();
   }

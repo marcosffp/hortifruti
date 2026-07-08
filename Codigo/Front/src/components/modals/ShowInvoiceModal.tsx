@@ -73,7 +73,6 @@ export default function ShowInvoiceModal({
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-                {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b border-gray-300">
                     <h2 className="text-xl font-semibold">
                         Nota Fiscal - Agrupamento {scoreNumber || ""}
@@ -86,7 +85,6 @@ export default function ShowInvoiceModal({
                     </button>
                 </div>
 
-                {/* PDF Viewer */}
                 <div className="flex-1 overflow-auto p-6">
                     {pdfUrl ? (
                         <iframe
@@ -101,7 +99,6 @@ export default function ShowInvoiceModal({
                     )}
                 </div>
 
-                {/* Footer com ações */}
                 <div className="flex justify-end gap-3 p-6 border-t border-gray-300">
                     <button
                         onClick={handlePrint}

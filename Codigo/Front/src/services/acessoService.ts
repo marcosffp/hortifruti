@@ -1,4 +1,3 @@
-// Serviço para gerenciar funcionalidades do módulo de backup/usuários
 import { UserRequest, UserResponse, userService } from "./userService";
 
 // Interfaces para compatibilidade com a UI
@@ -28,7 +27,6 @@ interface BackupStats {
 class BackupService {
   private baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-  // Estatísticas do módulo
   async getStats(): Promise<BackupStats> {
     try {
       const users = await userService.getAllUsers();
@@ -50,7 +48,6 @@ class BackupService {
     }
   }
 
-  // Buscar todos os usuários formatados para a UI
   async getFormattedUsers(): Promise<UIUserResponse[]> {
     const users = await userService.getAllUsers();
     return users.map((user) => ({
@@ -148,7 +145,7 @@ class BackupService {
     }
   }
 
-  // Buscar usuário por ID (simulado - backend não tem esse endpoint)
+  // Simulado - backend não tem esse endpoint
   async getUserById(id: number): Promise<UIUserResponse> {
     try {
       const users = await this.getFormattedUsers();
@@ -163,7 +160,6 @@ class BackupService {
     }
   }
 
-  // Excluir usuário
   async deleteUser(id: number): Promise<boolean> {
     try {
       const usuario = await this.getUserById(id);
@@ -175,7 +171,6 @@ class BackupService {
     }
   }
 
-  // Backup completo dos dados
   async performBackup(): Promise<{ success: boolean; message: string }> {
     try {
       const response = await fetch(`${this.baseURL}/api/acesso`, {
@@ -199,7 +194,6 @@ class BackupService {
     }
   }
 
-  // Restaurar dados do backup
   async restoreBackup(
     backupFile: File
   ): Promise<{ success: boolean; message: string }> {

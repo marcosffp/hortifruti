@@ -16,10 +16,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * Sources XMLs from the locally persisted {@link FiscalNoteXmlStorageService} instead of live
- * Focus NFe calls per note — the live-per-note approach silently dropped notes whenever the
- * external API call failed (timeout, "processando" status, rate limiting), causing incomplete
- * "Exportar Completo" ZIPs.
+ * Sources XMLs from the locally persisted {@link FiscalNoteXmlStorageService} instead of live Focus
+ * NFe calls per note — the live-per-note approach silently dropped notes whenever the external API
+ * call failed (timeout, "processando" status, rate limiting), causing incomplete "Exportar
+ * Completo" ZIPs.
  */
 @Service
 @AllArgsConstructor
@@ -27,8 +27,7 @@ import org.springframework.stereotype.Service;
 public class NfSalesCalculator {
   private final FiscalNoteXmlStorageService fiscalNoteXmlStorageService;
 
-  public List<File> generateXmlFileList(LocalDate startDate, LocalDate endDate)
-      throws IOException {
+  public List<File> generateXmlFileList(LocalDate startDate, LocalDate endDate) throws IOException {
     List<FiscalNoteXmlStorageResponse> storedNotes =
         fiscalNoteXmlStorageService.findByPeriod(startDate, endDate);
 

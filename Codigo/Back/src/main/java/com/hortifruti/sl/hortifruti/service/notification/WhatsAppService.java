@@ -37,7 +37,6 @@ public class WhatsAppService {
       throw new IllegalArgumentException("Número de telefone não pode ser vazio");
     }
 
-    // Remove todos os caracteres não numéricos
     String cleanNumber = phoneNumber.replaceAll("[^0-9]", "");
 
     // Se já começa com 55 (código do Brasil), assume que está correto
@@ -152,7 +151,6 @@ public class WhatsAppService {
 
     boolean allSent = true;
 
-    // Enviar cada documento com delay entre eles
     for (int i = 0; i < documents.size(); i++) {
 
       boolean sent =
@@ -176,18 +174,10 @@ public class WhatsAppService {
     return allSent;
   }
 
-  /**
-   * Método genérico para envio de mensagens Usado pelo NotificationService para enviar mensagens
-   * simples
-   */
   public boolean sendMessage(String phoneNumber, String message) {
     return sendTextMessage(phoneNumber, message);
   }
 
-  /**
-   * Método para enviar mensagem com anexos Usado pelo NotificationService para enviar mensagens com
-   * documentos
-   */
   public boolean sendMessage(
       String phoneNumber, String message, List<byte[]> attachments, List<String> fileNames) {
     if (attachments == null || attachments.isEmpty()) {

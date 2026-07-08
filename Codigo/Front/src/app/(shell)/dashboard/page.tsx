@@ -12,7 +12,6 @@ export default function Dashboard() {
   const [showModalReport, setShowModalReport] = useState(false);
   const { isGenerating, error, generateReport } = useReport();
 
-  // Estados para filtros
   const [startDate, setStartDate] = useState(() => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -97,9 +96,8 @@ export default function Dashboard() {
         </RoleGuard>
       </div>
 
-      {/* Dashboard com Gráficos - Protegido para MANAGER */}
       <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
-        <CashFlow 
+        <CashFlow
           startDate={startDate}
           endDate={endDate}
           setStartDate={setStartDate}
@@ -107,7 +105,6 @@ export default function Dashboard() {
         />
       </RoleGuard>
 
-      {/* Fallback para usuários sem permissão */}
       <RoleGuard
         roles={["MANAGER"]}
         ignoreRedirect={true}
@@ -133,16 +130,12 @@ export default function Dashboard() {
       </RoleGuard>
 
       {showModalReport && (
-        // Modal aprimorado para seleção de relatório (MENSAL ou POR PERÍODO)
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => !isGenerating && setShowModalReport(false)}
           />
-          {/* Dialog */}
           <div className="relative z-10 w-full max-w-lg mx-4 bg-white rounded-2xl shadow-2xl border border-gray-100">
-            {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div>
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Selecionar Tipo de Relatório</h2>
@@ -160,7 +153,6 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* Content */}
             <div className="px-5 py-5 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
@@ -208,7 +200,6 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Footer */}
             <div className="px-5 py-4 border-t border-gray-100 flex justify-end">
               <button
                 className="px-4 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-60"

@@ -67,21 +67,17 @@ public class BilletQuery {
     try {
       String endpoint = buildBilletEndpoint(combinedScore.getOurNumber_sicoob());
 
-      // Faz a requisição para obter o boleto
       ResponseEntity<JsonNode> response = httpClient.getWithResponse(endpoint);
       billetValidation.validateResponse(response);
 
-      // Verifica se a resposta é válida
       JsonNode resposta = response.getBody();
       if (resposta == null || resposta.isEmpty()) {
         throw new BilletException(
             "Nenhum boleto encontrado para o número: " + combinedScore.getOurNumber_sicoob());
       }
 
-      // Acessa o campo "resultado" que contém os detalhes do boleto
       JsonNode resultado = getResponseResult(response);
 
-      // Mapeia os dados para um objeto BilletResponse
       return mapJsonToBilletResponse(resultado);
 
     } catch (HttpClientErrorException e) {

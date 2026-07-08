@@ -17,10 +17,8 @@ export default function RootLayout({
       <div className="flex flex-col h-screen">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar component with onClose handler to close sidebar when an item is clicked or when close button is pressed */}
           <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-          {/* Overlay for mobile when sidebar is open */}
           <div
             className={`md:hidden fixed inset-0 bg-black/50 z-40 transition-opacity ${sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
             onClick={() => setSidebarOpen(false)}

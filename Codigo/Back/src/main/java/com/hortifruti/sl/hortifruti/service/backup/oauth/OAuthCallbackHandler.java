@@ -11,7 +11,6 @@ public class OAuthCallbackHandler {
   private final AuthorizationFlowFactory flowFactory;
   private final TokenProcessor tokenProcessor;
 
-  /** Processa o código de autorização recebido do Google. */
   protected void handleAuthorizationCode(String authorizationCode) {
 
     try {

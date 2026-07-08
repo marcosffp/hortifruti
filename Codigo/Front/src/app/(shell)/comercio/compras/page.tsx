@@ -53,9 +53,7 @@ export default function PurchasesPage() {
 
             <ClientSummaryCards clientId={selectedClient?.clientId} refreshKey={refreshKey} />
 
-            {/* Tabs */}
             <div className="mt-8">
-                {/* Container das tabs responsivo */}
                 <div className="flex gap-2 flex-nowrap overflow-x-auto w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                     <button
                         className={`flex items-center px-4 py-2 rounded-t-lg font-medium transition-colors ${
@@ -85,7 +83,6 @@ export default function PurchasesPage() {
                 <div className="bg-white rounded-b-lg shadow-sm p-4 overflow-x-auto">
                     {tab === "purchaseFiles" && (
                         <div>
-                            {/* Tabela de arquivos de compra */}
                             <PurchaseFilesTable
                                 clientId={selectedClient?.clientId}
                                 refreshKey={refreshKey}

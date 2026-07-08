@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-/** Repository para gerenciar sessões de chat. */
 public interface ChatSessionRepository extends JpaRepository<ChatSession, Long> {
 
   /**
@@ -21,13 +20,11 @@ public interface ChatSessionRepository extends JpaRepository<ChatSession, Long> 
           + "ORDER BY cs.createdAt DESC")
   Optional<ChatSession> findActiveSessionByPhoneNumber(@Param("phoneNumber") String phoneNumber);
 
-  /** Busca sessões aguardando atendimento humano */
   @Query(
       "SELECT cs FROM ChatSession cs WHERE cs.status = 'AWAITING_HUMAN' "
           + "ORDER BY cs.createdAt ASC")
   List<ChatSession> findSessionsAwaitingHuman();
 
-  /** Busca sessões pausadas que já podem ser reativadas */
   @Query(
       "SELECT cs FROM ChatSession cs WHERE cs.pausedUntil IS NOT NULL "
           + "AND cs.pausedUntil < :now")

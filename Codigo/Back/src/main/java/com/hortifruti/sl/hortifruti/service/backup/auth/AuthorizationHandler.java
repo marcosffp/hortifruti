@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuthorizationHandler {
 
-  /** Autoriza o usuário via fluxo OAuth2 */
   protected Credential authorizeUser(GoogleAuthorizationCodeFlow flow, String userId)
       throws IOException {
 

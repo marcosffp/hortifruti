@@ -21,7 +21,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-/** Controller para operações CRUD de produtos Acessível apenas para usuários com role MANAGER */
 @RestController
 @RequestMapping("/products")
 @RequiredArgsConstructor
@@ -32,7 +31,6 @@ public class ProductController {
 
   private final ProductService productService;
 
-  /** Lista todos os produtos */
   @GetMapping
   @PreAuthorize("hasRole('MANAGER')")
   @Operation(
@@ -48,7 +46,6 @@ public class ProductController {
     return ResponseEntity.ok(products);
   }
 
-  /** Lista produtos com paginação */
   @GetMapping("/paginated")
   @PreAuthorize("hasRole('MANAGER')")
   @Operation(summary = "Listar produtos com paginação")
@@ -84,7 +81,6 @@ public class ProductController {
     return ResponseEntity.ok(products);
   }
 
-  /** Busca produto por ID */
   @GetMapping("/{id}")
   @PreAuthorize("hasRole('MANAGER')")
   @Operation(summary = "Buscar produto por ID")
@@ -105,7 +101,6 @@ public class ProductController {
     return ResponseEntity.ok(product);
   }
 
-  /** Busca produtos por nome */
   @GetMapping("/search")
   @PreAuthorize("hasRole('MANAGER')")
   @Operation(summary = "Buscar produtos por nome")
@@ -129,7 +124,6 @@ public class ProductController {
     return ResponseEntity.ok(products);
   }
 
-  /** Cria novo produto */
   @PostMapping
   @PreAuthorize("hasRole('MANAGER')")
   @Operation(summary = "Criar novo produto")
@@ -147,7 +141,6 @@ public class ProductController {
     return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
   }
 
-  /** Atualiza produto existente */
   @PutMapping("/{id}")
   @PreAuthorize("hasRole('MANAGER')")
   @Operation(summary = "Atualizar produto existente")
@@ -170,7 +163,6 @@ public class ProductController {
     return ResponseEntity.ok(updatedProduct);
   }
 
-  /** Remove produto */
   @DeleteMapping("/{id}")
   @PreAuthorize("hasRole('MANAGER')")
   @Operation(summary = "Remover produto")
@@ -191,7 +183,6 @@ public class ProductController {
     return ResponseEntity.noContent().build();
   }
 
-  /** Conta total de produtos */
   @GetMapping("/count")
   @PreAuthorize("hasRole('MANAGER')")
   @Operation(summary = "Contar produtos")

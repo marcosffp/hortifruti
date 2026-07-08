@@ -8,8 +8,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Feriados nacionais brasileiros (fixos e móveis, calculados a partir da Páscoa),
- * usados para impedir que datas de vencimento caiam em dias não úteis.
+ * Feriados nacionais brasileiros (fixos e móveis, calculados a partir da Páscoa), usados para
+ * impedir que datas de vencimento caiam em dias não úteis.
  */
 final class BrazilianHolidays {
 
@@ -18,7 +18,9 @@ final class BrazilianHolidays {
   private BrazilianHolidays() {}
 
   static boolean isHoliday(LocalDate date) {
-    return HOLIDAYS_BY_YEAR.computeIfAbsent(date.getYear(), BrazilianHolidays::buildHolidays).contains(date);
+    return HOLIDAYS_BY_YEAR
+        .computeIfAbsent(date.getYear(), BrazilianHolidays::buildHolidays)
+        .contains(date);
   }
 
   private static Set<LocalDate> buildHolidays(int year) {
@@ -36,7 +38,8 @@ final class BrazilianHolidays {
 
     if (year >= 2024) {
       // Feriado nacional a partir da Lei 14.759/2023
-      holidays.add(LocalDate.of(year, Month.NOVEMBER, 20)); // Dia Nacional de Zumbi e da Consciência Negra
+      holidays.add(
+          LocalDate.of(year, Month.NOVEMBER, 20)); // Dia Nacional de Zumbi e da Consciência Negra
     }
 
     // Feriados móveis, calculados a partir do Domingo de Páscoa
@@ -49,7 +52,9 @@ final class BrazilianHolidays {
     return holidays;
   }
 
-  /** Calcula a data do Domingo de Páscoa (algoritmo de Gauss/Meeus para o calendário gregoriano). */
+  /**
+   * Calcula a data do Domingo de Páscoa (algoritmo de Gauss/Meeus para o calendário gregoriano).
+   */
   private static LocalDate calculateEaster(int year) {
     int a = year % 19;
     int b = year / 100;

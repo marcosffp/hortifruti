@@ -38,7 +38,6 @@ export default function StatsSection() {
       ([entry]) => {
         if (entry.isIntersecting && !isVisible) {
           setIsVisible(true);
-          // Animate counters
           stats.forEach((stat, index) => {
             if (stat.number.includes('%')) {
               const targetNumber = parseInt(stat.number.replace('%', ''));

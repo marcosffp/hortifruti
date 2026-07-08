@@ -41,7 +41,6 @@ export function useBackup() {
                 if (res.requiresAuth && res.authUrl) {
                     setAuthUrl(res.authUrl);
                 } else {
-                    // Atualiza status de armazenamento após concluir backup
                     refreshStorage();
                 }
             } catch (e: any) {

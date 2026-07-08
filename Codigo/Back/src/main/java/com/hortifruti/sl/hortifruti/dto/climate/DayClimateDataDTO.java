@@ -20,7 +20,6 @@ public record DayClimateDataDTO(
         String weatherDescription,
     @Schema(description = "Ícone do clima", example = "02d") String weatherIcon) {
 
-  /** Construtor de conveniência para criar a partir do DailyForecastDTO existente */
   public static DayClimateDataDTO fromDailyForecast(
       com.hortifruti.sl.hortifruti.dto.climate.WeatherForecastDTO.DailyForecastDTO dailyForecast) {
     return new DayClimateDataDTO(
@@ -35,7 +34,6 @@ public record DayClimateDataDTO(
         dailyForecast.weatherIcon());
   }
 
-  /** Construtor simplificado com apenas dados essenciais */
   public DayClimateDataDTO(LocalDate date, double avgTemp, double minTemp, double maxTemp) {
     this(date, minTemp, maxTemp, avgTemp, 0.0, 0.0, 0.0, "N/A", "01d");
   }

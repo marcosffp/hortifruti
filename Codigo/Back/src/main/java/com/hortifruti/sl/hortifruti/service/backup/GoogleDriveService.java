@@ -95,7 +95,6 @@ public class GoogleDriveService {
 
       log.info("Verificando se já existe uma credencial válida...");
 
-      // Verificar se o diretório de tokens existe
       java.io.File tokensDir = new java.io.File(TOKENS_DIRECTORY_PATH);
       if (!tokensDir.exists()) {
         log.info("Diretório de tokens não existe. Criando: {}", TOKENS_DIRECTORY_PATH);
@@ -108,9 +107,7 @@ public class GoogleDriveService {
         log.info("Access Token presente: {}", credential.getAccessToken() != null);
         log.info("Refresh Token presente: {}", credential.getRefreshToken() != null);
 
-        // Verificar se o token de acesso está válido
         if (credential.getAccessToken() != null) {
-          // Verificar se o token não expirou
           if (credential.getExpiresInSeconds() == null || credential.getExpiresInSeconds() > 60) {
             log.info("Token válido encontrado. Reutilizando credencial existente.");
             return credential;
@@ -132,7 +129,6 @@ public class GoogleDriveService {
 
       log.warn("Nenhuma credencial válida encontrada. Será necessário autenticar novamente.");
 
-      // Se não existir credencial válida, gerar a URL e lançar exceção com a URL
       String authorizationUrl = flow.newAuthorizationUrl().setRedirectUri(redirectUri).build();
 
       log.info("URL de autorização gerada: {}", authorizationUrl);
@@ -186,7 +182,6 @@ public class GoogleDriveService {
     throw new BackupException("Erro de autenticação no Google Drive.", e);
   }
 
-  // Método auxiliar para excluir diretório recursivamente
   private void deleteDirectory(java.io.File directory) {
     log.info("Excluindo diretório: {}", directory.getAbsolutePath());
     if (directory.isDirectory()) {
@@ -217,7 +212,6 @@ public class GoogleDriveService {
               + folderName
               + "' and trashed=false";
 
-      // Adicionar condição de pasta pai se especificada
       if (parentFolderId != null && !parentFolderId.isEmpty()) {
         query += " and '" + parentFolderId + "' in parents";
       }
@@ -249,7 +243,6 @@ public class GoogleDriveService {
    * estrutura hierárquica.
    */
   protected String getFolderId(String folderPath) {
-    // Extrair o nome da pasta do caminho
     String folderName = folderPath;
     if (folderPath.contains("/")) {
       folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
@@ -336,7 +329,6 @@ public class GoogleDriveService {
         return false;
       }
 
-      // Tentar carregar as credenciais para verificar se são válidas
       base64FileDecoder.decodeGoogleDriveCredentials();
       java.io.File credentialsFile = base64FileDecoder.getGoogleDriveCredentialsFile();
       if (!credentialsFile.exists()) {
@@ -436,11 +428,9 @@ public class GoogleDriveService {
               .setAccessType("offline")
               .build();
 
-      // Corrigir: Usar o flow para trocar o código por um token e salvar as credenciais
       com.google.api.client.auth.oauth2.TokenResponse response =
           flow.newTokenRequest(authorizationCode).setRedirectUri(redirectUri).execute();
 
-      // Salvar as credenciais usando o flow
       Credential credential = flow.createAndStoreCredential(response, "user");
 
       log.info("Token de autorização recebido e armazenado com sucesso.");

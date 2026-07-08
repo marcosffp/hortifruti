@@ -69,11 +69,10 @@ const EditarUsuarioPage = ({ params }: EditarUsuarioPageProps) => {
         name: formData.name,
         cargo: formData.cargo,
         perfil: formData.perfil as "Funcionário" | "Gestor" | undefined,
-        password: formData.password, // Incluir senha na atualização
+        password: formData.password,
       };
       await backupService.updateUser(userId, userData);
       showSuccess("Usuário atualizado com sucesso!");
-      // Definir flag para recarregar a lista de usuários
       localStorage.setItem("shouldReloadUsers", "true");
       router.push("/acesso");
     } catch (error) {

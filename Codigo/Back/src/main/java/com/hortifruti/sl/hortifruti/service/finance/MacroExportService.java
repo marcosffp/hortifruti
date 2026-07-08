@@ -72,15 +72,12 @@ public class MacroExportService {
     String folderName = createMacroFolder(startDate);
     Path folderPath = Path.of(folderName);
 
-    // Gerar relatórios de transação (Excel, PDF, Extratos)
     generateTransactionReports(folderPath);
 
-    // Gerar relatórios fiscais (usando ReportTaxService)
     generateTaxReports(startDate, endDate, folderPath);
 
     Path zipFilePath = compressFolder(folderPath, folderName);
 
-    // Limpar pasta temporária
     deleteFolderRecursively(folderPath);
 
     return zipFilePath.toString();

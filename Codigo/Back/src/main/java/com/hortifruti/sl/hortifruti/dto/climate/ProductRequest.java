@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
-/** DTO para requisições de criação/atualização de produtos */
 public record ProductRequest(
     @NotBlank(message = "Nome do produto é obrigatório")
         @Size(max = 100, message = "Nome deve ter no máximo 100 caracteres")
@@ -17,7 +16,6 @@ public record ProductRequest(
     List<Month> peakSalesMonths,
     List<Month> lowSalesMonths) {
 
-  /** Construtor com validações customizadas */
   public ProductRequest {
     if (peakSalesMonths == null) {
       peakSalesMonths = List.of();

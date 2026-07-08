@@ -2,7 +2,6 @@
 
 import { fetchWithAuth } from "@/utils/httpUtils";
 
-// Interface para Recomendação de Produtos
 export interface ProductRecommendation {
   productId: number;
   name: string;
@@ -11,7 +10,6 @@ export interface ProductRecommendation {
   tag: 'BOM' | 'MEDIO' | 'RUIM';
 }
 
-// Interface para criação de produto
 export interface ProductRequest {
   name: string;
   temperatureCategory: 'CONGELANDO' | 'FRIO' | 'AMENO' | 'QUENTE';
@@ -19,7 +17,6 @@ export interface ProductRequest {
   lowSalesMonths: number[];
 }
 
-// Interface para resposta de produto
 export interface ProductResponse {
   id: number;
   name: string;
@@ -30,7 +27,6 @@ export interface ProductResponse {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-// Interface para previsão do tempo
 export interface WeatherForecast {
   city: string;
   country: string;
@@ -69,7 +65,6 @@ export const productService = {
     return data;
   },
 
-  // Buscar recomendações por data
   async getRecommendationsByDate(date: string): Promise<ProductRecommendation[]> {
     const response = await fetchWithAuth(
       `${API_URL}/api/recommendations/by-date?date=${date}`,
@@ -90,7 +85,6 @@ export const productService = {
     return data;
   },
 
-  // Buscar recomendações por categoria de temperatura
   async getRecommendationsByTemperature(category: string): Promise<ProductRecommendation[]> {
     const response = await fetchWithAuth(
       `${API_URL}/api/recommendations/by-temperature/${category}`,
@@ -109,7 +103,6 @@ export const productService = {
     return response.json();
   },
 
-  // Criar novo produto
   async createProduct(product: ProductRequest): Promise<ProductResponse> {
     const response = await fetchWithAuth(`${API_URL}/products`, {
       method: 'POST',
@@ -126,7 +119,6 @@ export const productService = {
     return response.json();
   },
 
-  // Listar todos os produtos
   async getAllProducts(): Promise<ProductResponse[]> {
     const response = await fetchWithAuth(`${API_URL}/products`, {
       method: 'GET',
@@ -142,7 +134,6 @@ export const productService = {
     return response.json();
   },
 
-  // Atualizar produto existente
   async updateProduct(id: number, product: ProductRequest): Promise<ProductResponse> {
     const response = await fetchWithAuth(`${API_URL}/products/${id}`, {
       method: 'PUT',
@@ -159,7 +150,6 @@ export const productService = {
     return response.json();
   },
 
-  // Excluir produto
   async deleteProduct(id: number): Promise<void> {
     const response = await fetchWithAuth(`${API_URL}/products/${id}`, {
       method: 'DELETE',
