@@ -30,11 +30,7 @@ export default function FreightCalculationPage() {
 
         setIsCalculating(true);
 
-        // TODO: Integrar com backend para cálculo real do frete
-        // Simular cálculo de frete baseado na distância
-        // Na implementação real, enviaria originData.lat, originData.lng, destinationData.lat, destinationData.lng para o backend
         setTimeout(async () => {
-            // Simular cálculo baseado na distância (fórmula simples para demonstração)
             const freightData = await freightService.calculateFreight(
                 { lat: originData.lat, lng: originData.lng },
                 { lat: destinationData.lat, lng: destinationData.lng }
@@ -77,7 +73,6 @@ export default function FreightCalculationPage() {
 
     return (
         <main className="flex-1 p-6 bg-gray-50 overflow-auto flex flex-col h-full">
-            {/* Header Section */}
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-800">Cálculo de Frete</h1>
                 <p className="text-gray-600">Calcule o valor do frete entre dois endereços</p>
@@ -87,9 +82,7 @@ export default function FreightCalculationPage() {
                 <FreightConfigInfo />
             </RoleGuard>
 
-            {/* Main Content */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left Panel - Form */}
                 <div className="bg-white rounded-lg shadow-sm p-6">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-xl font-semibold text-gray-800">Dados da Entrega</h2>
@@ -102,7 +95,6 @@ export default function FreightCalculationPage() {
                         </button>
                     </div>
 
-                    {/* Origin Field */}
                     <div className="mb-4">
                         <div className="flex justify-between items-center mb-2">
                             <label className="block text-sm font-medium text-gray-700">
@@ -123,7 +115,6 @@ export default function FreightCalculationPage() {
                         />
                     </div>
 
-                    {/* Destination Field */}
                     <div className="mb-6">
                         <div className="flex justify-between items-center mb-2">
                             <label className="block text-sm font-medium text-gray-700">
@@ -144,7 +135,6 @@ export default function FreightCalculationPage() {
                         />
                     </div>
 
-                    {/* Route Info */}
                     {freightValue && routeData && (
                         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                             <h3 className="text-sm font-medium text-green-800 mb-2">Informações da Rota</h3>
@@ -161,7 +151,6 @@ export default function FreightCalculationPage() {
                         </div>
                     )}
 
-                    {/* Calculate Button */}
                     <button
                         onClick={handleCalculateFreight}
                         disabled={!originData || !destinationData || isCalculating}
@@ -180,7 +169,6 @@ export default function FreightCalculationPage() {
                         )}
                     </button>
 
-                    {/* Freight Result */}
                     {freightValue && (
                         <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                             <div className="flex items-center mb-2">
@@ -201,7 +189,6 @@ export default function FreightCalculationPage() {
                   
                 </div>
 
-                {/* Right Panel - Map */}
                 <div className="bg-white rounded-lg shadow-sm p-6">
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">Rota no Mapa</h2>
                     <MapComponent
@@ -210,7 +197,6 @@ export default function FreightCalculationPage() {
                 </div>
             </div>
 
-            {/* Favorites Modal */}
             <FavoritesModal
                 isOpen={showFavoritesModal}
                 onClose={() => {

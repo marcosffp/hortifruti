@@ -2,7 +2,6 @@
 
 import { authService } from './authService';
 
-// Serviço para gerenciar usuários do sistema - adequado ao backend existente
 interface UserRequest {
   username: string;
   password: string;
@@ -42,7 +41,6 @@ const getAuthHeaders = () => {
 class UserService {
   private baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-  // Criar novo usuário
   async createUser(userData: UserRequest): Promise<UserResponse> {
     try {
       const response = await fetch(`${this.baseURL}/users/register`, {
@@ -62,7 +60,6 @@ class UserService {
     }
   }
 
-  // Buscar todos os usuários
   async getAllUsers(): Promise<UserResponse[]> {
     try {
       const response = await fetch(`${this.baseURL}/users/all`, {
@@ -93,7 +90,6 @@ class UserService {
     }
   }
 
-  // Atualizar usuário por username
   async updateUser(userData: UserRequest): Promise<UserResponse> {
     try {
       const response = await fetch(`${this.baseURL}/users/update`, {
@@ -113,7 +109,6 @@ class UserService {
     }
   }
 
-  // Atualizar usuário por ID
   async updateUserById(id: number, userData: UserRequest): Promise<UserResponse> {
     try {
       const response = await fetch(`${this.baseURL}/users/update/${id}`, {
@@ -133,7 +128,6 @@ class UserService {
     }
   }
 
-  // Excluir usuário
   async deleteUser(username: string): Promise<void> {
     try {
       const response = await fetch(`${this.baseURL}/users/delete/${encodeURIComponent(username)}`, {

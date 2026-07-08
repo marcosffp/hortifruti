@@ -11,22 +11,20 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class CombinedScoreSchedulerService {
 
-  @Autowired private ClientRepository clientRepository;
-
-  @Autowired private EmailTemplateService emailTemplateService;
-
-  @Autowired private EmailService emailService;
-
-  @Autowired private BilletService billetService;
+  private final ClientRepository clientRepository;
+  private final EmailTemplateService emailTemplateService;
+  private final EmailService emailService;
+  private final BilletService billetService;
 
   @Value("${overdue.notification.emails}")
   private String overdueNotificationEmails;
@@ -40,10 +38,6 @@ public class CombinedScoreSchedulerService {
     checkOverdueCombinedScores();
   }
 
-  /**
-   * Método público para verificação manual de CombinedScores vencidos Pode ser chamado via endpoint
-   * ou programaticamente
-   */
   public List<CombinedScore> manualOverdueCheck() {
     log.info("Verificação manual de CombinedScores vencidos iniciada");
     return checkOverdueCombinedScores();
@@ -108,7 +102,6 @@ public class CombinedScoreSchedulerService {
 
       log.info("Encontrados {} CombinedScores vencidos", overdueScores.size());
 
-      // Log detalhado para debug
       if (overdueScores.isEmpty()) {
         log.info(
             "Nenhum boleto vencido não pago encontrado. Critérios: dueDate < {} AND confirmedAt IS NULL",
@@ -132,7 +125,6 @@ public class CombinedScoreSchedulerService {
     }
   }
 
-  /** Envia resumo dos CombinedScores vencidos para os emails de notificação configurados */
   private void sendOverdueSummaryToManagement(List<CombinedScore> overdueScores) {
     if (overdueNotificationEmails == null || overdueNotificationEmails.trim().isEmpty()) {
       log.warn("Nenhum email configurado para notificações de CombinedScores vencidos");
@@ -153,12 +145,10 @@ public class CombinedScoreSchedulerService {
     }
   }
 
-  /** Método auxiliar para enviar email HTML diretamente */
   private void sendHtmlEmailDirectly(String email, String subject, String htmlBody) {
     try {
       log.info("Tentando enviar email HTML de boletos vencidos");
 
-      // Usar o EmailService diretamente (injetado via @Autowired)
       // O método sendEmailWithAttachments suporta HTML (setText com true)
       boolean success =
           emailService.sendEmailWithAttachments(
@@ -186,10 +176,8 @@ public class CombinedScoreSchedulerService {
     }
   }
 
-  /** Constrói o corpo do email HTML de resumo gerencial para CombinedScores vencidos */
   private String buildManagementOverdueHtmlBody(List<CombinedScore> overdueScores) {
     try {
-      // Agrupa por cliente para o resumo
       var scoresByClient =
           overdueScores.stream().collect(Collectors.groupingBy(CombinedScore::getClientId));
 
@@ -198,14 +186,12 @@ public class CombinedScoreSchedulerService {
               .map(CombinedScore::getTotalValue)
               .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-      // Prepara as variáveis para o template
       Map<String, String> variables = new java.util.HashMap<>();
       variables.put("REPORT_DATE", LocalDateTime.now().toLocalDate().toString());
       variables.put("TOTAL_CLIENTS", String.valueOf(scoresByClient.size()));
       variables.put("TOTAL_OVERDUE_BOLETOS", String.valueOf(overdueScores.size()));
       variables.put("TOTAL_OVERDUE_AMOUNT", String.format("%.2f", totalOverdueAmount));
 
-      // Constrói as linhas da tabela de clientes
       StringBuilder clientRows = new StringBuilder();
 
       scoresByClient.forEach(
@@ -222,7 +208,6 @@ public class CombinedScoreSchedulerService {
             clientRows.append("<tr>");
             clientRows.append("<td class=\"client-name\">").append(clientName).append("</td>");
 
-            // Lógica para mostrar a quantidade de boletos
             if (clientScores.size() == 1) {
               clientRows.append("<td><span class=\"boleto-count\">1 boleto</span></td>");
             } else {
@@ -241,17 +226,14 @@ public class CombinedScoreSchedulerService {
 
       variables.put("CLIENT_ROWS", clientRows.toString());
 
-      // Usa o EmailTemplateService para processar o template
       return emailTemplateService.processTemplate("overdue-management", variables);
 
     } catch (Exception e) {
       log.error("Erro ao construir email HTML de CombinedScores vencidos", e);
-      // Fallback para texto simples
       return buildManagementOverdueFallbackBody(overdueScores);
     }
   }
 
-  /** Constrói um corpo de email simples como fallback */
   private String buildManagementOverdueFallbackBody(List<CombinedScore> overdueScores) {
     var scoresByClient =
         overdueScores.stream().collect(Collectors.groupingBy(CombinedScore::getClientId));

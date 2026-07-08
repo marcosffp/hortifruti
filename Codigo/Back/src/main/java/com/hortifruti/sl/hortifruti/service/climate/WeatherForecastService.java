@@ -11,16 +11,14 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class WeatherForecastService {
 
-  @Autowired private final OpenWeatherClient weatherClient;
+  private final OpenWeatherClient weatherClient;
 
-  /** Obtém a previsão do tempo para 5 dias */
   public WeatherForecastDTO getFiveDayForecast() throws WeatherApiException {
     Map<String, Object> rawData = weatherClient.fetch5DayForecast();
     return processWeatherData(rawData);

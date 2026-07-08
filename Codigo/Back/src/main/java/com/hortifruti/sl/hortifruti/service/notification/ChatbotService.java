@@ -42,7 +42,7 @@ public class ChatbotService {
   // Cache para rastrear mensagens enviadas pelo bot nos últimos 10 segundos
   // Key: phoneNumber, Value: timestamp da última mensagem enviada pelo bot
   private final Map<String, Long> botSentMessages = new java.util.concurrent.ConcurrentHashMap<>();
-  private static final long BOT_MESSAGE_THRESHOLD_MS = 10000; // 10 segundos
+  private static final long BOT_MESSAGE_THRESHOLD_MS = 10000;
 
   private static final String CONTACT_PHONE = "(31) 3641-2244";
 
@@ -178,7 +178,6 @@ public class ChatbotService {
     }
   }
 
-  /** Processa a seleção do menu principal */
   private void handleMenuSelection(ChatSession session, String phoneNumber, String message) {
     String normalized = message.toLowerCase().trim();
 
@@ -237,7 +236,6 @@ public class ChatbotService {
     sendMainMenu(phoneNumber);
   }
 
-  /** Envia o menu principal */
   private void sendMainMenu(String phoneNumber) {
     registerBotMessage(phoneNumber);
 
@@ -581,11 +579,6 @@ public class ChatbotService {
     }
   }
 
-  /**
-   * Envia mensagem informando que o comando não foi reconhecido e lista os comandos disponíveis.
-   *
-   * @param phoneNumber Número de telefone do destinatário
-   */
   private void handleUnknownCommand(String phoneNumber) {
     String message =
         "Desculpe, não entendi sua solicitação.\n\n"
@@ -600,11 +593,6 @@ public class ChatbotService {
     whatsAppService.sendTextMessage(phoneNumber, message);
   }
 
-  /**
-   * Envia mensagem genérica de erro ao cliente.
-   *
-   * @param phoneNumber Número de telefone do destinatário
-   */
   private void sendErrorMessage(String phoneNumber) {
     String message =
         "Ops! Ocorreu um erro temporário.\n\n"
@@ -633,22 +621,10 @@ public class ChatbotService {
     return jid;
   }
 
-  /**
-   * Extrai o corpo da mensagem do payload do UltraMsg.
-   *
-   * @param data Mapa de dados contendo informações da mensagem
-   * @return Conteúdo textual da mensagem
-   */
   private String extractMessageBodyUltraMsg(Map<String, Object> data) {
     return (String) data.getOrDefault("body", "");
   }
 
-  /**
-   * Extrai o tipo da mensagem do payload do UltraMsg.
-   *
-   * @param data Mapa de dados contendo informações da mensagem
-   * @return Tipo da mensagem (padrão: "chat")
-   */
   private String extractMessageTypeUltraMsg(Map<String, Object> data) {
     return (String) data.getOrDefault("type", "chat");
   }

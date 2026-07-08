@@ -45,11 +45,9 @@ export default function NotificacoesPage() {
   const [valorBoleto, setValorBoleto] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  // Estados específicos para contabilidade
   const [cardValue, setCardValue] = useState("");
   const [cashValue, setCashValue] = useState("");
 
-  // Tipos de arquivos suportados para upload
   const SUPPORTED_FILE_TYPES = [
     ".pdf",
     ".jpg",
@@ -67,10 +65,8 @@ export default function NotificacoesPage() {
     ".csv",
   ] as const;
 
-  // Converter lista para string usada no accept=""
   const FILE_ACCEPT_STRING = SUPPORTED_FILE_TYPES.join(",");
 
-  // Efeito para ajustar canais de envio quando muda o tipo de destinatário
   useEffect(() => {
     if (tipoDestinatario === "contabilidade") {
       // Para contabilidade, apenas email
@@ -81,7 +77,6 @@ export default function NotificacoesPage() {
     }
   }, [tipoDestinatario]);
 
-  // Carregar clientes
   useEffect(() => {
     const fetchClientes = async () => {
       try {
@@ -109,14 +104,12 @@ export default function NotificacoesPage() {
     fetchClientes();
   }, []);
 
-  // Filtrar clientes
   const filteredClientes = clientes.filter((cliente) =>
     cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cliente.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cliente.telefone.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Selecionar/desselecionar cliente
   const toggleCliente = (id: number) => {
     setClientes(
       clientes.map((c) =>
@@ -125,7 +118,6 @@ export default function NotificacoesPage() {
     );
   };
 
-  // Selecionar todos
   const toggleTodos = () => {
     const todosAtivos = filteredClientes.every((c) => c.selecionado);
     setClientes(
@@ -138,13 +130,11 @@ export default function NotificacoesPage() {
     );
   };
 
-  // Upload de arquivos
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files);
-      const maxSize = 10 * 1024 * 1024; // 10MB por arquivo
+      const maxSize = 10 * 1024 * 1024;
 
-      // Validar tamanho de cada arquivo
       const arquivosInvalidos = newFiles.filter(file => file.size > maxSize);
       if (arquivosInvalidos.length > 0) {
         showError(`${arquivosInvalidos.length} arquivo(s) excede(m) o tamanho máximo de 10MB`);
@@ -159,19 +149,16 @@ export default function NotificacoesPage() {
     }
   };
 
-  // Remover arquivo específico
   const removerArquivo = (index: number) => {
     setArquivos(prev => prev.filter((_, i) => i !== index));
     showSuccess("Arquivo removido");
   };
 
-  // Remover todos os arquivos
   const removerTodosArquivos = () => {
     setArquivos([]);
     showSuccess("Todos os arquivos foram removidos");
   };
 
-  // Validações básicas
   const validarArquivoECanais = () => {
     if (arquivos.length === 0) {
       showError("Por favor, selecione pelo menos um arquivo para enviar");
@@ -184,7 +171,6 @@ export default function NotificacoesPage() {
     return true;
   };
 
-  // Validar clientes selecionados
   const validarClientes = () => {
     const clientesSelecionados = clientes.filter((c) => c.selecionado);
     if (clientesSelecionados.length === 0) {
@@ -219,14 +205,12 @@ export default function NotificacoesPage() {
     return true;
   };
 
-  // Validações
   const validarFormulario = () => {
     if (!validarArquivoECanais()) return false;
     if (tipoDestinatario === "clientes" && !validarClientes()) return false;
     return true;
   };
 
-  // Enviar notificação
   const handleEnviar = async () => {
     if (!validarFormulario()) {
       return;
@@ -235,17 +219,15 @@ export default function NotificacoesPage() {
     try {
       setEnviando(true);
 
-      // Preparar dados para envio
       const clientesSelecionados = clientes.filter((c) => c.selecionado);
-      const clientIds = tipoDestinatario === "clientes" 
+      const clientIds = tipoDestinatario === "clientes"
         ? clientesSelecionados.map((c) => c.id)
-        : []; // Vazio para contabilidade
+        : [];
 
       const channels: string[] = [];
       if (canaisEnvio.email) channels.push("email");
       if (canaisEnvio.whatsapp) channels.push("whatsapp");
 
-      // Chamar serviço de notificação
       const requestData: BulkNotificationRequest = {
         files: arquivos,
         clientIds,
@@ -254,7 +236,6 @@ export default function NotificacoesPage() {
         customMessage: mensagemPersonalizada || undefined,
       };
 
-      // Adicionar campos financeiros se for contabilidade
       if (tipoDestinatario === "contabilidade") {
         if (cardValue) requestData.cardValue = cardValue;
         if (cashValue) requestData.cashValue = cashValue;
@@ -265,22 +246,19 @@ export default function NotificacoesPage() {
       if (response.success) {
         showSuccess(response.message);
 
-        // Limpar formulário
         setArquivos([]);
         setMensagemPersonalizada("");
         setDataVencimento("");
         setValorBoleto("");
         setClientes(clientes.map((c) => ({ ...c, selecionado: false })));
         setCanaisEnvio({ email: false, whatsapp: false });
-        
-        // Limpar campos financeiros
+
         setCardValue("");
         setCashValue("");
 
       } else {
         showError(response.message);
-        
-        // Mostrar falhas específicas se houver
+
         if (response.failedRecipients && response.failedRecipients.length > 0) {
           const failedList = response.failedRecipients.join(", ");
           showError(`Falha ao enviar para: ${failedList}`);
@@ -301,7 +279,6 @@ export default function NotificacoesPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-6 bg-[var(--neutral-50)] min-h-full">
-      {/* Header */}
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl md:text-3xl font-bold text-[var(--neutral-900)]">
           Módulo Notificações
@@ -312,11 +289,9 @@ export default function NotificacoesPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Formulário de Envio */}
         <div className="lg:col-span-2 space-y-4">
           <Card title="Envio de Documentos">
             <div className="space-y-6">
-              {/* Tipo de Destinatário */}
               <div>
                 <div className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
                   Destinatário
@@ -349,7 +324,6 @@ export default function NotificacoesPage() {
                 </div>
               </div>
 
-              {/* Canal de Envio */}
               <div>
                 <div className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
                   Canal de Envio (selecione um ou ambos)
@@ -386,7 +360,6 @@ export default function NotificacoesPage() {
                 </div>
               </div>
 
-              {/* Upload de Arquivos */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="block text-sm font-medium text-[var(--neutral-700)]">
@@ -399,7 +372,6 @@ export default function NotificacoesPage() {
                   )}
                 </div>
 
-                {/* Área de Upload */}
                 <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-[var(--neutral-300)] rounded-lg cursor-pointer hover:border-[var(--primary)] hover:bg-[var(--primary-bg)] transition-all mb-3">
                   <div className="flex flex-col items-center justify-center">
                     <Upload className="w-6 h-6 text-[var(--neutral-500)] mb-1" />
@@ -416,7 +388,6 @@ export default function NotificacoesPage() {
                   />
                 </label>
 
-                {/* Lista de Arquivos */}
                 {arquivos.length > 0 && (
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {arquivos.map((arquivo, index) => (
@@ -458,7 +429,6 @@ export default function NotificacoesPage() {
                 )}
               </div>
 
-              {/* Mensagem Personalizada */}
               <div>
                 <label htmlFor="mensagem" className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
                   Mensagem Personalizada (opcional)
@@ -473,13 +443,11 @@ export default function NotificacoesPage() {
                 />
               </div>
 
-              {/* Campos específicos para Contabilidade */}
               {tipoDestinatario === "contabilidade" && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-[var(--neutral-900)]">Valores Financeiros</h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Campo Cartão */}
                     <div>
                       <label htmlFor="cartao" className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
                         Valor de Cartão (R$)
@@ -496,7 +464,6 @@ export default function NotificacoesPage() {
                       />
                     </div>
 
-                    {/* Campo Dinheiro */}
                     <div>
                       <label htmlFor="dinheiro" className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
                         Valor em Dinheiro (R$)
@@ -516,7 +483,6 @@ export default function NotificacoesPage() {
                 </div>
               )}
 
-              {/* Botão de Enviar */}
               <Button
                 variant="primary"
                 fullWidth
@@ -541,12 +507,10 @@ export default function NotificacoesPage() {
           </Card>
         </div>
 
-        {/* Seleção de Clientes */}
         <div className="space-y-4">
           {tipoDestinatario === "clientes" ? (
             <Card title={`Selecionar Clientes (${clientesSelecionados})`}>
               <div className="space-y-4">
-                {/* Busca */}
                 <div className="relative">
                   <input
                     type="text"
@@ -558,7 +522,6 @@ export default function NotificacoesPage() {
                   <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--neutral-400)]" />
                 </div>
 
-                {/* Selecionar Todos */}
                 {filteredClientes.length > 0 && (
                   <button
                     type="button"
@@ -569,7 +532,6 @@ export default function NotificacoesPage() {
                   </button>
                 )}
 
-                {/* Lista de Clientes */}
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {(() => {
                     if (isLoading) {

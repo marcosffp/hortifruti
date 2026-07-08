@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 public class Recipient {
   private final ClientRepository clientRepository;
 
-  // private final String CIDE_CODE = "3157807";
   private final String COUNTRY_CODE = "1058";
   private final String COUNTRY_NAME = "Brazil";
 
@@ -28,10 +27,8 @@ public class Recipient {
 
     AddressRequest addressDto = parseAddress(client.getAddress(), client);
 
-    // Remove formatação do documento (pontos, traços, barras)
     String documentoLimpo = client.getDocument().replaceAll("[^0-9]", "");
 
-    // Valida se o documento está presente
     if (documentoLimpo.isEmpty()) {
       throw new InvoiceException("Cliente não possui CPF ou CNPJ cadastrado");
     }
@@ -59,15 +56,12 @@ public class Recipient {
     String cideCode = client.getCideCode().trim();
 
     try {
-      // ===== Validação do código IBGE =====
       if (cideCode.length() != 7) {
         throw new RuntimeException("Código IBGE inválido: " + cideCode);
       }
 
-      // ===== Normalização do endereço =====
       String cleanAddress = address.replaceAll("\\r?\\n", " ").replaceAll("\\s+", " ").trim();
 
-      // ===== Extração do CEP =====
       String[] addressAndZip = cleanAddress.split(",?\\s*CEP:\\s*");
       String addressWithoutZip = addressAndZip[0].trim();
 
@@ -75,7 +69,6 @@ public class Recipient {
         zipCode = addressAndZip[1].replaceAll("\\D", "");
       }
 
-      // ===== Quebra por vírgulas =====
       String[] parts = addressWithoutZip.split("\\s*,\\s*");
       parts =
           java.util.Arrays.stream(parts)
@@ -83,17 +76,14 @@ public class Recipient {
               .filter(p -> !p.isEmpty())
               .toArray(String[]::new);
 
-      // ===== Rua =====
       if (parts.length >= 1) {
         street = truncateIfNeeded(parts[0], 60);
       }
 
-      // ===== Número =====
       if (parts.length >= 2 && !parts[1].isBlank()) {
         number = parts[1];
       }
 
-      // ===== UF =====
       Pattern ufPattern = Pattern.compile("-\\s*([A-Z]{2})(?:\\s*,|$)");
       Matcher ufMatcher = ufPattern.matcher(addressWithoutZip);
 
@@ -103,25 +93,22 @@ public class Recipient {
         throw new InvoiceException("UF não encontrada no endereço: " + address);
       }
 
-      // ===== Cidade =====
       Pattern cityPattern = Pattern.compile("([^,]+)\\s*-\\s*" + state);
       Matcher cityMatcher = cityPattern.matcher(addressWithoutZip);
 
       if (cityMatcher.find()) {
         city = cityMatcher.group(1).trim();
       }
-      // ===== Bairro =====
       if (parts.length >= 3) {
         neighborhood = parts[parts.length - 3];
       }
 
-      // ===== Regra especial APTA =====
+      // Regra especial: cliente APTA sempre é faturado como SP, independente do endereço cadastrado
       String firstName = client.getClientName().split("\\s+")[0].toUpperCase();
       if (firstName.contains("APTA")) {
         state = "SP";
       }
 
-      // ===== Validação final =====
       if (!state.matches("[A-Z]{2}")) {
         throw new InvoiceException("UF inválida após parse: " + state);
       }

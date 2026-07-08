@@ -31,7 +31,6 @@ export default function EditarClientePageContent({ id }: EditarClientePageProps)
 
         const clientData = await clientService.getClientById(clientId);
 
-        // Parse do endereço usando a função utilitária
         const addressParts = parseAddressFromBackend(clientData.address || "");
 
         setInitialData({

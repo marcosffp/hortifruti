@@ -16,7 +16,6 @@ public class NotificationCoordinator {
   private final WhatsAppService whatsAppService;
   private final WhatsAppMessageBuilder whatsAppMessageBuilder;
 
-  /** Envia notificação para um destinatário específico */
   public NotificationResponse sendNotification(
       String recipient,
       NotificationChannel channel,
@@ -39,7 +38,6 @@ public class NotificationCoordinator {
         fileNames);
   }
 
-  /** Envia notificação com destinatários diferentes para email e WhatsApp */
   public NotificationResponse sendNotification(
       String emailRecipient,
       String whatsAppRecipient,
@@ -54,7 +52,6 @@ public class NotificationCoordinator {
     boolean emailSent = false;
     boolean whatsappSent = false;
 
-    // EMAIL
     if (channel == NotificationChannel.EMAIL || channel == NotificationChannel.BOTH) {
       if (emailRecipient == null || emailRecipient.trim().isEmpty()) {
         throw new NotificationException("Destinatário de email inválido.");
@@ -64,7 +61,6 @@ public class NotificationCoordinator {
               emailRecipient, subject, emailBody, attachments, fileNames);
     }
 
-    // WHATSAPP
     if (channel == NotificationChannel.WHATSAPP || channel == NotificationChannel.BOTH) {
       if (whatsAppRecipient == null || whatsAppRecipient.trim().isEmpty()) {
         throw new NotificationException("Destinatário de WhatsApp inválido.");
@@ -84,7 +80,6 @@ public class NotificationCoordinator {
         getWhatsAppStatus(channel, whatsappSent));
   }
 
-  /** Constrói mensagem de WhatsApp baseada no tipo e contexto */
   private String buildWhatsAppMessage(WhatsAppMessageType type, WhatsAppMessageContext context) {
     switch (type) {
       case MONTHLY_STATEMENTS:
@@ -120,7 +115,6 @@ public class NotificationCoordinator {
     }
   }
 
-  /** Envia apenas email (sem WhatsApp) */
   public boolean sendEmailOnly(
       String recipient,
       String subject,
@@ -158,7 +152,6 @@ public class NotificationCoordinator {
     return "N/A";
   }
 
-  /** Enum para tipos de mensagem WhatsApp */
   public enum WhatsAppMessageType {
     MONTHLY_STATEMENTS,
     GENERIC_FILES,
@@ -166,7 +159,6 @@ public class NotificationCoordinator {
     GENERIC
   }
 
-  /** Classe para contexto das mensagens WhatsApp */
   public static class WhatsAppMessageContext {
     private String period;
     private String totalValue;

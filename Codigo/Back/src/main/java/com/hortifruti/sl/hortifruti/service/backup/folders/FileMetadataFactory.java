@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class FileMetadataFactory {
 
-  /** Cria metadata para um arquivo a ser enviado. */
   protected File createFileMetadata(String fileName, String folderId) {
     File fileMetadata = new File();
     fileMetadata.setName(fileName);
@@ -19,7 +18,6 @@ public class FileMetadataFactory {
     return fileMetadata;
   }
 
-  /** Cria metadata para uma pasta. */
   protected File createFolderMetadata(String folderName, String parentFolderId) {
     File fileMetadata = new File();
     fileMetadata.setName(folderName);

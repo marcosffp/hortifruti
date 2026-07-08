@@ -28,7 +28,6 @@ public class CombinedScoreController {
 
   private final CombinedScoreService combinedScoreService;
 
-  /** Cria um novo agrupamento de compras. */
   @PostMapping("/create")
   public ResponseEntity<?> createCombinedScore(@Valid @RequestBody CombinedScoreRequest request) {
     combinedScoreService.createCombinedScore(request);
@@ -46,7 +45,6 @@ public class CombinedScoreController {
     return ResponseEntity.ok(combinedScoreId);
   }
 
-  /** Lista os agrupamentos de compras, com suporte a paginação. */
   @GetMapping
   public ResponseEntity<Page<CombinedScoreResponse>> listGroupings(
       @RequestParam(required = false) Long clientId,
@@ -58,34 +56,29 @@ public class CombinedScoreController {
     return ResponseEntity.ok(response);
   }
 
-  /** Lista o agrupamento mais recente de cada cliente (data e valor). */
   @GetMapping("/last-per-client")
   public ResponseEntity<List<ClientLastGroupingResponse>> getLastGroupingPerClient() {
     return ResponseEntity.ok(combinedScoreService.getLastGroupingPerClient());
   }
 
-  /** Cancela um agrupamento de compras pelo ID. */
   @DeleteMapping("/{id}")
   public ResponseEntity<?> cancelGrouping(@PathVariable Long id) {
     combinedScoreService.cancelGrouping(id);
     return ResponseEntity.ok("Agrupamento cancelado com sucesso.");
   }
 
-  /** Confirma o pagamento de um agrupamento de compras pelo ID. */
   @PatchMapping("/confirm-payment/{id}")
   public ResponseEntity<?> confirmPayment(@PathVariable Long id) {
     combinedScoreService.confirmPayment(id);
     return ResponseEntity.ok("Pagamento confirmado com sucesso.");
   }
 
-  /** Cancela o pagamento de um agrupamento de compras pelo ID. */
   @PatchMapping("/cancel-payment/{id}")
   public ResponseEntity<?> cancelPayment(@PathVariable Long id) {
     combinedScoreService.cancelPayment(id);
     return ResponseEntity.ok("Pagamento cancelado com sucesso.");
   }
 
-  /** Lista os produtos agrupados associados a um CombinedScore pelo ID. */
   @GetMapping("/{id}/grouped-products")
   public ResponseEntity<List<GroupedProductResponse>> getGroupedProductsByCombinedScoreId(
       @PathVariable Long id) {

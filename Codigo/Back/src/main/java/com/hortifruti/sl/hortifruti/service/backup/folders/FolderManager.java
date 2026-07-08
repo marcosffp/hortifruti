@@ -18,7 +18,6 @@ public class FolderManager {
   private final GoogleAuthService googleAuthService;
   private final DriveQueryBuilder queryBuilder;
 
-  /** Verifica se uma pasta existe dentro de uma pasta pai e retorna seu ID. */
   protected String getFolderId(String folderName, String parentFolderId) {
     try {
       Drive service = googleAuthService.getDriveService();
@@ -45,7 +44,6 @@ public class FolderManager {
     return getFolderId(folderName, null);
   }
 
-  /** Cria uma nova pasta no Google Drive. */
   protected String createFolder(String folderName, String parentFolderId) {
     try {
       Drive service = googleAuthService.getDriveService();
@@ -58,7 +56,6 @@ public class FolderManager {
     }
   }
 
-  /** Extrai o ID da pasta do resultado da consulta. */
   private String extractFolderIdFromResult(FileList result, String folderName) {
     List<File> files = result.getFiles();
     if (!files.isEmpty()) {
@@ -68,7 +65,6 @@ public class FolderManager {
     return null;
   }
 
-  /** Extrai o nome da pasta do caminho completo. */
   private String extractFolderNameFromPath(String folderPath) {
     if (folderPath.contains("/")) {
       return folderPath.substring(folderPath.lastIndexOf("/") + 1);
@@ -76,7 +72,6 @@ public class FolderManager {
     return folderPath;
   }
 
-  /** Cria metadata para uma pasta. */
   private File createFolderMetadata(String folderName, String parentFolderId) {
     File fileMetadata = new File();
     fileMetadata.setName(folderName);

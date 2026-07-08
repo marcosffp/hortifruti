@@ -169,8 +169,6 @@ public class BilletHttpClient {
     }
   }
 
-  // ── Métodos HTTP internos ─────────────────────────────────────────────────
-
   private ResponseEntity<String> doGet(String endpoint) throws IOException {
     HttpEntity<String> entity = new HttpEntity<>(createHeaders());
     return restTemplate.exchange(apiUrl + endpoint, HttpMethod.GET, entity, String.class);
@@ -192,8 +190,6 @@ public class BilletHttpClient {
     HttpEntity<String> entity = new HttpEntity<>(createHeaders());
     return restTemplate.exchange(apiUrl + endpoint, HttpMethod.DELETE, entity, String.class);
   }
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
 
   private HttpHeaders createHeaders() throws IOException {
     HttpHeaders headers = new HttpHeaders();

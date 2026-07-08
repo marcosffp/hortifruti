@@ -35,8 +35,7 @@ public class TransactionExcelExportService {
   public Map<String, byte[]> exportTransactionsAsExcel(LocalDate startDate, LocalDate endDate)
       throws IOException {
     LocalDate now = LocalDate.now();
-    LocalDate periodStart =
-        startDate != null ? startDate : now.minusMonths(1).withDayOfMonth(1);
+    LocalDate periodStart = startDate != null ? startDate : now.minusMonths(1).withDayOfMonth(1);
     LocalDate periodEnd = endDate != null ? endDate : now.withDayOfMonth(1).minusDays(1);
 
     List<Transaction> transactions =

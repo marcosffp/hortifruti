@@ -13,8 +13,7 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
   const [activeTab, setActiveTab] = useState('sacolao');
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  
-  // Estados para Sacolão
+
   const [sacolaoData, setSacolaoData] = useState(() => {
     const saved = localStorage.getItem('sacolaoData');
     return saved ? JSON.parse(saved) : {
@@ -124,7 +123,6 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
           </button>
         </div>
 
-        {/* Tabs */}
         <div className="flex border-b border-gray-200 mb-6">
           <button
             onClick={() => setActiveTab('sacolao')}
@@ -150,12 +148,10 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
           </button>
         </div>
 
-        {/* Sacolão Tab */}
         {activeTab === 'sacolao' && (
           <div>
             <h3 className="text-lg font-medium text-gray-800 mb-4">Endereço do Sacolão</h3>
             
-            {/* Current Sacolão */}
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
@@ -185,7 +181,6 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
               </div>
             </div>
 
-            {/* Edit Sacolão Form */}
             {isEditing && (
               <div className="bg-gray-50 rounded-lg p-4 mb-4">
                 <h4 className="font-medium text-gray-800 mb-4">Editar Sacolão</h4>
@@ -226,7 +221,6 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
           </div>
         )}
 
-        {/* Locais Favoritos Tab */}
         {activeTab === 'favorites' && (
           <div>
             <div className="flex justify-between items-center mb-4">
@@ -234,7 +228,6 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
               <span className="text-sm text-gray-500">{favoriteLocations.length} locais</span>
             </div>
 
-            {/* Add New Location Form */}
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <h4 className="font-medium text-gray-800 mb-4">
                 {editingId ? 'Editar Local' : 'Adicionar Novo Local'}
@@ -286,7 +279,6 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
               </div>
             </div>
 
-            {/* Favorite Locations List */}
             {favoriteLocations.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <MapPin size={48} className="mx-auto mb-3 text-gray-300" />

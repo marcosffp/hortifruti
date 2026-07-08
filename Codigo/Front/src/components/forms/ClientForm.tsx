@@ -55,7 +55,6 @@ export default function ClientForm({
   subtitle,
   submitButtonText
 }: ClientFormProps) {
-  // Estado para o formulário
   const [formData, setFormData] = useState<ClientFormData>({
     nome: "",
     email: "",
@@ -76,7 +75,6 @@ export default function ClientForm({
     ...initialData
   });
 
-  // Estado para erros de validação
   const [formErrors, setFormErrors] = useState({
     nome: "",
     email: "",
@@ -92,10 +90,8 @@ export default function ClientForm({
     cideCode: "",
   });
 
-  // Verifica se é CNPJ (empresa)
   const isCNPJ = formData.cpfCnpj.replace(/\D/g, "").length > 11;
 
-  // Atualiza formData quando initialData mudar
   useEffect(() => {
     if (initialData) {
       setFormData(prev => ({
@@ -119,7 +115,6 @@ export default function ClientForm({
     }
   }, [formData.stateIndicator]);
 
-  // Função para buscar e preencher endereço pelo CEP
   const buscarEnderecoPorCEP = async (cep: string) => {
     try {
       if (cep.replace(/\D/g, "").length < 8) return;
@@ -156,7 +151,6 @@ export default function ClientForm({
     }
   };
 
-  // Manipulador de mudança de campos
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -175,7 +169,6 @@ export default function ClientForm({
     } else if (name === "cep") {
       formattedValue = formatarCEP(value);
     } else if (name === "stateRegistration") {
-      // Formata IE de Minas Gerais
       formattedValue = formatarIEMinasGerais(value);
     }
 
@@ -192,7 +185,6 @@ export default function ClientForm({
     }
   };
 
-  // Manipulador para quando o campo CEP perde o foco
   const handleCepBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
     const { value } = e.target;
     const cep = value.replace(/\D/g, "");
@@ -207,7 +199,6 @@ export default function ClientForm({
     });
   };
 
-  // Validação de campos individuais
   const validateField = (name: string, value: string): string => {
     switch (name) {
       case "nome":
@@ -233,17 +224,6 @@ export default function ClientForm({
       case "estado":
         return !value.trim() ? "Estado é obrigatório" : "";
       case "stateRegistration":
-        // Validação de Inscrição Estadual desabilitada - aceita qualquer valor
-        // // Só é obrigatório se for contribuinte ICMS (indicador = 1)
-        // if (formData.stateIndicator === "1") {
-        //   if (!value.trim()) {
-        //     return "Inscrição Estadual é obrigatória para contribuintes ICMS";
-        //   }
-        //   // Valida formato de MG
-        //   if (!validarIEMinasGerais(value)) {
-        //     return "Inscrição Estadual inválida.";
-        //   }
-        // }
         return "";
       case "cideCode":
         // Código CIDE é obrigatório apenas para CNPJ
@@ -258,7 +238,6 @@ export default function ClientForm({
     }
   };
 
-  // Valida o formulário completo
   const validateForm = (): boolean => {
     const errors = {
       nome: validateField("nome", formData.nome),
@@ -279,7 +258,6 @@ export default function ClientForm({
     return !Object.values(errors).some(error => error);
   };
 
-  // Manipulador de envio do formulário
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -311,7 +289,6 @@ export default function ClientForm({
 
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Dados Pessoais */}
           <div className="border-b pb-6">
             <h2 className="text-lg font-medium mb-4 text-primary">
               Dados Pessoais
@@ -396,7 +373,6 @@ export default function ClientForm({
             </div>
           </div>
 
-          {/* Dados Fiscais - Só aparece para CNPJ */}
           {isCNPJ && (
             <div className="border-b pb-6">
               <h2 className="text-lg font-medium mb-4 text-primary">
@@ -480,7 +456,6 @@ export default function ClientForm({
             </div>
           )}
 
-          {/* Endereço */}
           <div className="border-b pb-6">
             <h2 className="text-lg font-medium mb-4 text-primary">Endereço</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -653,7 +628,6 @@ export default function ClientForm({
             </div>
           </div>
 
-          {/* Informações Adicionais */}
           <div>
             <h2 className="text-lg font-medium mb-4 text-primary">
               Informações Adicionais
@@ -700,7 +674,6 @@ export default function ClientForm({
             </div>
           </div>
 
-          {/* Botões do formulário */}
           <div className="flex justify-end space-x-3 pt-6 border-t">
             <Link href="/comercio/clientes">
               <Button variant="outline" disabled={isSubmitting}>

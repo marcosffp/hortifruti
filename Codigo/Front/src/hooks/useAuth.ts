@@ -12,7 +12,6 @@ export function useAuth() {
   const [userRoles, setUserRoles] = useState<string[]>([]);
 
   useEffect(() => {
-    // Verificar autenticação quando o componente é montado
     checkAuth();
   }, []);
 

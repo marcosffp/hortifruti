@@ -12,7 +12,7 @@ import {
   X,
   Upload,
   Wallet,
-  FileArchive // Nova importação
+  FileArchive
 } from "lucide-react";
 import { useEffect, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -36,7 +36,7 @@ export default function FinancialLaunchesPage() {
     deleteTransaction,
     updateTransaction,
     exportTransactionsAsExcel,
-    exportTransactionsComplete, // Nova função
+    exportTransactionsComplete,
     getAllCategories,
   } = useTransaction();
 
@@ -55,7 +55,6 @@ export default function FinancialLaunchesPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<TransactionResponse | null>(null);
 
-  // Novos estados para o filtro de data
   const [startDate, setStartDate] = useState(() => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -90,12 +89,11 @@ export default function FinancialLaunchesPage() {
 
       const allTransactions: PageResult<TransactionResponse> | undefined =
         await getAllTransactions(search, type, category, page);
-      
-      
+
       if (allTransactions) {
         setTransactions(allTransactions.content || []);
         setTotalPages(allTransactions.totalPages || 1);
-        
+
         if (page >= allTransactions.totalPages && allTransactions.totalPages > 0) {
           setPage(Math.max(0, allTransactions.totalPages - 1));
         }
@@ -128,7 +126,7 @@ export default function FinancialLaunchesPage() {
       try {
         await deleteTransaction(id);
         alert("Lançamento excluído com sucesso!");
-        fetchSummaryData(); // Refetch data after deletion
+        fetchSummaryData();
       } catch (err) {
         alert("Erro ao excluir lançamento: " + getErrorMessage(err));
       }
@@ -178,7 +176,6 @@ export default function FinancialLaunchesPage() {
 
   return (
     <main className="flex-1 p-6 bg-gray-50 overflow-auto flex flex-col">
-      {/* Header Section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800">
           Lançamentos Financeiros
@@ -189,7 +186,6 @@ export default function FinancialLaunchesPage() {
       </div>
 
       <div className="flex flex-wrap gap-6 mb-8 h-fit">
-        {/* Date Range Filter */}
         <div className="bg-white rounded-lg shadow-sm p-4 min-h-full flex-1">
           <h3 className="text-lg font-medium text-gray-800 mb-3">
             Filtro de Período (Resumo e Exportação)
@@ -234,13 +230,10 @@ export default function FinancialLaunchesPage() {
           </div>
         </div>
 
-        {/* Upload Section */}
         <EnhancedUploadExtract />
       </div>
 
-      {/* Summary Cards Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {/* Total de Entradas Card */}
         <div className="bg-white rounded-lg shadow-sm p-6 flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-500">Total de Entradas</p>
@@ -282,7 +275,6 @@ export default function FinancialLaunchesPage() {
           <ArrowUp className="text-green-500" size={24} />
         </div>
 
-        {/* Total de Saídas Card */}
         <div className="bg-white rounded-lg shadow-sm p-6 flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-500">Total de Saídas</p>
@@ -322,7 +314,6 @@ export default function FinancialLaunchesPage() {
           <ArrowDown className="text-red-500" size={24} />
         </div>
 
-        {/* Saldo Total Card */}
         <div className="bg-white rounded-lg shadow-sm p-6 flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-500">Saldo Total</p>
@@ -365,7 +356,6 @@ export default function FinancialLaunchesPage() {
         </div>
       </div>
 
-      {/* Launches List Section */}
       <div className="bg-white rounded-lg shadow-sm p-6 flex-grow flex flex-col">
         <div className="flex justify-between flex-wrap space-y-3 items-center mb-6">
           <div>
@@ -398,7 +388,6 @@ export default function FinancialLaunchesPage() {
           </div>
         </div>
 
-        {/* Search and Filters */}
         <div className="flex items-center gap-4 flex-wrap mb-6">
           <div className="relative flex-grow">
             <Search
@@ -436,7 +425,6 @@ export default function FinancialLaunchesPage() {
           </select>
         </div>
 
-        {/* Table of Launches */}
         <div className="overflow-x-auto">
           {isLoading ? (
             <Loading />
@@ -457,7 +445,6 @@ export default function FinancialLaunchesPage() {
               </thead>
               <tbody>
                 {transactions.map((transaction) => (
-                  // Se vier "2024-09-10", force como local:
                   <tr key={transaction.id} className="border-b border-gray-100">
                     <td className="py-3 px-4">
                       {(() => {
@@ -553,15 +540,14 @@ export default function FinancialLaunchesPage() {
             </span>
             Anterior
           </button>
-          
-          {/* Indicador de página atual - DEBUG */}
+
           <div className="flex items-center px-4 py-2 bg-gray-100 rounded-lg">
             <span className="text-sm text-gray-600">
               Página {page + 1} de {Math.max(1, totalPages)}
               {transactions?.length > 0 && ` (${transactions.length} resultados)`}
             </span>
           </div>
-          
+
           <button
             disabled={page >= totalPages - 1 || totalPages <= 1 || isLoading}
             onClick={() => {
@@ -596,7 +582,6 @@ export default function FinancialLaunchesPage() {
         </div>
       </div>
 
-      {/* Modal de Edição */}
       {isEditModalOpen && currentTransaction && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-xl">

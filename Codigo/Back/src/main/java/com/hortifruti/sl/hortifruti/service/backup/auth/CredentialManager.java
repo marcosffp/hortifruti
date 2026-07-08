@@ -28,7 +28,6 @@ public class CredentialManager {
   private final TokenValidator tokenValidator;
   private final TokenExceptionHandler tokenExceptionHandler;
 
-  /** Obtém credenciais válidas para o Google Drive */
   public Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT, CredentialConfig config)
       throws IOException {
 
@@ -36,7 +35,6 @@ public class CredentialManager {
     return validateAndGetCredential(HTTP_TRANSPORT, config, flow);
   }
 
-  /** Cria o fluxo de autorização do Google */
   private GoogleAuthorizationCodeFlow createAuthorizationFlow(
       NetHttpTransport httpTransport, CredentialConfig config) throws IOException {
     GoogleClientSecrets clientSecrets = loadClientSecrets(config.getCredentialsFile());
@@ -49,7 +47,6 @@ public class CredentialManager {
         .build();
   }
 
-  /** Valida e obtém a credencial */
   private Credential validateAndGetCredential(
       NetHttpTransport httpTransport, CredentialConfig config, GoogleAuthorizationCodeFlow flow)
       throws IOException {
@@ -67,7 +64,6 @@ public class CredentialManager {
     }
   }
 
-  /** Manipula credenciais inválidas */
   private Credential handleInvalidCredential(
       NetHttpTransport httpTransport, CredentialConfig config, GoogleAuthorizationCodeFlow flow)
       throws IOException {

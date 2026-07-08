@@ -18,7 +18,6 @@ import { useState } from "react";
 import RoleGuard from "@/components/auth/RoleGuard";
 import { usePathname } from "next/navigation";
 
-// Estrutura para submenu
 interface MenuItem {
   label: string;
   icon: LucideIcon;
@@ -125,8 +124,7 @@ export default function Sidebar({
         md:translate-x-0
       `}
     >
-      {/* Botão fechar para mobile */}
-      <button 
+      <button
         onClick={() => onClose?.()}
         className="md:hidden absolute top-4 right-4 text-gray-500 hover:text-gray-700"
         aria-label="Fechar menu lateral"
@@ -138,7 +136,6 @@ export default function Sidebar({
       </button>
       
       <nav className="flex flex-col gap-1 mt-8 md:mt-0">
-        {/* Home/Dashboard link */}
         <Link
           href="/dashboard"
           className={`flex items-center gap-2 px-3 py-2 rounded-lg ${pathname === "/dashboard" ? "bg-primary text-white" : "text-gray-700"} hover:bg-primary mb-2`}
@@ -148,9 +145,7 @@ export default function Sidebar({
           <span>Dashboard</span>
         </Link>
 
-        {/* Menu items with potential submenus */}
         {menu.map((item, i) => {
-          // Verifica se algum subitem está ativo
           const isSubActive = item.submenu?.some(
             (sub) => sub.href === pathname,
           );

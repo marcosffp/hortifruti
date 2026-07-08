@@ -66,7 +66,7 @@ public class CsvGeneratorService {
             .builder()
             .setHeader(
                 "ID", "Cliente ID", "Data da Compra", "Valor Total", "Criado Em", "Atualizado Em")
-            .build();
+            .get();
 
     try (FileWriter fileWriter = new FileWriter(filePath.toFile());
         CSVPrinter csvPrinter = new CSVPrinter(fileWriter, csvFormat)) {
@@ -114,7 +114,7 @@ public class CsvGeneratorService {
                 "Compra ID",
                 "Criado Em",
                 "Atualizado Em")
-            .build();
+            .get();
 
     try (FileWriter fileWriter = new FileWriter(filePath.toFile());
         CSVPrinter csvPrinter = new CSVPrinter(fileWriter, csvFormat)) {
@@ -166,7 +166,7 @@ public class CsvGeneratorService {
                 "Hash",
                 "Criado Em",
                 "Atualizado Em")
-            .build();
+            .get();
 
     try (FileWriter fileWriter = new FileWriter(filePath.toFile());
         CSVPrinter csvPrinter = new CSVPrinter(fileWriter, csvFormat)) {
@@ -208,7 +208,7 @@ public class CsvGeneratorService {
         CSVFormat.DEFAULT
             .builder()
             .setHeader("ID", "Nome", "Banco", "Criado Em", "Atualizado Em")
-            .build();
+            .get();
 
     try (FileWriter fileWriter = new FileWriter(filePath.toFile());
         CSVPrinter csvPrinter = new CSVPrinter(fileWriter, csvFormat)) {

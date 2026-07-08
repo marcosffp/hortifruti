@@ -32,7 +32,6 @@ public class BulkNotificationService {
   @Value("${accounting.email}")
   private String accountingEmail;
 
-  /** Envia notificações em massa para múltiplos destinatários */
   public BulkNotificationResponse sendBulkNotifications(
       List<MultipartFile> files,
       List<Long> clientIds,
@@ -75,7 +74,6 @@ public class BulkNotificationService {
     }
   }
 
-  /** Envia notificações para a contabilidade */
   private BulkNotificationResponse sendToAccounting(
       List<byte[]> fileContents,
       List<String> fileNames,
@@ -128,7 +126,6 @@ public class BulkNotificationService {
     }
   }
 
-  /** Envia notificações para múltiplos clientes */
   private BulkNotificationResponse sendToClients(
       List<Long> clientIds,
       List<byte[]> fileContents,
@@ -220,7 +217,6 @@ public class BulkNotificationService {
     }
   }
 
-  /** Constrói mensagem para contabilidade */
   private String buildAccountingMessage(int filesCount, String customMessage) {
     Map<String, String> variables = new HashMap<>();
     variables.put("FILES_COUNT", String.valueOf(filesCount));
@@ -236,7 +232,6 @@ public class BulkNotificationService {
     return emailTemplateService.processTemplate("accounting-documents", variables);
   }
 
-  /** Constrói mensagem para cliente */
   private String buildClientMessage(Client client, int filesCount, String customMessage) {
     Map<String, String> variables = new HashMap<>();
     variables.put("CLIENT_NAME", client.getClientName());
@@ -258,7 +253,6 @@ public class BulkNotificationService {
     return emailTemplateService.processTemplate("client-documents", variables);
   }
 
-  /** Determina o canal baseado nas seleções */
   private NotificationChannel determineChannel(boolean sendEmail, boolean sendWhatsApp) {
     if (sendEmail && sendWhatsApp) {
       return NotificationChannel.BOTH;
@@ -271,7 +265,6 @@ public class BulkNotificationService {
     }
   }
 
-  /** Retorna texto descritivo do canal */
   private String getChannelText(NotificationChannel channel) {
     return switch (channel) {
       case EMAIL -> "e-mail";

@@ -25,8 +25,8 @@ public class DatabaseStorageService {
   @Value("${overdue.notification.emails}")
   private String overdueNotificationEmails;
 
-  private static final BigDecimal MAX_STORAGE_MB = new BigDecimal("1024"); // 1GB
-  private static final BigDecimal THRESHOLD_PERCENTAGE = new BigDecimal("80"); // 80%
+  private static final BigDecimal MAX_STORAGE_MB = new BigDecimal("1024");
+  private static final BigDecimal THRESHOLD_PERCENTAGE = new BigDecimal("80");
 
   public BigDecimal getDatabaseSizeInMB() {
     String query =
@@ -61,19 +61,16 @@ public class DatabaseStorageService {
     String[] emails = overdueNotificationEmails.split(",");
     String subject = "Alerta: Armazenamento do Banco de Dados Excedido";
 
-    // Calcular percentual de uso
     BigDecimal storagePercentage =
         currentSize
             .multiply(new BigDecimal("100"))
             .divide(MAX_STORAGE_MB, 1, java.math.RoundingMode.HALF_UP);
 
-    // Preparar variáveis para o template
     Map<String, String> variables = new HashMap<>();
     variables.put("STORAGE_PERCENTAGE", storagePercentage.toString());
     variables.put("CURRENT_SIZE", currentSize.toString());
     variables.put("MAX_SIZE", MAX_STORAGE_MB.toString());
 
-    // Processar template HTML
     String emailBody = emailTemplateService.processTemplate("database-management", variables);
 
     for (String email : emails) {
@@ -86,7 +83,6 @@ public class DatabaseStorageService {
     }
   }
 
-  /** Método para teste manual do email de alerta de armazenamento */
   public void sendTestStorageNotification(BigDecimal simulatedSize) {
     log.info("Enviando email de teste de armazenamento com tamanho simulado: {} MB", simulatedSize);
     sendNotificationToManagement(simulatedSize);
@@ -101,7 +97,6 @@ public class DatabaseStorageService {
       log.warn(
           "Banco de dados atingiu {} MB, excedendo o limite de {} MB", currentSize, thresholdSize);
 
-      // Enviar notificação para a gerência
       sendNotificationToManagement(currentSize);
     } else {
       log.info("Banco de dados dentro do limite configurado. Nenhuma ação necessária.");

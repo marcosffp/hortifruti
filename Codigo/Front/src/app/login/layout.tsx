@@ -70,7 +70,6 @@ export default function LoginLayout({
           ></div>
         </div>
 
-        {/* Conteúdo */}
         <div className="relative z-10 flex-1">{children}</div>
       </div>
     </>

@@ -31,7 +31,6 @@ public enum Month {
     return displayName;
   }
 
-  /** Obtém o mês atual baseado no mês do sistema */
   public static Month getCurrentMonth() {
     int currentMonth = java.time.LocalDate.now().getMonthValue();
     for (Month month : values()) {
@@ -42,7 +41,6 @@ public enum Month {
     return JANEIRO;
   }
 
-  /** Verifica se o mês está na temporada (lista de meses) */
   public static boolean isInSeason(java.util.Set<Month> seasons) {
     return seasons.contains(getCurrentMonth());
   }

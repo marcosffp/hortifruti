@@ -61,7 +61,6 @@ export default function FiscalNoteXmlPage() {
                 </p>
             </div>
 
-            {/* Filtro de período */}
             <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-200 mb-6">
                 <div className="flex flex-wrap gap-4 items-end">
                     <div className="flex flex-col gap-1">
@@ -93,7 +92,6 @@ export default function FiscalNoteXmlPage() {
                 </div>
             </div>
 
-            {/* Tabela de resultados */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex-1">
                 {!searched ? (
                     <div className="flex flex-col items-center justify-center py-20 text-gray-400">

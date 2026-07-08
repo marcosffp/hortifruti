@@ -72,12 +72,6 @@ public class SalesCalculator {
         taxDetails.valorTotal());
   }
 
-  /**
-   * Registra um erro ao processar um CombinedScore.
-   *
-   * @param combinedScore CombinedScore que causou o erro.
-   * @param e Exceção lançada.
-   */
   private void logProcessingError(CombinedScore combinedScore, Exception e) {
     System.err.println("Erro ao processar CombinedScore ID: " + combinedScore.getId());
     e.printStackTrace();

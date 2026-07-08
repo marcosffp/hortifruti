@@ -26,17 +26,14 @@ public class StatementSelectionService {
   public List<Statement> getBestStatementsForMonth(int month, int year) {
     List<Statement> bestStatements = new ArrayList<>();
 
-    // Calcular o período do mês
     YearMonth yearMonth = YearMonth.of(year, month);
     LocalDate startOfMonth = yearMonth.atDay(1);
     LocalDate endOfMonth = yearMonth.atEndOfMonth();
 
-    // Buscar para Banco do Brasil
     Optional<Statement> bbStatement =
         getBestStatementForPeriod(Bank.BANCO_DO_BRASIL, startOfMonth, endOfMonth);
     bbStatement.ifPresent(bestStatements::add);
 
-    // Buscar para Sicoob
     Optional<Statement> sicoobStatement =
         getBestStatementForPeriod(Bank.SICOOB, startOfMonth, endOfMonth);
     sicoobStatement.ifPresent(bestStatements::add);
@@ -44,7 +41,6 @@ public class StatementSelectionService {
     return bestStatements;
   }
 
-  /** Busca o melhor statement para um banco específico no período */
   private Optional<Statement> getBestStatementForPeriod(
       Bank bank, LocalDate startDate, LocalDate endDate) {
     // Estratégia em 3 etapas:
@@ -74,7 +70,6 @@ public class StatementSelectionService {
     return statementRepository.findTopByBankOrderByCreatedAtDesc(bank);
   }
 
-  /** Conta quantas transações existem no período especificado */
   private int countTransactionsInPeriod(
       Statement statement, LocalDate startDate, LocalDate endDate) {
     if (statement.getTransactions() == null) {
@@ -91,7 +86,6 @@ public class StatementSelectionService {
             .count();
   }
 
-  /** Filtra as transações de um statement para um período específico */
   public List<Transaction> getTransactionsForPeriod(
       Statement statement, LocalDate startDate, LocalDate endDate) {
     if (statement.getTransactions() == null) {
@@ -107,7 +101,6 @@ public class StatementSelectionService {
         .collect(Collectors.toList());
   }
 
-  /** Fornece estatísticas sobre a cobertura dos statements */
   public String getStatementCoverageInfo(List<Statement> statements, int month, int year) {
     StringBuilder info = new StringBuilder();
     YearMonth yearMonth = YearMonth.of(year, month);

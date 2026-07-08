@@ -78,8 +78,7 @@ public class InvoiceController {
     return ResponseEntity.ok()
         .contentType(MediaType.APPLICATION_XML)
         .header(
-            HttpHeaders.CONTENT_DISPOSITION,
-            "attachment; filename=\"nota-fiscal-" + ref + ".xml\"")
+            HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"nota-fiscal-" + ref + ".xml\"")
         .body(resource);
   }
 }
