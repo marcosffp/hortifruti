@@ -24,7 +24,6 @@ const AddressAutocomplete = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  // Função de busca chamando o novo hook
   const searchAddresses = useCallback(
     async (query: string) => {
       if (query.length < 3) {
@@ -52,13 +51,11 @@ const AddressAutocomplete = ({
     []
   );
 
-  // Debounce de 300ms
   useEffect(() => {
     const timeoutId = setTimeout(() => searchAddresses(value), 300);
     return () => clearTimeout(timeoutId);
   }, [value, searchAddresses]);
 
-  // Fecha o dropdown ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: any) => {
       if (
@@ -111,7 +108,6 @@ const AddressAutocomplete = ({
           googleMapsUrl,
         };
 
-        // Atualiza o valor do input e chama o callback com os detalhes
         onChange(address);
         onAddressSelect?.(detailedAddress);
         setShowSuggestions(false);

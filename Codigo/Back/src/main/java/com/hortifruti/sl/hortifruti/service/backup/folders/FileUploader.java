@@ -16,7 +16,6 @@ public class FileUploader {
   private final GoogleAuthService googleAuthService;
   private final FileMetadataFactory fileMetadataFactory;
 
-  /** Faz upload de um arquivo para o Google Drive em uma pasta específica. */
   protected String uploadFile(String filePath, String fileName, String folderId) {
     validateFileInput(filePath, fileName);
 
@@ -32,7 +31,6 @@ public class FileUploader {
     }
   }
 
-  /** Valida os parâmetros de entrada para upload. */
   private void validateFileInput(String filePath, String fileName) {
     if (filePath == null || filePath.trim().isEmpty()) {
       throw new IllegalArgumentException("Caminho do arquivo não pode ser vazio");
@@ -42,7 +40,6 @@ public class FileUploader {
     }
   }
 
-  /** Cria o conteúdo de mídia para upload. */
   private FileContent createMediaContent(String filePath) {
     java.io.File fileContent = new java.io.File(filePath);
 

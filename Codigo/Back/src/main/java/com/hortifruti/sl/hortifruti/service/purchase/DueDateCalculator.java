@@ -12,22 +12,19 @@ import java.util.Map;
  */
 public class DueDateCalculator {
 
-  // Enum para tipos de documento
   private enum DocumentType {
     CPF,
     CNPJ,
     UNKNOWN
   }
 
-  // Enum para tipos de ajuste de final de semana
   private enum WeekendAdjustment {
     NONE,
-    PREVIOUS_FRIDAY,   // Volta para sexta anterior
-    PREVIOUS_THURSDAY, // Volta para quinta anterior
-    NEXT_FRIDAY        // Avança para próxima sexta
+    PREVIOUS_FRIDAY,
+    PREVIOUS_THURSDAY,
+    NEXT_FRIDAY
   }
 
-  // Classe interna para definir uma regra
   private static class DueDateRule {
     private final int daysToAdd;
     private final WeekendAdjustment weekendAdjustment;
@@ -47,7 +44,6 @@ public class DueDateCalculator {
   // Mapa de regras por primeiro nome do cliente (CNPJ) - EXATAMENTE como está no banco
   private static final Map<String, DueDateRule> CNPJ_RULES_BY_NAME = new HashMap<>();
 
-  // Regra padrão para CPF
   private static final DueDateRule CPF_DEFAULT_RULE =
       new DueDateRule(15, WeekendAdjustment.PREVIOUS_FRIDAY);
 
@@ -58,46 +54,38 @@ public class DueDateCalculator {
   private static final DueDateRule DEFAULT_RULE = new DueDateRule(20, WeekendAdjustment.NONE);
 
   static {
-    // Configuração das regras específicas por nome (CNPJ)
     // IMPORTANTE: Os nomes devem estar EXATAMENTE como aparecem no banco de dados
-    CNPJ_RULES_BY_NAME.put("LLINEA",    new DueDateRule(20, WeekendAdjustment.PREVIOUS_THURSDAY));
-    CNPJ_RULES_BY_NAME.put("APTA",      new DueDateRule(15, WeekendAdjustment.PREVIOUS_FRIDAY));
+    CNPJ_RULES_BY_NAME.put("LLINEA", new DueDateRule(20, WeekendAdjustment.PREVIOUS_THURSDAY));
+    CNPJ_RULES_BY_NAME.put("APTA", new DueDateRule(15, WeekendAdjustment.PREVIOUS_FRIDAY));
     CNPJ_RULES_BY_NAME.put("INDUSTRIA", new DueDateRule(20, WeekendAdjustment.NEXT_FRIDAY));
-    CNPJ_RULES_BY_NAME.put("ROCA",      new DueDateRule(15, WeekendAdjustment.NONE, true)); // 15 dias úteis
+    CNPJ_RULES_BY_NAME.put(
+        "ROCA", new DueDateRule(15, WeekendAdjustment.NONE, true)); // 15 dias úteis
 
     // === ADICIONE NOVAS REGRAS AQUI ===
-    // Exemplo dias corridos:  CNPJ_RULES_BY_NAME.put("EMPRESA", new DueDateRule(30, WeekendAdjustment.PREVIOUS_FRIDAY));
-    // Exemplo dias úteis:     CNPJ_RULES_BY_NAME.put("EMPRESA", new DueDateRule(30, WeekendAdjustment.NONE, true));
+    // Exemplo dias corridos:  CNPJ_RULES_BY_NAME.put("EMPRESA", new DueDateRule(30,
+    // WeekendAdjustment.PREVIOUS_FRIDAY));
+    // Exemplo dias úteis:     CNPJ_RULES_BY_NAME.put("EMPRESA", new DueDateRule(30,
+    // WeekendAdjustment.NONE, true));
   }
 
-  /**
-   * Método principal para calcular a data de vencimento.
-   *
-   * @param client      Cliente para o qual calcular o vencimento
-   * @param confirmedAt Data de confirmação base
-   * @return Data de vencimento calculada
-   */
   public static LocalDate calculate(Client client, LocalDate confirmedAt) {
     if (client == null || confirmedAt == null) {
       return confirmedAt;
     }
 
-    // Identifica o tipo de documento
     DocumentType documentType = getDocumentType(client.getDocument());
 
-    // Obtém a regra aplicável
     DueDateRule rule = getApplicableRule(client, documentType);
 
-    // Calcula a data base (dias úteis ou corridos)
-    LocalDate baseDueDate = rule.businessDays
-        ? addBusinessDays(confirmedAt, rule.daysToAdd)
-        : confirmedAt.plusDays(rule.daysToAdd);
+    LocalDate baseDueDate =
+        rule.businessDays
+            ? addBusinessDays(confirmedAt, rule.daysToAdd)
+            : confirmedAt.plusDays(rule.daysToAdd);
 
     // Aplica o ajuste de final de semana (apenas para dias corridos)
     return applyWeekendAdjustment(baseDueDate, rule.weekendAdjustment);
   }
 
-  /** Identifica o tipo de documento (CPF ou CNPJ). */
   private static DocumentType getDocumentType(String document) {
     String cleanDoc = cleanDocument(document);
 
@@ -114,7 +102,6 @@ public class DueDateCalculator {
     return DocumentType.UNKNOWN;
   }
 
-  /** Remove caracteres especiais do documento (pontos, hífens, barras). */
   private static String cleanDocument(String document) {
     if (document == null) {
       return null;
@@ -122,7 +109,6 @@ public class DueDateCalculator {
     return document.replaceAll("[.\\-/\\s]", "");
   }
 
-  /** Obtém a regra aplicável para o cliente baseado no tipo de documento e nome. */
   private static DueDateRule getApplicableRule(Client client, DocumentType documentType) {
     switch (documentType) {
       case CPF:
@@ -130,18 +116,16 @@ public class DueDateCalculator {
 
       case CNPJ:
         String firstName = extractFirstName(client.getClientName());
-        // Busca a regra específica, senão usa a regra padrão de CNPJ
         return CNPJ_RULES_BY_NAME.getOrDefault(firstName, CNPJ_DEFAULT_RULE);
 
       default:
-        // Caso não seja CPF nem CNPJ, usa a regra default geral
         return DEFAULT_RULE;
     }
   }
 
   /**
-   * Extrai o primeiro nome do cliente EXATAMENTE como está no banco.
-   * Mantém acentos, capitalização e caracteres especiais.
+   * Extrai o primeiro nome do cliente EXATAMENTE como está no banco. Mantém acentos, capitalização
+   * e caracteres especiais.
    */
   private static String extractFirstName(String fullName) {
     if (fullName == null || fullName.trim().isEmpty()) {
@@ -153,8 +137,8 @@ public class DueDateCalculator {
   }
 
   /**
-   * Soma dias úteis (pula sábados, domingos e feriados nacionais) a partir de uma data base.
-   * O dia de início (confirmedAt) não é contado — começa a contar a partir do dia seguinte.
+   * Soma dias úteis (pula sábados, domingos e feriados nacionais) a partir de uma data base. O dia
+   * de início (confirmedAt) não é contado — começa a contar a partir do dia seguinte.
    */
   private static LocalDate addBusinessDays(LocalDate startDate, int businessDays) {
     LocalDate date = startDate;
@@ -171,8 +155,8 @@ public class DueDateCalculator {
   }
 
   /**
-   * Aplica o ajuste de final de semana conforme a estratégia definida e, em seguida,
-   * garante que a data final não caia em final de semana nem em feriado nacional.
+   * Aplica o ajuste de final de semana conforme a estratégia definida e, em seguida, garante que a
+   * data final não caia em final de semana nem em feriado nacional.
    */
   private static LocalDate applyWeekendAdjustment(LocalDate date, WeekendAdjustment adjustment) {
     switch (adjustment) {
@@ -192,8 +176,8 @@ public class DueDateCalculator {
   }
 
   /**
-   * Anda em direção a datas passadas (direction = -1) ou futuras (direction = 1)
-   * até encontrar um dia que não seja final de semana nem feriado nacional.
+   * Anda em direção a datas passadas (direction = -1) ou futuras (direction = 1) até encontrar um
+   * dia que não seja final de semana nem feriado nacional.
    */
   private static LocalDate skipNonBusinessDays(LocalDate date, int direction) {
     LocalDate result = date;
@@ -203,18 +187,15 @@ public class DueDateCalculator {
     return result;
   }
 
-  /** Indica se a data cai em final de semana ou em feriado nacional brasileiro. */
   private static boolean isNonBusinessDay(LocalDate date) {
     return isWeekend(date) || BrazilianHolidays.isHoliday(date);
   }
 
-  /** Indica se a data cai em sábado ou domingo. */
   private static boolean isWeekend(LocalDate date) {
     DayOfWeek dow = date.getDayOfWeek();
     return dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY;
   }
 
-  /** Ajusta a data para a sexta-feira anterior se cair em final de semana. */
   private static LocalDate adjustToPreviousFriday(LocalDate date) {
     DayOfWeek dayOfWeek = date.getDayOfWeek();
 
@@ -229,8 +210,8 @@ public class DueDateCalculator {
   }
 
   /**
-   * Ajusta a data para a quinta-feira anterior se cair em final de semana.
-   * Sábado → volta 2 dias (quinta). Domingo → volta 3 dias (quinta).
+   * Ajusta a data para a quinta-feira anterior se cair em final de semana. Sábado → volta 2 dias
+   * (quinta). Domingo → volta 3 dias (quinta).
    */
   private static LocalDate adjustToPreviousThursday(LocalDate date) {
     DayOfWeek dayOfWeek = date.getDayOfWeek();
@@ -245,7 +226,6 @@ public class DueDateCalculator {
     }
   }
 
-  /** Ajusta a data para a próxima sexta-feira. */
   private static LocalDate adjustToNextFriday(LocalDate date) {
     if (date.getDayOfWeek() == DayOfWeek.FRIDAY) {
       return date;
@@ -262,4 +242,3 @@ public class DueDateCalculator {
     return date.plusDays(daysUntilFriday);
   }
 }
-

@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class DriveQueryBuilder {
 
-  /** Constrói query para buscar pastas no Google Drive. */
   protected String buildFolderQuery(String folderName, String parentFolderId) {
     StringBuilder query = new StringBuilder();
 
@@ -23,7 +22,6 @@ public class DriveQueryBuilder {
     return query.toString();
   }
 
-  /** Escapa valores para consultas do Google Drive. */
   private String escapeQueryValue(String value) {
     return value.replace("'", "\\'");
   }

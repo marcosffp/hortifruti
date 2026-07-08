@@ -9,7 +9,6 @@ export default function ProfilePage() {
   const [loginTime, setLoginTime] = useState<string>("");
 
   useEffect(() => {
-    // Definir a hora de login quando o componente é montado
     const now = new Date();
     setLoginTime(now.toLocaleString());
   }, []);

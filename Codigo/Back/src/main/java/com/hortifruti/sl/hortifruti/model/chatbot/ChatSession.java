@@ -45,12 +45,10 @@ public class ChatSession {
     }
   }
 
-  /** Verifica se o bot está pausado */
   public boolean isPaused() {
     return this.pausedUntil != null && LocalDateTime.now().isBefore(this.pausedUntil);
   }
 
-  /** Pausa o bot por uma determinada duração em horas */
   public void pauseBot(int hours) {
     this.pausedUntil = LocalDateTime.now().plusHours(hours);
   }

@@ -30,7 +30,6 @@ export function useUpload() {
     setError(null);
 
     try {
-      // Lógica de validação ou transformação de arquivos
       if (files.some((file) => file.size > 10 * 1024 * 1024)) {
         throw new Error("Um ou mais arquivos excedem o limite de 10MB.");
       }

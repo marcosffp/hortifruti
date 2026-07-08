@@ -18,7 +18,6 @@ interface FeaturesCarouselProps {
 export default function FeaturesCarousel({ features }: FeaturesCarouselProps) {
   const [currentFeature, setCurrentFeature] = useState(0);
 
-  // Auto-play do carrossel
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentFeature((prev) => (prev + 1) % features.length);
@@ -72,7 +71,6 @@ export default function FeaturesCarousel({ features }: FeaturesCarouselProps) {
         </div>
       </div>
 
-      {/* Navigation Controls - Arrows and Dots together */}
       <div className="flex justify-center items-center mt-6 space-x-4">
         <button
           onClick={prevFeature}
@@ -82,7 +80,6 @@ export default function FeaturesCarousel({ features }: FeaturesCarouselProps) {
           <ChevronLeft className="w-5 h-5 text-neutral-700" />
         </button>
 
-        {/* Dots Indicator */}
         <div className="flex space-x-2">
           {features.map((_, index) => (
             <button

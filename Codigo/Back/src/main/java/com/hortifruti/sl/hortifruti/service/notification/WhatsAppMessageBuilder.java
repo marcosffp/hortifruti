@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class WhatsAppMessageBuilder {
 
-  /** Constrói mensagem para extratos mensais */
   public String buildMonthlyStatementsMessage(String period, String customMessage) {
     StringBuilder message = new StringBuilder();
     message.append("Olá! Segue anexos contábeis.\n\n");
@@ -29,7 +28,6 @@ public class WhatsAppMessageBuilder {
     return message.toString();
   }
 
-  /** Constrói mensagem para arquivos genéricos da contabilidade */
   public String buildGenericFilesMessage(String totalValue, String customMessage) {
     StringBuilder message = new StringBuilder();
 
@@ -51,7 +49,6 @@ public class WhatsAppMessageBuilder {
     return message.toString();
   }
 
-  /** Constrói mensagem para documentos de cliente */
   public String buildClientDocumentsMessage(String clientName, String customMessage) {
     StringBuilder message = new StringBuilder();
 
@@ -75,13 +72,11 @@ public class WhatsAppMessageBuilder {
     return message.toString();
   }
 
-  /** Constrói mensagem para documentos de cliente usando objeto Client */
   public String buildClientDocumentsMessage(Client client, String customMessage) {
     String clientName = client != null ? client.getClientName() : null;
     return buildClientDocumentsMessage(clientName, customMessage);
   }
 
-  /** Mensagem genérica para casos não mapeados */
   public String buildGenericMessage(String subject, String customMessage) {
     StringBuilder message = new StringBuilder();
 

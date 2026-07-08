@@ -14,18 +14,15 @@ export default function ClientNumberModal({ open, onClose, onConfirm }: ClientNu
 
   const handleConfirm = () => {
     if (number.trim()) {
-      // Se a data foi preenchida, envia ela, senão envia null
       const dueDateValue = dueDate.trim() ? dueDate.trim() : undefined;
       onConfirm(number.trim(), dueDateValue);
-      
-      // Limpa os campos após confirmar
+
       setNumber("");
       setDueDate("");
     }
   };
 
   const handleClose = () => {
-    // Limpa os campos ao fechar
     setNumber("");
     setDueDate("");
     onClose();

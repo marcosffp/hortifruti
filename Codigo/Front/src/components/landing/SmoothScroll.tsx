@@ -18,13 +18,11 @@ export default function SmoothScroll() {
       }
     };
 
-    // Adicionar event listeners para todos os links internos
     const links = document.querySelectorAll('a[href^="#"]');
     links.forEach(link => {
       link.addEventListener('click', handleSmoothScroll);
     });
 
-    // Cleanup
     return () => {
       links.forEach(link => {
         link.removeEventListener('click', handleSmoothScroll);

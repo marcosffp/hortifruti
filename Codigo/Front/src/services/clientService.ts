@@ -3,12 +3,9 @@
 import { getAuthHeaders } from "@/utils/httpUtils";
 import { ClientResponse, ClientRequest, ClientSelectionInfo } from "@/types/clientType";
 
-// Definindo a URL base da API - pode ser ajustada conforme necessário
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-// Serviço para lidar com operações de cliente
 export const clientService = {
-  // Obter todos os clientes
   async getAllClients(): Promise<ClientResponse[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/clients`, {
@@ -28,7 +25,6 @@ export const clientService = {
     }
   },
 
-  // Obter cliente por ID
   async getClientById(id: number): Promise<ClientResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
@@ -48,7 +44,6 @@ export const clientService = {
     }
   },
 
-  // Criar novo cliente
   async createClient(clientData: ClientRequest): Promise<ClientResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/clients/register`, {
@@ -72,7 +67,6 @@ export const clientService = {
     }
   },
 
-  // Atualizar cliente existente
   async updateClient(
     id: number,
     clientData: ClientRequest,
@@ -95,7 +89,6 @@ export const clientService = {
     }
   },
 
-  // Excluir cliente
   async deleteClient(id: number): Promise<void> {
     try {
       const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
@@ -112,7 +105,6 @@ export const clientService = {
     }
   },
 
-  // Pesquisar clientes pelo nome
   async getClientByName(name: string): Promise<ClientResponse> {
     try {
       const response = await fetch(

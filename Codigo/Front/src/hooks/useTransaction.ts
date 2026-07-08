@@ -12,7 +12,6 @@ export function useTransaction() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Novo método para buscar transações paginadas e filtradas
   const getAllTransactions = async (
     search?: string,
     type?: string,
@@ -39,7 +38,6 @@ export function useTransaction() {
     }
   };
 
-  // Atualizar os métodos para aceitar parâmetros de data
   const getTotalRevenue = async (
     startDate?: string,
     endDate?: string,
@@ -217,11 +215,11 @@ export function useTransaction() {
     getTotalRevenue,
     getTotalExpenses,
     getTotalBalance,
-    getAllTransactions, // agora suporta paginação e filtros
+    getAllTransactions,
     updateTransaction,
     deleteTransaction,
     exportTransactionsAsExcel,
-    exportTransactionsComplete, // Novo método
+    exportTransactionsComplete,
     getAllCategories,
   };
 }

@@ -19,11 +19,9 @@ export default function ShowBilletModal({ isOpen, onClose, billetData, scoreNumb
 
     useEffect(() => {
         if (billetData && isOpen) {
-            // Cria URL do blob para exibir o PDF
             const url = URL.createObjectURL(billetData);
             setPdfUrl(url);
 
-            // Cleanup: revoga o URL quando o componente desmontar
             return () => {
                 URL.revokeObjectURL(url);
             };
@@ -58,7 +56,6 @@ export default function ShowBilletModal({ isOpen, onClose, billetData, scoreNumb
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-                {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b border-gray-300">
                     <h2 className="text-xl font-semibold">
                         Boleto - Agrupamento {scoreNumber || ""}
@@ -71,7 +68,6 @@ export default function ShowBilletModal({ isOpen, onClose, billetData, scoreNumb
                     </button>
                 </div>
 
-                {/* PDF Viewer */}
                 <div className="flex-1 overflow-auto p-6">
                     {pdfUrl ? (
                         <iframe
@@ -86,7 +82,6 @@ export default function ShowBilletModal({ isOpen, onClose, billetData, scoreNumb
                     )}
                 </div>
 
-                {/* Footer com ações */}
                 <div className="flex justify-end gap-3 p-6 border-t border-gray-300">
                     <button
                         onClick={handlePrint}

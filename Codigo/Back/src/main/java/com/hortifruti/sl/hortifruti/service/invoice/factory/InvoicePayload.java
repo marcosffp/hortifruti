@@ -60,9 +60,6 @@ public class InvoicePayload {
     try {
       Map<String, Object> payload = new HashMap<>();
 
-      // =========================
-      // DADOS GERAIS
-      // =========================
       payload.put("natureza_operacao", request.naturezaOperacao());
       payload.put("data_emissao", request.dataEmissao());
       payload.put("tipo_documento", "1");
@@ -73,9 +70,6 @@ public class InvoicePayload {
         payload.put("cnpj_emitente", focusNfeCnpjEmitente.trim());
       }
 
-      // =========================
-      // DESTINATÁRIO
-      // =========================
       if (request.destinatario() != null) {
 
         if (request.destinatario().cpf() != null) {
@@ -133,14 +127,8 @@ public class InvoicePayload {
         }
       }
 
-      // =========================
-      // FRETE
-      // =========================
       payload.put("modalidade_frete", "9");
 
-      // =========================
-      // ITENS
-      // =========================
       BigDecimal somaBase = BigDecimal.ZERO;
       BigDecimal somaCbsItens = BigDecimal.ZERO;
       BigDecimal somaIbsUfItens = BigDecimal.ZERO;
@@ -286,7 +274,6 @@ public class InvoicePayload {
           }
         }
 
-        // Totais do raiz
         BigDecimal ibsTotalRaiz = ibsUfTotalRaiz.add(ibsMunTotalRaiz);
         BigDecimal ibsCbsTotalRaiz = cbsTotalRaiz.add(ibsTotalRaiz);
 
@@ -299,9 +286,6 @@ public class InvoicePayload {
         payload.put("items", items);
       }
 
-      // =========================
-      // INFORMAÇÕES ADICIONAIS
-      // =========================
       if (request.informacoesAdicionaisContribuinte() != null) {
         payload.put(
             "informacoes_adicionais_contribuinte", request.informacoesAdicionaisContribuinte());

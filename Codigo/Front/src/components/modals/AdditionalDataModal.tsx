@@ -33,7 +33,6 @@ export default function AdditionalDataModal({
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-                {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b border-gray-300">
                     <h3 className="text-xl font-semibold">Dados Adicionais da NF</h3>
                     <button
@@ -44,7 +43,6 @@ export default function AdditionalDataModal({
                     </button>
                 </div>
 
-                {/* Body */}
                 <div className="p-6">
                     <div className="mb-4">
                         <p className="text-sm text-gray-600 mb-2">
@@ -72,7 +70,6 @@ export default function AdditionalDataModal({
                     </div>
                 </div>
 
-                {/* Footer */}
                 <div className="flex justify-end gap-3 p-6 border-t border-gray-300">
                     <button
                         onClick={handleClose}

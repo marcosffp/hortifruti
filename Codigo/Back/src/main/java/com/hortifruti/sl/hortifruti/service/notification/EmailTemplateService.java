@@ -16,7 +16,6 @@ public class EmailTemplateService {
     this.resourceLoader = resourceLoader;
   }
 
-  /** Carrega um template HTML e substitui as variáveis */
   public String processTemplate(String templateName, Map<String, String> variables) {
     try {
       String template = loadTemplate(templateName);
@@ -26,7 +25,6 @@ public class EmailTemplateService {
     }
   }
 
-  /** Carrega o template HTML do arquivo (prioriza versões clean) */
   private String loadTemplate(String templateName) throws IOException {
     // Primeiro tenta carregar a versão clean (sem avisos)
     String cleanTemplateName = templateName + "-clean";
@@ -37,13 +35,11 @@ public class EmailTemplateService {
       return cleanResource.getContentAsString(StandardCharsets.UTF_8);
     }
 
-    // Fallback para a versão original
     Resource resource =
         resourceLoader.getResource("classpath:templates/email/" + templateName + ".html");
     return resource.getContentAsString(StandardCharsets.UTF_8);
   }
 
-  /** Substitui as variáveis no template */
   private String replaceVariables(String template, Map<String, String> variables) {
     String result = template;
 
@@ -56,11 +52,9 @@ public class EmailTemplateService {
 
       // Processar blocos condicionais: {{#VARIABLE}} conteúdo {{/VARIABLE}}
       if (value != null && !value.isEmpty()) {
-        // Mostrar o bloco se a variável tem valor
         result =
             result.replaceAll("\\{\\{#" + key + "\\}\\}([\\s\\S]*?)\\{\\{/" + key + "\\}\\}", "$1");
       } else {
-        // Remover o bloco se a variável está vazia
         result =
             result.replaceAll("\\{\\{#" + key + "\\}\\}[\\s\\S]*?\\{\\{/" + key + "\\}\\}", "");
       }
@@ -69,7 +63,6 @@ public class EmailTemplateService {
     // Remover blocos condicionais não processados
     result = result.replaceAll("\\{\\{#[^}]+\\}\\}[\\s\\S]*?\\{\\{/[^}]+\\}\\}", "");
 
-    // Converter quebras de linha em <br> se necessário
     for (Map.Entry<String, String> entry : variables.entrySet()) {
       if (entry.getValue() != null && entry.getValue().contains("\n")) {
         String key = "{{" + entry.getKey() + "}}";
@@ -81,7 +74,6 @@ public class EmailTemplateService {
     return result;
   }
 
-  /** Mensagem de fallback caso o template não carregue */
   private String getFallbackMessage(String templateName) {
     return """
         <html>

@@ -25,7 +25,6 @@ public class GoogleAuthService {
   @Value("${google.tokens.directory}")
   private String tokensDirectoryPath;
 
-  /** Cria um cliente autorizado do Google Drive. */
   public Drive getDriveService() {
     try {
       CredentialConfig config =

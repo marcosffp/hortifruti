@@ -4,7 +4,6 @@ import com.hortifruti.sl.hortifruti.model.enumeration.RecommendationTag;
 import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-/** DTO para retorno de recomendações de produtos baseadas no clima */
 @Schema(description = "Recomendação de produto baseada em clima e sazonalidade")
 public record ClimateProductRecommendationDTO(
     @Schema(description = "ID do produto", example = "1") Long productId,

@@ -2,14 +2,12 @@
 
 import { toast } from "react-toastify";
 
-// Interface para tipos de erro
 export interface ApiError {
   message: string;
   statusCode?: number;
   details?: string[];
 }
 
-// Função para lidar com erros da API
 export const handleApiError = async (error: unknown): Promise<ApiError> => {
   console.error("API Error:", error);
 
@@ -22,7 +20,6 @@ export const handleApiError = async (error: unknown): Promise<ApiError> => {
         details: errorData.details || [],
       };
     } catch (_parseError) {
-      // Erro ao parsear o JSON da resposta
       return {
         message: `Erro ${error.status}: ${error.statusText}`,
         statusCode: error.status,
@@ -41,7 +38,6 @@ export const handleApiError = async (error: unknown): Promise<ApiError> => {
   };
 };
 
-// Funções para mostrar notificações
 export const showSuccess = (message: string) => {
   toast.success(message, {
     position: "top-right",

@@ -59,7 +59,6 @@ export default function NovoUsuarioPage() {
   return (
     <main className="flex-1 p-8 bg-gray-50 overflow-auto">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="mb-8 flex items-center">
           <Link href="/acesso" className="mr-4">
             <Button
@@ -76,7 +75,6 @@ export default function NovoUsuarioPage() {
           </div>
         </div>
 
-        {/* Form */}
         <form
           onSubmit={handleSubmit}
           className="bg-white rounded-lg shadow-md border border-gray-200"
@@ -91,7 +89,6 @@ export default function NovoUsuarioPage() {
           </div>
 
           <div className="p-6 space-y-6">
-            {/* Nome */}
             <div>
               <label
                 htmlFor="name"
@@ -114,7 +111,6 @@ export default function NovoUsuarioPage() {
               </p>
             </div>
 
-            {/* Senha */}
             <div>
               <label
                 htmlFor="password"
@@ -139,7 +135,6 @@ export default function NovoUsuarioPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              {/* Cargo */}
               <div>
                 <label
                   htmlFor="cargo"
@@ -159,7 +154,6 @@ export default function NovoUsuarioPage() {
                 />
               </div>
 
-              {/* Perfil */}
               <div>
                 <label
                   htmlFor="perfil"
@@ -181,7 +175,6 @@ export default function NovoUsuarioPage() {
               </div>
             </div>
 
-            {/* Info sobre perfis */}
             <div className="bg-gray-50 rounded-lg p-4">
               <h3 className="text-sm font-medium text-gray-800 mb-3">
                 Sobre os Perfis de Acesso:
@@ -210,7 +203,6 @@ export default function NovoUsuarioPage() {
             </div>
           </div>
 
-          {/* Footer */}
           <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
             <Link href="/acesso">
               <Button variant="outline" className="px-4 py-2">

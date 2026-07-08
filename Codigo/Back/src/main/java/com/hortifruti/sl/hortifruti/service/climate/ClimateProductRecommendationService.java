@@ -46,19 +46,14 @@ public class ClimateProductRecommendationService {
         .collect(Collectors.toList());
   }
 
-  /** Calcula a pontuação de um produto baseado no clima e sazonalidade */
   private ClimateProductRecommendationDTO calculateProductScore(
       ClimateProduct product, TemperatureCategory climateCategory, Month currentMonth) {
-    // 1. Pontuação do clima (peso maior - 70%)
     double climateScore = calculateClimateScore(product, climateCategory);
 
-    // 2. Pontuação da sazonalidade (peso menor - 30%)
     double seasonalityScore = calculateSeasonalityScore(product, currentMonth);
 
-    // 3. Pontuação final ponderada
     double finalScore = (climateScore * CLIMATE_WEIGHT) + (seasonalityScore * SEASONALITY_WEIGHT);
 
-    // 4. Determinar tag baseada na pontuação
     RecommendationTag tag = RecommendationTag.fromScore(finalScore);
 
     return new ClimateProductRecommendationDTO(
@@ -69,7 +64,6 @@ public class ClimateProductRecommendationService {
         tag);
   }
 
-  /** Calcula pontuação baseada no clima atual */
   private double calculateClimateScore(ClimateProduct product, TemperatureCategory currentClimate) {
     if (product.getTemperatureCategory() == currentClimate) {
       return PERFECT_CLIMATE_SCORE;
@@ -78,7 +72,6 @@ public class ClimateProductRecommendationService {
     return calculateProximityScore(product.getTemperatureCategory(), currentClimate);
   }
 
-  /** Calcula pontuação de proximidade entre categorias de temperatura */
   private double calculateProximityScore(
       TemperatureCategory productCategory, TemperatureCategory currentClimate) {
     int productOrdinal = productCategory.ordinal();
@@ -94,7 +87,6 @@ public class ClimateProductRecommendationService {
     };
   }
 
-  /** Calcula pontuação baseada na sazonalidade (mês atual) */
   private double calculateSeasonalityScore(ClimateProduct product, Month currentMonth) {
     if (product.getPeakSalesMonths() != null
         && product.getPeakSalesMonths().contains(currentMonth)) {
@@ -114,7 +106,6 @@ public class ClimateProductRecommendationService {
     return Month.values()[currentMonthNumber - 1];
   }
 
-  /** Busca produtos por categoria de temperatura específica */
   public List<ClimateProductRecommendationDTO> getProductsByTemperatureCategory(
       TemperatureCategory category) {
     if (category == null) {
@@ -135,8 +126,8 @@ public class ClimateProductRecommendationService {
   }
 
   /**
-   * NOVO: Gera recomendações baseadas apenas na data Busca os dados climáticos da API para a data
-   * especificada
+   * Gera recomendações baseadas apenas na data. Busca os dados climáticos da API para a data
+   * especificada.
    */
   public List<ClimateProductRecommendationDTO> getRecommendationsByDate(String dateString) {
     if (dateString == null || dateString.trim().isEmpty()) {
@@ -171,7 +162,6 @@ public class ClimateProductRecommendationService {
     }
   }
 
-  /** Método auxiliar para converter LocalDate para Month enum */
   private Month getMonthFromLocalDate(LocalDate date) {
     int monthNumber = date.getMonthValue();
     for (Month month : Month.values()) {

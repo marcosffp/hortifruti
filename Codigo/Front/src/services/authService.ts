@@ -1,6 +1,5 @@
 "use client";
 
-// Tipos para o serviço de autenticação
 export interface AuthRequest {
   username: string;
   password: string;
@@ -16,12 +15,9 @@ export interface AuthResponse {
   };
 }
 
-// Definindo a URL base da API
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-// Serviço para lidar com autenticação
 export const authService = {
-  // Login de usuário
   async login(credentials: AuthRequest): Promise<AuthResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/auth`, {
@@ -41,14 +37,12 @@ export const authService = {
 
       const token = await response.text();
 
-      // Decodificar o token para extrair as informações do usuário
       // JWT tokens são divididos em três partes separadas por ponto: header.payload.signature
       const parts = token.split(".");
       if (parts.length !== 3) {
         throw new Error("Token inválido");
       }
 
-      // Decodificar a parte do payload (segunda parte)
       const payload = JSON.parse(atob(parts[1]));
 
       const user = {
@@ -58,7 +52,6 @@ export const authService = {
         roles: [payload.role?.replace("ROLE_", "") || ""],
       };
 
-      // Armazenar o token no localStorage
       localStorage.setItem("auth_token", token);
       localStorage.setItem("user_info", JSON.stringify(user));
 
@@ -69,15 +62,12 @@ export const authService = {
     }
   },
 
-  // Logout de usuário
   logout() {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user_info");
-    // Redirecionar para a página de login ou home, conforme necessário
     window.location.href = "/";
   },
 
-  // Verificar se o token está expirado
   isTokenExpired(token: string): boolean {
     try {
       const parts = token.split(".");
@@ -91,7 +81,6 @@ export const authService = {
     }
   },
 
-  // Verificar se o usuário está autenticado e o token é válido
   isAuthenticated(): boolean {
     if (typeof window === "undefined") return false;
     const token = localStorage.getItem("auth_token");
@@ -99,13 +88,11 @@ export const authService = {
     return !this.isTokenExpired(token);
   },
 
-  // Obter o token atual
   getToken(): string | null {
     if (typeof window === "undefined") return null;
     return localStorage.getItem("auth_token");
   },
 
-  // Obter informações do usuário
   getUserInfo() {
     if (typeof window === "undefined") return null;
     const userInfo = localStorage.getItem("user_info");
@@ -117,7 +104,6 @@ export const authService = {
     return this.getUserInfo();
   },
 
-  // Verificar se o usuário tem uma role específica
   hasRole(role: string): boolean {
     const userInfo = this.getUserInfo();
     if (!userInfo?.roles) return false;

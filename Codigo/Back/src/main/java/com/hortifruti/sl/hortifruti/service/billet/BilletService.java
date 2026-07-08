@@ -78,10 +78,8 @@ public class BilletService {
       Client client = billetInfoCombinedAndClient.findClientById(combinedScore.getClientId());
       Pagador pagador = billetFactory.createPagadorFromClient(client);
 
-      // Verifica e converte a data se foi fornecida
       if (dueDate != null && !dueDate.trim().isEmpty()) {
         LocalDate customDueDate = LocalDate.parse(dueDate);
-        // Se a data personalizada é diferente da atual, atualiza o CombinedScore
         if (!customDueDate.equals(combinedScore.getDueDate())) {
           combinedScore.setDueDate(customDueDate);
           combinedScoreRepository.save(combinedScore);
@@ -100,41 +98,33 @@ public class BilletService {
 
   @Transactional
   public List<CombinedScore> syncAndFindOverdueUnpaidScores(LocalDate currentDate) {
-    // Busca todos os CombinedScore vencidos e não confirmados
     List<CombinedScore> overdueScores =
         combinedScoreRepository.findOverdueUnpaidScores(currentDate);
 
-    // Lista para armazenar os CombinedScore que permanecem pendentes
     List<CombinedScore> remainingPendingScores = new ArrayList<>();
 
     for (CombinedScore combinedScore : overdueScores) {
       boolean shouldRemainPending = true;
 
-      // Verifica se o CombinedScore possui um boleto associado e está pendente
       if (combinedScore.isHasBillet() && combinedScore.getStatus() == Status.PENDENTE) {
         try {
-          // Busca a lista de boletos atualizada do BilletService
           List<BilletResponse> updatedBillets = listBilletByPayer(combinedScore.getClientId());
 
-          // Busca o boleto específico pelo seu número
           Optional<BilletResponse> currentBillet =
               updatedBillets.stream()
                   .filter(billet -> billet.seuNumero().equals(combinedScore.getYourNumber()))
                   .findFirst();
 
-          // Se o boleto não estiver presente na lista, considera como pago
           if (currentBillet.isEmpty()) {
             combinedScore.setStatus(Status.PAGO);
             combinedScoreRepository.save(combinedScore);
             shouldRemainPending = false;
           }
         } catch (Exception e) {
-          // Em caso de erro, mantém como pendente para nova tentativa
           shouldRemainPending = true;
         }
       }
 
-      // Adiciona à lista de pendentes apenas se deve permanecer pendente
       if (shouldRemainPending) {
         remainingPendingScores.add(combinedScore);
       }

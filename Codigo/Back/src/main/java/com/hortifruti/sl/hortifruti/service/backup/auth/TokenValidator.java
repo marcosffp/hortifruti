@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class TokenValidator {
 
-  /** Verifica se a credencial é válida */
   protected boolean isValidCredential(Credential credential) {
     if (credential == null) {
       return false;
@@ -23,12 +22,10 @@ public class TokenValidator {
     return false;
   }
 
-  /** Verifica se o token não expirou */
   private boolean isTokenNotExpired(Credential credential) {
     return credential.getExpiresInSeconds() != null && credential.getExpiresInSeconds() > 60;
   }
 
-  /** Tenta renovar o token */
   private boolean tryRefreshToken(Credential credential) {
     try {
       if (credential.refreshToken()) {

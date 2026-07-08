@@ -50,12 +50,10 @@ public class SalesPdfGenerator {
 
       float yPosition = 750;
 
-      // Título
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
       addText(contentStream, leftMargin, yPosition, "RELAÇÃO DE VENDAS");
       yPosition -= lineHeight * 2;
 
-      // Informações empresa
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
       addText(contentStream, leftMargin, yPosition, "Filial: " + companyName);
       yPosition -= lineHeight;

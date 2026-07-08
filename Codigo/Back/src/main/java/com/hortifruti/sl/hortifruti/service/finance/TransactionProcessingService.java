@@ -56,7 +56,6 @@ public class TransactionProcessingService {
     }
   }
 
-  /** Importa extrato de um arquivo fornecido. */
   private void importStatement(byte[] fileBytes, String fileName, Statement statement)
       throws IOException {
 
@@ -71,7 +70,6 @@ public class TransactionProcessingService {
     processFileByType(statement.getBank(), fileBytes, fileName, statement);
   }
 
-  /** Processa um arquivo com base no tipo especificado. */
   private void processFileByType(Bank bank, byte[] fileBytes, String fileName, Statement statement)
       throws IOException {
 
@@ -87,14 +85,12 @@ public class TransactionProcessingService {
     }
   }
 
-  /** Retorna todas as transações como DTOs. */
   public List<TransactionResponse> getAllTransactions() {
     return transactionRepository.findAll().stream()
         .map(transactionMapper::toResponse)
         .collect(Collectors.toList());
   }
 
-  /** Atualiza uma transação existente. */
   public TransactionResponse updateTransaction(Long id, TransactionRequest transactionRequest) {
     Transaction existingTransaction =
         transactionRepository
@@ -116,10 +112,6 @@ public class TransactionProcessingService {
     transactionRepository.deleteById(id);
   }
 
-  /**
-   * Retorna todas as transações filtradas por critérios de pesquisa, tipo e categoria com
-   * paginação.
-   */
   public Page<TransactionResponse> getAllTransactions(
       String search, String type, String category, int page, int size) {
 
@@ -169,9 +161,6 @@ public class TransactionProcessingService {
     return transactionRepository.findAllCategories();
   }
 
-  /**
-   * Calcula a receita total para um período especificado ou para o mês atual se não for informado.
-   */
   public BigDecimal getTotalRevenue(TransactionRequestDate request) {
     LocalDate startDate = request.startDate();
     LocalDate endDate = request.endDate();
@@ -188,10 +177,6 @@ public class TransactionProcessingService {
         .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
-  /**
-   * Calcula as despesas totais para um período especificado ou para o mês atual se não for
-   * informado.
-   */
   public BigDecimal getTotalExpenses(TransactionRequestDate request) {
     LocalDate startDate = request.startDate();
     LocalDate endDate = request.endDate();
@@ -208,9 +193,6 @@ public class TransactionProcessingService {
         .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
-  /**
-   * Calcula o saldo total para um período especificado ou para o mês atual se não for informado.
-   */
   public BigDecimal getTotalBalance(TransactionRequestDate request) {
     BigDecimal receita = getTotalRevenue(request);
     BigDecimal despesas = getTotalExpenses(request);

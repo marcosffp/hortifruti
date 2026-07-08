@@ -18,7 +18,6 @@ public class GoogleOAuthService {
   @Value("${frontend.url}")
   private String frontendUrl;
 
-  /** Processa o callback de autorização do Google e gerencia redirecionamentos. */
   public void processOAuth2Callback(String authorizationCode, HttpServletResponse response) {
     try {
       oauthCallbackHandler.handleAuthorizationCode(authorizationCode);

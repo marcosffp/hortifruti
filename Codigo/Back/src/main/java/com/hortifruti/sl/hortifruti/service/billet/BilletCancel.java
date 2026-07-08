@@ -62,12 +62,10 @@ public class BilletCancel {
     }
   }
 
-  // Método auxiliar para construir o endpoint de cancelamento
   private String buildCancelEndpoint(String nossoNumero) {
     return String.format(billetConstants.getBASE_URL() + "boletos/%s/baixar", nossoNumero);
   }
 
-  // Método auxiliar para construir o corpo da requisição de cancelamento
   private Map<String, Object> buildCancelRequestBody() {
     Map<String, Object> requestBody = new HashMap<>();
     requestBody.put("numeroCliente", billetConstants.getClientNumber());
@@ -75,7 +73,6 @@ public class BilletCancel {
     return requestBody;
   }
 
-  // Método auxiliar para tratar a resposta de cancelamento
   private ResponseEntity<String> handleCancelResponse(
       JsonNode response, CombinedScore combinedScore) {
     if (response == null) {
@@ -85,7 +82,6 @@ public class BilletCancel {
     return ResponseEntity.ok("Boleto baixado com sucesso.");
   }
 
-  // Método auxiliar para tratar erros de requisição (400 Bad Request)
   private ResponseEntity<String> handleBadRequest(HttpClientErrorException.BadRequest e) {
     String errorBody = e.getResponseBodyAsString();
     if (errorBody.contains("Título em processo de baixa/liquidação")) {

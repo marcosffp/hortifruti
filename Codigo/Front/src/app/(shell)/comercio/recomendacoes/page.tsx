@@ -35,7 +35,6 @@ export default function RecommendationPage() {
     { value: "QUENTE", label: "Quente (25-50°C)" },
   ];
 
-  // Buscar recomendações baseadas em uma data específica
   const loadRecommendationsByDate = async (date: string) => {
     try {
       setLoading(true);
@@ -49,8 +48,7 @@ export default function RecommendationPage() {
       setLoading(false);
     }
   };
-  
-  // Limpar o filtro por data e mostrar todas as recomendações
+
   const loadAllRecommendations = async () => {
     try {
       setLoading(true);
@@ -66,18 +64,15 @@ export default function RecommendationPage() {
     }
   };
 
-  // Buscar recomendações e previsão do tempo do backend
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
         setWeatherLoading(true);
-        
+
         const today = new Date().toISOString().slice(0, 10);
-        // Carregar recomendações para hoje por padrão
         await loadRecommendationsByDate(today);
-        
-        // Carregar previsão do tempo
+
         try {
           const weatherData = await productService.getWeatherForecast();
           setWeather(weatherData);
@@ -97,7 +92,6 @@ export default function RecommendationPage() {
     loadData();
   }, []);
 
-  // Adicionar novo produto
   const handleAddProduct = async () => {
     if (!newProduct.name || !newProduct.temperatureCategory) {
       setError("Nome e categoria de temperatura são obrigatórios");
@@ -115,8 +109,7 @@ export default function RecommendationPage() {
         peakSalesMonths: [], 
         lowSalesMonths: [] 
       });
-      
-      // Atualiza recomendações após adicionar
+
       const data = await productService.getRecommendationsByDate(new Date().toISOString().slice(0, 10));
       setRecommendations(data);
       setError("");
@@ -127,8 +120,7 @@ export default function RecommendationPage() {
       setLoading(false);
     }
   };
-  
-  // Função para converter string de meses em números
+
   const handleMonthsChange = (value: string, field: 'peakSalesMonths' | 'lowSalesMonths', isEditing: boolean = false) => {
     const months = value.split(',')
       .map(m => m.trim())
@@ -151,8 +143,7 @@ export default function RecommendationPage() {
       }));
     }
   };
-  
-  // Preparar produto para edição
+
   const handleEditProduct = (productId: number, productName: string, temperatureCategory: string) => {
     setEditingProduct({
       id: productId,
@@ -166,10 +157,10 @@ export default function RecommendationPage() {
     setShowEdit(true);
   };
 
-  // Salvar as edições do produto
   const handleSaveEdit = async () => {
     if (!editingProduct) return;
-    
+
+
     if (!editingProduct.data.name || !editingProduct.data.temperatureCategory) {
       setError("Nome e categoria de temperatura são obrigatórios");
       return;
@@ -181,8 +172,7 @@ export default function RecommendationPage() {
       showSuccess("Produto atualizado com sucesso!");
       setShowEdit(false);
       setEditingProduct(null);
-      
-      // Atualiza recomendações após editar
+
       if (selectedDate) {
         const data = await productService.getRecommendationsByDate(selectedDate);
         setRecommendations(data);
@@ -200,22 +190,20 @@ export default function RecommendationPage() {
     }
   };
 
-  // Preparar exclusão do produto
   const handleDeleteProduct = (productId: number) => {
     setProductToDelete(productId);
   };
 
-  // Confirmar exclusão do produto
   const handleConfirmDelete = async () => {
     if (productToDelete === null) return;
-    
+
+
     try {
       setLoading(true);
       await productService.deleteProduct(productToDelete);
       showSuccess("Produto excluído com sucesso!");
       setProductToDelete(null);
-      
-      // Atualiza recomendações após excluir
+
       if (selectedDate) {
         const data = await productService.getRecommendationsByDate(selectedDate);
         setRecommendations(data);
@@ -232,7 +220,6 @@ export default function RecommendationPage() {
     }
   };
 
-  // Obter cor baseada na tag
   const getTagColor = (tag: string) => {
     switch (tag) {
       case 'BOM': return 'bg-[var(--primary)] text-white';
@@ -241,11 +228,10 @@ export default function RecommendationPage() {
       default: return 'bg-gray-200';
     }
   };
-  
-  // Função para selecionar o ícone correto com base na descrição do clima
+
   const getWeatherIcon = (description: string | undefined) => {
     if (!description) return <RiCloudyLine size={36} />;
-    
+
     const desc = description.toLowerCase();
     if (desc.includes('sol') || desc.includes('limpo') || desc.includes('clear')) {
       return <RiSunLine size={36} className="text-yellow-500" />;
@@ -266,8 +252,7 @@ export default function RecommendationPage() {
         <RiCloudyLine className="mr-2 text-blue-500" /> 
         Previsão do Tempo e Impacto na Demanda
       </h2>
-      
-      {/* Cards de previsão do tempo - Estilo similar ao mockup */}
+
       <div className="mb-8">
         <h3 className="text-md font-semibold mb-2 text-gray-700">
           Previsão Estendida do Tempo (próximos 5 dias)
@@ -275,8 +260,7 @@ export default function RecommendationPage() {
             Última atualização: {new Date().toLocaleString('pt-BR')}
           </span>
         </h3>
-       
-        
+
         {weatherLoading ? (
           <div className="p-4 bg-white rounded-lg shadow">
             <p className="text-center text-[var(--neutral-600)]">Carregando previsão do tempo...</p>
@@ -286,8 +270,7 @@ export default function RecommendationPage() {
             {weather.dailyForecasts.slice(0, 5).map((forecast, index) => {
               const date = new Date(forecast.date);
               const formattedDate = `${date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}, ${date.getDate()}/${date.getMonth() + 1}`;
-              
-              // Determinar a condição climática
+
               let condicao = 'estáveis';
               if (forecast.humidity > 70) condicao = 'úmidas';
               else if (forecast.humidity < 30) condicao = 'secas';
@@ -538,7 +521,6 @@ export default function RecommendationPage() {
                     </div>
                   </div>
                 </div>
-                {/* Botões de ação */}
                 <div className="flex justify-end p-3 border-t border-gray-100">
                   <button
                     onClick={() => handleEditProduct(rec.productId, rec.name, rec.temperatureCategory)}
@@ -564,7 +546,6 @@ export default function RecommendationPage() {
         </div>
       )}
 
-      {/* Modal de edição de produto */}
       {showEdit && editingProduct && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
@@ -641,8 +622,7 @@ export default function RecommendationPage() {
           </div>
         </div>
       )}
-      
-      {/* Modal de confirmação de exclusão */}
+
       {productToDelete !== null && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">

@@ -11,9 +11,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   return (
     <header className="w-full bg-primary border-b border-[var(--neutral-300)]">
       <div className="flex justify-between items-center px-6 py-4 max-md:flex-col max-md:gap-3">
-        {/* Left side - Logo and name */}
         <div className="flex items-center gap-3">
-          {/* Logo */}
           <Image
             src="/icon.png"
             alt="Logo Hortifruti"
@@ -21,7 +19,6 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
             height={50}
             className="h-12 w-12"
           />
-          {/* Nome */}
           <div className="flex flex-col">
             <span className="text-lg font-bold text-white leading-tight">
               HORTIFRUTI
@@ -31,13 +28,11 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
             </span>
           </div>
         </div>
-        {/* Right side - Phone, notifications, user, login */}
         <div className="flex items-center gap-4">
           <div className="menu md:hidden" onClick={onMenuClick} title="Menu">
             <MenuIcon className="text-gray-100 cursor-pointer " size={25} />
           </div>
           <span className="text-gray-100 text-sm">(31) 3649-7064</span>
-          {/* User avatar and name */}
           <div className="flex items-center gap-2" title="Perfil">
             <Link href="/perfil" className="flex items-center gap-2">
               <div className="w-8 h-8 bg-green-800 rounded-full flex items-center justify-center">
