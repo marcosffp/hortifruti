@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDashboard } from "@/hooks/useDashboard";
 import { DashboardData } from "@/services/dashboardService";
 import Card from "@/components/ui/Card";
@@ -18,7 +18,7 @@ import {
 } from 'chart.js';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import Loading from "@/components/ui/Loading";
-import { TrendingUp, Package, BarChart3 } from "lucide-react";
+import { TrendingUp, Package, BarChart3, Filter } from "lucide-react";
 
 // Registrar componentes do Chart.js
 ChartJS.register(
@@ -86,10 +86,22 @@ type CashFlowProps = {
 export default function CashFlow({ startDate, endDate, setStartDate, setEndDate }: CashFlowProps) {
   const { isLoading, error, getDashboardData } = useDashboard();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  // Rascunho dos filtros: só é aplicado (e dispara a busca) quando o usuário clica em "Aplicar Filtro",
+  // evitando buscas parciais enquanto o usuário ainda está trocando mês/ano/datas
+  const [draftMonth, setDraftMonth] = useState(selectedMonth);
+  const [draftYear, setDraftYear] = useState(selectedYear);
+  const [draftStartDate, setDraftStartDate] = useState(startDate);
+  const [draftEndDate, setDraftEndDate] = useState(endDate);
+
+  const hasPendingChanges =
+    draftMonth !== selectedMonth ||
+    draftYear !== selectedYear ||
+    draftStartDate !== startDate ||
+    draftEndDate !== endDate;
 
   const fetchDashboardData = async () => {
     const data = await getDashboardData(startDate, endDate, selectedMonth, selectedYear);
@@ -99,20 +111,15 @@ export default function CashFlow({ startDate, endDate, setStartDate, setEndDate 
   };
 
   useEffect(() => {
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
-
-    debounceTimer.current = setTimeout(() => {
-      fetchDashboardData();
-    }, 500);
-
-    return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-    }
+    fetchDashboardData();
   }, [startDate, endDate, selectedMonth, selectedYear]);
+
+  const applyFilters = () => {
+    setSelectedMonth(draftMonth);
+    setSelectedYear(draftYear);
+    setStartDate(draftStartDate);
+    setEndDate(draftEndDate);
+  };
 
   // Dados para gráfico de linha (Fluxo de Caixa) - ORDENADO e com valores NEGATIVOS
   const lineChartData = (() => {
@@ -476,14 +483,19 @@ export default function CashFlow({ startDate, endDate, setStartDate, setEndDate 
     <div className="grid gap-4 sm:gap-6 w-full max-w-full overflow-x-hidden">
       {/* Filtros */}
       <Card title="Filtros">
+        <p className="text-sm text-gray-500 mb-4">
+          Ajuste os campos abaixo e clique em <strong>Aplicar Filtro</strong> para atualizar os gráficos.
+          O intervalo de <strong>Data Inicial</strong> e <strong>Data Final</strong> aplicado aqui também é usado
+          pelo botão <strong>Baixar Relatório → Relatório por Período</strong>, no card acima.
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Mês
             </label>
             <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              value={draftMonth}
+              onChange={(e) => setDraftMonth(Number(e.target.value))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               {Array.from({ length: 12 }, (_, i) => (
@@ -499,8 +511,8 @@ export default function CashFlow({ startDate, endDate, setStartDate, setEndDate 
             </label>
             <input
               type="number"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              value={draftYear}
+              onChange={(e) => setDraftYear(Number(e.target.value))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
@@ -510,8 +522,8 @@ export default function CashFlow({ startDate, endDate, setStartDate, setEndDate 
             </label>
             <input
               type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              value={draftStartDate}
+              onChange={(e) => setDraftStartDate(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
@@ -521,12 +533,27 @@ export default function CashFlow({ startDate, endDate, setStartDate, setEndDate 
             </label>
             <input
               type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              value={draftEndDate}
+              onChange={(e) => setDraftEndDate(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
-          
+        </div>
+
+        <div className="flex items-center gap-3 mt-4">
+          <button
+            onClick={applyFilters}
+            disabled={isLoading || !hasPendingChanges}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Filter className="w-4 h-4" />
+            Aplicar Filtro
+          </button>
+          {hasPendingChanges && (
+            <span className="text-sm text-amber-600">
+              Você tem alterações não aplicadas.
+            </span>
+          )}
         </div>
       </Card>
 

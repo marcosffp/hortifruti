@@ -7,6 +7,7 @@ import { PurchaseType } from "@/types/purchaseType";
 import InvoiceProductsModal from "@/components/modals/InvoiceProductsModal";
 import { combinedScoreService } from "@/services/combinedScoreService";
 import { showError, showSuccess } from "@/services/notificationService";
+import { todaySaoPaulo } from "@/utils/dateUtils";
 
 interface PurchaseFilesTableProps {
     clientId?: number;
@@ -34,10 +35,7 @@ export default function PurchaseFilesTable({ clientId, refreshKey, onGroupingCre
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         return lastDay.toISOString().split('T')[0];
     });
-    const [confirmedAt, setConfirmedAt] = useState(() => {
-        const now = new Date();
-        return now.toISOString().split('T')[0];
-    });
+    const [confirmedAt, setConfirmedAt] = useState(() => todaySaoPaulo());
 
     // Debounce refs
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -203,7 +201,10 @@ export default function PurchaseFilesTable({ clientId, refreshKey, onGroupingCre
             <div className="flex justify-between items-center">
                 <h2 className="text-lg font-semibold">Arquivos de Compra</h2>
                 <button
-                    onClick={() => setShowGroupingModal(true)}
+                    onClick={() => {
+                        setConfirmedAt(todaySaoPaulo());
+                        setShowGroupingModal(true);
+                    }}
                     disabled={!clientId || purchases.length === 0}
                     className={`flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors ${
                         (!clientId || purchases.length === 0) ? 'opacity-50 cursor-not-allowed' : ''

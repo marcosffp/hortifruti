@@ -57,6 +57,7 @@ public class ClientService {
     existingClient.setAddress(clientRequest.address());
     existingClient.setDocument(clientRequest.document());
     existingClient.setVariablePrice(clientRequest.variablePrice());
+    existingClient.setOnlyBillet(clientRequest.onlyBillet());
     existingClient.setStateRegistration(clientRequest.stateRegistration());
     existingClient.setStateIndicator(clientRequest.stateIndicator());
 

@@ -62,6 +62,7 @@ export default function Dashboard() {
             <div className="space-y-3">
               <p className="text-gray-600">
                 Baixe seu relatório fiscal em PDF por mês anterior ou por um período específico.
+                Para o período específico, defina e aplique as datas na seção <strong>Filtros</strong>, logo abaixo.
               </p>
 
               <button
@@ -192,7 +193,7 @@ export default function Dashboard() {
                     <div>
                       <p className="font-medium text-gray-800">Relatório por Período</p>
                       <p className="text-xs text-gray-500">
-                        Usa as datas selecionadas no filtro do dashboard.
+                        Usa o período aplicado na seção "Filtros" do dashboard (Data Inicial/Data Final).
                       </p>
                     </div>
                   </div>

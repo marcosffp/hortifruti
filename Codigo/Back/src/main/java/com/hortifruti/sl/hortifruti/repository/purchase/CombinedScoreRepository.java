@@ -37,6 +37,12 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
   List<CombinedScore> findOverdueUnpaidScoresByClient(
       @Param("clientId") Long clientId, @Param("currentDate") LocalDate currentDate);
 
+  /** Busca o agrupamento mais recente (maior ID) de cada cliente */
+  @Query(
+      "SELECT cs FROM CombinedScore cs WHERE cs.id IN "
+          + "(SELECT MAX(c2.id) FROM CombinedScore c2 GROUP BY c2.clientId)")
+  List<CombinedScore> findLastGroupingPerClient();
+
   Optional<CombinedScore> findByYourNumber(String yourNumber);
 
   Optional<CombinedScore> findByInvoiceRef(String invoiceRef);
