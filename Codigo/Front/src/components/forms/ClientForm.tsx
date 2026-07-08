@@ -35,6 +35,7 @@ export interface ClientFormData {
   stateRegistration: string;
   stateIndicator: string;
   cideCode: string;
+  onlyBillet: string;
 }
 
 interface ClientFormProps {
@@ -71,6 +72,7 @@ export default function ClientForm({
     stateRegistration: "",
     stateIndicator: "9", // Padrão: Não contribuinte
     cideCode: "",
+    onlyBillet: "false",
     ...initialData
   });
 
@@ -674,6 +676,25 @@ export default function ClientForm({
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
                   Selecione "Preço Variável" se o cliente tiver valores negociados caso a caso.
+                </p>
+              </div>
+              <div>
+                <label htmlFor="onlyBillet" className="block text-sm font-medium text-gray-700 mb-1">
+                  Forma de Cobrança *
+                </label>
+                <select
+                  id="onlyBillet"
+                  name="onlyBillet"
+                  value={formData.onlyBillet}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="false">Boleto e Nota Fiscal</option>
+                  <option value="true">Somente Boleto</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Selecione "Somente Boleto" se o cliente nunca deve receber nota fiscal.
                 </p>
               </div>
             </div>

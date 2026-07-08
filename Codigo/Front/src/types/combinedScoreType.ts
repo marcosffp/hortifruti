@@ -35,3 +35,9 @@ export interface CombinedScoreRequest {
   endDate: string;
   confirmedAt?: string;
 }
+
+export interface ClientLastGroupingType {
+  clientId: number;
+  confirmedAt: string | null;
+  totalValue: number | null;
+}

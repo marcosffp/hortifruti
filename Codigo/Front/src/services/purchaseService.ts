@@ -56,8 +56,16 @@ export const purchaseService = {
     );
     if (!response.ok) throw new Error("Erro ao buscar arquivos de compra");
     const data = await response.json();
-    // O backend retorna um objeto Page<PurchaseResponse>
-    return data;
+    // O backend serializa Page via PagedModel (VIA_DTO), aninhando os metadados em "page"
+    return {
+      content: data.content || [],
+      totalElements: data.totalElements ?? data.page?.totalElements ?? 0,
+      totalPages: data.totalPages ?? data.page?.totalPages ?? 0,
+      number: data.number ?? data.page?.number ?? 0,
+      size: data.size ?? data.page?.size ?? 0,
+      first: data.first ?? (data.page?.number ?? 0) === 0,
+      last: data.last ?? (data.page?.number ?? 0) >= (data.page?.totalPages ?? 1) - 1,
+    };
   },
 
   async deletePurchaseFile(fileId: number): Promise<{ message: string }> {

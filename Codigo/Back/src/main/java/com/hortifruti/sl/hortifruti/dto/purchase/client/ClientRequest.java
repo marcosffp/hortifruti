@@ -13,4 +13,5 @@ public record ClientRequest(
     @NotBlank(message = "Endereço é obrigatório") String address,
     String stateRegistration,
     Integer stateIndicator,
-    String cideCode) {}
+    String cideCode,
+    boolean onlyBillet) {}
