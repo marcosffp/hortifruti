@@ -9,7 +9,7 @@
 ## 🛠️ Stack Principal
 
 ![Java](https://img.shields.io/badge/Java-25-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.2-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1.0-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
 ![Maven](https://img.shields.io/badge/Maven-3.9-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Multi--stage-2496ED?style=for-the-badge&logo=docker&logoColor=white)
@@ -398,26 +398,26 @@ O projeto usa **Google Java Format** via **Spotless**, com atalhos prontos:
 | Categoria | Tecnologia | Versão |
 |---|---|---|
 | Linguagem | Java | 25 |
-| Framework | Spring Boot (Web, WebFlux, WebSocket, Validation, Security, Data JPA) | 4.0.2 |
+| Framework | Spring Boot (Web, WebFlux, WebSocket, Validation, Security, Data JPA) | 4.1.0 |
 | Banco relacional | MySQL + HikariCP | 8.0 |
-| Segurança JWT | java-jwt (Auth0) | 4.4.0 |
-| Documentação | Springdoc OpenAPI (Swagger UI) | 2.8.9 |
-| Mapeamento DTO | MapStruct + Lombok | 1.6.3 / 1.18.32 |
+| Segurança JWT | java-jwt (Auth0) | 4.5.2 |
+| Documentação | Springdoc OpenAPI (Swagger UI) | 3.0.3 |
+| Mapeamento DTO | MapStruct + Lombok | 1.6.3 / 1.18.46 |
 | Variáveis de ambiente | spring-dotenv | 5.0.1 |
 | Rate limiting | Bucket4J (core + jcache) | 8.0.1 |
-| PDF | Apache PDFBox | 3.0.5 |
-| Planilhas | Apache POI OOXML | 5.4.1 |
+| PDF | Apache PDFBox | 3.0.7 |
+| Planilhas | Apache POI OOXML | 5.5.1 |
 | Compressão | Zip4j | 2.11.5 |
-| HTTP Client | Apache HttpComponents Client5 | 5.3.1 |
-| CSV | Apache Commons CSV | 1.10.0 |
-| Google APIs (Drive/OAuth/Maps) | google-api-client / google-oauth-client / google-api-services-drive | 2.7.2 / 1.34.1 / v3-rev20220815-2.0.0 |
+| HTTP Client | Apache HttpComponents Client5 | 5.6.1 |
+| CSV | Apache Commons CSV | 1.14.1 |
+| Google APIs (Drive/OAuth/Maps) | google-api-client / google-oauth-client / google-api-services-drive | 2.8.1 / 1.34.1 / v3-rev20220815-2.0.0 |
 | E-mail | SendGrid Java | 4.10.0 |
 | WhatsApp | Ultramsg (REST) | — |
 | NF-e | Focus NFe (REST) | — |
 | Boletos | Sicoob (REST + mTLS) | — |
 | Clima | OpenWeather (REST) | — |
-| JSON | Jackson + org.json | 20250517 |
-| Formatação | Spotless + Google Java Format | 2.44.0 / 1.28.0 |
+| JSON | Jackson + org.json | 20260522 |
+| Formatação | Spotless + Google Java Format | 3.8.0 / 1.28.0 |
 | Build | Maven | 3.9+ |
 | Containers | Docker (multi-stage) | — |
 | Deploy | Railway | — |

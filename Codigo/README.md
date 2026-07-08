@@ -16,7 +16,7 @@ Codigo/
 
 ## ⚙️ `/Back` — Backend ([README completo](Back/README.md))
 
-API REST desenvolvida em **Java 21** com **Spring Boot 4**, responsável por toda a regra de negócio, persistência e integrações externas.
+API REST desenvolvida em **Java 25** com **Spring Boot 4.1**, responsável por toda a regra de negócio, persistência e integrações externas.
 
 **Stack principal:** Spring Boot (Web, Security, Data JPA) · MySQL + HikariCP · JWT (Auth0) · MapStruct · Springdoc OpenAPI · Maven
 
@@ -31,7 +31,7 @@ API REST desenvolvida em **Java 21** com **Spring Boot 4**, responsável por tod
 
 ## 🎨 `/Front` — Frontend ([README completo](Front/README.md))
 
-Interface web (SPA) desenvolvida com **Next.js 15 (App Router)**, **React 19** e **TypeScript**.
+Interface web (SPA) desenvolvida com **Next.js 16 (App Router)**, **React 19** e **TypeScript**.
 
 **Stack principal:** Tailwind CSS · Material UI · Chart.js · Leaflet/OSRM · Axios · Biome
 

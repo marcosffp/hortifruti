@@ -156,7 +156,7 @@ export default function FinancialLaunchesPage() {
 
   const handleExport = async () => {
     try {
-      await exportTransactionsAsExcel();
+      await exportTransactionsAsExcel(startDate, endDate);
       showSuccess("Exportação Excel realizada com sucesso!");
     } catch (err) {
       showError("Erro ao exportar lançamentos: " + getErrorMessage(err));
@@ -192,7 +192,7 @@ export default function FinancialLaunchesPage() {
         {/* Date Range Filter */}
         <div className="bg-white rounded-lg shadow-sm p-4 min-h-full flex-1">
           <h3 className="text-lg font-medium text-gray-800 mb-3">
-            Filtro de Período do Resumo Financeiro
+            Filtro de Período (Resumo e Exportação)
           </h3>
           <div className="flex flex-col gap-4">
             <div>
