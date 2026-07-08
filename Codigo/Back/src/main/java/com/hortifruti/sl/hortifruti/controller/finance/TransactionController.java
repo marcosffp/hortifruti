@@ -107,8 +107,14 @@ public class TransactionController {
   @PostMapping(
       value = "/export",
       produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-  public ResponseEntity<byte[]> exportTransactionsAsExcel() throws IOException {
-    Map<String, byte[]> excelData = transactionExcelExportService.exportTransactionsAsExcel();
+  public ResponseEntity<byte[]> exportTransactionsAsExcel(
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate startDate,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate endDate)
+      throws IOException {
+    Map<String, byte[]> excelData =
+        transactionExcelExportService.exportTransactionsAsExcel(startDate, endDate);
     String excelFileName = excelData.keySet().iterator().next();
     byte[] excelFile = excelData.get(excelFileName);
 

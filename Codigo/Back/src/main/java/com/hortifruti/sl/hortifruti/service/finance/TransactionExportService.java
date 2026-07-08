@@ -27,7 +27,8 @@ public class TransactionExportService {
 
   public Map<String, byte[]> exportTransactionsAsZip() throws IOException {
     // Gerar Excel (apenas Banco do Brasil)
-    Map<String, byte[]> excelData = transactionExcelExportService.exportTransactionsAsExcel();
+    Map<String, byte[]> excelData =
+        transactionExcelExportService.exportTransactionsAsExcel(null, null);
 
     // Gerar PDF (apenas Banco do Brasil)
     Map<String, byte[]> pdfData = transactionPdfExportService.exportTransactionsAsPdf();

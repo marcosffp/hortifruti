@@ -7,10 +7,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.format.TextStyle;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.BorderStyle;
@@ -34,14 +32,16 @@ public class TransactionExcelExportService {
 
   private final TransactionRepository transactionRepository;
 
-  public Map<String, byte[]> exportTransactionsAsExcel() throws IOException {
+  public Map<String, byte[]> exportTransactionsAsExcel(LocalDate startDate, LocalDate endDate)
+      throws IOException {
     LocalDate now = LocalDate.now();
-    LocalDate firstDayLastMonth = now.minusMonths(1).withDayOfMonth(1);
-    LocalDate lastDayLastMonth = now.withDayOfMonth(1).minusDays(1);
+    LocalDate periodStart =
+        startDate != null ? startDate : now.minusMonths(1).withDayOfMonth(1);
+    LocalDate periodEnd = endDate != null ? endDate : now.withDayOfMonth(1).minusDays(1);
 
     List<Transaction> transactions =
         transactionRepository.findByTransactionDateBetweenAndStatementBank(
-            firstDayLastMonth, lastDayLastMonth, Bank.BANCO_DO_BRASIL);
+            periodStart, periodEnd, Bank.BANCO_DO_BRASIL);
 
     Map<String, byte[]> excelData = new HashMap<>();
     try (Workbook workbook = new XSSFWorkbook();
@@ -55,9 +55,13 @@ public class TransactionExcelExportService {
       workbook.write(excelOut);
       byte[] excelBytes = excelOut.toByteArray();
 
-      String currentMonth =
-          LocalDate.now().getMonth().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pt-BR"));
-      String excelFileName = "HORTIFRUTI_SANTA_LUZIA-" + currentMonth + ".xlsx";
+      DateTimeFormatter fileNameFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+      String excelFileName =
+          "HORTIFRUTI_SANTA_LUZIA-"
+              + periodStart.format(fileNameFormatter)
+              + "_a_"
+              + periodEnd.format(fileNameFormatter)
+              + ".xlsx";
 
       HttpHeaders headers = new HttpHeaders();
       headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + excelFileName);
