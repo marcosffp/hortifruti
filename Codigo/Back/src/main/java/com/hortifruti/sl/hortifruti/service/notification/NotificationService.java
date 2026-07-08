@@ -25,7 +25,6 @@ public class NotificationService {
   @Value("${accounting.email}")
   private String accountingEmail;
 
-  /** Envio para contabilidade */
   public NotificationResponse sendGenericFilesToAccounting(
       List<MultipartFile> files, GenericFilesAccountingRequest request) {
 
@@ -66,7 +65,6 @@ public class NotificationService {
     }
   }
 
-  /** Envio de documentos para cliente (WhatsApp + Email) */
   public NotificationResponse sendDocumentsToClient(
       List<MultipartFile> files, ClientDocumentsRequest request) {
 
@@ -109,10 +107,6 @@ public class NotificationService {
       throw new NotificationException("Erro ao processar arquivos: " + e.getMessage());
     }
   }
-
-  // -------------------------------------------------------------
-  // Templates
-  // -------------------------------------------------------------
 
   private String buildGenericFilesMessage(
       GenericFilesAccountingRequest request,

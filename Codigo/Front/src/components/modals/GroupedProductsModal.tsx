@@ -47,7 +47,6 @@ export default function GroupedProductsModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
         <div className="flex justify-between items-center p-6 border-gray-300 border-b">
           <h2 className="text-xl font-semibold">
             Produtos do Agrupamento {scoreNumber}
@@ -60,7 +59,6 @@ export default function GroupedProductsModal({
           </button>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
             <div className="space-y-2">

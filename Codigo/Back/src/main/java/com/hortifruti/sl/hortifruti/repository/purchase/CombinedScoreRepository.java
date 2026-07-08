@@ -12,7 +12,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Long> {
 
-  /** Busca todos os CombinedScores pendentes com boleto para um cliente */
   @Query(
       "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = 'PENDENTE' AND cs.hasBillet = true")
   List<CombinedScore> findAllPendingWithBilletByClient(@Param("clientId") Long clientId);
@@ -31,7 +30,6 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
       "SELECT cs FROM CombinedScore cs WHERE cs.dueDate < :currentDate AND cs.status = 'PENDENTE'")
   List<CombinedScore> findOverdueUnpaidScores(@Param("currentDate") LocalDate currentDate);
 
-  /** Busca CombinedScores vencidos por cliente */
   @Query(
       "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.dueDate < :currentDate AND cs.status = 'PENDENTE'")
   List<CombinedScore> findOverdueUnpaidScoresByClient(
@@ -47,7 +45,6 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
 
   Optional<CombinedScore> findByInvoiceRef(String invoiceRef);
 
-  /** Busca todas as refs de notas fiscais de um cliente específico */
   @Query(
       "SELECT cs.invoiceRef FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.hasInvoice = true AND cs.invoiceRef IS NOT NULL")
   List<String> findAllInvoiceRefsByClientId(@Param("clientId") Long clientId);

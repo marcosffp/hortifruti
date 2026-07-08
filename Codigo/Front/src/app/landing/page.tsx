@@ -24,7 +24,6 @@ import FeaturesCarousel from '@/components/landing/FeaturesCarousel';
 import StatsSection from '@/components/landing/StatsSection';
 import SmoothScroll from '@/components/landing/SmoothScroll';
 
-// Dados do carrossel de funcionalidades
 const features = [
   {
     id: 1,
@@ -74,7 +73,6 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       <SmoothScroll />
-      {/* Header/Navigation */}
       <header className="bg-primary shadow-sm border-b border-neutral-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -83,7 +81,6 @@ export default function LandingPage() {
               <span className="text-2xl font-bold text-white">Hortifruti</span>
             </div>
 
-            {/* Phone number - visible on desktop */}
             <div className="hidden md:flex items-center space-x-6">
               <a href="tel:+5531364970064" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
                 <Phone className="w-4 h-4" />
@@ -98,7 +95,6 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* Mobile menu button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="md:hidden p-2"
@@ -111,11 +107,9 @@ export default function LandingPage() {
             </button>
           </div>
 
-          {/* Mobile menu */}
           {isMobileMenuOpen && (
             <div className="md:hidden border-t border-white/20 py-4">
               <nav className="flex flex-col space-y-4">
-                {/* Phone number for mobile */}
                 <a href="tel:+5531364970064" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors px-4 py-2">
                   <Phone className="w-4 h-4" />
                   <span>(31) 3649-7064</span>
@@ -135,7 +129,6 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero Section*/}
       <section className="bg-gradient-to-br from-primary-bg via-white to-primary-bg py-9">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -185,7 +178,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features Carousel */}
       <section id="features" className="py-20 bg-neutral-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -201,10 +193,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stats Section */}
       <StatsSection />
 
-      {/* Footer */}
   <footer id="contact" className="bg-neutral-900 text-white py-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-2">
           <a href="tel:+5531364970064" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors text-sm mt-2">

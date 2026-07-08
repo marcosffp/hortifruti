@@ -234,7 +234,8 @@ public class CombinedScoreService {
     return combinedScoreRepository.findLastGroupingPerClient().stream()
         .map(
             cs ->
-                new ClientLastGroupingResponse(cs.getClientId(), cs.getConfirmedAt(), cs.getTotalValue()))
+                new ClientLastGroupingResponse(
+                    cs.getClientId(), cs.getConfirmedAt(), cs.getTotalValue()))
         .toList();
   }
 

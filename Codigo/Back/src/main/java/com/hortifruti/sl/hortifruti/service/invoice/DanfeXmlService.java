@@ -35,7 +35,6 @@ public class DanfeXmlService {
       ObjectMapper objectMapper = new ObjectMapper();
       JsonNode rootNode = objectMapper.readTree(response);
 
-      // Verifica o status da nota
       String status = rootNode.path("status").asText();
       if (status.contains("processando") || status.contains("pendente")) {
         throw new InvoiceException(
@@ -44,7 +43,6 @@ public class DanfeXmlService {
 
       String filePath = rootNode.path(jsonPath).asText();
 
-      // Verifica se o caminho do arquivo foi retornado
       if (filePath == null || filePath.trim().isEmpty()) {
         throw new InvoiceException(
             "Arquivo ainda não disponível. A nota fiscal pode estar em processamento.");
@@ -185,7 +183,8 @@ public class DanfeXmlService {
         fiscalNoteXmlStorageService.saveIfAbsent(ref, xmlBytes);
       }
     } catch (Exception e) {
-      System.err.println("[DanfeXmlService] Falha ao salvar XML no banco para ref=" + ref + ": " + e.getMessage());
+      System.err.println(
+          "[DanfeXmlService] Falha ao salvar XML no banco para ref=" + ref + ": " + e.getMessage());
     }
     return result;
   }
@@ -200,11 +199,10 @@ public class DanfeXmlService {
               } catch (InvoiceException e) {
                 System.err.println("Erro ao buscar caminho XML para referência: " + ref);
                 e.printStackTrace();
-                return null; // Ignorar erros
+                return null;
               }
             })
-        .filter(path -> path != null) // Remover nulos
+        .filter(path -> path != null)
         .collect(Collectors.toList());
   }
-
 }

@@ -158,20 +158,6 @@ public class IssueInvoice {
         .orElseThrow(() -> new InvoiceException("ID do cliente não encontrado"));
   }
 
-  /*
-   * private IssueInvoiceRequest buildInvoiceRequest(
-   * Long combinedScoreId, RecipientRequest recipient, List<ItemRequest> items) {
-   * return new IssueInvoiceRequest(
-   * combinedScoreId,
-   * NATUREZA_OPERACAO,
-   * ZonedDateTime.of(2026, 1, 22, 0, 0, 0, 0, ZoneId.of("America/Sao_Paulo"))
-   * .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-   * recipient,
-   * items,
-   * info);
-   * }
-   */
-
   private void updateCombinedScoreStatus(
       CombinedScore combinedScore, InvoiceResponse invoiceResponse) {
     combinedScore.setHasInvoice(true);

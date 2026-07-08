@@ -24,7 +24,6 @@ public class AuthorizationFlowFactory {
   private static final String TOKENS_DIRECTORY_PATH = "temp/google/tokens";
   private final Base64FileDecoder base64FileDecoder;
 
-  /** Cria o contexto completo para o fluxo OAuth. */
   protected OAuthFlowContext createFlowContext() {
     try {
       NetHttpTransport httpTransport = createHttpTransport();
@@ -37,12 +36,10 @@ public class AuthorizationFlowFactory {
     }
   }
 
-  /** Cria o transporte HTTP seguro. */
   private NetHttpTransport createHttpTransport() throws Exception {
     return GoogleNetHttpTransport.newTrustedTransport();
   }
 
-  /** Cria o fluxo de autorização do Google. */
   private GoogleAuthorizationCodeFlow createAuthorizationFlow(NetHttpTransport httpTransport)
       throws IOException {
 
@@ -59,7 +56,6 @@ public class AuthorizationFlowFactory {
         .build();
   }
 
-  /** Carrega os client secrets do arquivo de credenciais. */
   private GoogleClientSecrets loadClientSecrets() throws IOException {
 
     base64FileDecoder.decodeGoogleDriveCredentials();
@@ -75,7 +71,6 @@ public class AuthorizationFlowFactory {
         new InputStreamReader(new FileInputStream(credentialsFile), StandardCharsets.UTF_8));
   }
 
-  /** Garante que o diretório de tokens existe. */
   private void ensureTokensDirectoryExists() {
     java.io.File tokensDir = new java.io.File(TOKENS_DIRECTORY_PATH);
     if (!tokensDir.exists()) {

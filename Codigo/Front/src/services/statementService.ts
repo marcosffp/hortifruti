@@ -13,7 +13,6 @@ export interface StatementResponse {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export const statementService = {
-  // Upload de extratos
   async uploadStatements(files: File[]): Promise<{ message: string }> {
     const formData = new FormData();
     files.forEach((file) => {
@@ -40,7 +39,6 @@ export const statementService = {
     }
   },
 
-  // Listar extratos
   async listStatements(): Promise<StatementResponse[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/statements`, {
@@ -61,7 +59,6 @@ export const statementService = {
     }
   },
 
-  // Excluir extrato por ID
   async deleteStatement(id: number): Promise<void> {
     try {
       const response = await fetch(`${API_BASE_URL}/statements/${id}`, {

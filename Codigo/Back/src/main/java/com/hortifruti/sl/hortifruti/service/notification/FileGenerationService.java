@@ -32,7 +32,6 @@ public class FileGenerationService {
     try (ZipFile zipFile = new ZipFile(tempZipPath)) {
       ZipParameters zipParameters = new ZipParameters();
 
-      // Adicionar PDFs dos statements
       for (Statement statement : statements) {
         if (statement.getFilePath() != null) {
           String fileName = statement.getName() + "_" + statement.getBank().name() + ".pdf";
@@ -49,7 +48,6 @@ public class FileGenerationService {
         }
       }
 
-      // Gerar e adicionar Excel do Banco do Brasil
       List<Statement> bbStatements =
           statements.stream()
               .filter(s -> s.getBank() == Bank.BANCO_DO_BRASIL)
@@ -66,7 +64,6 @@ public class FileGenerationService {
         new File(bbExcelPath).delete();
       }
 
-      // Gerar e adicionar ZIP com Notas Fiscais do mês anterior
       byte[] invoicesZip = generateMonthlyInvoicesZip(month, year);
       if (invoicesZip.length > 0) {
         String invoicesZipPath =
@@ -204,7 +201,6 @@ public class FileGenerationService {
     }
   }
 
-  /** Gera boleto para cliente específico */
   public byte[] generateClientBoleto(Long clientId) throws IOException {
     try (Workbook workbook = new XSSFWorkbook()) {
       Sheet sheet = workbook.createSheet("Boleto - Cliente " + clientId);
@@ -239,7 +235,6 @@ public class FileGenerationService {
     }
   }
 
-  /** Gera nota fiscal para cliente específico */
   public byte[] generateClientNotaFiscal(Long clientId) throws IOException {
     try (Workbook workbook = new XSSFWorkbook()) {
       Sheet sheet = workbook.createSheet("Nota Fiscal - Cliente " + clientId);
@@ -274,7 +269,6 @@ public class FileGenerationService {
     }
   }
 
-  /** Gera ZIP com todas as notas fiscais do mês anterior */
   public byte[] generateMonthlyInvoicesZip(int month, int year) throws IOException {
     try {
       String tempZipPath =
@@ -317,7 +311,6 @@ public class FileGenerationService {
     }
   }
 
-  /** Gera uma nota fiscal de exemplo para demonstração */
   private byte[] generateSampleInvoice(int invoiceNumber, int month, int year) throws IOException {
     try (Workbook workbook = new XSSFWorkbook()) {
       Sheet sheet = workbook.createSheet("Nota Fiscal " + invoiceNumber);

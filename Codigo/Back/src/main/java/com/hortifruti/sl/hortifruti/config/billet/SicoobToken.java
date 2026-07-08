@@ -36,12 +36,6 @@ public class SicoobToken {
   @Qualifier("billetRestTemplate")
   private final RestTemplate restTemplate;
 
-  /**
-   * Obtém um token de acesso para a API do Sicoob.
-   *
-   * @return Token de acesso válido
-   * @throws BilletException Se houver erro ao obter ou processar o token
-   */
   public synchronized String getAccessToken() {
     try {
       if (accessToken != null && System.currentTimeMillis() < tokenExpiresAt - 30000) {
@@ -79,13 +73,6 @@ public class SicoobToken {
     this.tokenExpiresAt = 0;
   }
 
-  /**
-   * Processa a resposta da API para extrair o token de acesso e o TTL real.
-   *
-   * @param response Resposta da API
-   * @throws IOException Se houver erro ao processar a resposta
-   * @throws BilletException Se o token não for encontrado ou a resposta for inválida
-   */
   private void processTokenResponse(ResponseEntity<String> response) throws IOException {
     if (response.getBody() == null || response.getBody().trim().isEmpty()) {
       throw new BilletException("Resposta de token vazia do servidor.");

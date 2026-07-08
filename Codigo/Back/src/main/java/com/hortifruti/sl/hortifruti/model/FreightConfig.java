@@ -20,7 +20,6 @@ public class FreightConfig {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  // Vehicle Configurations
   private double kmPerLiterConsumption;
   private double fuelPrice;
   private double maintenanceCostPerKm;
@@ -28,13 +27,11 @@ public class FreightConfig {
   private double depreciationCostPerKm;
   private double insuranceCostPerKm;
 
-  // Delivery Person Configurations
   private double baseSalary;
   private double chargesPercentage;
   private double monthlyHoursWorked;
   private double administrativeCostsPercentage;
 
-  // Margin Configurations
   private double marginPercentage;
   private double fixedFee;
 }

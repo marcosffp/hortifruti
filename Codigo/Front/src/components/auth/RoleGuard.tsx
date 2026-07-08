@@ -31,31 +31,23 @@ export default function RoleGuard({
   const router = useRouter();
   const [hasVerified, setHasVerified] = useState(false);
 
-  // Converte a role para array se for uma string
   const roleArray = Array.isArray(roles) ? roles : [roles];
-
-  // Verifica se o usuário tem pelo menos uma das roles necessárias
   const hasPermission = roleArray.some((role) => hasRole(role));
 
   useEffect(() => {
-    // Apenas verificar permissões se o usuário estiver autenticado
     if (isAuthenticated && !hasPermission && !ignoreRedirect) {
-      // Se não tiver permissão e não for para ignorar o redirecionamento, redireciona
       router.push(redirectTo);
     }
     setHasVerified(true);
   }, [hasPermission, ignoreRedirect, isAuthenticated, redirectTo, router]);
 
-  // Não mostrar nada enquanto verifica as permissões, exceto no caso de elementos de UI
   if (!hasVerified && !ignoreRedirect) {
     return null;
   }
 
-  // Se for para ignorar o redirecionamento (componentes de UI), apenas renderiza ou não
   if (ignoreRedirect) {
     return hasPermission ? <>{children}</> : <>{fallback}</>;
   }
 
-  // Nos outros casos, renderiza apenas se tiver permissão
   return hasPermission ? <>{children}</> : null;
 }

@@ -63,17 +63,14 @@ export default function Login() {
       }} />
       <div className="min-h-screen flex items-center justify-center p-4 animate-fadeIn">
         <div className="w-full max-w-md animate-slideUp">
-          {/* Card Principal */}
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all hover:scale-[1.01] duration-300">
-          {/* Header com gradiente */}
           <div className="bg-gradient-to-r from-[var(--primary)] to-green-600 p-8 text-center relative overflow-hidden">
             {/* Decoração de fundo */}
             <div className="absolute inset-0 opacity-10">
               <div className="absolute top-0 left-0 w-40 h-40 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
               <div className="absolute bottom-0 right-0 w-32 h-32 bg-white rounded-full translate-x-1/2 translate-y-1/2"></div>
             </div>
-            
-            {/* Logo e título */}
+
             <div className="relative z-10">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-full shadow-lg mb-4">
                 <Image
@@ -95,10 +92,8 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Formulário */}
           <div className="p-8">
             <form className="space-y-6" onSubmit={handleSubmit}>
-              {/* Campo Usuário */}
               <div className="space-y-2">
                 <label
                   htmlFor="username"
@@ -124,7 +119,6 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Campo Senha */}
               <div className="space-y-2">
                 <label
                   htmlFor="password"
@@ -166,7 +160,6 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Botão de Login */}
               <div>
                 <button
                   type="submit"
@@ -191,7 +184,6 @@ export default function Login() {
               </div>
             </form>
 
-            {/* Footer */}
             <div className="mt-6 pt-6 border-t border-gray-200 text-center">
               <p className="text-xs text-gray-500">
                 © 2025 Hortifruti Santa Luzia. Todos os direitos reservados.

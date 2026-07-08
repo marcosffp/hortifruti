@@ -12,7 +12,6 @@ interface FreightConfigModalProps {
 const FreightConfigModal = ({ isOpen, onClose, initialData }: FreightConfigModalProps) => {
   const [activeTab, setActiveTab] = useState('vehicle');
   const [config, setConfig] = useState<FreightConfigDTO>(() => {
-    // Define um estado inicial padrão ou usa os dados passados via props
     return initialData || {
       kmPerLiterConsumption: 0,
       fuelPrice: 0,
@@ -31,7 +30,6 @@ const FreightConfigModal = ({ isOpen, onClose, initialData }: FreightConfigModal
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Efeito para atualizar o estado com os dados iniciais quando o modal abrir
   useEffect(() => {
     if (isOpen && initialData) {
       setConfig({...initialData});
@@ -61,21 +59,17 @@ const FreightConfigModal = ({ isOpen, onClose, initialData }: FreightConfigModal
         const currentValue = config[typedKey];
         const initialValue = initialData?.[typedKey];
         
-        // Se o valor foi alterado, inclui no objeto de campos alterados
         if (currentValue !== initialValue) {
-          // Converte para número se necessário
           let numValue = typeof currentValue === 'string' ? parseFloat(currentValue) : Number(currentValue);
           changedFields[typedKey] = isNaN(numValue) ? 0 : numValue;
         }
       });
-      
-      // Se não houver campos alterados, não faça a chamada
+
       if (Object.keys(changedFields).length === 0) {
         onClose();
         return;
       }
-      
-      // Chamar a API para salvar apenas os campos alterados
+
       const updatedConfig = await freightService.updateFreightConfig(changedFields);
       
       onClose(updatedConfig);
@@ -87,7 +81,6 @@ const FreightConfigModal = ({ isOpen, onClose, initialData }: FreightConfigModal
     }
   };
 
-  // Componente auxiliar para os inputs, mantendo o estilo consistente
   const ConfigInput = ({ label, name, value, placeholder, type = "number" }: any) => (
     <div>
       <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
@@ -110,7 +103,6 @@ const FreightConfigModal = ({ isOpen, onClose, initialData }: FreightConfigModal
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 max-lg:px-4">
       <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] flex flex-col">
-        {/* Cabeçalho do Modal */}
         <div className="flex justify-between items-center mb-6 flex-shrink-0">
           <h2 className="text-2xl font-semibold text-gray-800">Configurações de Frete</h2>
           <button 
@@ -122,7 +114,6 @@ const FreightConfigModal = ({ isOpen, onClose, initialData }: FreightConfigModal
           </button>
         </div>
 
-        {/* Mensagem de erro */}
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 flex items-center">
             <AlertCircle size={18} className="mr-2 flex-shrink-0" />
@@ -130,7 +121,6 @@ const FreightConfigModal = ({ isOpen, onClose, initialData }: FreightConfigModal
           </div>
         )}
 
-        {/* Abas de Navegação */}
         <div className="flex border-b border-gray-200 mb-6 flex-shrink-0">
           <button
             onClick={() => setActiveTab('vehicle')}
@@ -170,7 +160,6 @@ const FreightConfigModal = ({ isOpen, onClose, initialData }: FreightConfigModal
           </button>
         </div>
 
-        {/* Conteúdo das Abas */}
         <div className="overflow-y-auto pr-2 -mr-2">
           {activeTab === 'vehicle' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -200,7 +189,6 @@ const FreightConfigModal = ({ isOpen, onClose, initialData }: FreightConfigModal
           )}
         </div>
 
-        {/* Rodapé com Botões */}
         <div className="flex justify-end space-x-4 mt-8 pt-4 border-t border-gray-200 flex-shrink-0">
           <button
             onClick={() => onClose()}

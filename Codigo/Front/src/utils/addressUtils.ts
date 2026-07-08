@@ -26,7 +26,6 @@ export function parseAddressFromBackend(fullAddress: string): ParsedAddress {
   if (!fullAddress) return defaultAddress;
 
   try {
-    // Split por vírgula
     const parts = fullAddress.split(',').map(p => p.trim());
 
     // Formato vindo do backend: Rua X, 123, Complemento (opcional), Bairro, Cidade - UF, CEP: XXXXX-XXX
@@ -37,10 +36,8 @@ export function parseAddressFromBackend(fullAddress: string): ParsedAddress {
     const cidadeUf = parts[parts.length - 2] || "";
     const cepPart = parts[parts.length - 1] || "";
 
-    // Extrai cidade e estado
     const [cidade, estado] = cidadeUf.split(' - ').map(p => p.trim());
 
-    // Extrai CEP
     const cepMatch = cepPart.match(/CEP:\s*(.*)/);
     const cep = cepMatch ? cepMatch[1].trim() : "";
 

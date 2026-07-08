@@ -44,8 +44,7 @@ public class UserInitializer implements CommandLineRunner {
           productRepository.findAll().stream()
               .anyMatch(p -> p.getPeakSalesMonths() == null || p.getPeakSalesMonths().isEmpty());
     } catch (Exception e) {
-      log.error(
-          "Falha ao ler produtos existentes (dados corrompidos?). Repopulando do zero...", e);
+      log.error("Falha ao ler produtos existentes (dados corrompidos?). Repopulando do zero...", e);
       needsRepopulation = true;
     }
 
@@ -68,7 +67,6 @@ public class UserInitializer implements CommandLineRunner {
     }
   }
 
-  // Inicializa os usuários padrão
   private void initializeUsers() {
     if (userRepository.count() == 0) {
       createUser("root", "root", Role.MANAGER, "Desenvolvedor");
@@ -85,7 +83,6 @@ public class UserInitializer implements CommandLineRunner {
   }
 
   private void createSampleProducts() {
-    // Produtos FRIOS (6-14°C)
     productRepository.save(
         new ClimateProduct(
             "COUVE",
@@ -176,7 +173,6 @@ public class UserInitializer implements CommandLineRunner {
                 Month.NOVEMBRO,
                 Month.DEZEMBRO)));
 
-    // Produtos QUENTES
     productRepository.save(
         new ClimateProduct(
             "AMEIXA",
@@ -261,7 +257,6 @@ public class UserInitializer implements CommandLineRunner {
             List.of(Month.JANEIRO, Month.FEVEREIRO, Month.SETEMBRO, Month.DEZEMBRO),
             List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO, Month.OUTUBRO)));
 
-    // Produtos AMENOS
     productRepository.save(
         new ClimateProduct(
             "LARANJA",
@@ -336,7 +331,6 @@ public class UserInitializer implements CommandLineRunner {
             List.of(Month.OUTUBRO, Month.ABRIL)));
   }
 
-  // Cria um usuário com os dados fornecidos
   private void createUser(String username, String password, Role role, String position) {
     User user =
         User.builder()
@@ -348,7 +342,6 @@ public class UserInitializer implements CommandLineRunner {
     userRepository.save(user);
   }
 
-  // Inicializa a configuração de frete padrão
   private void initializeFreightConfig() {
     if (freightConfigRepository.count() == 0) {
       FreightConfig defaultConfig = createDefaultFreightConfig();
@@ -357,7 +350,6 @@ public class UserInitializer implements CommandLineRunner {
     }
   }
 
-  // Cria a configuração de frete padrão
   private FreightConfig createDefaultFreightConfig() {
     return FreightConfig.builder()
         .kmPerLiterConsumption(10.0)

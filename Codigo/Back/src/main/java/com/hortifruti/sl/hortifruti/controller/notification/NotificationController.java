@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,10 +34,8 @@ public class NotificationController {
   private final NotificationService notificationService;
   private final BulkNotificationService bulkNotificationService;
   private final DatabaseStorageService databaseStorageService;
+  private final CombinedScoreSchedulerService schedulerService;
 
-  @Autowired private CombinedScoreSchedulerService schedulerService;
-
-  /** Envio para contabilidade - Arquivos genéricos com valores de débito/crédito (opcional) */
   @Operation(
       summary = "Enviar arquivos genéricos para contabilidade",
       description =
@@ -48,16 +45,15 @@ public class NotificationController {
       @Parameter(
               description = "Arquivos a serem enviados para contabilidade (opcional)",
               content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
-          @RequestParam(value = "files", required = false)
+          @RequestParam(required = false)
           List<MultipartFile> files,
       @Parameter(description = "Valor do cartão (opcional)")
-          @RequestParam(value = "cardValue", required = false, defaultValue = "0")
+          @RequestParam(required = false, defaultValue = "0")
           String cardValue,
       @Parameter(description = "Valor em dinheiro (opcional)")
-          @RequestParam(value = "cashValue", required = false, defaultValue = "0")
+          @RequestParam(required = false, defaultValue = "0")
           String cashValue,
-      @Parameter(description = "Mensagem personalizada (opcional)")
-          @RequestParam(value = "customMessage", required = false)
+      @Parameter(description = "Mensagem personalizada (opcional)") @RequestParam(required = false)
           String customMessage) {
     try {
       GenericFilesAccountingRequest request =
@@ -74,7 +70,6 @@ public class NotificationController {
     }
   }
 
-  /** Envio para cliente - Documentos diversos */
   @Operation(
       summary = "Enviar documentos para cliente",
       description = "Envio de documentos para cliente específico via email e/ou WhatsApp")
@@ -83,14 +78,12 @@ public class NotificationController {
       @Parameter(
               description = "Arquivos a serem enviados para o cliente (opcional)",
               content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
-          @RequestParam(value = "files", required = false)
+          @RequestParam(required = false)
           List<MultipartFile> files,
-      @Parameter(description = "ID do cliente") @RequestParam("clientId") Long clientId,
-      @Parameter(description = "Canal de comunicação (EMAIL, WHATSAPP, BOTH)")
-          @RequestParam("channel")
+      @Parameter(description = "ID do cliente") @RequestParam Long clientId,
+      @Parameter(description = "Canal de comunicação (EMAIL, WHATSAPP, BOTH)") @RequestParam
           String channel,
-      @Parameter(description = "Mensagem personalizada (opcional)")
-          @RequestParam(value = "customMessage", required = false)
+      @Parameter(description = "Mensagem personalizada (opcional)") @RequestParam(required = false)
           String customMessage) {
     try {
       ClientDocumentsRequest request =
@@ -106,7 +99,6 @@ public class NotificationController {
     }
   }
 
-  /** Teste manual do email de alerta de armazenamento do banco de dados */
   @PostMapping("/test/database-storage-alert")
   @Operation(
       summary = "Testar email de alerta de armazenamento, excluir depois",
@@ -198,17 +190,16 @@ public class NotificationController {
     }
   }
 
-  /** Enviar notificações em massa para múltiplos destinatários */
   @PostMapping(value = "/send-bulk", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @Operation(
       summary = "Enviar notificações em massa",
       description = "Envia múltiplos arquivos para múltiplos clientes via e-mail e/ou WhatsApp")
   public ResponseEntity<BulkNotificationResponse> sendBulkNotifications(
-      @RequestParam("files") List<MultipartFile> files,
-      @RequestParam("clientIds") List<Long> clientIds,
-      @RequestParam("channels") List<String> channels,
-      @RequestParam("destinationType") String destinationType,
-      @RequestParam(value = "customMessage", required = false) String customMessage) {
+      @RequestParam List<MultipartFile> files,
+      @RequestParam List<Long> clientIds,
+      @RequestParam List<String> channels,
+      @RequestParam String destinationType,
+      @RequestParam(required = false) String customMessage) {
     try {
       BulkNotificationResponse response =
           bulkNotificationService.sendBulkNotifications(

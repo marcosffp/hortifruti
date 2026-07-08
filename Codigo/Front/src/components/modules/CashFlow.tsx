@@ -20,7 +20,6 @@ import { Line, Bar, Pie } from 'react-chartjs-2';
 import Loading from "@/components/ui/Loading";
 import { TrendingUp, Package, BarChart3, Filter } from "lucide-react";
 
-// Registrar componentes do Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,

@@ -47,12 +47,6 @@ public enum TemperatureCategory {
     }
   }
 
-  /**
-   * Verifica se a temperatura está nesta categoria
-   *
-   * @param temperature temperatura a verificar
-   * @return true se a temperatura está nesta categoria
-   */
   public boolean contains(double temperature) {
     return temperature >= minTemp && temperature <= maxTemp;
   }

@@ -4,7 +4,6 @@ import com.hortifruti.sl.hortifruti.model.enumeration.Month;
 import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
 import java.util.List;
 
-/** DTO para resposta de produtos */
 public record ProductResponse(
     Long id,
     String name,
@@ -15,7 +14,6 @@ public record ProductResponse(
     String peakSalesDisplay,
     String lowSalesDisplay) {
 
-  /** Construtor que calcula automaticamente os displays */
   public ProductResponse(
       Long id,
       String name,

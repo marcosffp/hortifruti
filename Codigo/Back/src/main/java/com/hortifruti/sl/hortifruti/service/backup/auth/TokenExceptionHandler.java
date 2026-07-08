@@ -25,7 +25,6 @@ public class TokenExceptionHandler {
 
   private static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE);
 
-  /** Manipula exceções relacionadas a tokens */
   protected Credential handleTokenException(
       com.google.api.client.auth.oauth2.TokenResponseException e,
       NetHttpTransport httpTransport,
@@ -39,12 +38,10 @@ public class TokenExceptionHandler {
     throw new BackupException("Erro de autenticação no Google Drive.", e);
   }
 
-  /** Verifica se é um erro de grant inválido */
   private boolean isInvalidGrantError(com.google.api.client.auth.oauth2.TokenResponseException e) {
     return e.getDetails() != null && "invalid_grant".equals(e.getDetails().getError());
   }
 
-  /** Manipula erro de grant inválido (token expirado ou revogado) */
   private Credential handleInvalidGrantError(
       NetHttpTransport httpTransport, CredentialConfig config) throws IOException {
     TokenCleaner.cleanTokenDirectory(config.getTokensDirectoryPath());
@@ -53,7 +50,6 @@ public class TokenExceptionHandler {
     return authorizationHandler.authorizeUser(flow, "user");
   }
 
-  /** Cria novo fluxo de autorização após limpeza de tokens */
   private GoogleAuthorizationCodeFlow createNewAuthorizationFlow(
       NetHttpTransport httpTransport, CredentialConfig config) throws IOException {
     GoogleClientSecrets clientSecrets =

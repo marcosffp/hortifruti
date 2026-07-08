@@ -69,7 +69,6 @@ public class NfSalesZipGenerator {
       throw new IOException("Erro ao criar o arquivo ZIP: " + zipFileName, e);
     }
 
-    // Limpeza dos arquivos temporários
     try {
       Files.walk(folderPath)
           .sorted((path1, path2) -> path2.compareTo(path1))

@@ -26,14 +26,11 @@ public class TransactionExportService {
   private final TransactionRepository transactionRepository;
 
   public Map<String, byte[]> exportTransactionsAsZip() throws IOException {
-    // Gerar Excel (apenas Banco do Brasil)
     Map<String, byte[]> excelData =
         transactionExcelExportService.exportTransactionsAsExcel(null, null);
 
-    // Gerar PDF (apenas Banco do Brasil)
     Map<String, byte[]> pdfData = transactionPdfExportService.exportTransactionsAsPdf();
 
-    // 1. Buscar 10 transações do Banco do Brasil do mês passado para definir o período
     LocalDate now = LocalDate.now();
     LocalDate firstDayLastMonth = now.minusMonths(1).withDayOfMonth(1);
     LocalDate lastDayLastMonth = now.withDayOfMonth(1).minusDays(1);
@@ -43,40 +40,32 @@ public class TransactionExportService {
         transactionRepository.findByTransactionDateBetweenAndStatementBank(
             firstDayLastMonth, lastDayLastMonth, Bank.BANCO_DO_BRASIL, pageable);
 
-    // 3. Buscar pelo menos 10 transações do SICOOB do mesmo período
     List<Transaction> sicoobTransactions =
         transactionRepository.findByTransactionDateBetweenAndStatementBank(
             firstDayLastMonth, lastDayLastMonth, Bank.SICOOB, pageable);
 
-    // 4. Coletar todos os extratos únicos referenciados por ambos os bancos
     Set<Statement> referencedStatements = new HashSet<>();
 
-    // Extratos das transações do Banco do Brasil
     for (Transaction transaction : bbTransactions) {
       if (transaction.getStatement() != null) {
         referencedStatements.add(transaction.getStatement());
       }
     }
 
-    // Extratos das transações do SICOOB
     for (Transaction transaction : sicoobTransactions) {
       if (transaction.getStatement() != null) {
         referencedStatements.add(transaction.getStatement());
       }
     }
 
-    // 5. Retornar todos os arquivos como Map sem criar ZIP
     Map<String, byte[]> allFiles = new HashMap<>();
 
-    // Adicionar Excel
     String excelFileName = excelData.keySet().iterator().next();
     allFiles.put(excelFileName, excelData.get(excelFileName));
 
-    // Adicionar PDF
     String pdfFileName = pdfData.keySet().iterator().next();
     allFiles.put(pdfFileName, pdfData.get(pdfFileName));
 
-    // Adicionar extratos
     int statementCount = 1;
     for (Statement statement : referencedStatements) {
       if (statement.getFilePath() != null && statement.getFilePath().length > 0) {

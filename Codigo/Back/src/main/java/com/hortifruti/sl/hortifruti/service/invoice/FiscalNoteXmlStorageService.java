@@ -76,7 +76,9 @@ public class FiscalNoteXmlStorageService {
           return;
         }
 
-        if (status.contains("cancelado") || status.contains("denegado") || status.contains("erro")) {
+        if (status.contains("cancelado")
+            || status.contains("denegado")
+            || status.contains("erro")) {
           log.warn(
               "[FiscalNoteXmlStorage] NF ref={} com status={}, salvamento cancelado", ref, status);
           return;
@@ -91,7 +93,8 @@ public class FiscalNoteXmlStorageService {
       Thread.currentThread().interrupt();
       log.error("[FiscalNoteXmlStorage] Thread interrompida ao salvar ref={}", ref, e);
     } catch (Exception e) {
-      log.error("[FiscalNoteXmlStorage] Erro ao salvar XML para ref={}: {}", ref, e.getMessage(), e);
+      log.error(
+          "[FiscalNoteXmlStorage] Erro ao salvar XML para ref={}: {}", ref, e.getMessage(), e);
     }
   }
 
@@ -105,7 +108,10 @@ public class FiscalNoteXmlStorageService {
       NfMetadata metadata = extractMetadata(rootNode, ref);
       persistIfAbsent(ref, new String(xmlBytes), metadata);
     } catch (Exception e) {
-      log.warn("[FiscalNoteXmlStorage] Não foi possível salvar XML como backup para ref={}: {}", ref, e.getMessage());
+      log.warn(
+          "[FiscalNoteXmlStorage] Não foi possível salvar XML como backup para ref={}: {}",
+          ref,
+          e.getMessage());
     }
   }
 
@@ -121,16 +127,14 @@ public class FiscalNoteXmlStorageService {
     FiscalNoteXmlStorage storage =
         repository
             .findByRef(ref)
-            .orElseThrow(() -> new InvoiceException("XML não encontrado no banco para ref: " + ref));
+            .orElseThrow(
+                () -> new InvoiceException("XML não encontrado no banco para ref: " + ref));
     return storage.getXmlContent().getBytes();
   }
 
   @Transactional
   public String getNfNumber(String ref) {
-    return repository
-        .findByRef(ref)
-        .map(FiscalNoteXmlStorage::getNfNumber)
-        .orElse(ref);
+    return repository.findByRef(ref).map(FiscalNoteXmlStorage::getNfNumber).orElse(ref);
   }
 
   private void persistIfAbsent(String ref, String xmlContent, NfMetadata metadata) {
@@ -151,7 +155,9 @@ public class FiscalNoteXmlStorageService {
 
     repository.save(storage);
     log.info(
-        "[FiscalNoteXmlStorage] XML salvo com sucesso: ref={} nfNumber={}", ref, metadata.nfNumber());
+        "[FiscalNoteXmlStorage] XML salvo com sucesso: ref={} nfNumber={}",
+        ref,
+        metadata.nfNumber());
   }
 
   private NfMetadata extractMetadata(JsonNode rootNode, String ref) {
