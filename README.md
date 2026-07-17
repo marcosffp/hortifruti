@@ -49,7 +49,7 @@ O sistema é dividido em duas aplicações independentes que se comunicam via AP
 
 ## 🌐 Acesso ao Sistema
 
-**Site em Produção:** https://hortifruti-two.vercel.app/landing
+**Site em Produção:** https://www.hortifrutisl.zone.id
 
 ### 👤 Credenciais de Acesso
 

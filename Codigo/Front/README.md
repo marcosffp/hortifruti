@@ -255,7 +255,7 @@ npm run check-types   # Checagem de tipos TypeScript (tsc --noEmit)
 
 A aplicação está publicada na **Vercel**, com build e deploy automáticos a partir do repositório.
 
-**Site em produção:** https://hortifruti-two.vercel.app/landing
+**Site em produção:** https://www.hortifrutisl.zone.id
 
 | Item | Configuração |
 |---|---|
