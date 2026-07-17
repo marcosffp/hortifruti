@@ -1,4 +1,4 @@
-import { BilletResponse } from "@/types/billetType";
+import { BilletFilters, BilletResponse, OpenBilletResponse } from "@/types/billetType";
 import { getAuthHeaders } from "@/utils/httpUtils";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -48,12 +48,21 @@ export const billetService = {
     }
   },
 
-  async getClientBillets(clientId: number): Promise<BilletResponse[]> {
+  async getClientBillets(clientId: number, filters?: BilletFilters): Promise<BilletResponse[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/billet/client/${clientId}`, {
-        method: "GET",
-        headers: getAuthHeaders(),
-      });
+      const params = new URLSearchParams();
+      if (filters?.codigoSituacao) params.append("codigoSituacao", String(filters.codigoSituacao));
+      if (filters?.dataInicio) params.append("dataInicio", filters.dataInicio);
+      if (filters?.dataFim) params.append("dataFim", filters.dataFim);
+      const queryString = params.toString();
+
+      const response = await fetch(
+        `${API_BASE_URL}/billet/client/${clientId}${queryString ? `?${queryString}` : ""}`,
+        {
+          method: "GET",
+          headers: getAuthHeaders(),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Erro ao buscar boletos do cliente: ${response.status}`);
@@ -63,6 +72,25 @@ export const billetService = {
       return result;
     } catch (error) {
       console.error("Falha ao buscar boletos do cliente:", error);
+      throw error;
+    }
+  },
+
+  async getOpenBillets(): Promise<OpenBilletResponse[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/billet/open`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar boletos em aberto: ${response.status}`);
+      }
+
+      const result: OpenBilletResponse[] = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Falha ao buscar boletos em aberto:", error);
       throw error;
     }
   },
@@ -101,6 +129,25 @@ export const billetService = {
       return result;
     } catch (error) {
       console.error("Falha ao cancelar boleto:", error);
+      throw error;
+    }
+  },
+
+  async markBilletAsPaid(combinedScoreId: number): Promise<string> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/billet/mark-paid/${combinedScoreId}`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+      });
+
+      const result = await response.text();
+      if (!response.ok) {
+        throw new Error(result || `Erro ao confirmar pagamento: ${response.status}`);
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Falha ao confirmar pagamento do boleto:", error);
       throw error;
     }
   }

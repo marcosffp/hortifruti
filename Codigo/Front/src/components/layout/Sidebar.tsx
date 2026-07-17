@@ -8,6 +8,7 @@ import {
   FileCode,
   Home,
   type LucideIcon,
+  Receipt,
   ShoppingBasket,
   ShoppingCart,
   Truck,
@@ -60,6 +61,12 @@ const menu: MenuItem[] = [
         label: "Gerenciamento de Compras",
         icon: ShoppingBasket,
         href: "/comercio/compras",
+        roles: ["MANAGER", "EMPLOYEE"],
+      },
+      {
+        label: "Boletos",
+        icon: Receipt,
+        href: "/comercio/boletos",
         roles: ["MANAGER", "EMPLOYEE"],
       },
       {

@@ -1,11 +1,14 @@
 package com.hortifruti.sl.hortifruti.controller;
 
 import com.hortifruti.sl.hortifruti.dto.billet.BilletResponse;
+import com.hortifruti.sl.hortifruti.dto.billet.OpenBilletResponse;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import com.hortifruti.sl.hortifruti.service.billet.BilletService;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -41,19 +44,47 @@ public class BilletController {
   }
 
   /**
-   * Lista boletos de um pagador específico.
+   * Lista boletos de um pagador específico. Sem filtros, retorna os boletos em aberto.
    *
    * @param clientId ID do cliente (CPF ou CNPJ).
-   * @return Lista de boletos do pagador.
+   * @param codigoSituacao Situação do boleto (1=Em aberto, 2=Baixado, 3=Liquidado), opcional.
+   * @param dataInicio Data de vencimento inicial do filtro, opcional.
+   * @param dataFim Data de vencimento final do filtro, opcional.
+   * @return Lista de boletos do pagador que atendem aos filtros informados.
    */
   @GetMapping("/client/{clientId}")
-  public ResponseEntity<List<BilletResponse>> listBilletByPayer(@PathVariable long clientId) {
+  public ResponseEntity<List<BilletResponse>> listBilletByPayer(
+      @PathVariable long clientId,
+      @RequestParam(required = false) Integer codigoSituacao,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate dataInicio,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate dataFim) {
     try {
-      List<BilletResponse> billets = billetService.listBilletByPayer(clientId);
+      boolean hasFilters = codigoSituacao != null || dataInicio != null || dataFim != null;
+      List<BilletResponse> billets =
+          hasFilters
+              ? billetService.listBilletByPayer(clientId, codigoSituacao, dataInicio, dataFim)
+              : billetService.listBilletByPayer(clientId);
       return ResponseEntity.ok(billets);
     } catch (Exception e) {
       e.printStackTrace();
       return ResponseEntity.badRequest().body(List.of());
+    }
+  }
+
+  /**
+   * Lista todos os boletos em aberto de todos os clientes, ordenados por data de vencimento.
+   *
+   * @return Lista de boletos em aberto.
+   */
+  @GetMapping("/open")
+  public ResponseEntity<List<OpenBilletResponse>> listAllOpenBillets() {
+    try {
+      return ResponseEntity.ok(billetService.listAllOpenBillets());
+    } catch (Exception e) {
+      e.printStackTrace();
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(List.of());
     }
   }
 
@@ -137,6 +168,24 @@ public class BilletController {
     } catch (Exception e) {
       e.printStackTrace();
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
+  }
+
+  /**
+   * Marca manualmente como pago um agrupamento com boleto (ex: pagamento recebido fora do
+   * Sicoob), removendo-o da lista de boletos em aberto.
+   *
+   * @param combinedScoreId ID do CombinedScore associado ao boleto.
+   * @return Resposta indicando o sucesso ou falha da operação.
+   */
+  @PatchMapping("/mark-paid/{combinedScoreId}")
+  public ResponseEntity<String> markBilletAsPaid(@PathVariable Long combinedScoreId) {
+    try {
+      billetService.markBilletAsPaid(combinedScoreId);
+      return ResponseEntity.ok("Pagamento confirmado com sucesso.");
+    } catch (Exception e) {
+      e.printStackTrace();
+      return ResponseEntity.badRequest().body("Erro ao confirmar pagamento: " + e.getMessage());
     }
   }
 }
