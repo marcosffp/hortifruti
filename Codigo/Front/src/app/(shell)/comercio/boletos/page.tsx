@@ -8,6 +8,7 @@ import {
     CheckCircle2,
     CircleCheck,
     Clock,
+    Download,
     ExternalLink,
     Filter,
     ListChecks,
@@ -15,13 +16,30 @@ import {
     RefreshCcw,
     Search,
     ShieldQuestion,
+    Trash2,
     UserSearch,
+    X,
 } from "lucide-react";
 import ClientSelector from "@/components/modules/ClientSelector";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import { useBillet } from "@/hooks/useBillet";
 import { showError, showSuccess } from "@/services/notificationService";
 import { BilletResponse, OpenBilletResponse } from "@/types/billetType";
 import { ClientSelectionInfo } from "@/types/clientType";
+
+type RowActionType = "pay" | "download" | "cancel";
+type BulkActionType = "pay" | "download" | "cancel";
+
+function triggerPdfDownload(blob: Blob, yourNumber: string | null, combinedScoreId: number) {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `BOL-${yourNumber || combinedScoreId}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+}
 
 type Tab = "abertos" | "porCliente";
 
@@ -110,9 +128,88 @@ function situacaoBadgeColor(situacao: string): string {
     return "bg-blue-100 text-blue-800";
 }
 
+function ActionSpinner() {
+    return (
+        <span className="block w-4 h-4 border-2 border-white/60 border-t-white rounded-full animate-spin" />
+    );
+}
+
+function BilletRowActions({
+    billet,
+    rowAction,
+    bulkAction,
+    onMarkAsPaid,
+    onDownload,
+    onCancel,
+    onViewGrouping,
+}: {
+    billet: OpenBilletResponse;
+    rowAction: { id: number; type: RowActionType } | null;
+    bulkAction: BulkActionType | null;
+    onMarkAsPaid: (billet: OpenBilletResponse) => void;
+    onDownload: (billet: OpenBilletResponse) => void;
+    onCancel: (billet: OpenBilletResponse) => void;
+    onViewGrouping: (clientId: number) => void;
+}) {
+    const disabled = rowAction !== null || bulkAction !== null;
+    const isActing = (type: RowActionType) =>
+        rowAction?.id === billet.combinedScoreId && rowAction.type === type;
+
+    return (
+        <div className="flex items-center gap-1.5">
+            <button
+                type="button"
+                onClick={() => onMarkAsPaid(billet)}
+                disabled={disabled}
+                title="Marcar como pago"
+                aria-label="Marcar como pago"
+                className="p-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {isActing("pay") ? <ActionSpinner /> : <CheckCircle2 className="w-4 h-4" />}
+            </button>
+            <button
+                type="button"
+                onClick={() => onDownload(billet)}
+                disabled={disabled}
+                title="Baixar PDF"
+                aria-label="Baixar PDF"
+                className="p-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {isActing("download") ? <ActionSpinner /> : <Download className="w-4 h-4" />}
+            </button>
+            <button
+                type="button"
+                onClick={() => onCancel(billet)}
+                disabled={disabled}
+                title="Dar baixa"
+                aria-label="Dar baixa"
+                className="p-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {isActing("cancel") ? <ActionSpinner /> : <Trash2 className="w-4 h-4" />}
+            </button>
+            <button
+                type="button"
+                onClick={() => onViewGrouping(billet.clientId)}
+                title="Ver Agrupamento"
+                aria-label="Ver Agrupamento"
+                className="p-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors cursor-pointer"
+            >
+                <ExternalLink className="w-4 h-4" />
+            </button>
+        </div>
+    );
+}
+
 export default function BoletosPage() {
     const router = useRouter();
-    const { getOpenBillets, getClientBillets, markBilletAsPaid, isLoading } = useBillet();
+    const {
+        getOpenBillets,
+        getClientBillets,
+        markBilletAsPaid,
+        downloadStoredBillet,
+        cancelBillet,
+        isLoading,
+    } = useBillet();
 
     const [tab, setTab] = useState<Tab>("abertos");
 
@@ -120,7 +217,10 @@ export default function BoletosPage() {
     const [openBillets, setOpenBillets] = useState<OpenBilletResponse[]>([]);
     const [loadingOpen, setLoadingOpen] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
-    const [markingPaidId, setMarkingPaidId] = useState<number | null>(null);
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [rowAction, setRowAction] = useState<{ id: number; type: RowActionType } | null>(null);
+    const [bulkAction, setBulkAction] = useState<BulkActionType | null>(null);
+    const [cancelTarget, setCancelTarget] = useState<number[] | null>(null);
 
     // Aba "Consultar por cliente"
     const [selectedClient, setSelectedClient] = useState<ClientSelectionInfo | null>(null);
@@ -135,6 +235,7 @@ export default function BoletosPage() {
         try {
             const data = await getOpenBillets();
             setOpenBillets(data);
+            setSelectedIds(new Set());
         } catch (error) {
             showError("Não foi possível carregar os boletos em aberto");
             console.error(error);
@@ -148,6 +249,18 @@ export default function BoletosPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const removeBillets = (ids: number[]) => {
+        const idSet = new Set(ids);
+        setOpenBillets((prev) => prev.filter((b) => !idSet.has(b.combinedScoreId)));
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            ids.forEach((id) => {
+                next.delete(id);
+            });
+            return next;
+        });
+    };
+
     const handleMarkAsPaid = async (billet: OpenBilletResponse) => {
         if (
             !window.confirm(
@@ -156,18 +269,85 @@ export default function BoletosPage() {
         ) {
             return;
         }
-        setMarkingPaidId(billet.combinedScoreId);
+        setRowAction({ id: billet.combinedScoreId, type: "pay" });
         try {
             await markBilletAsPaid(billet.combinedScoreId);
             showSuccess("Pagamento confirmado com sucesso.");
-            setOpenBillets((prev) =>
-                prev.filter((b) => b.combinedScoreId !== billet.combinedScoreId)
-            );
+            removeBillets([billet.combinedScoreId]);
         } catch (error: any) {
             showError(error?.message || "Não foi possível confirmar o pagamento do boleto");
             console.error(error);
         } finally {
-            setMarkingPaidId(null);
+            setRowAction(null);
+        }
+    };
+
+    const handleDownloadPdf = async (billet: OpenBilletResponse) => {
+        setRowAction({ id: billet.combinedScoreId, type: "download" });
+        try {
+            const blob = await downloadStoredBillet(billet.combinedScoreId);
+            triggerPdfDownload(blob, billet.yourNumber, billet.combinedScoreId);
+        } catch (error: any) {
+            showError(error?.message || "Não foi possível baixar o PDF do boleto");
+            console.error(error);
+        } finally {
+            setRowAction(null);
+        }
+    };
+
+    const executeCancel = async (ids: number[]) => {
+        const succeeded: number[] = [];
+        const failed: number[] = [];
+        for (const id of ids) {
+            try {
+                await cancelBillet(id);
+                succeeded.push(id);
+            } catch (error) {
+                failed.push(id);
+                console.error(error);
+            }
+        }
+        if (succeeded.length > 0) {
+            removeBillets(succeeded);
+        }
+        if (failed.length === 0) {
+            showSuccess(
+                succeeded.length > 1
+                    ? `${succeeded.length} boletos com baixa realizada com sucesso.`
+                    : "Boleto com baixa realizada com sucesso."
+            );
+        } else if (succeeded.length === 0) {
+            showError(
+                failed.length > 1
+                    ? `Não foi possível dar baixa em ${failed.length} boletos.`
+                    : "Não foi possível dar baixa no boleto."
+            );
+        } else {
+            showError(
+                `${succeeded.length} boleto(s) com baixa realizada, ${failed.length} falharam.`
+            );
+        }
+    };
+
+    const handleCancelBillet = (billet: OpenBilletResponse) => {
+        setCancelTarget([billet.combinedScoreId]);
+    };
+
+    const confirmCancel = async () => {
+        if (!cancelTarget) return;
+        const ids = cancelTarget;
+        const isSingle = ids.length === 1;
+        setCancelTarget(null);
+        if (isSingle) {
+            setRowAction({ id: ids[0], type: "cancel" });
+        } else {
+            setBulkAction("cancel");
+        }
+        try {
+            await executeCancel(ids);
+        } finally {
+            setRowAction(null);
+            setBulkAction(null);
         }
     };
 
@@ -176,6 +356,115 @@ export default function BoletosPage() {
         const term = searchTerm.toLowerCase();
         return openBillets.filter((b) => b.clientName.toLowerCase().includes(term));
     }, [openBillets, searchTerm]);
+
+    const isRowSelected = (id: number) => selectedIds.has(id);
+
+    const toggleRowSelected = (id: number) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
+
+    const isAllFilteredSelected =
+        filteredOpenBillets.length > 0 &&
+        filteredOpenBillets.every((b) => selectedIds.has(b.combinedScoreId));
+
+    const toggleSelectAllFiltered = () => {
+        setSelectedIds((prev) => {
+            if (isAllFilteredSelected) {
+                const next = new Set(prev);
+                filteredOpenBillets.forEach((b) => {
+                    next.delete(b.combinedScoreId);
+                });
+                return next;
+            }
+            const next = new Set(prev);
+            filteredOpenBillets.forEach((b) => {
+                next.add(b.combinedScoreId);
+            });
+            return next;
+        });
+    };
+
+    const clearSelection = () => setSelectedIds(new Set());
+
+    const selectedBillets = useMemo(
+        () => openBillets.filter((b) => selectedIds.has(b.combinedScoreId)),
+        [openBillets, selectedIds]
+    );
+
+    const handleBulkMarkAsPaid = async () => {
+        if (selectedBillets.length === 0) return;
+        if (
+            !window.confirm(
+                `Confirmar o pagamento dos ${selectedBillets.length} boletos selecionados? Eles deixarão de aparecer na lista de boletos em aberto.`
+            )
+        ) {
+            return;
+        }
+        setBulkAction("pay");
+        const ids = selectedBillets.map((b) => b.combinedScoreId);
+        const succeeded: number[] = [];
+        const failed: number[] = [];
+        for (const id of ids) {
+            try {
+                await markBilletAsPaid(id);
+                succeeded.push(id);
+            } catch (error) {
+                failed.push(id);
+                console.error(error);
+            }
+        }
+        if (succeeded.length > 0) {
+            removeBillets(succeeded);
+        }
+        if (failed.length === 0) {
+            showSuccess(`${succeeded.length} pagamento(s) confirmado(s) com sucesso.`);
+        } else if (succeeded.length === 0) {
+            showError(`Não foi possível confirmar o pagamento de ${failed.length} boleto(s).`);
+        } else {
+            showError(
+                `${succeeded.length} pagamento(s) confirmado(s), ${failed.length} falharam.`
+            );
+        }
+        setBulkAction(null);
+    };
+
+    const handleBulkDownload = async () => {
+        if (selectedBillets.length === 0) return;
+        setBulkAction("download");
+        let succeeded = 0;
+        let failed = 0;
+        for (const billet of selectedBillets) {
+            try {
+                const blob = await downloadStoredBillet(billet.combinedScoreId);
+                triggerPdfDownload(blob, billet.yourNumber, billet.combinedScoreId);
+                succeeded++;
+            } catch (error) {
+                failed++;
+                console.error(error);
+            }
+        }
+        if (failed === 0) {
+            showSuccess(`${succeeded} PDF(s) baixado(s) com sucesso.`);
+        } else if (succeeded === 0) {
+            showError(`Não foi possível baixar nenhum dos ${failed} PDF(s) selecionados.`);
+        } else {
+            showError(`${succeeded} PDF(s) baixado(s), ${failed} falharam.`);
+        }
+        setBulkAction(null);
+    };
+
+    const handleBulkCancel = () => {
+        if (selectedBillets.length === 0) return;
+        setCancelTarget(selectedBillets.map((b) => b.combinedScoreId));
+    };
 
     const handleSearchClientBillets = async (client: ClientSelectionInfo | null) => {
         if (!client) return;
@@ -223,6 +512,17 @@ export default function BoletosPage() {
     const goToGrouping = (clientId: number) => {
         router.push(`/comercio/compras?clientId=${clientId}&tab=grouped`);
     };
+
+    const cancelConfirmTitle = (() => {
+        if (!cancelTarget) return "";
+        if (cancelTarget.length === 1) {
+            const billet = openBillets.find((b) => b.combinedScoreId === cancelTarget[0]);
+            return `Tem certeza que deseja dar baixa no boleto de ${billet?.clientName ?? "cliente"}${
+                billet ? ` (${formatCurrency(billet.totalValue)})` : ""
+            }? Esta ação não pode ser desfeita.`;
+        }
+        return `Tem certeza que deseja dar baixa nos ${cancelTarget.length} boletos selecionados? Esta ação não pode ser desfeita.`;
+    })();
 
     return (
         <main className="flex-1 p-6 bg-gray-50 overflow-auto flex flex-col min-h-full">
@@ -293,6 +593,53 @@ export default function BoletosPage() {
                             <Search className="absolute left-3 top-3 text-gray-400" size={18} />
                         </div>
 
+                        {selectedIds.size > 0 && (
+                            <div className="flex flex-wrap items-center gap-3 mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <span className="text-sm font-medium text-green-900">
+                                    {selectedIds.size}{" "}
+                                    {selectedIds.size === 1 ? "boleto selecionado" : "boletos selecionados"}
+                                </span>
+                                <div className="flex flex-wrap items-center gap-2 ml-auto">
+                                    <button
+                                        type="button"
+                                        onClick={handleBulkMarkAsPaid}
+                                        disabled={bulkAction !== null}
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <CheckCircle2 className="w-3 h-3" />
+                                        {bulkAction === "pay" ? "Confirmando..." : "Marcar como pago"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleBulkDownload}
+                                        disabled={bulkAction !== null}
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <Download className="w-3 h-3" />
+                                        {bulkAction === "download" ? "Baixando..." : "Baixar PDF"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleBulkCancel}
+                                        disabled={bulkAction !== null}
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <Trash2 className="w-3 h-3" />
+                                        {bulkAction === "cancel" ? "Processando..." : "Dar baixa"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={clearSelection}
+                                        disabled={bulkAction !== null}
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-xs cursor-pointer disabled:opacity-50"
+                                    >
+                                        <X className="w-3 h-3" />
+                                        Limpar seleção
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         {loadingOpen ? (
                             <div className="space-y-3">
                                 {[...Array(5)].map((_, i) => (
@@ -312,10 +659,20 @@ export default function BoletosPage() {
                                 )}
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
+                            <>
+                            <div className="hidden md:block overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="text-left text-gray-500 border-b">
+                                            <th className="py-3 px-3 font-semibold w-10">
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-4 h-4 cursor-pointer accent-green-700"
+                                                    checked={isAllFilteredSelected}
+                                                    onChange={toggleSelectAllFiltered}
+                                                    aria-label="Selecionar todos os boletos filtrados"
+                                                />
+                                            </th>
                                             <th className="py-3 px-3 font-semibold">Cliente</th>
                                             <th className="py-3 px-3 font-semibold">Agrupamento</th>
                                             <th className="py-3 px-3 font-semibold">Valor</th>
@@ -328,8 +685,19 @@ export default function BoletosPage() {
                                         {filteredOpenBillets.map((billet) => (
                                             <tr
                                                 key={billet.combinedScoreId}
-                                                className="border-b last:border-0 hover:bg-gray-50 transition-colors"
+                                                className={`border-b last:border-0 hover:bg-gray-50 transition-colors ${
+                                                    isRowSelected(billet.combinedScoreId) ? "bg-green-50/60" : ""
+                                                }`}
                                             >
+                                                <td className="py-3 px-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 cursor-pointer accent-green-700"
+                                                        checked={isRowSelected(billet.combinedScoreId)}
+                                                        onChange={() => toggleRowSelected(billet.combinedScoreId)}
+                                                        aria-label={`Selecionar boleto de ${billet.clientName}`}
+                                                    />
+                                                </td>
                                                 <td className="py-3 px-3 font-medium text-gray-800">
                                                     {billet.clientName}
                                                 </td>
@@ -351,24 +719,16 @@ export default function BoletosPage() {
                                                     </div>
                                                 </td>
                                                 <td className="py-3 px-3 text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                            onClick={() => handleMarkAsPaid(billet)}
-                                                            disabled={markingPaidId === billet.combinedScoreId}
-                                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        >
-                                                            <CheckCircle2 className="w-3 h-3" />
-                                                            {markingPaidId === billet.combinedScoreId
-                                                                ? "Confirmando..."
-                                                                : "Marcar como pago"}
-                                                        </button>
-                                                        <button
-                                                            onClick={() => goToGrouping(billet.clientId)}
-                                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
-                                                        >
-                                                            <ExternalLink className="w-3 h-3" />
-                                                            Ver Agrupamento
-                                                        </button>
+                                                    <div className="flex items-center justify-end">
+                                                        <BilletRowActions
+                                                            billet={billet}
+                                                            rowAction={rowAction}
+                                                            bulkAction={bulkAction}
+                                                            onMarkAsPaid={handleMarkAsPaid}
+                                                            onDownload={handleDownloadPdf}
+                                                            onCancel={handleCancelBillet}
+                                                            onViewGrouping={goToGrouping}
+                                                        />
                                                     </div>
                                                 </td>
                                             </tr>
@@ -376,6 +736,74 @@ export default function BoletosPage() {
                                     </tbody>
                                 </table>
                             </div>
+                            <div className="md:hidden space-y-3">
+                                {filteredOpenBillets.map((billet) => (
+                                    <div
+                                        key={billet.combinedScoreId}
+                                        className={`border rounded-lg p-4 ${
+                                            isRowSelected(billet.combinedScoreId)
+                                                ? "border-green-300 bg-green-50/60"
+                                                : "border-gray-200"
+                                        }`}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <input
+                                                type="checkbox"
+                                                className="w-4 h-4 mt-1 cursor-pointer accent-green-700 shrink-0"
+                                                checked={isRowSelected(billet.combinedScoreId)}
+                                                onChange={() => toggleRowSelected(billet.combinedScoreId)}
+                                                aria-label={`Selecionar boleto de ${billet.clientName}`}
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-gray-800 break-words">
+                                                    {billet.clientName}
+                                                </p>
+                                                <p className="text-xs text-gray-500 mt-0.5">
+                                                    Agrupamento #{billet.combinedScoreId}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
+                                            <div>
+                                                <span className="block text-xs text-gray-500">Valor</span>
+                                                <span className="font-medium text-gray-800">
+                                                    {formatCurrency(billet.totalValue)}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span className="block text-xs text-gray-500">Vencimento</span>
+                                                <span className="font-medium text-gray-800">
+                                                    {formatDate(billet.dueDate)}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                                            <DueBadge dueDate={billet.dueDate} />
+                                            {!billet.confirmadoNoSicoob && (
+                                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                    <ShieldQuestion className="w-3 h-3" />
+                                                    Não confirmado
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center justify-end mt-3 pt-3 border-t border-gray-100">
+                                            <BilletRowActions
+                                                billet={billet}
+                                                rowAction={rowAction}
+                                                bulkAction={bulkAction}
+                                                onMarkAsPaid={handleMarkAsPaid}
+                                                onDownload={handleDownloadPdf}
+                                                onCancel={handleCancelBillet}
+                                                onViewGrouping={goToGrouping}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            </>
                         )}
                     </div>
                 )}
@@ -541,6 +969,13 @@ export default function BoletosPage() {
                     </div>
                 )}
             </div>
+
+            <ConfirmDeleteModal
+                open={cancelTarget !== null}
+                onClose={() => setCancelTarget(null)}
+                onConfirm={confirmCancel}
+                title={cancelConfirmTitle}
+            />
         </main>
     );
 }

@@ -218,4 +218,12 @@ public class GlobalExceptionHandler {
     response.put("message", ex.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
+
+  @ExceptionHandler(StorageException.class)
+  public ResponseEntity<Map<String, String>> handleStorageException(StorageException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro de Armazenamento");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+  }
 }

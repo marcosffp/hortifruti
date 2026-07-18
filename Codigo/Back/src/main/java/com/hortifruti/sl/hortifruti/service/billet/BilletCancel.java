@@ -5,6 +5,7 @@ import com.hortifruti.sl.hortifruti.config.billet.BilletHttpClient;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
+import com.hortifruti.sl.hortifruti.service.storage.BilletFileStorageService;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +25,7 @@ public class BilletCancel {
   private final BilletConstants billetConstants;
   private final BilletValidation billetValidation;
   private final BilletInfoCombinedAndClient billetInfoCombinedAndClient;
+  private final BilletFileStorageService billetFileStorageService;
 
   /**
    * Realiza a baixa (cancelamento) de um boleto através da API do Sicoob.
@@ -77,6 +79,7 @@ public class BilletCancel {
       JsonNode response, CombinedScore combinedScore) {
     if (response == null) {
       combinedScoreService.updateStatusAfterBilletCancellation(combinedScore.getYourNumber());
+      billetFileStorageService.cancelBilletFileAfterCommit(combinedScore.getId());
       return ResponseEntity.noContent().build();
     }
     return ResponseEntity.ok("Boleto baixado com sucesso.");

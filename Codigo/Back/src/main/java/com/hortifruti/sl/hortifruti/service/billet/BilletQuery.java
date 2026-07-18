@@ -15,7 +15,6 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
 
 @Component
 @AllArgsConstructor
@@ -69,9 +68,11 @@ public class BilletQuery {
         boletos.add(boleto);
       }
       return boletos;
-    } catch (HttpClientErrorException e) {
-      throw new BilletException(
-          "Erro na requisição para listar boletos: " + e.getResponseBodyAsString(), e);
+    } catch (BilletException e) {
+      // httpClient.getWithResponse já converte erros HTTP/rede em BilletException com o detalhe
+      // real (status, corpo da resposta) — não deve ser re-envolvida aqui, para não perder essa
+      // informação atrás de uma mensagem genérica.
+      throw e;
     } catch (IOException e) {
       throw new BilletException("Erro ao processar a resposta da API ao listar boletos.", e);
     } catch (Exception e) {

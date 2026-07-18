@@ -118,6 +118,26 @@ export const billetService = {
     }
   },
 
+  async downloadStoredBillet(combinedScoreId: number): Promise<Blob> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/billet/${combinedScoreId}/file`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao baixar boleto armazenado: ${response.status}`);
+      }
+
+      const result = await response.blob();
+      return result;
+    } catch (error) {
+      console.error("Falha ao baixar boleto armazenado:", error);
+      throw error;
+    }
+  },
+
   async cancelBillet(combinedScoreId: number): Promise<string> {
     try {
       const response = await fetch(`${API_BASE_URL}/billet/cancel/${combinedScoreId}`, {
