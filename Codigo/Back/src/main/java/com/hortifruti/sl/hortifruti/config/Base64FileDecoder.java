@@ -57,20 +57,63 @@ public class Base64FileDecoder {
     return decodedFile;
   }
 
-  public File decodePem() throws IOException {
+public File decodePem() throws IOException {
+    System.out.println("[DEBUG] Iniciando decodePem()");
+
     if (pem == null || pem.isEmpty()) {
-      throw new BilletException("A propriedade 'document.pem' está vazia ou não foi configurada.");
+        System.err.println("[ERROR] Propriedade 'document.pem' está vazia ou não foi configurada.");
+        throw new BilletException("A propriedade 'document.pem' está vazia ou não foi configurada.");
     }
+
+    System.out.println("[DEBUG] Tamanho da string PEM recebida (base64): " + pem.length() + " caracteres");
+    System.out.println("[DEBUG] pemTempDirectory configurado: " + pemTempDirectory);
+
+    File tempDir = new File(pemTempDirectory);
+    System.out.println("[DEBUG] Diretório temp existe? " + tempDir.exists()
+            + " | é diretório? " + tempDir.isDirectory()
+            + " | tem permissão de escrita? " + tempDir.canWrite());
+
+    if (!tempDir.exists()) {
+        System.err.println("[ERROR] Diretório '" + pemTempDirectory + "' não existe. Tentando criar...");
+        boolean created = tempDir.mkdirs();
+        System.out.println("[DEBUG] Diretório criado com sucesso? " + created);
+    }
+
     String outputPath = pemTempDirectory + "/empresa.pem";
-    File decodedFile = decodeBase64ToFile(pem, outputPath);
+    System.out.println("[DEBUG] Caminho de saída do arquivo PEM: " + outputPath);
+
+    File decodedFile;
+    try {
+        decodedFile = decodeBase64ToFile(pem, outputPath);
+    } catch (Exception e) {
+        System.err.println("[ERROR] Exceção lançada dentro de decodeBase64ToFile: " + e.getClass().getName()
+                + " - " + e.getMessage());
+        e.printStackTrace();
+        throw e;
+    }
+
     if (decodedFile == null) {
-      throw new BilletException("Falha ao decodificar o arquivo PEM.");
+        System.err.println("[ERROR] decodeBase64ToFile retornou null para o caminho: " + outputPath);
+        throw new BilletException("Falha ao decodificar o arquivo PEM.");
     }
-    if (!decodedFile.exists()) {
-      System.err.println("[ERROR] Falha ao decodificar o arquivo PEM.");
+
+    System.out.println("[DEBUG] Objeto File retornado. Caminho absoluto: " + decodedFile.getAbsolutePath());
+    System.out.println("[DEBUG] Arquivo existe (decodedFile.exists())? " + decodedFile.exists());
+
+    if (decodedFile.exists()) {
+        System.out.println("[DEBUG] Tamanho do arquivo gerado: " + decodedFile.length() + " bytes");
+        System.out.println("[DEBUG] Arquivo pode ser lido? " + decodedFile.canRead());
+    } else {
+        System.err.println("[ERROR] Falha ao decodificar o arquivo PEM. Arquivo não existe em: "
+                + decodedFile.getAbsolutePath());
+        // Aqui você provavelmente quer lançar uma exceção também,
+        // já que hoje só loga e segue retornando um File que não existe.
+        // throw new BilletException("Arquivo PEM decodificado não foi encontrado em disco: " + decodedFile.getAbsolutePath());
     }
+
+    System.out.println("[DEBUG] Finalizando decodePem() com sucesso.");
     return decodedFile;
-  }
+}
 
   private File decodeBase64ToFile(String base64, String outputPath) throws IOException {
     byte[] decodedBytes = Base64.getDecoder().decode(base64);
