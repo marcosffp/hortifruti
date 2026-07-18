@@ -31,7 +31,8 @@ public class Auth {
       throw new AuthException("A senha informada está incorreta. Por favor, tente novamente.");
     }
 
-    String token = tokenConfiguration.generateToken(user.getId(), user.getUsername(), user.getRole());
+    String token =
+        tokenConfiguration.generateToken(user.getId(), user.getUsername(), user.getRole());
     return new AuthResult(token, user);
   }
 

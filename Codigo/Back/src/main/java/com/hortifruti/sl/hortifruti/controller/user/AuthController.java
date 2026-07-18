@@ -6,6 +6,8 @@ import com.hortifruti.sl.hortifruti.config.auth.TokenConfiguration;
 import com.hortifruti.sl.hortifruti.dto.user.AuthRequest;
 import com.hortifruti.sl.hortifruti.dto.user.AuthUserResponse;
 import com.hortifruti.sl.hortifruti.model.User;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -39,8 +41,7 @@ public class AuthController {
   public ResponseEntity<AuthUserResponse> login(@Valid @RequestBody AuthRequest authRequest) {
     AuthResult result = auth.autenticar(authRequest);
 
-    ResponseCookie cookie =
-        buildCookie(result.token(), tokenConfiguration.getExpirationSeconds());
+    ResponseCookie cookie = buildCookie(result.token(), tokenConfiguration.getExpirationSeconds());
 
     return ResponseEntity.ok()
         .header(HttpHeaders.SET_COOKIE, cookie.toString())
@@ -54,9 +55,31 @@ public class AuthController {
   }
 
   @PostMapping("/logout")
-  public ResponseEntity<Void> logout() {
+  public ResponseEntity<Void> logout(HttpServletRequest request) {
+    String token = recoverToken(request);
+    if (token != null) {
+      tokenConfiguration.revokeToken(token);
+    }
+
     ResponseCookie cookie = buildCookie("", 0);
     return ResponseEntity.noContent().header(HttpHeaders.SET_COOKIE, cookie.toString()).build();
+  }
+
+  private String recoverToken(HttpServletRequest request) {
+    String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+    if (authHeader != null && authHeader.startsWith("Bearer ")) {
+      return authHeader.substring(7);
+    }
+
+    if (request.getCookies() != null) {
+      for (Cookie cookie : request.getCookies()) {
+        if (COOKIE_NAME.equals(cookie.getName()) && !cookie.getValue().isEmpty()) {
+          return cookie.getValue();
+        }
+      }
+    }
+
+    return null;
   }
 
   private ResponseCookie buildCookie(String token, long maxAgeSeconds) {

@@ -64,11 +64,11 @@ public class BilletService {
    * Lista todos os boletos em aberto de todos os clientes, ordenados por data de vencimento.
    *
    * <p>Parte dos agrupamentos (CombinedScore) marcados localmente como pendentes/com boleto, mas
-   * não confia nesse status local — para cada cliente, busca no Sicoob a lista de boletos
-   * realmente "Em aberto" (mesma consulta usada pela tela "Consultar por Cliente") e só inclui na
-   * lista final os agrupamentos cujo boleto aparece nela. Agrupamentos que não aparecem são
-   * considerados encerrados no Sicoob: o status local é corrigido quando é possível confirmar a
-   * situação final (liquidado/baixado) e, de todo modo, são removidos da lista de "em aberto".
+   * não confia nesse status local — para cada cliente, busca no Sicoob a lista de boletos realmente
+   * "Em aberto" (mesma consulta usada pela tela "Consultar por Cliente") e só inclui na lista final
+   * os agrupamentos cujo boleto aparece nela. Agrupamentos que não aparecem são considerados
+   * encerrados no Sicoob: o status local é corrigido quando é possível confirmar a situação final
+   * (liquidado/baixado) e, de todo modo, são removidos da lista de "em aberto".
    *
    * @return Lista de boletos realmente em aberto, ordenada por vencimento (mais próximos primeiro)
    */
@@ -114,10 +114,10 @@ public class BilletService {
   private record ReconciledScore(CombinedScore score, boolean confirmadoNoSicoob) {}
 
   /**
-   * Confirma no Sicoob quais agrupamentos de um cliente realmente estão "Em aberto", usando a
-   * mesma consulta da tela "Consultar por Cliente" (codigoSituacao=1). Não confia no status local
-   * do CombinedScore: um agrupamento só entra no resultado se o seu boleto (por seuNumero) estiver
-   * na lista de "Em aberto" retornada pelo Sicoob.
+   * Confirma no Sicoob quais agrupamentos de um cliente realmente estão "Em aberto", usando a mesma
+   * consulta da tela "Consultar por Cliente" (codigoSituacao=1). Não confia no status local do
+   * CombinedScore: um agrupamento só entra no resultado se o seu boleto (por seuNumero) estiver na
+   * lista de "Em aberto" retornada pelo Sicoob.
    *
    * <p>Se a consulta ao Sicoob falhar para o cliente inteiro (ex: falha de comunicação), mantém
    * todos os agrupamentos do cliente na lista, sinalizados como não confirmados — evita esconder
@@ -166,10 +166,10 @@ public class BilletService {
   }
 
   /**
-   * Tenta confirmar diretamente no Sicoob (por nossoNumero) a situação final de um agrupamento
-   * que não apareceu na lista de "Em aberto" do pagador, para corrigir o status local. Falhas
-   * aqui são apenas registradas — o agrupamento já foi excluído da lista de "em aberto" porque a
-   * consulta por pagador confirmou que ele não está mais aberto.
+   * Tenta confirmar diretamente no Sicoob (por nossoNumero) a situação final de um agrupamento que
+   * não apareceu na lista de "Em aberto" do pagador, para corrigir o status local. Falhas aqui são
+   * apenas registradas — o agrupamento já foi excluído da lista de "em aberto" porque a consulta
+   * por pagador confirmou que ele não está mais aberto.
    */
   private void tryUpdateClosedStatus(CombinedScore cs) {
     String ourNumber = cs.getOurNumber_sicoob();
@@ -200,8 +200,8 @@ public class BilletService {
   }
 
   /**
-   * Traduz a situação retornada pelo Sicoob para o status local correspondente, quando o boleto
-   * não está mais em aberto. Retorna {@code null} se o boleto ainda estiver em aberto.
+   * Traduz a situação retornada pelo Sicoob para o status local correspondente, quando o boleto não
+   * está mais em aberto. Retorna {@code null} se o boleto ainda estiver em aberto.
    */
   private Status resolveClosedStatus(String situacaoBoleto) {
     String value = situacaoBoleto == null ? "" : situacaoBoleto.toLowerCase();
@@ -229,9 +229,9 @@ public class BilletService {
 
   /**
    * Marca manualmente como pago um agrupamento com boleto (ex: pagamento recebido por fora do
-   * Sicoob). Diferente de {@link CombinedScoreService#confirmPayment}, que é para agrupamentos
-   * sem boleto, este método é justamente para os que têm boleto — por isso não bloqueia por
-   * hasBillet, apenas exige que exista um boleto associado.
+   * Sicoob). Diferente de {@link CombinedScoreService#confirmPayment}, que é para agrupamentos sem
+   * boleto, este método é justamente para os que têm boleto — por isso não bloqueia por hasBillet,
+   * apenas exige que exista um boleto associado.
    */
   @Transactional
   public void markBilletAsPaid(Long combinedScoreId) {

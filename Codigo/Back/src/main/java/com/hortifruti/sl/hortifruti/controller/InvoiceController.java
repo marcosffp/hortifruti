@@ -56,9 +56,8 @@ public class InvoiceController {
       String response = invoiceService.cancelInvoice(ref, justificativa);
       return ResponseEntity.ok(response);
     } catch (Exception e) {
-      log.error("Erro ao cancelar a NF-e para ref {}: {}", ref, e.getMessage(), e);
-      return ResponseEntity.internalServerError()
-          .body("Erro ao cancelar a NF-e: " + e.getMessage());
+      log.error("Erro ao cancelar a NF-e para ref {}", ref, e);
+      return ResponseEntity.internalServerError().body("Erro ao cancelar a NF-e.");
     }
   }
 
