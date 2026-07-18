@@ -1,6 +1,6 @@
 'use client';
 
-import { authService } from './authService';
+import { API_BASE_URL } from '@/config/api';
 
 interface UserRequest {
   username: string;
@@ -16,36 +16,19 @@ interface UserResponse {
   role: "MANAGER" | "EMPLOYEE";
 }
 
-const getAuthHeaders = () => {
-  const token = authService.getToken();
-  
-  if (token) {
-    
-    if (authService.isTokenExpired(token)) {
-      window.location.href = '/login';
-      throw new Error('Token expirado. Redirecionando para login.');
-    }
-  }
-  
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
-  return headers;
-};
+const getAuthHeaders = (): HeadersInit => ({
+  'Content-Type': 'application/json',
+});
 
 class UserService {
-  private baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  private baseURL = API_BASE_URL;
 
   async createUser(userData: UserRequest): Promise<UserResponse> {
     try {
       const response = await fetch(`${this.baseURL}/users/register`, {
         method: 'POST',
         headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(userData),
       });
 
@@ -65,6 +48,7 @@ class UserService {
       const response = await fetch(`${this.baseURL}/users/all`, {
         method: 'GET',
         headers: getAuthHeaders(),
+        credentials: 'include',
         cache: 'no-store',
       });
 
@@ -95,6 +79,7 @@ class UserService {
       const response = await fetch(`${this.baseURL}/users/update`, {
         method: 'PUT',
         headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(userData),
       });
 
@@ -114,6 +99,7 @@ class UserService {
       const response = await fetch(`${this.baseURL}/users/update/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(userData),
       });
 
@@ -133,6 +119,7 @@ class UserService {
       const response = await fetch(`${this.baseURL}/users/delete/${encodeURIComponent(username)}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
+        credentials: 'include',
       });
 
       if (!response.ok) {

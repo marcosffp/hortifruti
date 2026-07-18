@@ -1,7 +1,6 @@
 import { InvoiceResponse, InvoiceResponseGet } from "@/types/invoiceType";
 import { getAuthHeaders } from "@/utils/httpUtils";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { API_BASE_URL } from "@/config/api";
 
 export const invoiceService = {
   async generateInvoice(combinedScoreId: number, dadosAdicionais?: string): Promise<InvoiceResponse> {
@@ -15,6 +14,7 @@ export const invoiceService = {
       const response = await fetch(url, {
         method: "POST",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -34,6 +34,7 @@ export const invoiceService = {
       const response = await fetch(`${API_BASE_URL}/invoices/consulta/${ref}`, {
         method: "GET",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -53,6 +54,7 @@ export const invoiceService = {
       const response = await fetch(`${API_BASE_URL}/invoices/${ref}/danfe`, {
         method: "GET",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -72,6 +74,7 @@ export const invoiceService = {
       const response = await fetch(`${API_BASE_URL}/invoices/${ref}/xml/download`, {
         method: "GET",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -91,6 +94,7 @@ export const invoiceService = {
       const response = await fetch(`${API_BASE_URL}/invoices/${ref}/cancel?justificativa=${encodeURIComponent(justificativa)}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
 
       if (!response.ok) {

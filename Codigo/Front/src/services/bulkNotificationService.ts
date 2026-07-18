@@ -1,8 +1,6 @@
 "use client";
 
-import { authService } from "@/services/authService";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { API_BASE_URL } from "@/config/api";
 
 export interface BulkNotificationRequest {
   files: File[];
@@ -28,12 +26,7 @@ export const bulkNotificationService = {
     request: BulkNotificationRequest
   ): Promise<BulkNotificationResponse> {
     try {
-      const token = authService.getToken();
       const headers: HeadersInit = {};
-
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
 
       if (request.destinationType === "contabilidade") {
         return await this.sendToAccounting(request, headers);
@@ -80,6 +73,7 @@ export const bulkNotificationService = {
       {
         method: "POST",
         headers,
+        credentials: "include",
         body: formData,
       }
     );
@@ -141,6 +135,7 @@ export const bulkNotificationService = {
           {
             method: "POST",
             headers,
+            credentials: "include",
             body: formData,
           }
         );
@@ -178,20 +173,16 @@ export const bulkNotificationService = {
 
   async testService(): Promise<boolean> {
     try {
-      const token = authService.getToken();
       const headers: HeadersInit = {
         "Content-Type": "application/json",
       };
-
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
 
       const response = await fetch(
         `${API_BASE_URL}/api/notifications/test`,
         {
           method: "GET",
           headers,
+          credentials: "include",
         }
       );
 

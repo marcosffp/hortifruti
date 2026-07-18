@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { getAuthHeaders } from "@/utils/httpUtils";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { API_BASE_URL } from "@/config/api";
 
 export function useClient() {
     const [isLoading, setIsLoading] = useState(false);
@@ -16,6 +15,7 @@ export function useClient() {
             const response = await fetch(`${API_BASE_URL}/clients/${clientId}`, {
                 method: "GET",
                 headers: getAuthHeaders(),
+                credentials: "include",
             });
 
             if (!response.ok) {

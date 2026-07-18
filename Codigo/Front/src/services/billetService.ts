@@ -1,7 +1,6 @@
 import { BilletFilters, BilletResponse, OpenBilletResponse } from "@/types/billetType";
 import { getAuthHeaders } from "@/utils/httpUtils";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { API_BASE_URL } from "@/config/api";
 
 export const billetService = {
   async generateBillet(combinedScoreId: number, number: string, dueDate?: string): Promise<Blob> {
@@ -15,6 +14,7 @@ export const billetService = {
       const response = await fetch(url, {
         method: "GET",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -34,6 +34,7 @@ export const billetService = {
       const response = await fetch(`${API_BASE_URL}/billet/${combinedScoreId}`, {
         method: "GET",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -61,6 +62,7 @@ export const billetService = {
         {
           method: "GET",
           headers: getAuthHeaders(),
+          credentials: "include",
         }
       );
 
@@ -81,6 +83,7 @@ export const billetService = {
       const response = await fetch(`${API_BASE_URL}/billet/open`, {
         method: "GET",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -100,6 +103,7 @@ export const billetService = {
       const response = await fetch(`${API_BASE_URL}/billet/issue-copy/${combinedScoreId}`, {
         method: "GET",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -119,6 +123,7 @@ export const billetService = {
       const response = await fetch(`${API_BASE_URL}/billet/cancel/${combinedScoreId}`, {
         method: "POST",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -138,6 +143,7 @@ export const billetService = {
       const response = await fetch(`${API_BASE_URL}/billet/mark-paid/${combinedScoreId}`, {
         method: "PATCH",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
 
       const result = await response.text();

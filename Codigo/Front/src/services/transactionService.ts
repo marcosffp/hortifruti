@@ -1,6 +1,5 @@
 import { getAuthHeaders } from "@/utils/httpUtils";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { API_BASE_URL } from "@/config/api";
 
 export interface TransactionResponse {
   id: number;
@@ -60,6 +59,7 @@ export const transactionService = {
       const response = await fetch(`${API_BASE_URL}/transactions/revenue?startDate=${defaultStartDate}&endDate=${defaultEndDate}`, {
         method: "GET",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
       if (!response.ok) {
         throw new Error(`Erro ao buscar receita total: ${response.statusText}`);
@@ -78,6 +78,7 @@ export const transactionService = {
       const response = await fetch(`${API_BASE_URL}/transactions/expenses?startDate=${defaultStartDate}&endDate=${defaultEndDate}`, {
         method: "GET",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
       if (!response.ok) {
         throw new Error(
@@ -98,6 +99,7 @@ export const transactionService = {
       const response = await fetch(`${API_BASE_URL}/transactions/balance?startDate=${defaultStartDate}&endDate=${defaultEndDate}`, {
         method: "GET",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
       if (!response.ok) {
         throw new Error(`Erro ao buscar saldo total: ${response.statusText}`);
@@ -134,8 +136,9 @@ export const transactionService = {
     const response = await fetch(url, {
       method: "GET",
       headers: getAuthHeaders(),
+      credentials: "include",
     });
-    
+
     if (!response.ok) {
       throw new Error(
         `Erro ao buscar todas as transações: ${response.statusText}`,
@@ -165,6 +168,7 @@ export const transactionService = {
       const response = await fetch(`${API_BASE_URL}/transactions/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        credentials: "include",
         body: JSON.stringify(transaction),
       });
 
@@ -187,6 +191,7 @@ export const transactionService = {
       const response = await fetch(`${API_BASE_URL}/transactions/${id}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
       if (!response.ok) {
         throw new Error(`Erro ao deletar transação: ${response.statusText}`);
@@ -209,6 +214,7 @@ export const transactionService = {
         {
           method: "POST",
           headers: getAuthHeaders(),
+          credentials: "include",
         },
       );
       if (!response.ok) {
@@ -227,6 +233,7 @@ export const transactionService = {
       const response = await fetch(`${API_BASE_URL}/transactions/export-complete`, {
         method: "POST",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
       if (!response.ok) {
         throw new Error(`Erro ao exportar relatório completo: ${response.statusText}`);
@@ -242,6 +249,7 @@ export const transactionService = {
   async getAllCategories(): Promise<string[]> {
     const response = await fetch(`${API_BASE_URL}/transactions/categories`, {
       headers: getAuthHeaders(),
+      credentials: "include",
     });
     if (!response.ok) throw new Error("Erro ao buscar categorias");
     return await response.json();

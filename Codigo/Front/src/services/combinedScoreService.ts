@@ -5,15 +5,14 @@ import {
   CombinedScoreRequest,
   ClientLastGroupingType,
 } from "@/types/combinedScoreType";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { API_BASE_URL } from "@/config/api";
 
 export const combinedScoreService = {
   async fetchCombinedScores(clientId?: number, page = 0, size = 20): Promise<CombinedScoreResponse> {
     let url = `${API_BASE_URL}/combined-scores?page=${page}&size=${size}`;
     if (clientId) url += `&clientId=${clientId}`;
     
-    const response = await fetch(url, { headers: getAuthHeaders() });
+    const response = await fetch(url, { headers: getAuthHeaders(), credentials: "include" });
     if (!response.ok) throw new Error("Erro ao buscar agrupamentos");
     const data = await response.json();
 
@@ -41,6 +40,7 @@ export const combinedScoreService = {
     const response = await fetch(`${API_BASE_URL}/combined-scores/create`, {
       method: "POST",
       headers: getAuthHeaders(),
+      credentials: "include",
       body: JSON.stringify(requestWithDateTime),
     });
     if (!response.ok) throw new Error("Erro ao criar agrupamento");
@@ -51,6 +51,7 @@ export const combinedScoreService = {
     const response = await fetch(`${API_BASE_URL}/combined-scores/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
+      credentials: "include",
     });
     if (!response.ok) throw new Error("Erro ao deletar agrupamento");
     return await response.text();
@@ -60,6 +61,7 @@ export const combinedScoreService = {
     const response = await fetch(`${API_BASE_URL}/combined-scores/confirm-payment/${id}`, {
       method: "PATCH",
       headers: getAuthHeaders(),
+      credentials: "include",
     });
     if (!response.ok) throw new Error("Erro ao confirmar pagamento");
     return await response.text();
@@ -69,6 +71,7 @@ export const combinedScoreService = {
     const response = await fetch(`${API_BASE_URL}/combined-scores/cancel-payment/${id}`, {
       method: "PATCH",
       headers: getAuthHeaders(),
+      credentials: "include",
     });
     if (!response.ok) throw new Error("Erro ao cancelar pagamento");
     return await response.text();
@@ -77,7 +80,7 @@ export const combinedScoreService = {
   async fetchGroupedProducts(combinedScoreId: number): Promise<GroupedProductType[]> {
     const response = await fetch(
       `${API_BASE_URL}/combined-scores/${combinedScoreId}/grouped-products`,
-      { headers: getAuthHeaders() }
+      { headers: getAuthHeaders(), credentials: "include" }
     );
     if (!response.ok) throw new Error("Erro ao buscar produtos agrupados");
     return await response.json();
@@ -86,6 +89,7 @@ export const combinedScoreService = {
   async fetchLastGroupingPerClient(): Promise<ClientLastGroupingType[]> {
     const response = await fetch(`${API_BASE_URL}/combined-scores/last-per-client`, {
       headers: getAuthHeaders(),
+      credentials: "include",
     });
     if (!response.ok) throw new Error("Erro ao buscar últimos agrupamentos");
     return await response.json();
@@ -95,6 +99,7 @@ export const combinedScoreService = {
     const response = await fetch(`${API_BASE_URL}/combined-scores/create-wildcard-billet`, {
       method: "POST",
       headers: getAuthHeaders(),
+      credentials: "include",
       body: JSON.stringify({ clientId, value }),
     });
     if (!response.ok) throw new Error("Erro ao criar boleto avulso");

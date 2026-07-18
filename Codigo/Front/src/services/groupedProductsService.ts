@@ -1,13 +1,13 @@
 import { GroupedScoreResponse, GroupedScoreType, GroupedProductRequest } from "@/types/groupedType";
 import { getAuthHeaders } from "@/utils/httpUtils";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { API_BASE_URL } from "@/config/api";
 
 export const groupedProductsService = {
     async fetchGroupedProducts(clientId?: number, page = 0, size = 10) {
         const url = `${API_BASE_URL}/grouped-products?clientId=${clientId}&page=${page}&size=${size}`;
         const response = await fetch(url, {
             headers: getAuthHeaders(),
+            credentials: "include",
         });
 
         if (!response.ok) throw new Error("Erro ao buscar produtos agrupados");
@@ -23,6 +23,7 @@ export const groupedProductsService = {
         const response = await fetch(url, {
             method: "POST",
             headers: getAuthHeaders(),
+            credentials: "include",
             body: JSON.stringify({ clientId, groupedProducts }),
         });
 
@@ -37,6 +38,7 @@ export const groupedProductsService = {
         const response = await fetch(url, {
             method: "DELETE",
             headers: getAuthHeaders(),
+            credentials: "include",
         });
 
         if (!response.ok) throw new Error("Erro ao cancelar agrupamento de produtos");
@@ -50,6 +52,7 @@ export const groupedProductsService = {
         const response = await fetch(url, {
             method: "PATCH",
             headers: getAuthHeaders(),
+            credentials: "include",
         });
 
         if (!response.ok) throw new Error("Erro ao confirmar pagamento do agrupamento");

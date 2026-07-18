@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.config.auth;
 
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -60,9 +61,19 @@ public class SecurityFilter extends OncePerRequestFilter {
 
   private String recoverToken(HttpServletRequest request) {
     String authHeader = request.getHeader("Authorization");
-    return (authHeader != null && authHeader.startsWith("Bearer "))
-        ? authHeader.substring(7)
-        : null;
+    if (authHeader != null && authHeader.startsWith("Bearer ")) {
+      return authHeader.substring(7);
+    }
+
+    if (request.getCookies() != null) {
+      for (Cookie cookie : request.getCookies()) {
+        if ("auth_token".equals(cookie.getName()) && !cookie.getValue().isEmpty()) {
+          return cookie.getValue();
+        }
+      }
+    }
+
+    return null;
   }
 
   private UserDetails loadByUserName(String username) {

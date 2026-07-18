@@ -55,6 +55,10 @@ public class TokenConfiguration {
     return LocalDateTime.now().plusMinutes(minutosExpiracao).toInstant(ZoneOffset.of("-03:00"));
   }
 
+  public long getExpirationSeconds() {
+    return minutosExpiracao * 60;
+  }
+
   public Role getRoleFromToken(String token) {
     try {
       String roleString =

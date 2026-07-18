@@ -1,12 +1,11 @@
 "use client";
 
 import { getAuthHeadersForFormData } from "@/utils/httpUtils";
+import { API_BASE_URL } from "@/config/api";
 
 export interface BackupResponseDTO {
   message: string;
 }
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 function buildQuery(params: Record<string, string | undefined>) {
   const usp = new URLSearchParams();
@@ -22,6 +21,7 @@ export const backupService = {
     const response = await fetch(`${API_BASE_URL}/backup/storage`, {
       method: "GET",
       headers: getAuthHeadersForFormData(),
+      credentials: "include",
     });
 
     if (!response.ok) {
@@ -52,6 +52,7 @@ export const backupService = {
     const response = await fetch(`${API_BASE_URL}/backup${query}`, {
       method: "POST",
       headers: getAuthHeadersForFormData(),
+      credentials: "include",
     });
 
     if (!response.ok) {
