@@ -1,62 +1,72 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import L from "leaflet";
 import { MapPin } from "lucide-react";
-import { RouteData } from "@/types/addressType";
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useCallback, useEffect, useState } from "react";
+import {
+  MapContainer,
+  Marker,
+  Polyline,
+  Popup,
+  TileLayer,
+} from "react-leaflet";
+import type { Location, RouteData } from "@/types/addressType";
+import "leaflet/dist/leaflet.css";
 
 const MapComponent = ({ routeData }: { routeData: RouteData | null }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [routePoints, setRoutePoints] = useState<[number, number][]>([]);
-  
+
   useEffect(() => {
     L.Icon.Default.mergeOptions({
-      iconRetinaUrl: '/leaflet/marker-icon-2x.png',
-      iconUrl: '/leaflet/marker-icon.png',
-      shadowUrl: '/leaflet/marker-shadow.png',
+      iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+      iconUrl: "/leaflet/marker-icon.png",
+      shadowUrl: "/leaflet/marker-shadow.png",
     });
   }, []);
+
+  // Função para buscar a rota da API OSRM
+  const fetchRoute = useCallback(
+    async (origin: Location, destination: Location) => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson`,
+        );
+        const data = await response.json();
+
+        if (data.routes && data.routes.length > 0) {
+          // Converter formato do GeoJSON para array de [lat, lng]
+          const points: [number, number][] =
+            data.routes[0].geometry.coordinates.map(
+              (coord: [number, number]) => [coord[1], coord[0]], // OSRM retorna [lng, lat], precisamos inverter para [lat, lng]
+            );
+          setRoutePoints(points);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar rota:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
 
   // Buscar os pontos da rota quando routeData mudar
   useEffect(() => {
     if (routeData) {
       fetchRoute(routeData.origin, routeData.destination);
     }
-  }, [routeData]);
-
-  // Função para buscar a rota da API OSRM
-  const fetchRoute = async (origin: any, destination: any) => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(
-        `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson`
-      );
-      const data = await response.json();
-      
-      if (data.routes && data.routes.length > 0) {
-        // Converter formato do GeoJSON para array de [lat, lng]
-        const points: [number, number][] = data.routes[0].geometry.coordinates.map(
-          (coord: [number, number]) => [coord[1], coord[0]] // OSRM retorna [lng, lat], precisamos inverter para [lat, lng]
-        );
-        setRoutePoints(points);
-      }
-    } catch (error) {
-      console.error("Erro ao buscar rota:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [routeData, fetchRoute]);
 
   // Determinar o centro do mapa e o zoom
-  const center: [number, number] = routeData 
+  const center: [number, number] = routeData
     ? [
-        (routeData.origin.lat + routeData.destination.lat) / 2, 
-        (routeData.origin.lng + routeData.destination.lng) / 2
+        (routeData.origin.lat + routeData.destination.lat) / 2,
+        (routeData.origin.lng + routeData.destination.lng) / 2,
       ]
     : [0, 0];
-  
+
   const zoom = routeData ? 12 : 2;
 
   return (
@@ -70,32 +80,34 @@ const MapComponent = ({ routeData }: { routeData: RouteData | null }) => {
             </div>
           </div>
         ) : routeData ? (
-          <MapContainer 
-            center={center} 
-            zoom={zoom} 
-            style={{ height: '100%', width: '100%' }}
+          <MapContainer
+            center={center}
+            zoom={zoom}
+            style={{ height: "100%", width: "100%" }}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            
+
             {/* Origem */}
             <Marker position={[routeData.origin.lat, routeData.origin.lng]}>
               <Popup>Origem: {routeData.origin.address}</Popup>
             </Marker>
-            
+
             {/* Destino */}
-            <Marker position={[routeData.destination.lat, routeData.destination.lng]}>
+            <Marker
+              position={[routeData.destination.lat, routeData.destination.lng]}
+            >
               <Popup>Destino: {routeData.destination.address}</Popup>
             </Marker>
-            
+
             {/* Linha da rota obtida da API */}
             {routePoints.length > 0 && (
-              <Polyline 
-                positions={routePoints} 
-                color="#2563eb" 
-                weight={4} 
+              <Polyline
+                positions={routePoints}
+                color="#2563eb"
+                weight={4}
                 opacity={0.7}
               />
             )}
@@ -119,7 +131,9 @@ const MapComponent = ({ routeData }: { routeData: RouteData | null }) => {
           </div>
           <div className="bg-gray-50 p-3 rounded-lg">
             <h4 className="font-medium text-gray-800 mb-1">Destino</h4>
-            <p className="text-sm text-gray-600">{routeData.destination.address}</p>
+            <p className="text-sm text-gray-600">
+              {routeData.destination.address}
+            </p>
           </div>
         </div>
       )}

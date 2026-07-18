@@ -150,10 +150,13 @@ public class BilletQuery {
   }
 
   private String getClientDocument(long clientId) {
+    // CNPJ passa a aceitar letras (A-Z) a partir de ago/2026 — remove só a máscara,
+    // preservando eventuais letras. CPF continua só numérico.
     return billetInfoCombinedAndClient
         .findClientById(clientId)
         .getDocument()
-        .replaceAll("[^\\d]", "");
+        .replaceAll("[^0-9A-Za-z]", "")
+        .toUpperCase();
   }
 
   private BilletResponse mapJsonToBilletResponse(JsonNode boletoNode) {

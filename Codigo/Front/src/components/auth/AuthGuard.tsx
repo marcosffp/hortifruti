@@ -1,7 +1,7 @@
 "use client";
 
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
 import { authService } from "@/services/authService";
 
 const publicPages = ["/login"];

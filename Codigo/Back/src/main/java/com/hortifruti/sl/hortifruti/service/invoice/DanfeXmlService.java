@@ -102,12 +102,7 @@ public class DanfeXmlService {
         .contentType(mediaType)
         .header(
             HttpHeaders.CONTENT_DISPOSITION,
-            "attachment; filename=\""
-                + filePrefix
-                + "-"
-                + ref
-                + getFileExtension(mediaType)
-                + "\"")
+            "attachment; filename=\"" + filePrefix + "-" + ref + getFileExtension(mediaType) + "\"")
         .body(resource);
   }
 
@@ -188,7 +183,10 @@ public class DanfeXmlService {
       }
     } catch (Exception e) {
       System.err.println(
-          "[DanfeXmlService] Falha ao salvar DANFE no banco para ref=" + ref + ": " + e.getMessage());
+          "[DanfeXmlService] Falha ao salvar DANFE no banco para ref="
+              + ref
+              + ": "
+              + e.getMessage());
     }
     return result;
   }

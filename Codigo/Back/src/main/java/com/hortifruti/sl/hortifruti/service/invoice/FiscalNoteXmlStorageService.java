@@ -63,7 +63,6 @@ public class FiscalNoteXmlStorageService {
         JsonNode rootNode = objectMapper.readTree(response);
         String status = rootNode.path("status").asText();
 
-
         if (status.contains("autorizado")) {
           String xmlPath = rootNode.path("caminho_xml_nota_fiscal").asText();
           if (xmlPath == null || xmlPath.isBlank()) {
@@ -106,8 +105,16 @@ public class FiscalNoteXmlStorageService {
     }
   }
 
-  /** Called from downloadXml as a safety net — saves if not yet persisted. */
-  @Transactional
+  /**
+   * Called from downloadXml as a safety net — saves if not yet persisted.
+   *
+   * <p>Roda em transação própria (REQUIRES_NEW): pode colidir com o job assíncrono {@link
+   * #triggerSaveAfterIssuance} tentando persistir a mesma ref ao mesmo tempo (duplicate key), e uma
+   * falha aqui é só best-effort — não pode envenenar a transação de quem chamou (ex:
+   * downloadXml/downloadDanfe), senão o commit do chamador falha com UnexpectedRollbackException
+   * mesmo com a exceção sendo capturada abaixo.
+   */
+  @Transactional(Transactional.TxType.REQUIRES_NEW)
   public void saveIfAbsent(String ref, byte[] xmlBytes) {
     if (repository.existsByRef(ref)) return;
     try {
@@ -129,8 +136,10 @@ public class FiscalNoteXmlStorageService {
    * persisted. Unlike {@link #saveIfAbsent}, this only touches the {@code danfeObjectKey} field:
    * the row may already exist (XML saved earlier) or not (DANFE requested before XML was ever
    * persisted).
+   *
+   * <p>Roda em transação própria (REQUIRES_NEW) pelo mesmo motivo de {@link #saveIfAbsent}.
    */
-  @Transactional
+  @Transactional(Transactional.TxType.REQUIRES_NEW)
   public void saveDanfeIfAbsent(String ref, byte[] danfeBytes) {
     if (danfeBytes == null || danfeBytes.length == 0) return;
 
@@ -251,7 +260,8 @@ public class FiscalNoteXmlStorageService {
     return repository.findByRef(ref).map(FiscalNoteXmlStorage::getNfNumber).orElse(ref);
   }
 
-  private void persistIfAbsent(String ref, String xmlContent, byte[] danfeBytes, NfMetadata metadata) {
+  private void persistIfAbsent(
+      String ref, String xmlContent, byte[] danfeBytes, NfMetadata metadata) {
     if (repository.existsByRef(ref)) {
       return;
     }
@@ -355,7 +365,8 @@ public class FiscalNoteXmlStorageService {
           .timeout(java.time.Duration.ofSeconds(60))
           .block();
     } catch (Exception e) {
-      log.error("[FiscalNoteXmlStorage] Erro ao baixar arquivo ({}): {}", mediaType, e.getMessage());
+      log.error(
+          "[FiscalNoteXmlStorage] Erro ao baixar arquivo ({}): {}", mediaType, e.getMessage());
       return null;
     }
   }

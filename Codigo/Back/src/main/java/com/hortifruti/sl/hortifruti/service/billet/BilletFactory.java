@@ -132,7 +132,9 @@ public class BilletFactory {
           rua + ", " + numero + (complemento.isEmpty() ? "" : ", " + complemento);
 
       return new Pagador(
-          client.getDocument().replaceAll("[^0-9]", ""),
+          // CNPJ passa a aceitar letras (A-Z) a partir de ago/2026 — remove só a máscara,
+          // preservando eventuais letras. CPF continua só numérico.
+          client.getDocument().replaceAll("[^0-9A-Za-z]", "").toUpperCase(),
           client.getClientName(),
           enderecoCompleto,
           bairro,

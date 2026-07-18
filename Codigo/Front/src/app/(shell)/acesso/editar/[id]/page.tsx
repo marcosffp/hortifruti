@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
 import { ArrowLeft, Save } from "lucide-react";
-import Button from "@/components/ui/Button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { use, useEffect, useState } from "react";
+import Button from "@/components/ui/Button";
 import { backupService } from "@/services/acessoService";
 import { showError, showSuccess } from "@/services/notificationService";
 
@@ -42,7 +42,7 @@ const EditarUsuarioPage = ({ params }: EditarUsuarioPageProps) => {
           perfil: userData.perfil || "Funcionário",
           password: "",
         });
-      } catch (error) {
+      } catch (_error) {
         setError("Erro ao carregar dados do usuário.");
       } finally {
         setIsLoading(false);
@@ -52,7 +52,7 @@ const EditarUsuarioPage = ({ params }: EditarUsuarioPageProps) => {
   }, [userId]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -75,7 +75,7 @@ const EditarUsuarioPage = ({ params }: EditarUsuarioPageProps) => {
       showSuccess("Usuário atualizado com sucesso!");
       localStorage.setItem("shouldReloadUsers", "true");
       router.push("/acesso");
-    } catch (error) {
+    } catch (_error) {
       showError("Erro ao atualizar usuário");
     } finally {
       setIsSubmitting(false);

@@ -75,8 +75,8 @@ public class StatementService {
   }
 
   /**
-   * Lê o conteúdo do arquivo do extrato, do R2 (registros novos) ou da coluna legada
-   * (registros salvos antes da migração para R2).
+   * Lê o conteúdo do arquivo do extrato, do R2 (registros novos) ou da coluna legada (registros
+   * salvos antes da migração para R2).
    */
   public byte[] getFileContent(Statement statement) {
     if (statement.getObjectKey() != null) {

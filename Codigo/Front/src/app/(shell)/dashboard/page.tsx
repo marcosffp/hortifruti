@@ -1,11 +1,19 @@
 "use client";
 
-import RoleGuard from "@/components/auth/RoleGuard";
-import CashFlow from "@/components/modules/CashFlow";
-import { Lock, Loader2, AlertCircle, CalendarDays, CalendarRange, X } from "lucide-react";
-import Card from "@/components/ui/Card";
-import Alerts from "@/components/ui/Alerts";
+import {
+  AlertCircle,
+  CalendarDays,
+  CalendarRange,
+  Loader2,
+  Lock,
+  X,
+} from "lucide-react";
 import { useState } from "react";
+import RoleGuard from "@/components/auth/RoleGuard";
+import BankBalanceCard from "@/components/modules/BankBalanceCard";
+import CashFlow from "@/components/modules/CashFlow";
+import Alerts from "@/components/ui/Alerts";
+import Card from "@/components/ui/Card";
 import { useReport } from "@/hooks/useReport";
 
 export default function Dashboard() {
@@ -15,13 +23,13 @@ export default function Dashboard() {
   const [startDate, setStartDate] = useState(() => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    return firstDay.toISOString().split('T')[0];
+    return firstDay.toISOString().split("T")[0];
   });
-  
+
   const [endDate, setEndDate] = useState(() => {
     const now = new Date();
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return lastDay.toISOString().split('T')[0];
+    return lastDay.toISOString().split("T")[0];
   });
 
   const handleGenerateReport = (type: "MONTH" | "RANGE") => {
@@ -33,11 +41,11 @@ export default function Dashboard() {
       const now = new Date();
       const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
-      const start = firstDay.toISOString().split('T')[0];
-      const end = lastDay.toISOString().split('T')[0];
+      const start = firstDay.toISOString().split("T")[0];
+      const end = lastDay.toISOString().split("T")[0];
       generateReport(start, end);
     }
-  }
+  };
 
   return (
     <main className="flex-1 p-6 bg-gray-50 overflow-auto">
@@ -47,6 +55,12 @@ export default function Dashboard() {
           Visão geral dos dados financeiros e operacionais
         </p>
       </div>
+
+      <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
+        <div className="mb-6">
+          <BankBalanceCard />
+        </div>
+      </RoleGuard>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <Card title="Bem-vindo ao Hortifruti SL">
@@ -60,11 +74,13 @@ export default function Dashboard() {
           <Card title="Relatórios Financeiros">
             <div className="space-y-3">
               <p className="text-gray-600">
-                Baixe seu relatório fiscal em PDF por mês anterior ou por um período específico.
-                Para o período específico, defina e aplique as datas na seção <strong>Filtros</strong>, logo abaixo.
+                Baixe seu relatório fiscal em PDF por mês anterior ou por um
+                período específico. Para o período específico, defina e aplique
+                as datas na seção <strong>Filtros</strong>, logo abaixo.
               </p>
 
               <button
+                type="button"
                 className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-[var(--primary)] text-white rounded hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => setShowModalReport(true)}
                 disabled={isGenerating}
@@ -88,7 +104,8 @@ export default function Dashboard() {
 
               {isGenerating && (
                 <p className="text-xs text-gray-500">
-                  Seu relatório está sendo preparado. Isso pode levar alguns segundos.
+                  Seu relatório está sendo preparado. Isso pode levar alguns
+                  segundos.
                 </p>
               )}
             </div>
@@ -116,7 +133,8 @@ export default function Dashboard() {
                 Acesso Restrito
               </h3>
               <p className="text-gray-500 mb-4">
-                Os relatórios financeiros são acessíveis apenas para usuários com perfil de Gerente.
+                Os relatórios financeiros são acessíveis apenas para usuários
+                com perfil de Gerente.
               </p>
               <p className="text-sm text-gray-400">
                 Entre em contato com um administrador para solicitar acesso.
@@ -131,19 +149,25 @@ export default function Dashboard() {
 
       {showModalReport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          <button
+            type="button"
+            aria-label="Fechar modal"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm cursor-default"
             onClick={() => !isGenerating && setShowModalReport(false)}
           />
           <div className="relative z-10 w-full max-w-lg mx-4 bg-white rounded-2xl shadow-2xl border border-gray-100">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div>
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Selecionar Tipo de Relatório</h2>
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
+                  Selecionar Tipo de Relatório
+                </h2>
                 <p className="text-sm text-gray-500 mt-0.5">
-                  Escolha entre o relatório do mês anterior ou um intervalo personalizado.
+                  Escolha entre o relatório do mês anterior ou um intervalo
+                  personalizado.
                 </p>
               </div>
               <button
+                type="button"
                 className="p-2 rounded-md hover:bg-gray-100 text-gray-500"
                 onClick={() => setShowModalReport(false)}
                 disabled={isGenerating}
@@ -156,6 +180,7 @@ export default function Dashboard() {
             <div className="px-5 py-5 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
+                  type="button"
                   className="group rounded-xl border border-gray-200 hover:border-green-300 bg-white hover:bg-green-50 p-4 text-left transition-all disabled:opacity-60"
                   onClick={() => handleGenerateReport("MONTH")}
                   disabled={isGenerating}
@@ -165,7 +190,9 @@ export default function Dashboard() {
                       <CalendarDays className="w-5 h-5" />
                     </span>
                     <div>
-                      <p className="font-medium text-gray-800">Relatório Mensal</p>
+                      <p className="font-medium text-gray-800">
+                        Relatório Mensal
+                      </p>
                       <p className="text-xs text-gray-500">
                         Gera o .zip do mês anterior completo.
                       </p>
@@ -174,6 +201,7 @@ export default function Dashboard() {
                 </button>
 
                 <button
+                  type="button"
                   className="group rounded-xl border border-gray-200 hover:border-green-300 bg-white hover:bg-green-50 p-4 text-left transition-all disabled:opacity-60"
                   onClick={() => handleGenerateReport("RANGE")}
                   disabled={isGenerating}
@@ -183,9 +211,12 @@ export default function Dashboard() {
                       <CalendarRange className="w-5 h-5" />
                     </span>
                     <div>
-                      <p className="font-medium text-gray-800">Relatório por Período</p>
+                      <p className="font-medium text-gray-800">
+                        Relatório por Período
+                      </p>
                       <p className="text-xs text-gray-500">
-                        Usa o período aplicado na seção "Filtros" do dashboard (Data Inicial/Data Final).
+                        Usa o período aplicado na seção "Filtros" do dashboard
+                        (Data Inicial/Data Final).
                       </p>
                     </div>
                   </div>
@@ -202,6 +233,7 @@ export default function Dashboard() {
 
             <div className="px-5 py-4 border-t border-gray-100 flex justify-end">
               <button
+                type="button"
                 className="px-4 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-60"
                 onClick={() => setShowModalReport(false)}
                 disabled={isGenerating}

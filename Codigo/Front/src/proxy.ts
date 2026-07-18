@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
 // Só entra no connect-src se for uma URL absoluta — um caminho relativo (ex.:
@@ -35,7 +35,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|icon.png).*)",
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|icon.png).*)"],
 };

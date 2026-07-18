@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import { authService } from "@/services/authService";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import Loading from "@/components/ui/Loading";
+import { authService } from "@/services/authService";
 
 export default function App() {
   const router = useRouter();

@@ -1,9 +1,9 @@
 "use client";
 
-import { Geolocation } from "@/types/addressType";
-import { FreightConfigDTO } from "@/types/freightType";
-import { getAuthHeaders } from "@/utils/httpUtils";
 import { API_BASE_URL } from "@/config/api";
+import type { Geolocation } from "@/types/addressType";
+import type { FreightConfigDTO } from "@/types/freightType";
+import { getAuthHeaders } from "@/utils/httpUtils";
 
 export interface FreightRequest {
   origin: Geolocation;
@@ -49,7 +49,9 @@ export const freightService = {
       });
 
       if (!response.ok) {
-        throw new Error(`Erro ao buscar configurações de frete: ${response.status}`);
+        throw new Error(
+          `Erro ao buscar configurações de frete: ${response.status}`,
+        );
       }
 
       return response.json();
@@ -59,17 +61,21 @@ export const freightService = {
     }
   },
 
-  async updateFreightConfig(config: Partial<FreightConfigDTO>): Promise<FreightConfigDTO> {
+  async updateFreightConfig(
+    config: Partial<FreightConfigDTO>,
+  ): Promise<FreightConfigDTO> {
     try {
       const response = await fetch(`${API_BASE_URL}/distance/freight-config`, {
         method: "PATCH",
         headers: getAuthHeaders(),
         body: JSON.stringify(config),
-        credentials: 'include',
+        credentials: "include",
       });
 
       if (!response.ok) {
-        throw new Error(`Erro ao atualizar configurações de frete: ${response.status}`);
+        throw new Error(
+          `Erro ao atualizar configurações de frete: ${response.status}`,
+        );
       }
 
       return await response.json();
@@ -77,5 +83,5 @@ export const freightService = {
       console.error("Falha ao atualizar configurações de frete:", error);
       throw error;
     }
-  }
+  },
 };

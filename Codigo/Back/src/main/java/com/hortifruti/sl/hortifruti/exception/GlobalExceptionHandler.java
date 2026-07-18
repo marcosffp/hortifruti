@@ -160,6 +160,14 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
+  @ExceptionHandler(BBApiException.class)
+  public ResponseEntity<Map<String, String>> handleBBApiException(BBApiException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro na Integração com o Banco do Brasil");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(response);
+  }
+
   @ExceptionHandler(PurchaseException.class)
   public ResponseEntity<Map<String, String>> handlePurchaseException(PurchaseException ex) {
     Map<String, String> response = new HashMap<>();

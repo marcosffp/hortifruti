@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { API_BASE_URL } from '@/config/api';
+import { API_BASE_URL } from "@/config/api";
 
 interface UserRequest {
   username: string;
@@ -17,7 +17,7 @@ interface UserResponse {
 }
 
 const getAuthHeaders = (): HeadersInit => ({
-  'Content-Type': 'application/json',
+  "Content-Type": "application/json",
 });
 
 class UserService {
@@ -26,9 +26,9 @@ class UserService {
   async createUser(userData: UserRequest): Promise<UserResponse> {
     try {
       const response = await fetch(`${this.baseURL}/users/register`, {
-        method: 'POST',
+        method: "POST",
         headers: getAuthHeaders(),
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify(userData),
       });
 
@@ -38,7 +38,7 @@ class UserService {
 
       return await response.json();
     } catch (error) {
-      console.error('Falha ao criar usuário:', error);
+      console.error("Falha ao criar usuário:", error);
       throw error;
     }
   }
@@ -46,10 +46,10 @@ class UserService {
   async getAllUsers(): Promise<UserResponse[]> {
     try {
       const response = await fetch(`${this.baseURL}/users/all`, {
-        method: 'GET',
+        method: "GET",
         headers: getAuthHeaders(),
-        credentials: 'include',
-        cache: 'no-store',
+        credentials: "include",
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -58,7 +58,7 @@ class UserService {
 
       return await response.json();
     } catch (error) {
-      console.error('Falha ao obter usuários:', error);
+      console.error("Falha ao obter usuários:", error);
       throw error;
     }
   }
@@ -67,7 +67,7 @@ class UserService {
   async getUserByUsername(username: string): Promise<UserResponse | null> {
     try {
       const users = await this.getAllUsers();
-      return users.find(user => user.username === username) || null;
+      return users.find((user) => user.username === username) || null;
     } catch (error) {
       console.error(`Falha ao obter usuário ${username}:`, error);
       throw error;
@@ -77,9 +77,9 @@ class UserService {
   async updateUser(userData: UserRequest): Promise<UserResponse> {
     try {
       const response = await fetch(`${this.baseURL}/users/update`, {
-        method: 'PUT',
+        method: "PUT",
         headers: getAuthHeaders(),
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify(userData),
       });
 
@@ -94,12 +94,15 @@ class UserService {
     }
   }
 
-  async updateUserById(id: number, userData: UserRequest): Promise<UserResponse> {
+  async updateUserById(
+    id: number,
+    userData: UserRequest,
+  ): Promise<UserResponse> {
     try {
       const response = await fetch(`${this.baseURL}/users/update/${id}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: getAuthHeaders(),
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify(userData),
       });
 
@@ -116,11 +119,14 @@ class UserService {
 
   async deleteUser(username: string): Promise<void> {
     try {
-      const response = await fetch(`${this.baseURL}/users/delete/${encodeURIComponent(username)}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `${this.baseURL}/users/delete/${encodeURIComponent(username)}`,
+        {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+          credentials: "include",
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`Erro ao excluir usuário: ${response.status}`);

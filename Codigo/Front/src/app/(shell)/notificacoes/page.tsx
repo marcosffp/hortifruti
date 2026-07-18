@@ -1,23 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
+  Building2,
+  CheckCircle2,
+  FileText,
   Mail,
   MessageCircle,
-  Upload,
   Send,
+  Upload,
   Users,
-  Building2,
   X,
-  FileText,
-  Calendar,
-  CheckCircle2,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import {
+  type BulkNotificationRequest,
+  bulkNotificationService,
+} from "@/services/bulkNotificationService";
 import { clientService } from "@/services/clientService";
 import { showError, showSuccess } from "@/services/notificationService";
-import { bulkNotificationService, BulkNotificationRequest } from "@/services/bulkNotificationService";
 
 interface Cliente {
   id: number;
@@ -27,7 +29,6 @@ interface Cliente {
   selecionado: boolean;
 }
 
-type CanalEnvio = "email" | "whatsapp";
 type TipoDestinatario = "clientes" | "contabilidade";
 
 export default function NotificacoesPage() {
@@ -40,9 +41,10 @@ export default function NotificacoesPage() {
     email: boolean;
     whatsapp: boolean;
   }>({ email: false, whatsapp: false });
-  const [tipoDestinatario, setTipoDestinatario] = useState<TipoDestinatario>("clientes");
-  const [dataVencimento, setDataVencimento] = useState("");
-  const [valorBoleto, setValorBoleto] = useState("");
+  const [tipoDestinatario, setTipoDestinatario] =
+    useState<TipoDestinatario>("clientes");
+  const [_dataVencimento, setDataVencimento] = useState("");
+  const [_valorBoleto, setValorBoleto] = useState("");
   const [enviando, setEnviando] = useState(false);
 
   const [cardValue, setCardValue] = useState("");
@@ -104,17 +106,18 @@ export default function NotificacoesPage() {
     fetchClientes();
   }, []);
 
-  const filteredClientes = clientes.filter((cliente) =>
-    cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cliente.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cliente.telefone.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredClientes = clientes.filter(
+    (cliente) =>
+      cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cliente.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cliente.telefone.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const toggleCliente = (id: number) => {
     setClientes(
       clientes.map((c) =>
-        c.id === id ? { ...c, selecionado: !c.selecionado } : c
-      )
+        c.id === id ? { ...c, selecionado: !c.selecionado } : c,
+      ),
     );
   };
 
@@ -126,7 +129,7 @@ export default function NotificacoesPage() {
         selecionado: filteredClientes.some((fc) => fc.id === c.id)
           ? !todosAtivos
           : c.selecionado,
-      }))
+      })),
     );
   };
 
@@ -135,22 +138,24 @@ export default function NotificacoesPage() {
       const newFiles = Array.from(e.target.files);
       const maxSize = 10 * 1024 * 1024;
 
-      const arquivosInvalidos = newFiles.filter(file => file.size > maxSize);
+      const arquivosInvalidos = newFiles.filter((file) => file.size > maxSize);
       if (arquivosInvalidos.length > 0) {
-        showError(`${arquivosInvalidos.length} arquivo(s) excede(m) o tamanho máximo de 10MB`);
+        showError(
+          `${arquivosInvalidos.length} arquivo(s) excede(m) o tamanho máximo de 10MB`,
+        );
         return;
       }
 
-      setArquivos(prev => [...prev, ...newFiles]);
+      setArquivos((prev) => [...prev, ...newFiles]);
       showSuccess(`${newFiles.length} arquivo(s) adicionado(s) com sucesso`);
-      
+
       // Limpar o input para permitir adicionar o mesmo arquivo novamente
-      e.target.value = '';
+      e.target.value = "";
     }
   };
 
   const removerArquivo = (index: number) => {
-    setArquivos(prev => prev.filter((_, i) => i !== index));
+    setArquivos((prev) => prev.filter((_, i) => i !== index));
     showSuccess("Arquivo removido");
   };
 
@@ -184,7 +189,7 @@ export default function NotificacoesPage() {
         .map((c) => c.nome);
       if (clientesSemEmail.length > 0) {
         showError(
-          `Os seguintes clientes não possuem e-mail cadastrado: ${clientesSemEmail.join(", ")}`
+          `Os seguintes clientes não possuem e-mail cadastrado: ${clientesSemEmail.join(", ")}`,
         );
         return false;
       }
@@ -196,7 +201,7 @@ export default function NotificacoesPage() {
         .map((c) => c.nome);
       if (clientesSemTelefone.length > 0) {
         showError(
-          `Os seguintes clientes não possuem telefone cadastrado: ${clientesSemTelefone.join(", ")}`
+          `Os seguintes clientes não possuem telefone cadastrado: ${clientesSemTelefone.join(", ")}`,
         );
         return false;
       }
@@ -220,9 +225,10 @@ export default function NotificacoesPage() {
       setEnviando(true);
 
       const clientesSelecionados = clientes.filter((c) => c.selecionado);
-      const clientIds = tipoDestinatario === "clientes"
-        ? clientesSelecionados.map((c) => c.id)
-        : [];
+      const clientIds =
+        tipoDestinatario === "clientes"
+          ? clientesSelecionados.map((c) => c.id)
+          : [];
 
       const channels: string[] = [];
       if (canaisEnvio.email) channels.push("email");
@@ -241,7 +247,8 @@ export default function NotificacoesPage() {
         if (cashValue) requestData.cashValue = cashValue;
       }
 
-      const response = await bulkNotificationService.sendBulkNotifications(requestData);
+      const response =
+        await bulkNotificationService.sendBulkNotifications(requestData);
 
       if (response.success) {
         showSuccess(response.message);
@@ -255,7 +262,6 @@ export default function NotificacoesPage() {
 
         setCardValue("");
         setCashValue("");
-
       } else {
         showError(response.message);
 
@@ -264,9 +270,9 @@ export default function NotificacoesPage() {
           showError(`Falha ao enviar para: ${failedList}`);
         }
       }
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro desconhecido";
       showError(`Erro ao enviar notificação: ${errorMessage}`);
       console.error("Erro ao enviar:", error);
     } finally {
@@ -275,7 +281,8 @@ export default function NotificacoesPage() {
   };
 
   const clientesSelecionados = clientes.filter((c) => c.selecionado).length;
-  const todosAtivos = filteredClientes.length > 0 && filteredClientes.every((c) => c.selecionado);
+  const todosAtivos =
+    filteredClientes.length > 0 && filteredClientes.every((c) => c.selecionado);
 
   return (
     <div className="p-4 md:p-6 space-y-6 bg-[var(--neutral-50)] min-h-full">
@@ -331,7 +338,12 @@ export default function NotificacoesPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => setCanaisEnvio((prev) => ({ ...prev, email: !prev.email }))}
+                    onClick={() =>
+                      setCanaisEnvio((prev) => ({
+                        ...prev,
+                        email: !prev.email,
+                      }))
+                    }
                     className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
                       canaisEnvio.email
                         ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
@@ -340,12 +352,19 @@ export default function NotificacoesPage() {
                   >
                     <Mail className="w-5 h-5" />
                     <span className="font-medium">E-mail</span>
-                    {canaisEnvio.email && <CheckCircle2 className="w-4 h-4 ml-auto" />}
+                    {canaisEnvio.email && (
+                      <CheckCircle2 className="w-4 h-4 ml-auto" />
+                    )}
                   </button>
                   {tipoDestinatario !== "contabilidade" && (
                     <button
                       type="button"
-                      onClick={() => setCanaisEnvio((prev) => ({ ...prev, whatsapp: !prev.whatsapp }))}
+                      onClick={() =>
+                        setCanaisEnvio((prev) => ({
+                          ...prev,
+                          whatsapp: !prev.whatsapp,
+                        }))
+                      }
                       className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
                         canaisEnvio.whatsapp
                           ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
@@ -354,7 +373,9 @@ export default function NotificacoesPage() {
                     >
                       <MessageCircle className="w-5 h-5" />
                       <span className="font-medium">WhatsApp</span>
-                      {canaisEnvio.whatsapp && <CheckCircle2 className="w-4 h-4 ml-auto" />}
+                      {canaisEnvio.whatsapp && (
+                        <CheckCircle2 className="w-4 h-4 ml-auto" />
+                      )}
                     </button>
                   )}
                 </div>
@@ -376,7 +397,10 @@ export default function NotificacoesPage() {
                   <div className="flex flex-col items-center justify-center">
                     <Upload className="w-6 h-6 text-[var(--neutral-500)] mb-1" />
                     <p className="text-sm text-[var(--neutral-600)]">
-                      <span className="font-semibold">Clique para adicionar</span> ou arraste arquivos
+                      <span className="font-semibold">
+                        Clique para adicionar
+                      </span>{" "}
+                      ou arraste arquivos
                     </p>
                   </div>
                   <input
@@ -392,7 +416,7 @@ export default function NotificacoesPage() {
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {arquivos.map((arquivo, index) => (
                       <div
-                        key={`${arquivo.name}-${index}`}
+                        key={`${arquivo.name}-${arquivo.size}-${arquivo.lastModified}`}
                         className="flex items-center justify-between p-3 bg-[var(--primary-bg)] border border-[var(--primary)] rounded-lg"
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -430,7 +454,10 @@ export default function NotificacoesPage() {
               </div>
 
               <div>
-                <label htmlFor="mensagem" className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
+                <label
+                  htmlFor="mensagem"
+                  className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
+                >
                   Mensagem Personalizada (opcional)
                 </label>
                 <textarea
@@ -445,11 +472,16 @@ export default function NotificacoesPage() {
 
               {tipoDestinatario === "contabilidade" && (
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-[var(--neutral-900)]">Valores Financeiros</h3>
+                  <h3 className="text-lg font-semibold text-[var(--neutral-900)]">
+                    Valores Financeiros
+                  </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="cartao" className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
+                      <label
+                        htmlFor="cartao"
+                        className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
+                      >
                         Valor de Cartão (R$)
                       </label>
                       <input
@@ -465,7 +497,10 @@ export default function NotificacoesPage() {
                     </div>
 
                     <div>
-                      <label htmlFor="dinheiro" className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
+                      <label
+                        htmlFor="dinheiro"
+                        className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
+                      >
                         Valor em Dinheiro (R$)
                       </label>
                       <input
@@ -496,10 +531,12 @@ export default function NotificacoesPage() {
                   const canais = [];
                   if (canaisEnvio.email) canais.push("E-mail");
                   if (canaisEnvio.whatsapp) canais.push("WhatsApp");
-                  const canaisTexto = canais.length > 0 ? canais.join(" e ") : "Notificação";
-                  const contador = tipoDestinatario === "clientes" && clientesSelecionados > 0
-                    ? ` (${clientesSelecionados})`
-                    : "";
+                  const canaisTexto =
+                    canais.length > 0 ? canais.join(" e ") : "Notificação";
+                  const contador =
+                    tipoDestinatario === "clientes" && clientesSelecionados > 0
+                      ? ` (${clientesSelecionados})`
+                      : "";
                   return `Enviar ${canaisTexto}${contador}`;
                 })()}
               </Button>
@@ -568,8 +605,8 @@ export default function NotificacoesPage() {
                             {cliente.nome}
                           </p>
                           <div className="space-y-1">
-                            {canaisEnvio.email && (
-                              cliente.email ? (
+                            {canaisEnvio.email &&
+                              (cliente.email ? (
                                 <p className="text-sm text-[var(--neutral-600)] truncate flex items-center gap-1">
                                   <Mail className="w-3 h-3" />
                                   {cliente.email}
@@ -579,10 +616,9 @@ export default function NotificacoesPage() {
                                   <Mail className="w-3 h-3" />
                                   Sem e-mail cadastrado
                                 </p>
-                              )
-                            )}
-                            {canaisEnvio.whatsapp && (
-                              cliente.telefone ? (
+                              ))}
+                            {canaisEnvio.whatsapp &&
+                              (cliente.telefone ? (
                                 <p className="text-sm text-[var(--neutral-600)] truncate flex items-center gap-1">
                                   <MessageCircle className="w-3 h-3" />
                                   {cliente.telefone}
@@ -592,8 +628,7 @@ export default function NotificacoesPage() {
                                   <MessageCircle className="w-3 h-3" />
                                   Sem telefone cadastrado
                                 </p>
-                              )
-                            )}
+                              ))}
                           </div>
                         </div>
                         {cliente.selecionado && (
@@ -631,15 +666,14 @@ export default function NotificacoesPage() {
                   </div>
                 </div>
                 <p className="text-xs text-[var(--neutral-500)]">
-                  Os documentos serão enviados automaticamente para o escritório de
-                  contabilidade
+                  Os documentos serão enviados automaticamente para o escritório
+                  de contabilidade
                 </p>
               </div>
             </Card>
           )}
         </div>
       </div>
-
     </div>
   );
 }

@@ -1,8 +1,12 @@
 "use client";
 
-import { getAuthHeaders } from "@/utils/httpUtils";
-import { ClientResponse, ClientRequest, ClientSelectionInfo } from "@/types/clientType";
 import { API_BASE_URL } from "@/config/api";
+import type {
+  ClientRequest,
+  ClientResponse,
+  ClientSelectionInfo,
+} from "@/types/clientType";
+import { getAuthHeaders } from "@/utils/httpUtils";
 
 export const clientService = {
   async getAllClients(): Promise<ClientResponse[]> {
@@ -142,7 +146,9 @@ export const clientService = {
       });
 
       if (!response.ok) {
-        throw new Error(`Erro ao buscar clientes para seleção: ${response.status}`);
+        throw new Error(
+          `Erro ao buscar clientes para seleção: ${response.status}`,
+        );
       }
 
       return await response.json();

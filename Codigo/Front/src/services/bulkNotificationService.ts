@@ -23,20 +23,18 @@ export interface BulkNotificationResponse {
 
 export const bulkNotificationService = {
   async sendBulkNotifications(
-    request: BulkNotificationRequest
+    request: BulkNotificationRequest,
   ): Promise<BulkNotificationResponse> {
     try {
       const headers: HeadersInit = {};
 
       if (request.destinationType === "contabilidade") {
         return await this.sendToAccounting(request, headers);
-      }
-      else if (request.destinationType === "clientes") {
+      } else if (request.destinationType === "clientes") {
         return await this.sendToClients(request, headers);
       }
-      
+
       throw new Error("Tipo de destinatário inválido");
-      
     } catch (error) {
       console.error("Falha ao enviar notificações:", error);
       throw error;
@@ -48,7 +46,7 @@ export const bulkNotificationService = {
    */
   async sendToAccounting(
     request: BulkNotificationRequest,
-    headers: HeadersInit
+    headers: HeadersInit,
   ): Promise<BulkNotificationResponse> {
     const formData = new FormData();
 
@@ -75,13 +73,13 @@ export const bulkNotificationService = {
         headers,
         credentials: "include",
         body: formData,
-      }
+      },
     );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(
-        errorData?.message || `Erro ao enviar notificações: ${response.status}`
+        errorData?.message || `Erro ao enviar notificações: ${response.status}`,
       );
     }
 
@@ -100,7 +98,7 @@ export const bulkNotificationService = {
    */
   async sendToClients(
     request: BulkNotificationRequest,
-    headers: HeadersInit
+    headers: HeadersInit,
   ): Promise<BulkNotificationResponse> {
     const results = {
       totalSent: 0,
@@ -109,7 +107,10 @@ export const bulkNotificationService = {
     };
 
     let channel = "EMAIL";
-    if (request.channels.includes("email") && request.channels.includes("whatsapp")) {
+    if (
+      request.channels.includes("email") &&
+      request.channels.includes("whatsapp")
+    ) {
       channel = "BOTH";
     } else if (request.channels.includes("whatsapp")) {
       channel = "WHATSAPP";
@@ -137,7 +138,7 @@ export const bulkNotificationService = {
             headers,
             credentials: "include",
             body: formData,
-          }
+          },
         );
 
         if (!response.ok) {
@@ -177,14 +178,11 @@ export const bulkNotificationService = {
         "Content-Type": "application/json",
       };
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/notifications/test`,
-        {
-          method: "GET",
-          headers,
-          credentials: "include",
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/api/notifications/test`, {
+        method: "GET",
+        headers,
+        credentials: "include",
+      });
 
       return response.ok;
     } catch (error) {

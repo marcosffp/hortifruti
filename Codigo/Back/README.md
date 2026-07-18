@@ -16,7 +16,9 @@
 ![JWT](https://img.shields.io/badge/JWT-Auth0-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
 ![Swagger](https://img.shields.io/badge/Swagger-OpenAPI_3-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)
 ![Sicoob](https://img.shields.io/badge/Sicoob-Boletos-00A651?style=for-the-badge)
+![Banco do Brasil](https://img.shields.io/badge/Banco_do_Brasil-Extratos-FDC300?style=for-the-badge)
 ![Focus NFe](https://img.shields.io/badge/Focus_NFe-NF--e-orange?style=for-the-badge)
+![Cloudflare R2](https://img.shields.io/badge/Cloudflare_R2-Storage-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
 ![Google Drive](https://img.shields.io/badge/Google_Drive-Backup-4285F4?style=for-the-badge&logo=googledrive&logoColor=white)
 ![SendGrid](https://img.shields.io/badge/SendGrid-E--mail-1A82E2?style=for-the-badge&logo=twilio&logoColor=white)
 ![OpenWeather](https://img.shields.io/badge/OpenWeather-Forecast-EB6E4B?style=for-the-badge&logo=openweathermap&logoColor=white)
@@ -42,7 +44,7 @@
 
 ## 📖 Sobre o projeto
 
-O backend do **Hortifruti SL** é uma API REST que sustenta toda a operação administrativa e financeira do Hortifruti Santa Luzia LTDA. Ele recebe extratos bancários e notas de compra em PDF/planilha, extrai e concilia as transações automaticamente, agrupa vendas por cliente em "scores combinados" e gera boletos (Sicoob) e notas fiscais eletrônicas (Focus NFe) a partir desses agrupamentos. Também é responsável pelo cálculo de frete (Google Maps), recomendações de compra baseadas em previsão do tempo (OpenWeather), envio de notificações por e-mail (SendGrid) e WhatsApp (Ultramsg), backup do banco de dados no Google Drive e por alimentar o dashboard consolidado consumido pelo frontend.
+O backend do **Hortifruti SL** é uma API REST que sustenta toda a operação administrativa e financeira do Hortifruti Santa Luzia LTDA. Ele recebe extratos bancários e notas de compra em PDF/planilha, extrai e concilia as transações automaticamente, agrupa vendas por cliente em "scores combinados" e gera boletos (Sicoob) e notas fiscais eletrônicas (Focus NFe) a partir desses agrupamentos — inclusive em um fluxo combinado que emite a NF-e e o boleto vinculado em uma única chamada, com rollback automático da NF-e se o boleto falhar. Também consulta o saldo e o extrato da conta corrente em tempo real via API do Banco do Brasil, calcula frete (Google Maps), gera recomendações de compra baseadas em previsão do tempo (OpenWeather), envia notificações por e-mail (SendGrid) e WhatsApp (Ultramsg), faz backup do banco de dados no Google Drive, armazena boletos/XMLs/extratos no Cloudflare R2 e alimenta o dashboard consolidado consumido pelo frontend.
 
 ---
 
@@ -72,13 +74,14 @@ A aplicação segue uma **arquitetura em camadas** (*layered architecture*), com
 | Padrão | Onde se aplica |
 |---|---|
 | DTO + Mapper (MapStruct) | Conversão entre entidades JPA e objetos de request/response |
-| Autenticação stateless via JWT | `JwtAuthenticationFilter` valida o token em toda requisição protegida |
+| Autenticação via JWT em cookie `httpOnly` | `AuthController` emite o token em um cookie `auth_token` (`httpOnly`, `secure`/`SameSite` por ambiente); `JwtAuthenticationFilter` valida o token (cookie ou header `Authorization`) em toda requisição protegida |
 | Controle de acesso por papel (`@PreAuthorize`) | Endpoints sensíveis restritos a `MANAGER` |
-| Rate limiting | Bucket4J protege endpoints públicos e de integração contra abuso |
+| Rate limiting | Bucket4J (`RateLimitingFilter`) protege endpoints por IP + rota; o IP real do cliente é resolvido via `X-Forwarded-For`, já que a app roda atrás dos proxies do Railway e do *rewrite* same-origin do Next.js |
 | Token de serviço dedicado | Endpoints do `scheduler` exigem `API_SCHEDULER_TOKEN`, isolados do fluxo de usuário |
 | Agendamento (`@Scheduled`) | Verificação automática de boletos vencidos e monitoramento de armazenamento do banco |
 | Processamento assíncrono (`@Async`) | Notificações em massa e operações de backup não bloqueiam a requisição |
-| mTLS (certificado `.pfx`) | Autenticação mútua com a API do Sicoob para emissão de boletos |
+| mTLS (certificado `.pfx`) | Autenticação mútua compartilhada entre Sicoob (boletos) e Banco do Brasil (extratos) |
+| Armazenamento de objetos (S3-compatible) | `R2StorageService` grava/lê/move boletos, XMLs de NF-e e extratos no Cloudflare R2 |
 
 ---
 
@@ -86,11 +89,12 @@ A aplicação segue uma **arquitetura em camadas** (*layered architecture*), com
 
 | Módulo (`service/…`) | Responsabilidade | Integração externa |
 |---|---|---|
-| `user` / `auth` | Cadastro, autenticação JWT e gestão de usuários (papéis: Gestor, Administrador) | — |
+| `user` / `auth` | Cadastro, autenticação via JWT em cookie `httpOnly` e gestão de usuários (papéis: Gestor, Administrador) | — |
 | `purchase` | Clientes, compras, agrupamento de vendas (`CombinedScore`) e produtos por nota | — |
-| `finance` | Importação de extratos bancários, transações, categorização e exportação (Excel/ZIP) | Apache PDFBox · Apache POI |
-| `billet` | Geração, consulta, 2ª via e cancelamento de boletos | Sicoob (mTLS) |
-| `invoice` | Emissão, consulta, cancelamento e armazenamento de notas fiscais eletrônicas (XML/DANFE) e relatórios fiscais (ICMS, vendas, pagamentos) | Focus NFe |
+| `finance` | Importação de extratos bancários (PDF), transações, categorização, exportação (Excel/ZIP) e consulta de saldo/extrato em tempo real (`BBSaldoService`, `TransactionBBService`) | Apache PDFBox · Apache POI · Banco do Brasil (mTLS) |
+| `billet` | Geração, consulta, listagem de boletos em aberto, baixa manual (`mark-paid`), 2ª via e cancelamento de boletos | Sicoob (mTLS) |
+| `invoice` | Emissão, consulta, cancelamento e armazenamento de notas fiscais eletrônicas (XML/DANFE), emissão combinada de NF-e + boleto (`IssueInvoiceWithBilletService`) e relatórios fiscais (ICMS, vendas, pagamentos) | Focus NFe |
+| `storage` | Geração de chaves de objeto e upload/download/move de arquivos (boletos, XMLs, extratos) | Cloudflare R2 (S3-compatible) |
 | `freight` | Cálculo de distância e frete entre endereços | Google Maps Distance Matrix |
 | `climate` | Previsão do tempo e recomendações de compra de produtos sazonais | OpenWeather |
 | `notification` | Envio de e-mails, mensagens de WhatsApp e notificações em massa para clientes e contabilidade | SendGrid · Ultramsg |
@@ -108,17 +112,17 @@ Back/
 │   └── main/
 │       ├── java/com/hortifruti/sl/hortifruti/
 │       │   ├── HortifrutiSlApplication.java
-│       │   ├── controller/          # 20 controllers REST (user, purchase, finance, climate, notification…)
+│       │   ├── controller/          # Controllers REST (user, purchase, finance, climate, notification…)
 │       │   │   ├── climate/ · finance/ · notification/ · purchase/ · user/
-│       │   ├── service/             # ~96 services de domínio e integração
+│       │   ├── service/             # Services de domínio e integração
 │       │   │   ├── backup/ · billet/ · chatbot/ · climate/ · finance/
-│       │   │   ├── freight/ · invoice/ · notification/ · purchase/ · scheduler/
+│       │   │   ├── freight/ · invoice/ · notification/ · purchase/ · scheduler/ · storage/
 │       │   ├── repository/          # Repositórios Spring Data JPA
 │       │   ├── model/               # Entidades JPA + enumerations (Role, Status, Bank…)
-│       │   ├── dto/                 # ~59 DTOs de request/response, organizados por domínio
+│       │   ├── dto/                 # DTOs de request/response, organizados por domínio
 │       │   ├── mapper/              # Mappers MapStruct (entidade ⇄ DTO)
 │       │   ├── config/              # Segurança JWT, rate limiting, clientes HTTP, Swagger
-│       │   │   ├── auth/ · billet/ · climate/ · email/
+│       │   │   ├── auth/ · bb/ · billet/ · climate/ · email/ · storage/
 │       │   ├── exception/           # Exceções de domínio + tratamento global
 │       │   └── util/                # Utilitários (Base64, datas, arquivos)
 │       └── resources/
@@ -140,7 +144,9 @@ Documentação interativa disponível em `http://localhost:8080/swagger-ui.html`
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `POST` | `/auth` | Login e emissão do token JWT |
+| `POST` | `/auth` | Login — emite o JWT em cookie `httpOnly` (`auth_token`) |
+| `GET` | `/auth/me` | Retorna o usuário autenticado (lido do cookie/sessão) |
+| `POST` | `/auth/logout` | Revoga o token e limpa o cookie de sessão |
 | `POST` | `/users/register` | Cadastrar novo usuário |
 | `GET` | `/users/all` | Listar usuários |
 | `PUT` | `/users/update` · `/users/update/{id}` | Atualizar usuário (próprio ou por ID) |
@@ -176,9 +182,12 @@ Documentação interativa disponível em `http://localhost:8080/swagger-ui.html`
 | Método | Rota | Descrição |
 |---|---|---|
 | `GET` | `/billet/generate/{combinedScoreId}` | Gerar boleto em PDF (com vencimento opcional) |
-| `GET` | `/billet/client/{clientId}` | Listar boletos de um cliente (pagador) |
+| `GET` | `/billet/client/{clientId}` | Listar boletos de um cliente (pagador), com filtros opcionais |
+| `GET` | `/billet/open` | Listar todos os boletos em aberto de todos os clientes |
 | `GET` | `/billet/issue-copy/{idCombinedScore}` | Emitir 2ª via |
-| `POST` | `/billet/cancel/{idCombinedScore}` | Cancelar boleto |
+| `GET` | `/billet/{combinedScoreId}/file` | Baixar o PDF armazenado no R2 (sem emitir nova via no Sicoob) |
+| `POST` | `/billet/cancel/{idCombinedScore}` | Cancelar (baixar) boleto |
+| `PATCH` | `/billet/mark-paid/{combinedScoreId}` | Marcar boleto como pago manualmente (pagamento recebido fora do Sicoob) |
 | `GET` | `/billet/{combinedScoreId}` | Consultar boleto pelo agrupamento |
 
 ### Notas fiscais — Focus NFe (`/invoices`)
@@ -186,18 +195,20 @@ Documentação interativa disponível em `http://localhost:8080/swagger-ui.html`
 | Método | Rota | Descrição |
 |---|---|---|
 | `POST` | `/invoices/issue/{combinedScoreId}` | Emitir NF-e |
+| `POST` | `/invoices/issue-with-billet/{combinedScoreId}` | Emitir NF-e e o boleto vinculado em um único fluxo (com rollback automático da NF-e em caso de falha) |
 | `GET` | `/invoices/consulta/{ref}` | Consultar status da nota |
 | `GET` | `/invoices/{ref}/danfe` · `/invoices/{ref}/xml/download` | Baixar DANFE e XML |
 | `DELETE` | `/invoices/{ref}/cancel` | Cancelar nota (com justificativa) |
 | `GET` | `/invoices/xml-storage` · `/invoices/xml-storage/{ref}/download` | Consultar e baixar XMLs armazenados por período |
 | `GET` | `/api/tax-reports/...` | Relatórios fiscais (ICMS, vendas, pagamentos, cadastro) |
 
-### Financeiro (`/statements`, `/transactions`)
+### Financeiro (`/statements`, `/transactions`, `/finance/bank-balance`)
 
 | Método | Rota | Descrição |
 |---|---|---|
 | `POST` | `/statements/import` | Importar extrato bancário (PDF, multipart) |
 | `GET` | `/statements` | Listar extratos importados |
+| `GET` | `/finance/bank-balance` | Saldo disponível em conta corrente, via API do Banco do Brasil *(Gestor)* |
 | `GET` | `/transactions` | Transações filtradas e paginadas *(Gestor)* |
 | `GET` | `/transactions/revenue` · `/expenses` · `/balance` | Receita, despesas e saldo por período *(Gestor)* |
 | `GET` | `/transactions/categories` | Listar categorias de transação |
@@ -233,26 +244,48 @@ Documentação interativa disponível em `http://localhost:8080/swagger-ui.html`
 
 Crie um arquivo `.env` na raiz de `Codigo/Back/` com as variáveis abaixo. **Nunca versionar em produção.**
 
-```dotenv
-# ── URLs ───────────────────────────────────────
-FRONTEND_URL=http://localhost:3000
-BACKEND_URL=http://localhost:8080
+Cada variável tem uma versão por ambiente (`LOCAL_`, `HML_`, `PROD_`), selecionada em runtime
+pelo profile ativo (`SPRING_PROFILES_ACTIVE`). Veja `.env.example` para a lista completa —
+resumo do essencial:
 
-# ── MySQL ──────────────────────────────────────
-MYSQLHOST=localhost
-MYSQLPORT=3306
-MYSQLDATABASE=hortifruti_sl
-MYSQLUSER=seu_usuario
-MYSQLPASSWORD=sua_senha
+```dotenv
+# ── Ambiente ativo ─────────────────────────────
+SPRING_PROFILES_ACTIVE=local
+
+# ── URLs (uma por ambiente) ────────────────────
+LOCAL_FRONTEND_URL=http://localhost:3000
+LOCAL_BACKEND_URL=http://localhost:8080
+HML_FRONTEND_URL=
+HML_BACKEND_URL=
+PROD_FRONTEND_URL=
+PROD_BACKEND_URL=
+
+# ── MySQL (uma por ambiente) ────────────────────
+LOCAL_MYSQLHOST=localhost
+LOCAL_MYSQLPORT=3306
+LOCAL_MYSQLDATABASE=hortifruti_sl
+LOCAL_MYSQLUSER=root
+LOCAL_MYSQLPASSWORD=root
+HML_MYSQLHOST=
+HML_MYSQLPORT=
+HML_MYSQLDATABASE=
+HML_MYSQLUSER=
+HML_MYSQLPASSWORD=
+PROD_MYSQLHOST=
+PROD_MYSQLPORT=
+PROD_MYSQLDATABASE=
+PROD_MYSQLUSER=
+PROD_MYSQLPASSWORD=
 
 # ── Autenticação ───────────────────────────────
 JWT_SECRET=sua_chave_secreta_jwt_com_pelo_menos_32_caracteres
 API_SCHEDULER_TOKEN=token_seguro_para_endpoints_scheduler
 
 # ── Google ─────────────────────────────────────
+# Não há GOOGLE_REDIRECT_URI: a URI de callback é derivada de
+# LOCAL_BACKEND_URL/HML_BACKEND_URL/PROD_BACKEND_URL + /backup/oauth2callback (fixo).
 CREDENTIALS_GOOGLE=sua_api_key_google_maps
 GOOGLE_DRIVE_CREDENTIALS=suas_credenciais_google_drive_em_base64
-GOOGLE_REDIRECT_URI=http://localhost:8080/oauth2/callback
 
 # ── Sicoob (boletos) ───────────────────────────
 SICOOB_CLIENT_ID=seu_client_id_sicoob
@@ -261,18 +294,30 @@ SICOOB_AUTH_URL=https://auth.sicoob.com.br
 SICOOB_SCOPE=cobranca_boletos
 SICOOB_NUM_CLIENTE=numero_cliente_sicoob
 SICOOB_NUM_CONTA_CORRENTE=numero_conta_corrente
-SICOOB_DOMAIN=dominio_sicoob
+
+# ── Certificado .pfx (mTLS — compartilhado entre Sicoob e Banco do Brasil) ─
 DOCUMENT_PFX=certificado_digital_em_base64
 PASSWORD_PFX=senha_do_certificado_pfx
+
+# ── Banco do Brasil (consulta de saldo/extrato) ─
+BB_APP_KEY=app_key_bb
+BB_CLIENT_ID=client_id_bb
+BB_CLIENT_SECRET=client_secret_bb
+BB_REGISTRATION_ACCESS_TOKEN=registration_access_token_bb
+BB_BASIC=credencial_basic_auth_bb
+BB_AGENCIA=numero_agencia
+BB_CONTA=numero_conta
+BB_SCOPE=extrato-info
 
 # ── OpenWeather ────────────────────────────────
 API_TOKEN=sua_api_key_openweather
 API_URL=https://api.openweathermap.org/data/2.5/forecast
 
-# ── Focus NFe ──────────────────────────────────
-FOCUS_NFE_TOKEN=seu_token_focus_nfe
-FOCUS_NFE_API_URL=https://api.focusnfe.com.br
-FOCUS_NFE_ENVIRONMENT=homologacao
+# ── Focus NFe (uma por ambiente, exceto local que reaproveita a de HML) ─
+HML_FOCUS_NFE_TOKEN=seu_token_focus_nfe_homologacao
+HML_FOCUS_NFE_API_URL=https://homologacao.focusnfe.com.br
+PROD_FOCUS_NFE_TOKEN=seu_token_focus_nfe_producao
+PROD_FOCUS_NFE_API_URL=https://api.focusnfe.com.br
 FOCUS_NFE_CNPJ_EMITENTE=cnpj_da_empresa_emitente
 COMPANY_NAME=Nome da Empresa LTDA
 COMPANY_STATE_REGISTRATION=inscricao_estadual
@@ -281,11 +326,19 @@ COMPANY_CNPJ=cnpj_da_empresa
 # ── Notificações ───────────────────────────────
 ULTRAMSG_TOKEN=token_ultramsg_whatsapp
 ULTRAMSG_INSTANCE_ID=instance_id_ultramsg
+CHATBOT_WEBHOOK_SECRET=segredo_estatico_do_webhook_do_chatbot
 SENDGRID_API_KEY=sua_api_key_sendgrid
 SENDGRID_FROM_EMAIL=noreply@seudominio.com
 ACCOUNTING_EMAIL=contabilidade@empresa.com
 ACCOUNTING_WHATSAPP=5531999999999
 OVERDUE_NOTIFICATION_EMAILS=email1@empresa.com,email2@empresa.com
+
+# ── Cloudflare R2 (storage de boletos, XMLs e extratos) ─
+R2_ACCOUNT_ID=id_da_conta_cloudflare
+R2_ACCESS_KEY_ID=access_key_id_r2
+R2_SECRET_ACCESS_KEY=secret_access_key_r2
+R2_BUCKET_NAME=nome_do_bucket
+R2_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
 ```
 
 ---
@@ -328,9 +381,9 @@ docker build -t hortifruti-backend .
 
 ### Observações importantes
 
-- ⚠️ **MySQL** precisa estar acessível antes de iniciar a aplicação (perfil ativo: `prod`, `ddl-auto=none` — o schema é gerenciado manualmente)
+- ⚠️ **MySQL** precisa estar acessível antes de iniciar a aplicação (`ddl-auto=update` em todos os perfis — o schema é atualizado automaticamente)
 - ⚠️ **`JWT_SECRET`** deve ter pelo menos 32 caracteres
-- ⚠️ **Certificado Sicoob (`DOCUMENT_PFX`)** deve estar em Base64 — usado para autenticação mútua (mTLS) na emissão de boletos
+- ⚠️ **Certificado Sicoob/BB (`DOCUMENT_PFX`)** deve estar em Base64 — usado para autenticação mútua (mTLS) na emissão de boletos e na consulta de extratos do Banco do Brasil
 - 📁 Diretórios temporários (`temp/cert`, `temp/google`, `temp/notifications`) são criados automaticamente
 - 🕐 **Timezone**: `America/Sao_Paulo` · **Formato de data**: `dd/MM/yyyy`
 
@@ -381,13 +434,14 @@ O projeto usa **Google Java Format** via **Spotless**, com atalhos prontos:
 
 | Regra | Motivação |
 |---|---|
-| `spring.jpa.hibernate.ddl-auto=none` | Schema do banco gerenciado manualmente — evita alterações destrutivas automáticas em produção |
+| `spring.jpa.hibernate.ddl-auto` definido por perfil (`application-{local,hml,prod}.properties`) | Cada ambiente controla sua própria estratégia de schema — hoje `update` em todos os perfis |
 | `open-in-view=false` | Previne sessões Hibernate abertas durante a renderização da resposta (N+1 fora da camada de serviço) |
 | Controllers nunca acessam `repository` diretamente | Toda regra de negócio passa pela camada `service` |
 | Endpoints sensíveis exigem `@PreAuthorize("hasRole('MANAGER')")` | Controle de acesso por papel centralizado na camada de segurança |
 | `JwtAuthenticationFilter` nunca é *bypassado* | Endpoints públicos são declarados explicitamente na configuração de segurança |
+| JWT trafega em cookie `httpOnly` | Reduz exposição a XSS em relação a manter o token em `localStorage` |
 | Endpoints do `scheduler` exigem `API_SCHEDULER_TOKEN` | Isola tarefas automatizadas do fluxo de autenticação de usuários |
-| Integração com Sicoob via certificado `.pfx` (mTLS) | Exigência da própria instituição financeira para emissão de boletos |
+| Integração com Sicoob e Banco do Brasil via certificado `.pfx` compartilhado (mTLS) | Exigência das próprias instituições financeiras para boletos e extratos |
 | Operações de notificação e backup executam via `@Async` | Evita bloquear a thread da requisição HTTP em chamadas a serviços externos |
 | Variáveis sensíveis somente via `.env` / variáveis de ambiente | Nunca *hardcoded* — chaves, tokens e certificados nunca expostos no código |
 
@@ -403,18 +457,20 @@ O projeto usa **Google Java Format** via **Spotless**, com atalhos prontos:
 | Segurança JWT | java-jwt (Auth0) | 4.5.2 |
 | Documentação | Springdoc OpenAPI (Swagger UI) | 3.0.3 |
 | Mapeamento DTO | MapStruct + Lombok | 1.6.3 / 1.18.46 |
-| Variáveis de ambiente | spring-dotenv | 5.0.1 |
+| Variáveis de ambiente | spring-dotenv | 5.1.0 |
 | Rate limiting | Bucket4J (core + jcache) | 8.0.1 |
 | PDF | Apache PDFBox | 3.0.7 |
 | Planilhas | Apache POI OOXML | 5.5.1 |
 | Compressão | Zip4j | 2.11.5 |
 | HTTP Client | Apache HttpComponents Client5 | 5.6.1 |
 | CSV | Apache Commons CSV | 1.14.1 |
-| Google APIs (Drive/OAuth/Maps) | google-api-client / google-oauth-client / google-api-services-drive | 2.8.1 / 1.34.1 / v3-rev20220815-2.0.0 |
+| Google APIs (Drive/OAuth/Maps) | google-api-client / google-oauth-client-jetty / google-api-services-drive | 2.8.1 / 1.39.0 / v3-rev20220815-2.0.0 |
+| Storage (S3-compatible) | AWS SDK for Java (S3) — usado com Cloudflare R2 | 2.29.52 |
 | E-mail | SendGrid Java | 4.10.0 |
 | WhatsApp | Ultramsg (REST) | — |
 | NF-e | Focus NFe (REST) | — |
 | Boletos | Sicoob (REST + mTLS) | — |
+| Extratos bancários | Banco do Brasil — API Extratos (REST + mTLS) | — |
 | Clima | OpenWeather (REST) | — |
 | JSON | Jackson + org.json | 20260522 |
 | Formatação | Spotless + Google Java Format | 3.8.0 / 1.28.0 |

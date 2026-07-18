@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeft, Save, User, UserCog, Shield } from "lucide-react";
-import Button from "@/components/ui/Button";
+import { ArrowLeft, Save, Shield, UserCog } from "lucide-react";
 import Link from "next/link";
-import { showError, showSuccess } from "@/services/notificationService";
-import { backupService, UIUserRequest } from "@/services/acessoService";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import Button from "@/components/ui/Button";
+import { backupService, type UIUserRequest } from "@/services/acessoService";
+import { showError, showSuccess } from "@/services/notificationService";
 
 export default function NovoUsuarioPage() {
   const router = useRouter();
@@ -19,7 +19,7 @@ export default function NovoUsuarioPage() {
   });
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -45,7 +45,7 @@ export default function NovoUsuarioPage() {
       setIsSubmitting(true);
       await backupService.createUser(formData);
       showSuccess(
-        "Usuário criado com sucesso! Agora ele pode fazer login com o e-mail e senha cadastrados."
+        "Usuário criado com sucesso! Agora ele pode fazer login com o e-mail e senha cadastrados.",
       );
       router.push("/acesso");
     } catch (error) {

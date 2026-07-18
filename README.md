@@ -16,6 +16,7 @@
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Multi--stage-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Cloudflare R2](https://img.shields.io/badge/Cloudflare_R2-Storage-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
 ![Railway](https://img.shields.io/badge/Railway-Backend-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-Frontend-000000?style=for-the-badge&logo=vercel&logoColor=white)
 
@@ -36,7 +37,7 @@
 
 ## 📖 Sobre o projeto
 
-O **Hortifruti SL** é um sistema de gestão desenvolvido para o Hortifruti Santa Luzia LTDA, com o objetivo de digitalizar e automatizar processos administrativos e financeiros que hoje são feitos manualmente. Entre os principais focos estão a **conciliação bancária** (extração e categorização automática de transações a partir de extratos em PDF), o **agrupamento de vendas por cliente** para geração de cobranças consolidadas, a **emissão de boletos** (Sicoob) e **notas fiscais eletrônicas** (Focus NFe), o **cálculo de frete**, **recomendações de compra** baseadas em previsão do tempo e um **dashboard** com visão consolidada do negócio — tudo isso com notificações automáticas por e-mail e WhatsApp.
+O **Hortifruti SL** é um sistema de gestão desenvolvido para o Hortifruti Santa Luzia LTDA, com o objetivo de digitalizar e automatizar processos administrativos e financeiros que hoje são feitos manualmente. Entre os principais focos estão a **conciliação bancária** (extração e categorização automática de transações a partir de extratos em PDF, com consulta de saldo em tempo real via API do Banco do Brasil), o **agrupamento de vendas por cliente** para geração de cobranças consolidadas, a **emissão de boletos** (Sicoob) e **notas fiscais eletrônicas** (Focus NFe) — inclusive de forma combinada (NF-e + boleto vinculado em um único fluxo) —, o **cálculo de frete**, **recomendações de compra** baseadas em previsão do tempo e um **dashboard** com visão consolidada do negócio — tudo isso com notificações automáticas por e-mail e WhatsApp e armazenamento de arquivos (boletos, XMLs, extratos) na nuvem via Cloudflare R2.
 
 O sistema é dividido em duas aplicações independentes que se comunicam via API REST:
 
@@ -174,10 +175,10 @@ As instruções completas de configuração — incluindo todas as variáveis de
 
 | Sintoma | Verificação |
 |---|---|
-| Erro de conexão com banco | MySQL está rodando e as credenciais (`MYSQLUSER`/`MYSQLPASSWORD`) estão corretas |
+| Erro de conexão com banco | MySQL está rodando e as credenciais do prefixo correspondente ao ambiente ativo (`LOCAL_`/`HML_`/`PROD_MYSQLUSER`/`MYSQLPASSWORD`) estão corretas |
 | Erro de JWT | `JWT_SECRET` tem pelo menos 32 caracteres |
-| Erro de certificado Sicoob | Arquivo `.pfx` está corretamente codificado em Base64 em `DOCUMENT_PFX` |
-| Falha em integrações externas | Chaves de API (Sicoob, Google, Focus NFe, SendGrid, Ultramsg, OpenWeather) válidas e com permissões necessárias |
+| Erro de certificado Sicoob/BB | Arquivo `.pfx` está corretamente codificado em Base64 em `DOCUMENT_PFX` (certificado mTLS compartilhado entre Sicoob e Banco do Brasil) |
+| Falha em integrações externas | Chaves de API (Sicoob, Banco do Brasil, Google, Focus NFe, SendGrid, Ultramsg, OpenWeather, Cloudflare R2) válidas e com permissões necessárias |
 
 ---
 
@@ -189,8 +190,9 @@ As instruções completas de configuração — incluindo todas as variáveis de
 - **Gestão de Clientes**: CRUD completo com informações de contato e histórico de compras
 - **Conciliação Bancária**: upload e processamento automático de extratos em PDF
 - **Gestão de Compras**: upload de notas, agrupamento de vendas por cliente (*combined scores*)
-- **Sistema de Boletos**: integração com Sicoob para geração, consulta e cancelamento de cobranças
-- **Nota Fiscal Eletrônica**: integração com Focus NFe para emissão, DANFE e XML
+- **Sistema de Boletos**: integração com Sicoob para geração, consulta, baixa manual/automática e cancelamento de cobranças
+- **Nota Fiscal Eletrônica**: integração com Focus NFe para emissão, DANFE e XML — inclusive emissão combinada de NF-e + boleto vinculado
+- **Saldo Bancário**: consulta em tempo real do saldo em conta via API do Banco do Brasil
 - **Notificações**: envio por e-mail (SendGrid) e WhatsApp (Ultramsg), avulso e em massa
 - **Gestão de Produtos**: cadastro e recomendações de compra baseadas em clima
 - **Cálculo de Frete**: rotas e distância via Google Maps, visualização em mapa interativo
@@ -202,18 +204,22 @@ As instruções completas de configuração — incluindo todas as variáveis de
 | Integração | Uso |
 |---|---|
 | **Sicoob** | Geração e consulta de boletos bancários (mTLS com certificado digital) |
+| **Banco do Brasil** | Consulta de saldo e extrato da conta corrente (API Extratos, mTLS com o mesmo certificado do Sicoob) |
 | **Focus NFe** | Emissão e gestão de notas fiscais eletrônicas |
 | **Google Maps** | Cálculo de frete, rotas e autocomplete de endereços |
 | **Google Drive** | Armazenamento de backups do banco de dados |
+| **Cloudflare R2** | Armazenamento de boletos, XMLs de NF-e e extratos bancários (S3-compatible) |
 | **SendGrid** | Envio de e-mails transacionais |
 | **Ultramsg** | Envio de mensagens via WhatsApp |
 | **OpenWeather** | Previsão do tempo para recomendações de compra (Santa Luzia/MG) |
 
 #### Segurança
 
-- Autenticação stateless via **JWT**
+- Autenticação via **JWT** entregue em cookie `httpOnly` (não em `localStorage`), com o frontend chamando a API em same-origin (`/api/*`) via *rewrite* do Next.js — evita bloqueio de cookies cross-site em navegadores como Safari/iOS
 - Controle de acesso por papel (`@PreAuthorize` no backend, `RoleGuard` no frontend)
-- Certificados digitais (`.pfx`) para integração bancária
+- Cabeçalhos de segurança (CSP com nonce, HSTS, `X-Frame-Options`) aplicados via *middleware* do Next.js
+- Rate limiting por IP real do cliente (resolvido via `X-Forwarded-For`, considerando os proxies do Railway e do Next.js)
+- Certificados digitais (`.pfx`) para integração bancária (Sicoob e Banco do Brasil)
 - Tokens de serviço dedicados para endpoints de *scheduler*
 - Segredos e credenciais sempre via variáveis de ambiente — nunca versionados
 
@@ -223,9 +229,9 @@ As instruções completas de configuração — incluindo todas as variáveis de
 
 | Camada | Tecnologias principais |
 |---|---|
-| **Backend** | Java 25 · Spring Boot 4.1 (Web, Security, Data JPA) · MySQL + HikariCP · JWT (Auth0) · MapStruct · Springdoc OpenAPI · Apache PDFBox/POI · Bucket4J · Docker |
-| **Frontend** | Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Material UI · Chart.js · Leaflet/OSRM · Axios · Biome |
-| **Infraestrutura** | MySQL 8.0 · Docker (multi-stage) · Railway (backend) · Vercel (frontend) |
+| **Backend** | Java 25 · Spring Boot 4.1 (Web, Security, Data JPA) · MySQL + HikariCP · JWT (Auth0) · MapStruct · Springdoc OpenAPI · Apache PDFBox/POI · Bucket4J · AWS SDK S3 (Cloudflare R2) · Docker |
+| **Frontend** | Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Material UI · Chart.js · Leaflet/OSRM · Biome |
+| **Infraestrutura** | MySQL 8.0 · Cloudflare R2 · Docker (multi-stage) · Railway (backend) · Vercel (frontend) |
 | **Qualidade** | Spotless + Google Java Format (backend) · Biome (frontend) |
 
 > A lista completa de dependências e versões está nas tabelas "Tecnologias e dependências" de cada subprojeto: [Backend](Codigo/Back/README.md#-tecnologias-e-dependências) · [Frontend](Codigo/Front/README.md#-tecnologias-e-dependências)

@@ -1,7 +1,11 @@
-import { useState } from 'react';
-import { X, Plus, Edit, Trash2, MapPin, Store } from 'lucide-react';
-import AddressAutocomplete from '@/components/modules/AddressAutocomplete';
-import { AddressType, FavoriteLocation, Location } from '@/types/addressType';
+import { Edit, MapPin, Plus, Store, Trash2, X } from "lucide-react";
+import { useState } from "react";
+import AddressAutocomplete from "@/components/modules/AddressAutocomplete";
+import type {
+  AddressType,
+  FavoriteLocation,
+  Location,
+} from "@/types/addressType";
 
 interface FavoritesModalProps {
   isOpen: boolean;
@@ -9,28 +13,37 @@ interface FavoritesModalProps {
   onSelectAddress: (addressData: AddressType) => void;
 }
 
-const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProps) => {
-  const [activeTab, setActiveTab] = useState('sacolao');
+const FavoritesModal = ({
+  isOpen,
+  onClose,
+  onSelectAddress,
+}: FavoritesModalProps) => {
+  const [activeTab, setActiveTab] = useState("sacolao");
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const [sacolaoData, setSacolaoData] = useState(() => {
-    const saved = localStorage.getItem('sacolaoData');
-    return saved ? JSON.parse(saved) : {
-      name: 'Hortifruti Santa Luzia',
-      address: 'R. Jaime Carlos Afonso Teixeira, 70 - Centro, Santa Luzia - MG',
-      lat: -19.7647797,
-      lng: -43.8500743
-    };
+    const saved = localStorage.getItem("sacolaoData");
+    return saved
+      ? JSON.parse(saved)
+      : {
+          name: "Hortifruti Santa Luzia",
+          address:
+            "R. Jaime Carlos Afonso Teixeira, 70 - Centro, Santa Luzia - MG",
+          lat: -19.7647797,
+          lng: -43.8500743,
+        };
   });
-  const [newSacolaoName, setNewSacolaoName] = useState('');
-  const [newSacolaoAddress, setNewSacolaoAddress] = useState('');
-  const [favoriteLocations, setFavoriteLocations] = useState<FavoriteLocation[]>(() => {
-    const saved = localStorage.getItem('favoriteLocations');
+  const [newSacolaoName, setNewSacolaoName] = useState("");
+  const [newSacolaoAddress, setNewSacolaoAddress] = useState("");
+  const [favoriteLocations, setFavoriteLocations] = useState<
+    FavoriteLocation[]
+  >(() => {
+    const saved = localStorage.getItem("favoriteLocations");
     return saved ? JSON.parse(saved) : [];
   });
-  const [newLocationName, setNewLocationName] = useState('');
-  const [newLocationAddress, setNewLocationAddress] = useState('');
+  const [newLocationName, setNewLocationName] = useState("");
+  const [newLocationAddress, setNewLocationAddress] = useState("");
 
   if (!isOpen) return null;
 
@@ -40,12 +53,12 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
         name: newSacolaoName,
         address: newSacolaoAddress,
         lat: sacolaoData.lat,
-        lng: sacolaoData.lng
+        lng: sacolaoData.lng,
       };
       setSacolaoData(updated);
-      localStorage.setItem('sacolaoData', JSON.stringify(updated));
-      setNewSacolaoName('');
-      setNewSacolaoAddress('');
+      localStorage.setItem("sacolaoData", JSON.stringify(updated));
+      setNewSacolaoName("");
+      setNewSacolaoAddress("");
       setIsEditing(false);
     }
   };
@@ -57,18 +70,20 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
         name: newLocationName,
         address: newLocationAddress,
         lat: 0, // Seria obtido do autocomplete
-        lng: 0
+        lng: 0,
       };
-    const updated = [...favoriteLocations, newLocation];
-    setFavoriteLocations(updated);
-    localStorage.setItem('favoriteLocations', JSON.stringify(updated));
-      setNewLocationName('');
-      setNewLocationAddress('');
+      const updated = [...favoriteLocations, newLocation];
+      setFavoriteLocations(updated);
+      localStorage.setItem("favoriteLocations", JSON.stringify(updated));
+      setNewLocationName("");
+      setNewLocationAddress("");
     }
   };
 
   const handleEditFavoriteLocation = (id: number) => {
-  const location = favoriteLocations.find((loc: FavoriteLocation) => loc.id === id);
+    const location = favoriteLocations.find(
+      (loc: FavoriteLocation) => loc.id === id,
+    );
     if (location) {
       setNewLocationName(location.name);
       setNewLocationAddress(location.address);
@@ -78,24 +93,26 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
 
   const handleUpdateFavoriteLocation = () => {
     if (newLocationName && newLocationAddress && editingId) {
-      const updated = favoriteLocations.map((loc: FavoriteLocation) => 
-        loc.id === editingId 
+      const updated = favoriteLocations.map((loc: FavoriteLocation) =>
+        loc.id === editingId
           ? { ...loc, name: newLocationName, address: newLocationAddress }
-          : loc
+          : loc,
       );
       setFavoriteLocations(updated);
-      localStorage.setItem('favoriteLocations', JSON.stringify(updated));
-      setNewLocationName('');
-      setNewLocationAddress('');
+      localStorage.setItem("favoriteLocations", JSON.stringify(updated));
+      setNewLocationName("");
+      setNewLocationAddress("");
       setEditingId(null);
     }
   };
 
   const handleDeleteFavoriteLocation = (id: number) => {
-    if (window.confirm('Tem certeza que deseja excluir este local favorito?')) {
-  const updated = favoriteLocations.filter((loc: FavoriteLocation) => loc.id !== id);
-    setFavoriteLocations(updated);
-    localStorage.setItem('favoriteLocations', JSON.stringify(updated));
+    if (window.confirm("Tem certeza que deseja excluir este local favorito?")) {
+      const updated = favoriteLocations.filter(
+        (loc: FavoriteLocation) => loc.id !== id,
+      );
+      setFavoriteLocations(updated);
+      localStorage.setItem("favoriteLocations", JSON.stringify(updated));
     }
   };
 
@@ -104,7 +121,7 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
       onSelectAddress({
         address: location.address,
         lat: location.lat,
-        lng: location.lng
+        lng: location.lng,
       });
     }
     onClose();
@@ -114,8 +131,11 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
     <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10 max-lg:px-4">
       <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800">Gerenciar Locais Favoritos</h2>
+          <h2 className="text-2xl font-semibold text-gray-800">
+            Gerenciar Locais Favoritos
+          </h2>
           <button
+            type="button"
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 p-1"
           >
@@ -125,22 +145,24 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
 
         <div className="flex border-b border-gray-200 mb-6">
           <button
-            onClick={() => setActiveTab('sacolao')}
+            type="button"
+            onClick={() => setActiveTab("sacolao")}
             className={`px-6 py-3 border-b-2 font-medium transition-colors ${
-              activeTab === 'sacolao'
-                ? 'border-green-500 text-green-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+              activeTab === "sacolao"
+                ? "border-green-500 text-green-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
             <Store size={18} className="inline mr-2" />
             Sacolão
           </button>
           <button
-            onClick={() => setActiveTab('favorites')}
+            type="button"
+            onClick={() => setActiveTab("favorites")}
             className={`px-6 py-3 border-b-2 font-medium transition-colors ${
-              activeTab === 'favorites'
-                ? 'border-green-500 text-green-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+              activeTab === "favorites"
+                ? "border-green-500 text-green-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
             <MapPin size={18} className="inline mr-2" />
@@ -148,18 +170,25 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
           </button>
         </div>
 
-        {activeTab === 'sacolao' && (
+        {activeTab === "sacolao" && (
           <div>
-            <h3 className="text-lg font-medium text-gray-800 mb-4">Endereço do Sacolão</h3>
-            
+            <h3 className="text-lg font-medium text-gray-800 mb-4">
+              Endereço do Sacolão
+            </h3>
+
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <h4 className="font-medium text-green-800 mb-1">{sacolaoData.name}</h4>
-                  <p className="text-green-700 text-sm">{sacolaoData.address}</p>
+                  <h4 className="font-medium text-green-800 mb-1">
+                    {sacolaoData.name}
+                  </h4>
+                  <p className="text-green-700 text-sm">
+                    {sacolaoData.address}
+                  </p>
                 </div>
                 <div className="flex space-x-2">
                   <button
+                    type="button"
                     onClick={() => handleSelectLocation(sacolaoData)}
                     className="text-green-600 hover:text-green-800 p-1"
                     title="Usar este endereço"
@@ -167,6 +196,7 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
                     <MapPin size={18} />
                   </button>
                   <button
+                    type="button"
                     onClick={() => {
                       setIsEditing(true);
                       setNewSacolaoName(sacolaoData.name);
@@ -183,7 +213,9 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
 
             {isEditing && (
               <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                <h4 className="font-medium text-gray-800 mb-4">Editar Sacolão</h4>
+                <h4 className="font-medium text-gray-800 mb-4">
+                  Editar Sacolão
+                </h4>
                 <div className="space-y-4">
                   <input
                     type="text"
@@ -199,16 +231,18 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
                   />
                   <div className="flex space-x-3">
                     <button
+                      type="button"
                       onClick={handleSaveSacolao}
                       className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
                     >
                       Salvar
                     </button>
                     <button
+                      type="button"
                       onClick={() => {
                         setIsEditing(false);
-                        setNewSacolaoName('');
-                        setNewSacolaoAddress('');
+                        setNewSacolaoName("");
+                        setNewSacolaoAddress("");
                       }}
                       className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
                     >
@@ -221,16 +255,20 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
           </div>
         )}
 
-        {activeTab === 'favorites' && (
+        {activeTab === "favorites" && (
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-800">Locais Favoritos</h3>
-              <span className="text-sm text-gray-500">{favoriteLocations.length} locais</span>
+              <h3 className="text-lg font-medium text-gray-800">
+                Locais Favoritos
+              </h3>
+              <span className="text-sm text-gray-500">
+                {favoriteLocations.length} locais
+              </span>
             </div>
 
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <h4 className="font-medium text-gray-800 mb-4">
-                {editingId ? 'Editar Local' : 'Adicionar Novo Local'}
+                {editingId ? "Editar Local" : "Adicionar Novo Local"}
               </h4>
               <div className="space-y-4">
                 <input
@@ -248,27 +286,36 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
                     const newFavorite: FavoriteLocation = {
                       ...addressData,
                       id: Date.now(),
-                      name: newLocationName
+                      name: newLocationName,
                     };
                     setFavoriteLocations((prev) => [...prev, newFavorite]);
-                    localStorage.setItem('favoriteLocations', JSON.stringify([...favoriteLocations, newFavorite]));
+                    localStorage.setItem(
+                      "favoriteLocations",
+                      JSON.stringify([...favoriteLocations, newFavorite]),
+                    );
                   }}
                   placeholder="Endereço completo..."
                 />
                 <div className="flex space-x-3">
                   <button
-                    onClick={editingId ? handleUpdateFavoriteLocation : handleAddFavoriteLocation}
+                    type="button"
+                    onClick={
+                      editingId
+                        ? handleUpdateFavoriteLocation
+                        : handleAddFavoriteLocation
+                    }
                     className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
                   >
                     <Plus size={18} className="mr-2" />
-                    {editingId ? 'Atualizar' : 'Adicionar'}
+                    {editingId ? "Atualizar" : "Adicionar"}
                   </button>
                   {editingId && (
                     <button
+                      type="button"
                       onClick={() => {
                         setEditingId(null);
-                        setNewLocationName('');
-                        setNewLocationAddress('');
+                        setNewLocationName("");
+                        setNewLocationAddress("");
                       }}
                       className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
                     >
@@ -283,13 +330,16 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
               <div className="text-center py-8 text-gray-500">
                 <MapPin size={48} className="mx-auto mb-3 text-gray-300" />
                 <p>Nenhum local favorito cadastrado</p>
-                <p className="text-sm">Adicione locais para facilitar o cálculo de frete</p>
+                <p className="text-sm">
+                  Adicione locais para facilitar o cálculo de frete
+                </p>
                 <button
+                  type="button"
                   className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center mx-auto"
                   onClick={() => {
                     setEditingId(null);
-                    setNewLocationName('');
-                    setNewLocationAddress('');
+                    setNewLocationName("");
+                    setNewLocationAddress("");
                   }}
                 >
                   <Plus size={18} className="mr-2" />
@@ -305,11 +355,16 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-800 mb-1">{location.name}</h4>
-                        <p className="text-gray-600 text-sm">{location.address}</p>
+                        <h4 className="font-medium text-gray-800 mb-1">
+                          {location.name}
+                        </h4>
+                        <p className="text-gray-600 text-sm">
+                          {location.address}
+                        </p>
                       </div>
                       <div className="flex space-x-2">
                         <button
+                          type="button"
                           onClick={() => handleSelectLocation(location)}
                           className="text-green-600 hover:text-green-800 p-1"
                           title="Usar este endereço"
@@ -317,14 +372,20 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
                           <MapPin size={18} />
                         </button>
                         <button
-                          onClick={() => handleEditFavoriteLocation(location.id)}
+                          type="button"
+                          onClick={() =>
+                            handleEditFavoriteLocation(location.id)
+                          }
                           className="text-blue-600 hover:text-blue-800 p-1"
                           title="Editar"
                         >
                           <Edit size={18} />
                         </button>
                         <button
-                          onClick={() => handleDeleteFavoriteLocation(location.id)}
+                          type="button"
+                          onClick={() =>
+                            handleDeleteFavoriteLocation(location.id)
+                          }
                           className="text-red-600 hover:text-red-800 p-1"
                           title="Excluir"
                         >
@@ -344,4 +405,3 @@ const FavoritesModal = ({ isOpen, onClose, onSelectAddress }: FavoritesModalProp
 };
 
 export default FavoritesModal;
-

@@ -1,25 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { 
-  Calendar, 
-  CircleCheck, 
-  DollarSign, 
-  LayoutGrid, 
-  LayoutList, 
-  MapPin, 
-  Phone, 
-  Plus, 
-  Search, 
-  Settings, 
-  User 
+import {
+  Calendar,
+  CircleCheck,
+  DollarSign,
+  LayoutGrid,
+  LayoutList,
+  MapPin,
+  Phone,
+  Plus,
+  Search,
+  Settings,
+  User,
 } from "lucide-react";
-import Button from "@/components/ui/Button";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import ClientCard from "@/components/modules/ClientCard";
+import Button from "@/components/ui/Button";
 import { clientService } from "@/services/clientService";
 import { combinedScoreService } from "@/services/combinedScoreService";
 import { showError, showSuccess } from "@/services/notificationService";
-import ClientCard from "@/components/modules/ClientCard";
 
 interface ClienteUI {
   id: number;
@@ -61,7 +61,7 @@ export default function ClientesPage() {
         ]);
 
         const lastGroupingByClientId = new Map(
-          lastGroupings.map((grouping) => [grouping.clientId, grouping])
+          lastGroupings.map((grouping) => [grouping.clientId, grouping]),
         );
 
         const clientesUI: ClienteUI[] = clientesResponse.map((client) => {
@@ -73,7 +73,9 @@ export default function ClientesPage() {
             telefone: client.phoneNumber || "",
             endereco: client.address || "",
             status: client.variablePrice ? "preco-variavel" : "preco-fixo",
-            ultimaCompra: formatLastPurchaseDate(lastGrouping?.confirmedAt ?? null),
+            ultimaCompra: formatLastPurchaseDate(
+              lastGrouping?.confirmedAt ?? null,
+            ),
             totalCompras: lastGrouping?.totalValue ?? 0,
           };
         });
@@ -161,6 +163,7 @@ export default function ClientesPage() {
               </div>
               <div className="flex bg-gray-100 rounded-lg p-1">
                 <button
+                  type="button"
                   onClick={() => {
                     setViewMode("list");
                     localStorage.setItem("clientesViewMode", "list");
@@ -172,6 +175,7 @@ export default function ClientesPage() {
                   <LayoutList size={20} />
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     setViewMode("grid");
                     localStorage.setItem("clientesViewMode", "grid");
@@ -220,27 +224,39 @@ export default function ClientesPage() {
               <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 border-b bg-gradient-to-r from-gray-50 to-gray-100 shadow-sm">
                 <div className="col-span-3 flex items-center gap-2">
                   <User size={16} className="text-gray-500" />
-                  <span className="font-semibold text-gray-800 truncate">Cliente</span>
+                  <span className="font-semibold text-gray-800 truncate">
+                    Cliente
+                  </span>
                 </div>
                 <div className="col-span-2 flex items-center gap-2">
                   <Phone size={16} className="text-gray-500" />
-                  <span className="font-semibold text-gray-800 truncate">Contato</span>
+                  <span className="font-semibold text-gray-800 truncate">
+                    Contato
+                  </span>
                 </div>
                 <div className="col-span-3 flex items-center gap-2">
                   <MapPin size={16} className="text-gray-500" />
-                  <span className="font-semibold text-gray-800 truncate">Endereço</span>
+                  <span className="font-semibold text-gray-800 truncate">
+                    Endereço
+                  </span>
                 </div>
                 <div className="col-span-1 flex items-center gap-2">
                   <CircleCheck size={16} className="text-gray-500" />
-                  <span className="font-semibold text-gray-800 truncate">Preço</span>
+                  <span className="font-semibold text-gray-800 truncate">
+                    Preço
+                  </span>
                 </div>
                 <div className="col-span-1 flex items-center gap-2">
                   <Calendar size={16} className="text-gray-500" />
-                  <span className="font-semibold text-gray-800 truncate">Compras</span>
+                  <span className="font-semibold text-gray-800 truncate">
+                    Compras
+                  </span>
                 </div>
                 <div className="col-span-1 flex items-center gap-2">
                   <DollarSign size={16} className="text-gray-500" />
-                  <span className="font-semibold text-gray-800 truncate">Total</span>
+                  <span className="font-semibold text-gray-800 truncate">
+                    Total
+                  </span>
                 </div>
                 <div className="col-span-1 flex justify-end">
                   <Settings size={16} className="text-gray-500" />
@@ -282,11 +298,13 @@ export default function ClientesPage() {
                     </div>
                   )}
                 </div>
-                
+
                 <p className="text-xl font-medium text-gray-700">
-                  {searchTerm ? "Busca sem resultados" : "Nenhum cliente cadastrado"}
+                  {searchTerm
+                    ? "Busca sem resultados"
+                    : "Nenhum cliente cadastrado"}
                 </p>
-                
+
                 <p className="text-sm mt-3 max-w-md mx-auto text-gray-600">
                   {searchTerm
                     ? `Não encontramos clientes com o termo "${searchTerm}". Tente outras palavras-chave ou limpe o campo de busca.`
@@ -295,7 +313,8 @@ export default function ClientesPage() {
 
                 <div className="mt-8">
                   {searchTerm ? (
-                    <button 
+                    <button
+                      type="button"
                       onClick={() => setSearchTerm("")}
                       className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors inline-flex items-center gap-2"
                     >
@@ -373,12 +392,14 @@ export default function ClientesPage() {
             </p>
             <div className="flex justify-end gap-3">
               <button
+                type="button"
                 onClick={cancelarExclusao}
                 className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
               >
                 Cancelar
               </button>
               <button
+                type="button"
                 onClick={confirmarEExcluirCliente}
                 className="px-4 py-2 bg-red-600/80 text-white rounded-md hover:bg-red-700 transition-colors"
               >
