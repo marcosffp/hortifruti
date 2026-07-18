@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { statementService } from "@/services/statementService";
 import { purchaseService } from "@/services/purchaseService";
+import { statementService } from "@/services/statementService";
 import { validarArquivos } from "@/utils/validationUtils";
 
 export function useUpload() {
@@ -20,9 +20,9 @@ export function useUpload() {
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + " B";
-    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
-    else return (bytes / 1048576).toFixed(1) + " MB";
+    if (bytes < 1024) return `${bytes} B`;
+    else if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+    else return `${(bytes / 1048576).toFixed(1)} MB`;
   };
 
   const processFiles = async (files: File[], entity: string) => {
@@ -34,7 +34,7 @@ export function useUpload() {
         throw new Error("Um ou mais arquivos excedem o limite de 10MB.");
       }
 
-      let response;
+      let response: { message: string };
       if (entity === "purchase")
         response = await purchaseService.uploadPurchases(files);
       else if (entity === "statement")
@@ -42,8 +42,10 @@ export function useUpload() {
       else throw new Error("Entidade desconhecida.");
 
       return response;
-    } catch (err: any) {
-      setError(err.message || "Erro ao processar os arquivos.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao processar os arquivos.",
+      );
       throw err;
     } finally {
       setIsLoading(false);

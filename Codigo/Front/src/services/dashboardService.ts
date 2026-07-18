@@ -1,5 +1,5 @@
-import { getAuthHeaders } from "@/utils/httpUtils";
 import { API_BASE_URL } from "@/config/api";
+import { getAuthHeaders } from "@/utils/httpUtils";
 
 export interface TopProduct {
   Nome: string;
@@ -43,7 +43,7 @@ export interface DashboardData {
     [week: string]: number;
   };
   "Produtos em Alta": TopProduct[];
-  "Top10ProdutosPorQuantidade": TopProductByQuantity[];
+  Top10ProdutosPorQuantidade: TopProductByQuantity[];
 }
 
 export const dashboardService = {
@@ -51,7 +51,7 @@ export const dashboardService = {
     startDate: string,
     endDate: string,
     month: number,
-    year: number
+    year: number,
   ): Promise<DashboardData> {
     try {
       const response = await fetch(
@@ -60,11 +60,13 @@ export const dashboardService = {
           method: "GET",
           headers: getAuthHeaders(),
           credentials: "include",
-        }
+        },
       );
 
       if (!response.ok) {
-        throw new Error(`Erro ao buscar dados do dashboard: ${response.statusText}`);
+        throw new Error(
+          `Erro ao buscar dados do dashboard: ${response.statusText}`,
+        );
       }
 
       const data = await response.json();

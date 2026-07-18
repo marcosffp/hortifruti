@@ -1,7 +1,10 @@
-import { GroupedProductRequest } from "@/types/groupedType";
-import { InvoiceProductType, InvoiceProductUpdate, PurchaseResponse } from "@/types/purchaseType";
-import { getAuthHeadersForFormData, getAuthHeaders } from "@/utils/httpUtils";
 import { API_BASE_URL } from "@/config/api";
+import type { GroupedProductRequest } from "@/types/groupedType";
+import type {
+  InvoiceProductType,
+  InvoiceProductUpdate,
+} from "@/types/purchaseType";
+import { getAuthHeaders, getAuthHeadersForFormData } from "@/utils/httpUtils";
 
 export const purchaseService = {
   async uploadPurchases(files: File[]): Promise<{ message: string }> {
@@ -27,19 +30,19 @@ export const purchaseService = {
   async fetchClientProducts(
     clientId: number,
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<GroupedProductRequest[]> {
     const sDate = startDate ? `${startDate}T00:00:00` : "";
     const eDate = endDate ? `${endDate}T23:59:59` : "";
 
     const response = await fetch(
       `${API_BASE_URL}/purchases/client/products?clientId=${clientId}&startDate=${encodeURIComponent(
-        sDate
+        sDate,
       )}&endDate=${encodeURIComponent(eDate)}`,
       {
         headers: getAuthHeaders(),
         credentials: "include",
-      }
+      },
     );
     if (!response.ok) throw new Error("Erro ao buscar produtos do cliente");
     const data = await response.json();
@@ -53,7 +56,7 @@ export const purchaseService = {
       {
         headers: getAuthHeaders(),
         credentials: "include",
-      }
+      },
     );
     if (!response.ok) throw new Error("Erro ao buscar arquivos de compra");
     const data = await response.json();
@@ -65,7 +68,9 @@ export const purchaseService = {
       number: data.number ?? data.page?.number ?? 0,
       size: data.size ?? data.page?.size ?? 0,
       first: data.first ?? (data.page?.number ?? 0) === 0,
-      last: data.last ?? (data.page?.number ?? 0) >= (data.page?.totalPages ?? 1) - 1,
+      last:
+        data.last ??
+        (data.page?.number ?? 0) >= (data.page?.totalPages ?? 1) - 1,
     };
   },
 
@@ -85,10 +90,12 @@ export const purchaseService = {
     return { message: data.message };
   },
 
-  async fetchInvoiceProducts(purchaseId: number): Promise<InvoiceProductType[]> {
+  async fetchInvoiceProducts(
+    purchaseId: number,
+  ): Promise<InvoiceProductType[]> {
     const response = await fetch(
       `${API_BASE_URL}/purchases/${purchaseId}/products`,
-      { headers: getAuthHeaders(), credentials: "include" }
+      { headers: getAuthHeaders(), credentials: "include" },
     );
     if (!response.ok) throw new Error("Erro ao buscar produtos da compra");
     return await response.json();
@@ -96,9 +103,12 @@ export const purchaseService = {
 
   async updateInvoiceProduct(
     id: number,
-    update: InvoiceProductUpdate
+    update: InvoiceProductUpdate,
   ): Promise<InvoiceProductType> {
-    const headers = { ...(getAuthHeaders() || {}), "Content-Type": "application/json" };
+    const headers = {
+      ...(getAuthHeaders() || {}),
+      "Content-Type": "application/json",
+    };
     const response = await fetch(`${API_BASE_URL}/invoice-products/${id}`, {
       method: "PUT",
       headers,
@@ -108,18 +118,24 @@ export const purchaseService = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-      throw new Error(errorData?.error || `Erro ao atualizar produto (status ${response.status})`);
+      throw new Error(
+        errorData?.error ||
+          `Erro ao atualizar produto (status ${response.status})`,
+      );
     }
 
     return await response.json();
   },
 
   async deleteInvoiceProduct(productId: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/invoice-products/${productId}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-      credentials: "include",
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/invoice-products/${productId}`,
+      {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+        credentials: "include",
+      },
+    );
     if (!response.ok) throw new Error("Erro ao deletar produto");
-  }
+  },
 };

@@ -50,39 +50,39 @@ public class IssueInvoice {
   private final FocusNfeApiClient focusNfeApiClient;
   private final FiscalNoteXmlStorageService fiscalNoteXmlStorageService;
 
-@Transactional
-public InvoiceResponse issueInvoice(Long combinedScoreId, String dadosAdicionais) {
-  try {
-    CombinedScore combinedScore = fetchCombinedScore(combinedScoreId);
+  @Transactional
+  public InvoiceResponse issueInvoice(Long combinedScoreId, String dadosAdicionais) {
+    try {
+      CombinedScore combinedScore = fetchCombinedScore(combinedScoreId);
 
-    Client client = fetchClient(combinedScore.getClientId());
+      Client client = fetchClient(combinedScore.getClientId());
 
-    RecipientRequest recipient = recipientService.createRecipientRequest(client.getId());
+      RecipientRequest recipient = recipientService.createRecipientRequest(client.getId());
 
-    List<ItemRequest> items =
-        invoiceItemService.createItems(
-            combinedScore.getGroupedProducts(), recipient.endereco().uf());
+      List<ItemRequest> items =
+          invoiceItemService.createItems(
+              combinedScore.getGroupedProducts(), recipient.endereco().uf());
 
-    IssueInvoiceRequest request =
-        buildInvoiceRequest(recipient, items, combinedScore, dadosAdicionais);
+      IssueInvoiceRequest request =
+          buildInvoiceRequest(recipient, items, combinedScore, dadosAdicionais);
 
-    String ref = UUID.randomUUID().toString();
+      String ref = UUID.randomUUID().toString();
 
-    String payload = invoicePayloadService.buildFocusNfePayload(request, ref);
+      String payload = invoicePayloadService.buildFocusNfePayload(request, ref);
 
-    String response = focusNfeApiClient.sendRequest(ref, payload);
+      String response = focusNfeApiClient.sendRequest(ref, payload);
 
-    InvoiceResponse invoiceResponse = objectMapper.readValue(response, InvoiceResponse.class);
+      InvoiceResponse invoiceResponse = objectMapper.readValue(response, InvoiceResponse.class);
 
-    updateCombinedScoreStatus(combinedScore, invoiceResponse);
+      updateCombinedScoreStatus(combinedScore, invoiceResponse);
 
-    fiscalNoteXmlStorageService.triggerSaveAfterIssuance(invoiceResponse.ref());
+      fiscalNoteXmlStorageService.triggerSaveAfterIssuance(invoiceResponse.ref());
 
-    return invoiceResponse;
-  } catch (Exception e) {
-    throw new InvoiceException("Erro ao emitir nota fiscal: " + e.getMessage(), e);
+      return invoiceResponse;
+    } catch (Exception e) {
+      throw new InvoiceException("Erro ao emitir nota fiscal: " + e.getMessage(), e);
+    }
   }
-}
 
   private IssueInvoiceRequest buildInvoiceRequest(
       RecipientRequest recipient,

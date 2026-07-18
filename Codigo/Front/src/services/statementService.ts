@@ -1,7 +1,7 @@
 "use client";
 
-import { getAuthHeadersForFormData } from "@/utils/httpUtils";
 import { API_BASE_URL } from "@/config/api";
+import { getAuthHeadersForFormData } from "@/utils/httpUtils";
 
 export interface StatementResponse {
   id: number;

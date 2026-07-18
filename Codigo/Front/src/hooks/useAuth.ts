@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { authService } from "@/services/authService";
 
 export function useAuth() {
@@ -11,11 +11,7 @@ export function useAuth() {
   const [userName, setUserName] = useState<string>("");
   const [userRoles, setUserRoles] = useState<string[]>([]);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     const user = await authService.me();
     setIsAuthenticated(!!user);
 
@@ -28,7 +24,11 @@ export function useAuth() {
     }
 
     setIsLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const login = async (username: string, password: string) => {
     setIsLoading(true);

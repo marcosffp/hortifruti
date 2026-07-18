@@ -1,35 +1,44 @@
-import { ClientInfo } from "@/types/clientType";
+import { CircleDollarSign, Package, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
-import { UserRound, Package, CircleDollarSign } from "lucide-react";
-import { getAuthHeaders } from "@/utils/httpUtils";
 import { API_BASE_URL } from "@/config/api";
+import type { ClientInfo } from "@/types/clientType";
+import { getAuthHeaders } from "@/utils/httpUtils";
 
 interface ClientSummaryCardsProps {
   clientId: number | undefined;
   refreshKey?: number;
 }
 
-export default function ClientSummaryCards({ clientId, refreshKey }: ClientSummaryCardsProps) {
+export default function ClientSummaryCards({
+  clientId,
+  refreshKey,
+}: ClientSummaryCardsProps) {
   const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey is intentionally unused inside the effect — it only exists to force a refetch when the parent bumps it
   useEffect(() => {
     const fetchClientSummary = async () => {
       setIsLoading(true);
       setError(null);
       try {
         const response = await fetch(
-          `${API_BASE_URL}/clients/${clientId}/summary`, {
+          `${API_BASE_URL}/clients/${clientId}/summary`,
+          {
             headers: getAuthHeaders(),
             credentials: "include",
-          }
+          },
         );
         if (!response.ok) throw new Error("Erro ao buscar dados do cliente");
         const data: ClientInfo = await response.json();
         setClientInfo(data);
-      } catch (err: any) {
-        setError(err.message || "Erro ao buscar dados do cliente");
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Erro ao buscar dados do cliente",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -42,7 +51,11 @@ export default function ClientSummaryCards({ clientId, refreshKey }: ClientSumma
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="bg-gray-200 rounded-lg p-6 animate-pulse h-24" />
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: static-length skeleton placeholder list, no stable identity available
+            key={i}
+            className="bg-gray-200 rounded-lg p-6 animate-pulse h-24"
+          />
         ))}
       </div>
     );
@@ -61,8 +74,12 @@ export default function ClientSummaryCards({ clientId, refreshKey }: ClientSumma
       <div className="bg-white rounded-lg shadow-sm p-6 flex items-center justify-between">
         <div className="flex flex-col items-start">
           <span className="text-gray-500 text-sm mb-2">Cliente</span>
-          <span className="text-lg font-bold text-gray-800">{clientInfo.clientName}</span>
-            <span className="text-sm text-gray-600">{clientInfo.clientAddress}</span>
+          <span className="text-lg font-bold text-gray-800">
+            {clientInfo.clientName}
+          </span>
+          <span className="text-sm text-gray-600">
+            {clientInfo.clientAddress}
+          </span>
         </div>
         <UserRound size={32} className="text-green-600" />
       </div>
@@ -77,7 +94,10 @@ export default function ClientSummaryCards({ clientId, refreshKey }: ClientSumma
         <div className="flex flex-col items-start">
           <span className="text-gray-500 text-sm mb-2">Valor Total</span>
           <span className="text-lg font-bold">
-            R$ {clientInfo.totalValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            R${" "}
+            {clientInfo.totalValue.toLocaleString("pt-BR", {
+              minimumFractionDigits: 2,
+            })}
           </span>
         </div>
         <CircleDollarSign size={32} className="text-green-600" />

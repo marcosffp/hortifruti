@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useUpload } from "@/hooks/useUpload";
-import Loading from "@/components/ui/Loading";
 import { ArrowUp } from "lucide-react";
+import { useRef, useState } from "react";
+import Loading from "@/components/ui/Loading";
+import { useUpload } from "@/hooks/useUpload";
 import { showError, showSuccess } from "@/services/notificationService";
 
 export default function EnhancedUploadExtract() {
@@ -24,7 +24,7 @@ export default function EnhancedUploadExtract() {
       await processFiles(validFiles, "statement");
 
       showSuccess(`O arquivo "${file.name}" foi processado com sucesso!`);
-    } catch (err) {
+    } catch (_err) {
       showError(`Erro ao processar o arquivo "${file.name}".`);
     } finally {
       setLoading(false);
@@ -37,7 +37,7 @@ export default function EnhancedUploadExtract() {
       handleFileUpload(selectedFile);
       // Limpar o input para permitir reenvio do mesmo arquivo
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     }
   };
@@ -72,9 +72,10 @@ export default function EnhancedUploadExtract() {
       {/* Loading overlay */}
       {loading && <Loading />}
 
-      <div
-        className={`w-full h-full max-h-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center p-2 transition-colors ${isDragging ? "border-primary bg-primary-bg" : "border-gray-300"
-          }`}
+      <section
+        className={`w-full h-full max-h-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center p-2 transition-colors ${
+          isDragging ? "border-primary bg-primary-bg" : "border-gray-300"
+        }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -87,7 +88,9 @@ export default function EnhancedUploadExtract() {
           <p className="text-base font-medium mb-2">
             Clique ou arraste um arquivo
           </p>
-          <p className="text-gray-500 text-sm mb-4">Apenas arquivos PDF com no máximo 10MB</p>
+          <p className="text-gray-500 text-sm mb-4">
+            Apenas arquivos PDF com no máximo 10MB
+          </p>
           <button
             onClick={handleButtonClick}
             type="button"
@@ -104,7 +107,7 @@ export default function EnhancedUploadExtract() {
             onChange={handleFileChange}
           />
         </div>
-      </div>
+      </section>
     </div>
   );
 }

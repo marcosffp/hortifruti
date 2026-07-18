@@ -35,7 +35,7 @@ export interface RouteData {
   origin: Location;
   destination: Location;
   polyline: { lat: number; lng: number }[];
-};
+}
 
 export interface Geolocation {
   lat: number;

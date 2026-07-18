@@ -1,10 +1,10 @@
 "use client";
 import {
+  BadgeDollarSign,
   BarChart,
   Bell,
   ChevronDown,
   Database,
-  BadgeDollarSign,
   FileCode,
   Home,
   type LucideIcon,
@@ -15,9 +15,9 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import RoleGuard from "@/components/auth/RoleGuard";
-import { usePathname } from "next/navigation";
 
 interface MenuItem {
   label: string;
@@ -100,7 +100,7 @@ const menu: MenuItem[] = [
 
 export default function Sidebar({
   open,
-  onClose
+  onClose,
 }: {
   open: boolean;
   onClose?: () => void;
@@ -132,16 +132,29 @@ export default function Sidebar({
       `}
     >
       <button
+        type="button"
         onClick={() => onClose?.()}
         className="md:hidden absolute top-4 right-4 text-gray-500 hover:text-gray-700"
         aria-label="Fechar menu lateral"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="lucide lucide-x"
+          aria-hidden="true"
+        >
           <path d="M18 6 6 18"></path>
           <path d="m6 6 12 12"></path>
         </svg>
       </button>
-      
+
       <nav className="flex flex-col gap-1 mt-8 md:mt-0">
         <Link
           href="/dashboard"

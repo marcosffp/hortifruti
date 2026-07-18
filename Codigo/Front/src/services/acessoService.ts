@@ -1,5 +1,5 @@
-import { UserRequest, UserResponse, userService } from "./userService";
 import { API_BASE_URL } from "@/config/api";
+import { type UserRequest, userService } from "./userService";
 
 // Interfaces para compatibilidade com a UI
 interface UIUserRequest {
@@ -38,7 +38,7 @@ class BackupService {
         totalEmployees: users.filter((u) => u.role === "EMPLOYEE").length,
         lastBackup: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (_error) {
       // Fallback com dados mockados
       return {
         totalUsers: 2,
@@ -67,12 +67,11 @@ class BackupService {
   async createUser(userData: UIUserRequest): Promise<UIUserResponse> {
     try {
       const backendUserData: UserRequest = {
-        username: userData.name, 
+        username: userData.name,
         password: userData.password,
         position: userData.cargo,
         role: userData.perfil === "Gestor" ? "MANAGER" : "EMPLOYEE",
       };
-
 
       const result = await userService.createUser(backendUserData);
 
@@ -100,12 +99,12 @@ class BackupService {
 
   async updateUser(
     id: number,
-    userData: Partial<UIUserRequest>
+    userData: Partial<UIUserRequest>,
   ): Promise<UIUserResponse> {
     try {
       const existingUser = await this.getUserById(id);
       const backendUserData: UserRequest = {
-        username: userData.name || existingUser.nome, 
+        username: userData.name || existingUser.nome,
         password: userData.password || "",
         position: userData.cargo || existingUser.cargo,
         role: userData.perfil
@@ -113,11 +112,11 @@ class BackupService {
             ? "MANAGER"
             : "EMPLOYEE"
           : existingUser.perfil === "Gestor"
-          ? "MANAGER"
-          : "EMPLOYEE",
+            ? "MANAGER"
+            : "EMPLOYEE",
       };
 
-      if (!backendUserData.username || !backendUserData.username.trim()) {
+      if (!backendUserData.username?.trim()) {
         throw new Error("Nome é obrigatório para atualização");
       }
 
@@ -194,7 +193,7 @@ class BackupService {
   }
 
   async restoreBackup(
-    backupFile: File
+    backupFile: File,
   ): Promise<{ success: boolean; message: string }> {
     try {
       const formData = new FormData();
