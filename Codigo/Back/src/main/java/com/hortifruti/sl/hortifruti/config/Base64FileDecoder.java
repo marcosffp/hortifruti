@@ -3,8 +3,12 @@ package com.hortifruti.sl.hortifruti.config;
 import com.hortifruti.sl.hortifruti.exception.BackupException;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -77,6 +81,9 @@ public File decodePem() throws IOException {
         System.err.println("[ERROR] Diretório '" + pemTempDirectory + "' não existe. Tentando criar...");
         boolean created = tempDir.mkdirs();
         System.out.println("[DEBUG] Diretório criado com sucesso? " + created);
+        if (!created) {
+            throw new BilletException("Não foi possível criar o diretório temporário: " + pemTempDirectory);
+        }
     }
 
     String outputPath = pemTempDirectory + "/empresa.pem";
@@ -100,19 +107,44 @@ public File decodePem() throws IOException {
     System.out.println("[DEBUG] Objeto File retornado. Caminho absoluto: " + decodedFile.getAbsolutePath());
     System.out.println("[DEBUG] Arquivo existe (decodedFile.exists())? " + decodedFile.exists());
 
-    if (decodedFile.exists()) {
-        System.out.println("[DEBUG] Tamanho do arquivo gerado: " + decodedFile.length() + " bytes");
-        System.out.println("[DEBUG] Arquivo pode ser lido? " + decodedFile.canRead());
-    } else {
+    if (!decodedFile.exists()) {
         System.err.println("[ERROR] Falha ao decodificar o arquivo PEM. Arquivo não existe em: "
                 + decodedFile.getAbsolutePath());
-        // Aqui você provavelmente quer lançar uma exceção também,
-        // já que hoje só loga e segue retornando um File que não existe.
-        // throw new BilletException("Arquivo PEM decodificado não foi encontrado em disco: " + decodedFile.getAbsolutePath());
+        throw new BilletException(
+                "Arquivo PEM decodificado não foi encontrado em disco: " + decodedFile.getAbsolutePath());
+    }
+
+    System.out.println("[DEBUG] Tamanho do arquivo gerado: " + decodedFile.length() + " bytes");
+    System.out.println("[DEBUG] Arquivo pode ser lido? " + decodedFile.canRead());
+
+    try {
+        String sha256 = calcularSha256(decodedFile);
+        System.out.println("[DEBUG] SHA-256 do arquivo PEM decodificado: " + sha256);
+    } catch (Exception e) {
+        System.err.println("[WARN] Não foi possível calcular o SHA-256 do arquivo PEM: " + e.getMessage());
     }
 
     System.out.println("[DEBUG] Finalizando decodePem() com sucesso.");
     return decodedFile;
+}
+
+private String calcularSha256(File file) throws IOException, NoSuchAlgorithmException {
+    MessageDigest digest = MessageDigest.getInstance("SHA-256");
+    try (InputStream is = new FileInputStream(file)) {
+        byte[] buffer = new byte[8192];
+        int bytesRead;
+        while ((bytesRead = is.read(buffer)) != -1) {
+            digest.update(buffer, 0, bytesRead);
+        }
+    }
+    byte[] hash = digest.digest();
+    StringBuilder hexString = new StringBuilder();
+    for (byte b : hash) {
+        String hex = Integer.toHexString(0xff & b);
+        if (hex.length() == 1) hexString.append('0');
+        hexString.append(hex);
+    }
+    return hexString.toString();
 }
 
   private File decodeBase64ToFile(String base64, String outputPath) throws IOException {
