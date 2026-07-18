@@ -28,7 +28,7 @@ WORKDIR /app
 COPY --from=builder --chown=appuser:appuser /app/target/*.jar app.jar
 
 # Cria diretórios temporários
-RUN mkdir -p /app/temp/cert /app/temp/google /app/temp/notifications && \
+RUN mkdir -p /app/temp/cert/bb_upload /app/temp/google /app/temp/notifications && \
     chown -R appuser:appuser /app/temp && \
     chmod -R 755 /app/temp
 
