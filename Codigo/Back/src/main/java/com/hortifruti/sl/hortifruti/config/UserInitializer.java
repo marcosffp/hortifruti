@@ -68,6 +68,7 @@ public class UserInitializer implements CommandLineRunner {
       log.info("Decodificando arquivos Base64...");
       base64FileDecoder.decodeGoogleDriveCredentials();
       base64FileDecoder.decodePfx();
+      base64FileDecoder.decodePem();
       log.info("Arquivos Base64 decodificados com sucesso!");
     } catch (Exception e) {
       log.error("Erro ao decodificar arquivos Base64: ", e);
