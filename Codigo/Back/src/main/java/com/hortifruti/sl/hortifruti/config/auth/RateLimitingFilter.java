@@ -23,7 +23,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
-    String clientIp = request.getRemoteAddr();
+    String clientIp = resolveClientIp(request);
     String endpoint = request.getRequestURI();
     String key = clientIp + ":" + endpoint;
 
@@ -42,5 +42,20 @@ public class RateLimitingFilter extends OncePerRequestFilter {
   private Bucket createNewBucket(String key) {
     Bandwidth limit = Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1)));
     return Bucket.builder().addLimit(limit).build();
+  }
+
+  /**
+   * A aplicação roda atrás de proxies (Railway e o rewrite same-origin do Next.js), então
+   * request.getRemoteAddr() sempre retorna o IP do proxy — usar isso como chave faria todos os
+   * usuários dividirem o mesmo balde de rate limit. X-Forwarded-For carrega o IP original do
+   * cliente, adicionado pelo proxy de borda; pegamos o primeiro valor da lista (o cliente mais
+   * próximo da origem).
+   */
+  private String resolveClientIp(HttpServletRequest request) {
+    String forwardedFor = request.getHeader("X-Forwarded-For");
+    if (forwardedFor != null && !forwardedFor.isBlank()) {
+      return forwardedFor.split(",")[0].trim();
+    }
+    return request.getRemoteAddr();
   }
 }
