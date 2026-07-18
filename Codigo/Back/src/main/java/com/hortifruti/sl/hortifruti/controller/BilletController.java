@@ -106,6 +106,18 @@ public class BilletController {
   }
 
   /**
+   * Baixa o PDF do boleto exatamente como foi gerado e guardado no bucket (R2), sem emitir uma via
+   * nova no Sicoob.
+   *
+   * @param combinedScoreId ID do CombinedScore associado ao boleto.
+   * @return PDF do boleto armazenado.
+   */
+  @GetMapping("/{combinedScoreId}/file")
+  public ResponseEntity<byte[]> downloadStoredBillet(@PathVariable Long combinedScoreId) {
+    return billetService.getStoredBilletFile(combinedScoreId);
+  }
+
+  /**
    * Realiza a baixa (cancelamento) de um boleto.
    *
    * @param idCombinedScore ID do CombinedScore associado ao boleto.

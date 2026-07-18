@@ -90,6 +90,20 @@ export function useBillet() {
         }
     };
 
+    const downloadStoredBillet = async (combinedScoreId: number): Promise<Blob> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const result = await billetService.downloadStoredBillet(combinedScoreId);
+            return result;
+        } catch (err: any) {
+            setError(err.message || "Erro ao baixar boleto armazenado");
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const cancelBillet = async (combinedScoreId: number) => {
         setIsLoading(true);
         setError(null);
@@ -125,6 +139,7 @@ export function useBillet() {
         getClientBillets,
         getOpenBillets,
         issueCopy,
+        downloadStoredBillet,
         cancelBillet,
         markBilletAsPaid,
         isLoading,

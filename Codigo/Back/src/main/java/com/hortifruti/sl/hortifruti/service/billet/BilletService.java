@@ -11,6 +11,7 @@ import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
+import com.hortifruti.sl.hortifruti.service.storage.BilletFileStorageService;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -49,6 +50,7 @@ public class BilletService {
   private final BilletQuery billetQuery;
   private final BilletCancel billetCancel;
   private final BilletInfoCombinedAndClient billetInfoCombinedAndClient;
+  private final BilletFileStorageService billetFileStorageService;
 
   public List<BilletResponse> listBilletByPayer(long clientId) throws IOException {
     return billetQuery.listBilletByPayer(clientId);
@@ -135,7 +137,8 @@ public class BilletService {
       log.warn(
           "Não foi possível confirmar no Sicoob os boletos em aberto do cliente {}: {}",
           clientId,
-          e.getMessage());
+          e.getMessage(),
+          e);
       return clientScores.stream().map(cs -> new ReconciledScore(cs, false)).toList();
     }
 
@@ -189,13 +192,17 @@ public class BilletService {
             resolvedStatus);
         cs.setStatus(resolvedStatus);
         combinedScoreRepository.save(cs);
+        if (resolvedStatus == Status.CANCELADO_BOLETO) {
+          billetFileStorageService.cancelBilletFileAfterCommit(cs.getId());
+        }
       }
     } catch (Exception e) {
       log.warn(
           "Boleto do agrupamento {} não está mais 'Em aberto' no Sicoob, mas não foi possível"
               + " confirmar sua situação final para corrigir o status local: {}",
           cs.getId(),
-          e.getMessage());
+          e.getMessage(),
+          e);
     }
   }
 
@@ -225,6 +232,17 @@ public class BilletService {
 
   public BilletResponse getBilletByCombinedScore(long combinedScoreId) throws IOException {
     return billetQuery.getBilletByCombinedScore(combinedScoreId);
+  }
+
+  /**
+   * Baixa o PDF do boleto exatamente como foi gerado e guardado no R2, sem emitir uma via nova no
+   * Sicoob (diferente de {@link #issueCopy}).
+   */
+  public ResponseEntity<byte[]> getStoredBilletFile(Long combinedScoreId) {
+    CombinedScore combinedScore =
+        billetInfoCombinedAndClient.findCombinedScoreById(combinedScoreId);
+    byte[] pdfBytes = billetFileStorageService.getBilletFileContent(combinedScoreId);
+    return buildPdfResponse(pdfBytes, combinedScore.getYourNumber());
   }
 
   /**
@@ -281,8 +299,10 @@ public class BilletService {
       BilletRequestSimplified billetRequest =
           billetFactory.createBilletRequest(combinedScore, combinedScoreId, pagador, number);
       Map<String, Object> responseBody = issueBilletAndExtractResponse(billetRequest);
+      byte[] pdfBytes = (byte[]) responseBody.get("pdf");
+      billetFileStorageService.saveBilletFile(combinedScoreId, pdfBytes);
       updateCombinedScoreWithBilletData(combinedScore, responseBody);
-      return buildPdfResponse((byte[]) responseBody.get("pdf"), combinedScore.getYourNumber());
+      return buildPdfResponse(pdfBytes, combinedScore.getYourNumber());
     } catch (Exception e) {
       throw new CombinedScoreException("Erro ao gerar o boleto: " + e.getMessage(), e);
     }

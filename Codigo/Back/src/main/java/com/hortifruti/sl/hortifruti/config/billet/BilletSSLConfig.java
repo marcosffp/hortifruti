@@ -5,15 +5,23 @@ import com.hortifruti.sl.hortifruti.exception.BilletException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.security.KeyStore;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Enumeration;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.config.TlsConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
+import org.apache.hc.client5.http.ssl.TlsSocketStrategy;
 import org.apache.hc.core5.http.message.BasicHeader;
+import org.apache.hc.core5.http.ssl.TLS;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -21,6 +29,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class BilletSSLConfig {
@@ -44,14 +53,24 @@ public class BilletSSLConfig {
         keyStore.load(instream, pfxPassword.toCharArray());
       }
 
-      TlsConfig tlsConfig =
-          TlsConfig.custom()
-              .setHandshakeTimeout(Timeout.ofSeconds(30))
-              .setSupportedProtocols("TLSv1.2", "TLSv1.3")
-              .build();
+      KeyManagerFactory keyManagerFactory =
+          KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+      keyManagerFactory.init(keyStore, pfxPassword.toCharArray());
+
+      SSLContext sslContext = SSLContext.getInstance("TLS");
+      sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+
+      TlsSocketStrategy tlsSocketStrategy =
+          ClientTlsStrategyBuilder.create()
+              .setSslContext(sslContext)
+              .setTlsVersions(TLS.V_1_2, TLS.V_1_3)
+              .buildClassic();
+
+      TlsConfig tlsConfig = TlsConfig.custom().setHandshakeTimeout(Timeout.ofSeconds(30)).build();
 
       PoolingHttpClientConnectionManager connectionManager =
           PoolingHttpClientConnectionManagerBuilder.create()
+              .setTlsSocketStrategy(tlsSocketStrategy)
               .setDefaultTlsConfig(tlsConfig)
               .setMaxConnTotal(20)
               .setMaxConnPerRoute(10)

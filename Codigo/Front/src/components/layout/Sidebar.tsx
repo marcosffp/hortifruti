@@ -58,18 +58,6 @@ const menu: MenuItem[] = [
         roles: ["MANAGER", "EMPLOYEE"],
       },
       {
-        label: "Gerenciamento de Compras",
-        icon: ShoppingBasket,
-        href: "/comercio/compras",
-        roles: ["MANAGER", "EMPLOYEE"],
-      },
-      {
-        label: "Boletos",
-        icon: Receipt,
-        href: "/comercio/boletos",
-        roles: ["MANAGER", "EMPLOYEE"],
-      },
-      {
         label: "Recomendações de Produtos",
         icon: BarChart,
         href: "/comercio/recomendacoes",
@@ -82,6 +70,18 @@ const menu: MenuItem[] = [
         roles: ["MANAGER"],
       },
     ],
+  },
+  {
+    label: "Gerenciamento de Compras",
+    icon: ShoppingBasket,
+    href: "/comercio/compras",
+    roles: ["MANAGER", "EMPLOYEE"],
+  },
+  {
+    label: "Boletos",
+    icon: Receipt,
+    href: "/comercio/boletos",
+    roles: ["MANAGER", "EMPLOYEE"],
   },
   {
     label: "Módulo Notificações",

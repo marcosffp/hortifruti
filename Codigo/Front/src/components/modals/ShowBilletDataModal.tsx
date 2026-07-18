@@ -24,8 +24,9 @@ export default function ShowBilletDataModal({
     clientNumber,
     onBilletCancelled
 }: ShowBilletDataModalProps) {
-    const { issueCopy, cancelBillet, isLoading } = useBillet();
+    const { issueCopy, downloadStoredBillet, cancelBillet, isLoading } = useBillet();
     const [cancelling, setCancelling] = useState(false);
+    const [downloadingStored, setDownloadingStored] = useState(false);
     const [confirmDeleteModalOpen, setConfirmDeleteModalOpen] = useState(false);
 
     if (!isOpen) return null;
@@ -48,6 +49,29 @@ export default function ShowBilletDataModal({
         } catch (error) {
             showError("Erro ao gerar segunda via do boleto");
             console.error(error);
+        }
+    };
+
+    const handleDownloadStoredBillet = async () => {
+        setDownloadingStored(true);
+        try {
+            const pdfBlob = await downloadStoredBillet(combinedScoreId);
+
+            const url = window.URL.createObjectURL(pdfBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `BOL-${clientNumber}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            showSuccess("Boleto baixado com sucesso!");
+        } catch (error) {
+            showError("Erro ao baixar boleto armazenado");
+            console.error(error);
+        } finally {
+            setDownloadingStored(false);
         }
     };
 
@@ -171,6 +195,14 @@ export default function ShowBilletDataModal({
                 </div>
 
                 <div className="sticky bottom-0 bg-white border-t border-gray-300 p-6 flex justify-end gap-3">
+                    <button
+                        onClick={handleDownloadStoredBillet}
+                        disabled={downloadingStored}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Download className="w-4 h-4" />
+                        {downloadingStored ? "Baixando..." : "Baixar Boleto"}
+                    </button>
                     <button
                         onClick={handleIssueCopy}
                         disabled={isLoading}

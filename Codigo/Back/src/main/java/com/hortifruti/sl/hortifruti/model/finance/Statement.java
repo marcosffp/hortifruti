@@ -34,9 +34,13 @@ public class Statement {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private long id;
 
+  /** Legado: extratos salvos antes da migração para R2. Novos registros usam {@link #objectKey}. */
   @Lob
   @Column(name = "file_path", columnDefinition = "LONGBLOB")
   private byte[] filePath;
+
+  @Column(name = "object_key", length = 500)
+  private String objectKey;
 
   @Column(nullable = false, length = 200)
   private String name;
