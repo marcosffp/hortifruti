@@ -8,4 +8,5 @@ public record BilletResponse(
     String dataVencimento,
     String seuNumero,
     String situacaoBoleto,
-    BigDecimal valor) {}
+    BigDecimal valor,
+    Long combinedScoreId) {}

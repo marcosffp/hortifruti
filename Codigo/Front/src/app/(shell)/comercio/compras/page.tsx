@@ -3,13 +3,16 @@
 import ClientSelector from "@/components/modules/ClientSelector";
 import ClientSummaryCards from "@/components/modules/ClientSummaryCards";
 import EnhancedUploadNotes from "@/components/modules/EnhancedUploadNotes";
+import { clientService } from "@/services/clientService";
 import { ClientSelectionInfo } from "@/types/clientType";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import PurchaseFilesTable from "@/components/modules/tables/PurchaseFilesTable";
 import { FileText, Package, ExternalLink } from "lucide-react";
 import CombinedScoresCards from "@/components/modules/CombinedScoresCards";
 
 export default function PurchasesPage() {
+    const searchParams = useSearchParams();
     const [selectedClient, setSelectedClient] = useState<ClientSelectionInfo | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
     const [tab, setTab] = useState<"purchaseFiles" | "grouped">("purchaseFiles");
@@ -17,6 +20,30 @@ export default function PurchasesPage() {
     const handleUploadSuccess = () => {
         setRefreshKey((prev) => prev + 1);
     };
+
+    // Permite chegar direto no agrupamento de um cliente via link (ex: vindo da tela de Boletos)
+    useEffect(() => {
+        const clientIdParam = searchParams?.get("clientId");
+        const tabParam = searchParams?.get("tab");
+
+        if (tabParam === "grouped") {
+            setTab("grouped");
+        }
+
+        if (!clientIdParam) return;
+        const clientId = Number(clientIdParam);
+        if (Number.isNaN(clientId)) return;
+
+        clientService
+            .getClientById(clientId)
+            .then((client) => {
+                setSelectedClient({ clientId: client.id, clientName: client.clientName });
+            })
+            .catch((error) => {
+                console.error("Erro ao carregar cliente a partir do link:", error);
+            });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams]);
 
     return (
         <main className="flex-1 p-6 bg-gray-50 overflow-auto flex flex-col min-h-full">

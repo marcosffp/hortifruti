@@ -3,6 +3,7 @@
 import { Geolocation } from "@/types/addressType";
 import { FreightConfigDTO } from "@/types/freightType";
 import { getAuthHeaders } from "@/utils/httpUtils";
+import { API_BASE_URL } from "@/config/api";
 
 export interface FreightRequest {
   origin: Geolocation;
@@ -15,8 +16,6 @@ export interface FreightResponse {
   freight: number;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-
 export const freightService = {
   async calculateFreight(
     origin: Geolocation,
@@ -26,6 +25,7 @@ export const freightService = {
       const response = await fetch(`${API_BASE_URL}/distance`, {
         method: "POST",
         headers: getAuthHeaders(),
+        credentials: "include",
         body: JSON.stringify({ origin, destination }),
       });
 
@@ -45,6 +45,7 @@ export const freightService = {
       const response = await fetch(`${API_BASE_URL}/distance/freight-config`, {
         method: "GET",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
 
       if (!response.ok) {

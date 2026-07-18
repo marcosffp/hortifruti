@@ -15,14 +15,16 @@ export function useAuth() {
     checkAuth();
   }, []);
 
-  const checkAuth = () => {
-    const authenticated = authService.isAuthenticated();
-    setIsAuthenticated(authenticated);
+  const checkAuth = async () => {
+    const user = await authService.me();
+    setIsAuthenticated(!!user);
 
-    if (authenticated) {
-      const userInfo = authService.getUserInfo();
-      setUserName(userInfo?.name || "");
-      setUserRoles(userInfo?.roles || []);
+    if (user) {
+      setUserName(user.name || "");
+      setUserRoles(user.roles || []);
+    } else {
+      setUserName("");
+      setUserRoles([]);
     }
 
     setIsLoading(false);
@@ -32,7 +34,7 @@ export function useAuth() {
     setIsLoading(true);
     try {
       await authService.login({ username, password });
-      checkAuth();
+      await checkAuth();
       return true;
     } catch (error) {
       console.error("Erro ao fazer login:", error);
@@ -42,8 +44,8 @@ export function useAuth() {
     }
   };
 
-  const logout = () => {
-    authService.logout();
+  const logout = async () => {
+    await authService.logout();
     setIsAuthenticated(false);
     setUserName("");
     setUserRoles([]);

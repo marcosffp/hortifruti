@@ -1,6 +1,7 @@
 "use client";
 
 import { fetchWithAuth } from "@/utils/httpUtils";
+import { API_BASE_URL as API_URL } from "@/config/api";
 
 export interface ProductRecommendation {
   productId: number;
@@ -24,8 +25,6 @@ export interface ProductResponse {
   peakSalesMonths: number[];
   lowSalesMonths: number[];
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export interface WeatherForecast {
   city: string;

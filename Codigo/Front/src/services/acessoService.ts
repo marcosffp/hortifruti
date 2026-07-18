@@ -1,4 +1,5 @@
 import { UserRequest, UserResponse, userService } from "./userService";
+import { API_BASE_URL } from "@/config/api";
 
 // Interfaces para compatibilidade com a UI
 interface UIUserRequest {
@@ -25,7 +26,7 @@ interface BackupStats {
 }
 
 class BackupService {
-  private baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+  private baseURL = API_BASE_URL;
 
   async getStats(): Promise<BackupStats> {
     try {
@@ -175,9 +176,7 @@ class BackupService {
     try {
       const response = await fetch(`${this.baseURL}/api/acesso`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-        },
+        credentials: "include",
       });
 
       if (response.ok) {
@@ -203,9 +202,7 @@ class BackupService {
 
       const response = await fetch(`${this.baseURL}/api/acesso/restore`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-        },
+        credentials: "include",
         body: formData,
       });
 

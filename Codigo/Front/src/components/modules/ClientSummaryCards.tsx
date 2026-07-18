@@ -2,6 +2,7 @@ import { ClientInfo } from "@/types/clientType";
 import { useEffect, useState } from "react";
 import { UserRound, Package, CircleDollarSign } from "lucide-react";
 import { getAuthHeaders } from "@/utils/httpUtils";
+import { API_BASE_URL } from "@/config/api";
 
 interface ClientSummaryCardsProps {
   clientId: number | undefined;
@@ -19,8 +20,9 @@ export default function ClientSummaryCards({ clientId, refreshKey }: ClientSumma
       setError(null);
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/clients/${clientId}/summary`, {
-            headers: getAuthHeaders()
+          `${API_BASE_URL}/clients/${clientId}/summary`, {
+            headers: getAuthHeaders(),
+            credentials: "include",
           }
         );
         if (!response.ok) throw new Error("Erro ao buscar dados do cliente");

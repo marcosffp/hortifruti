@@ -9,9 +9,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,12 +35,21 @@ public class ChatbotController {
 
   private final ChatbotService chatbotService;
 
+  @Value("${chatbot.webhook.secret}")
+  private String webhookSecret;
+
   /**
    * Webhook principal para receber mensagens do WhatsApp via UltraMsg.
    *
    * <p>Este endpoint é chamado automaticamente pela UltraMsg quando uma nova mensagem é enviada por
    * um cliente no WhatsApp.
    *
+   * <p>Como a UltraMsg não assina o payload, a autenticidade da chamada é validada por um segredo
+   * compartilhado enviado como query param {@code token}, configurado na própria URL do webhook
+   * cadastrada no painel da UltraMsg. Requisições sem o token correto são rejeitadas antes de
+   * qualquer dado de cliente ser processado.
+   *
+   * @param token Segredo compartilhado que comprova que a chamada veio da UltraMsg
    * @param payload Dados da mensagem recebida contendo informações como remetente, conteúdo, tipo e
    *     timestamp
    * @return ResponseEntity com status da operação
@@ -50,9 +62,13 @@ public class ChatbotController {
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "Mensagem processada com sucesso"),
+        @ApiResponse(responseCode = "401", description = "Token do webhook ausente ou inválido"),
         @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
       })
   public ResponseEntity<String> receiveWhatsAppMessage(
+      @Parameter(description = "Segredo compartilhado do webhook", required = true)
+          @RequestParam(required = false)
+          String token,
       @io.swagger.v3.oas.annotations.parameters.RequestBody(
               description = "Payload da mensagem recebida via UltraMsg",
               content =
@@ -73,6 +89,10 @@ public class ChatbotController {
                     """)))
           @RequestBody
           Map<String, Object> payload) {
+    if (!isValidWebhookToken(token)) {
+      log.warn("Tentativa de acesso ao webhook do chatbot com token inválido ou ausente");
+      return ResponseEntity.status(401).body("Invalid webhook token");
+    }
     try {
       chatbotService.processIncomingMessage(payload);
       return ResponseEntity.ok("Message processed successfully");
@@ -80,6 +100,16 @@ public class ChatbotController {
       log.error("Erro ao processar webhook do WhatsApp: {}", e.getMessage(), e);
       return ResponseEntity.status(500).body("Error processing message");
     }
+  }
+
+  /** Compara o token recebido com o segredo configurado em tempo constante. */
+  private boolean isValidWebhookToken(String token) {
+    if (token == null || webhookSecret == null || webhookSecret.isBlank()) {
+      return false;
+    }
+    byte[] provided = token.getBytes(StandardCharsets.UTF_8);
+    byte[] expected = webhookSecret.getBytes(StandardCharsets.UTF_8);
+    return MessageDigest.isEqual(provided, expected);
   }
 
   /**

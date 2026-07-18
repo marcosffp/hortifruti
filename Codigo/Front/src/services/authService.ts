@@ -1,27 +1,27 @@
 "use client";
 
+import { API_BASE_URL } from "@/config/api";
+
 export interface AuthRequest {
   username: string;
   password: string;
 }
 
-export interface AuthResponse {
-  token: string;
-  user: {
-    id: number;
-    username: string;
-    name: string;
-    roles: string[];
-  };
+export interface AuthUser {
+  id: number;
+  username: string;
+  name: string;
+  roles: string[];
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+let pendingMeRequest: Promise<AuthUser | null> | null = null;
 
 export const authService = {
-  async login(credentials: AuthRequest): Promise<AuthResponse> {
+  async login(credentials: AuthRequest): Promise<AuthUser> {
     try {
       const response = await fetch(`${API_BASE_URL}/auth`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -35,78 +35,46 @@ export const authService = {
         );
       }
 
-      const token = await response.text();
-
-      // JWT tokens são divididos em três partes separadas por ponto: header.payload.signature
-      const parts = token.split(".");
-      if (parts.length !== 3) {
-        throw new Error("Token inválido");
-      }
-
-      const payload = JSON.parse(atob(parts[1]));
-
-      const user = {
-        id: payload.id || 0,
-        username: payload.sub || "",
-        name: payload.sub || "", // Usar o subject como nome caso não haja um nome específico
-        roles: [payload.role?.replace("ROLE_", "") || ""],
-      };
-
-      localStorage.setItem("auth_token", token);
-      localStorage.setItem("user_info", JSON.stringify(user));
-
-      return { token, user };
+      return await response.json();
     } catch (error) {
       console.error("Falha ao fazer login:", error);
       throw error;
     }
   },
 
-  logout() {
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("user_info");
-    window.location.href = "/";
+  async me(): Promise<AuthUser | null> {
+    if (pendingMeRequest) return pendingMeRequest;
+
+    pendingMeRequest = (async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/me`, {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (!response.ok) return null;
+
+        return await response.json();
+      } catch {
+        return null;
+      } finally {
+        pendingMeRequest = null;
+      }
+    })();
+
+    return pendingMeRequest;
   },
 
-  isTokenExpired(token: string): boolean {
+  async logout() {
     try {
-      const parts = token.split(".");
-      if (parts.length !== 3) return true;
-      const payload = JSON.parse(atob(parts[1]));
-      if (!payload.exp) return true;
-      const now = Math.floor(Date.now() / 1000);
-      return payload.exp < now;
-    } catch {
-      return true;
+      await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Falha ao encerrar sessão no servidor:", error);
+    } finally {
+      window.location.href = "/";
     }
-  },
-
-  isAuthenticated(): boolean {
-    if (typeof window === "undefined") return false;
-    const token = localStorage.getItem("auth_token");
-    if (!token) return false;
-    return !this.isTokenExpired(token);
-  },
-
-  getToken(): string | null {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("auth_token");
-  },
-
-  getUserInfo() {
-    if (typeof window === "undefined") return null;
-    const userInfo = localStorage.getItem("user_info");
-    return userInfo ? JSON.parse(userInfo) : null;
-  },
-
-  // Alias para getUserInfo para compatibilidade
-  getCurrentUser() {
-    return this.getUserInfo();
-  },
-
-  hasRole(role: string): boolean {
-    const userInfo = this.getUserInfo();
-    if (!userInfo?.roles) return false;
-    return userInfo.roles.includes(role);
   },
 };

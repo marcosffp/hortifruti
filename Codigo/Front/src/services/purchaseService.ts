@@ -1,8 +1,7 @@
 import { GroupedProductRequest } from "@/types/groupedType";
 import { InvoiceProductType, InvoiceProductUpdate, PurchaseResponse } from "@/types/purchaseType";
 import { getAuthHeadersForFormData, getAuthHeaders } from "@/utils/httpUtils";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { API_BASE_URL } from "@/config/api";
 
 export const purchaseService = {
   async uploadPurchases(files: File[]): Promise<{ message: string }> {
@@ -12,6 +11,7 @@ export const purchaseService = {
     const response = await fetch(`${API_BASE_URL}/purchases/process`, {
       method: "POST",
       headers: getAuthHeadersForFormData(),
+      credentials: "include",
       body: formData,
     });
 
@@ -38,6 +38,7 @@ export const purchaseService = {
       )}&endDate=${encodeURIComponent(eDate)}`,
       {
         headers: getAuthHeaders(),
+        credentials: "include",
       }
     );
     if (!response.ok) throw new Error("Erro ao buscar produtos do cliente");
@@ -51,6 +52,7 @@ export const purchaseService = {
       `${API_BASE_URL}/purchases/client/${clientId}/ordered?page=${page}&size=${size}`,
       {
         headers: getAuthHeaders(),
+        credentials: "include",
       }
     );
     if (!response.ok) throw new Error("Erro ao buscar arquivos de compra");
@@ -71,6 +73,7 @@ export const purchaseService = {
     const response = await fetch(`${API_BASE_URL}/purchases/${fileId}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
+      credentials: "include",
     });
 
     if (!response.ok) {
@@ -85,7 +88,7 @@ export const purchaseService = {
   async fetchInvoiceProducts(purchaseId: number): Promise<InvoiceProductType[]> {
     const response = await fetch(
       `${API_BASE_URL}/purchases/${purchaseId}/products`,
-      { headers: getAuthHeaders() }
+      { headers: getAuthHeaders(), credentials: "include" }
     );
     if (!response.ok) throw new Error("Erro ao buscar produtos da compra");
     return await response.json();
@@ -99,6 +102,7 @@ export const purchaseService = {
     const response = await fetch(`${API_BASE_URL}/invoice-products/${id}`, {
       method: "PUT",
       headers,
+      credentials: "include",
       body: JSON.stringify(update),
     });
 
@@ -114,6 +118,7 @@ export const purchaseService = {
     const response = await fetch(`${API_BASE_URL}/invoice-products/${productId}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
+      credentials: "include",
     });
     if (!response.ok) throw new Error("Erro ao deletar produto");
   }

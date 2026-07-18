@@ -17,7 +17,7 @@ public class Auth {
   private final PasswordEncoder passwordEncoder;
   private final TokenConfiguration tokenConfiguration;
 
-  public String autenticar(AuthRequest authRequest) {
+  public AuthResult autenticar(AuthRequest authRequest) {
     String username = authRequest.username();
     String password = authRequest.password();
 
@@ -31,6 +31,10 @@ public class Auth {
       throw new AuthException("A senha informada está incorreta. Por favor, tente novamente.");
     }
 
-    return tokenConfiguration.generateToken(user.getId(), user.getUsername(), user.getRole());
+    String token =
+        tokenConfiguration.generateToken(user.getId(), user.getUsername(), user.getRole());
+    return new AuthResult(token, user);
   }
+
+  public record AuthResult(String token, User user) {}
 }

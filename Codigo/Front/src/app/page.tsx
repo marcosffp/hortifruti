@@ -9,11 +9,14 @@ export default function App() {
   const router = useRouter();
 
   useEffect(() => {
-    if (authService.isAuthenticated()) {
-      router.push("/dashboard");
-    } else {
-      router.push("/landing");
-    }
+    (async () => {
+      const user = await authService.me();
+      if (user) {
+        router.push("/dashboard");
+      } else {
+        router.push("/landing");
+      }
+    })();
   }, [router]);
 
   return (

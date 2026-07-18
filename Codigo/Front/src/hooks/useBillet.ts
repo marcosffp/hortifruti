@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { billetService } from "@/services/billetService";
-import { BilletResponse } from "@/types/billetType";
+import { BilletFilters, BilletResponse, OpenBilletResponse } from "@/types/billetType";
 
 export function useBillet() {
     const [isLoading, setIsLoading] = useState(false);
@@ -48,14 +48,28 @@ export function useBillet() {
         }
     };
 
-    const getClientBillets = async (clientId: number) => {
+    const getClientBillets = async (clientId: number, filters?: BilletFilters) => {
         setIsLoading(true);
         setError(null);
         try {
-            const result = await billetService.getClientBillets(clientId);
+            const result = await billetService.getClientBillets(clientId, filters);
             return result;
         } catch (err: any) {
             setError(err.message || "Erro ao buscar boletos do cliente");
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const getOpenBillets = async (): Promise<OpenBilletResponse[]> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const result = await billetService.getOpenBillets();
+            return result;
+        } catch (err: any) {
+            setError(err.message || "Erro ao buscar boletos em aberto");
             throw err;
         } finally {
             setIsLoading(false);
@@ -90,14 +104,30 @@ export function useBillet() {
         }
     };
 
-    return { 
-        downloadBillet, 
-        generateBillet, 
-        getBilletInfo, 
-        getClientBillets, 
-        issueCopy, 
-        cancelBillet, 
-        isLoading, 
-        error 
+    const markBilletAsPaid = async (combinedScoreId: number) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const result = await billetService.markBilletAsPaid(combinedScoreId);
+            return result;
+        } catch (err: any) {
+            setError(err.message || "Erro ao confirmar pagamento do boleto");
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return {
+        downloadBillet,
+        generateBillet,
+        getBilletInfo,
+        getClientBillets,
+        getOpenBillets,
+        issueCopy,
+        cancelBillet,
+        markBilletAsPaid,
+        isLoading,
+        error
     };
 }

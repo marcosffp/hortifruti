@@ -1,6 +1,7 @@
 "use client";
 
 import { getAuthHeadersForFormData } from "@/utils/httpUtils";
+import { API_BASE_URL } from "@/config/api";
 
 export interface StatementResponse {
   id: number;
@@ -9,8 +10,6 @@ export interface StatementResponse {
   status: string;
   message?: string;
 }
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export const statementService = {
   async uploadStatements(files: File[]): Promise<{ message: string }> {
@@ -23,6 +22,7 @@ export const statementService = {
       const response = await fetch(`${API_BASE_URL}/statements/import`, {
         method: "POST",
         headers: getAuthHeadersForFormData(),
+        credentials: "include",
         body: formData,
       });
 
@@ -44,6 +44,7 @@ export const statementService = {
       const response = await fetch(`${API_BASE_URL}/statements`, {
         method: "GET",
         headers: getAuthHeadersForFormData(),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -64,6 +65,7 @@ export const statementService = {
       const response = await fetch(`${API_BASE_URL}/statements/${id}`, {
         method: "DELETE",
         headers: getAuthHeadersForFormData(),
+        credentials: "include",
       });
 
       if (!response.ok) {
