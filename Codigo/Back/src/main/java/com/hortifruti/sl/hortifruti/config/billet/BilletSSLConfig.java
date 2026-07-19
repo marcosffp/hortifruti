@@ -29,6 +29,19 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
+/**
+ * Diagnostico de mTLS em producao (Railway): se os logs de {@link LoggingX509KeyManager} e do
+ * catch de {@code ResourceAccessException} em {@code SicoobToken}/{@code BilletHttpClient} nao
+ * forem suficientes para identificar a causa de uma falha de handshake, dá pra ligar o log
+ * nativo de SSL da JVM setando, so no servico do Railway e so durante a janela de diagnostico:
+ *
+ * <pre>{@code
+ * JAVA_TOOL_OPTIONS=-Djavax.net.debug=ssl:handshake
+ * }</pre>
+ *
+ * É muito verboso (loga bytes do handshake) — REMOVER essa variável assim que o diagnóstico
+ * terminar, não deixar ligada em produção.
+ */
 @Slf4j
 @Configuration
 @RequiredArgsConstructor

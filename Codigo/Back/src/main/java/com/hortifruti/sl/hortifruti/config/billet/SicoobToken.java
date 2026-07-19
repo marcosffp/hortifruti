@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -16,8 +17,10 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class SicoobToken {
@@ -36,7 +39,10 @@ public class SicoobToken {
   @Qualifier("billetRestTemplate")
   private final RestTemplate restTemplate;
 
+  private final EgressIpLogger egressIpLogger;
+
   public synchronized String getAccessToken() {
+    long startedAt = System.currentTimeMillis();
     try {
       if (accessToken != null && System.currentTimeMillis() < tokenExpiresAt - 30000) {
         return accessToken;
@@ -54,6 +60,7 @@ public class SicoobToken {
 
       HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
 
+      startedAt = System.currentTimeMillis();
       ResponseEntity<String> response = restTemplate.postForEntity(authUrl, request, String.class);
 
       processTokenResponse(response);
@@ -63,6 +70,18 @@ public class SicoobToken {
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
       throw new BilletException(
           "Erro ao obter token de acesso: " + ex.getResponseBodyAsString(), ex);
+    } catch (ResourceAccessException ex) {
+      long elapsedMs = System.currentTimeMillis() - startedAt;
+      Throwable rootCause = ex.getCause();
+      String causeClass = rootCause != null ? rootCause.getClass().getSimpleName() : ex.getClass().getSimpleName();
+      String causeMessage = rootCause != null ? rootCause.getMessage() : ex.getMessage();
+      log.error(
+          "[Sicoob][token] falha de rede/TLS - causaRaiz={} mensagem={} elapsedMs={} egressIp={}",
+          causeClass,
+          causeMessage,
+          elapsedMs,
+          egressIpLogger.currentEgressIp());
+      throw new BilletException("Erro de rede/TLS ao obter token de acesso: " + causeMessage, ex);
     } catch (Exception ex) {
       throw new BilletException("Erro inesperado ao obter token de acesso.", ex);
     }

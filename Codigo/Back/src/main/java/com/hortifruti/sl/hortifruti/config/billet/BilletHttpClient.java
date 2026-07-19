@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -16,8 +17,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class BilletHttpClient {
@@ -31,6 +34,8 @@ public class BilletHttpClient {
   private final SicoobToken sicoobToken;
 
   private final ObjectMapper objectMapper;
+
+  private final EgressIpLogger egressIpLogger;
 
   public JsonNode get(String endpoint) throws IOException {
     try {
@@ -170,25 +175,63 @@ public class BilletHttpClient {
   }
 
   private ResponseEntity<String> doGet(String endpoint) throws IOException {
-    HttpEntity<String> entity = new HttpEntity<>(createHeaders());
-    return restTemplate.exchange(apiUrl + endpoint, HttpMethod.GET, entity, String.class);
+    long startedAt = System.currentTimeMillis();
+    try {
+      HttpEntity<String> entity = new HttpEntity<>(createHeaders());
+      return restTemplate.exchange(apiUrl + endpoint, HttpMethod.GET, entity, String.class);
+    } catch (ResourceAccessException ex) {
+      logNetworkFailure("GET " + endpoint, ex, startedAt);
+      throw ex;
+    }
   }
 
   private ResponseEntity<String> doPost(String endpoint, Object body) throws IOException {
-    String jsonBody = objectMapper.writeValueAsString(body);
-    HttpEntity<String> entity = new HttpEntity<>(jsonBody, createHeaders());
-    return restTemplate.postForEntity(apiUrl + endpoint, entity, String.class);
+    long startedAt = System.currentTimeMillis();
+    try {
+      String jsonBody = objectMapper.writeValueAsString(body);
+      HttpEntity<String> entity = new HttpEntity<>(jsonBody, createHeaders());
+      return restTemplate.postForEntity(apiUrl + endpoint, entity, String.class);
+    } catch (ResourceAccessException ex) {
+      logNetworkFailure("POST " + endpoint, ex, startedAt);
+      throw ex;
+    }
   }
 
   private ResponseEntity<String> doPut(String endpoint, Object body) throws IOException {
-    String jsonBody = objectMapper.writeValueAsString(body);
-    HttpEntity<String> entity = new HttpEntity<>(jsonBody, createHeaders());
-    return restTemplate.exchange(apiUrl + endpoint, HttpMethod.PUT, entity, String.class);
+    long startedAt = System.currentTimeMillis();
+    try {
+      String jsonBody = objectMapper.writeValueAsString(body);
+      HttpEntity<String> entity = new HttpEntity<>(jsonBody, createHeaders());
+      return restTemplate.exchange(apiUrl + endpoint, HttpMethod.PUT, entity, String.class);
+    } catch (ResourceAccessException ex) {
+      logNetworkFailure("PUT " + endpoint, ex, startedAt);
+      throw ex;
+    }
   }
 
   private ResponseEntity<String> doDelete(String endpoint) throws IOException {
-    HttpEntity<String> entity = new HttpEntity<>(createHeaders());
-    return restTemplate.exchange(apiUrl + endpoint, HttpMethod.DELETE, entity, String.class);
+    long startedAt = System.currentTimeMillis();
+    try {
+      HttpEntity<String> entity = new HttpEntity<>(createHeaders());
+      return restTemplate.exchange(apiUrl + endpoint, HttpMethod.DELETE, entity, String.class);
+    } catch (ResourceAccessException ex) {
+      logNetworkFailure("DELETE " + endpoint, ex, startedAt);
+      throw ex;
+    }
+  }
+
+  private void logNetworkFailure(String operation, ResourceAccessException ex, long startedAt) {
+    long elapsedMs = System.currentTimeMillis() - startedAt;
+    Throwable rootCause = ex.getCause();
+    String causeClass = rootCause != null ? rootCause.getClass().getSimpleName() : ex.getClass().getSimpleName();
+    String causeMessage = rootCause != null ? rootCause.getMessage() : ex.getMessage();
+    log.error(
+        "[Sicoob][api] operacao={} falha de rede/TLS - causaRaiz={} mensagem={} elapsedMs={} egressIp={}",
+        operation,
+        causeClass,
+        causeMessage,
+        elapsedMs,
+        egressIpLogger.currentEgressIp());
   }
 
   private HttpHeaders createHeaders() throws IOException {
