@@ -133,7 +133,12 @@ public class GmailSmtpEmailSender implements EmailSender {
     Properties props = sender.getJavaMailProperties();
     props.put("mail.transport.protocol", "smtp");
     props.put("mail.smtp.auth", "true");
-    props.put("mail.smtp.starttls.enable", "true");
+    if (port == 465) {
+      // Porta 465 usa SSL implícito desde a conexão inicial (sem STARTTLS).
+      props.put("mail.smtp.ssl.enable", "true");
+    } else {
+      props.put("mail.smtp.starttls.enable", "true");
+    }
     props.put("mail.smtp.connectiontimeout", String.valueOf(connectionTimeoutMs));
     props.put("mail.smtp.timeout", String.valueOf(timeoutMs));
     props.put("mail.smtp.writetimeout", String.valueOf(timeoutMs));
