@@ -15,13 +15,13 @@
 ![Docker](https://img.shields.io/badge/Docker-Multi--stage-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-Auth0-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
 ![Swagger](https://img.shields.io/badge/Swagger-OpenAPI_3-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)
-![Sicoob](https://img.shields.io/badge/Sicoob-Boletos-00A651?style=for-the-badge)
-![Banco do Brasil](https://img.shields.io/badge/Banco_do_Brasil-Extratos-FDC300?style=for-the-badge)
-![Focus NFe](https://img.shields.io/badge/Focus_NFe-NF--e-orange?style=for-the-badge)
+![Sicoob](https://img.shields.io/badge/Sicoob-Boletos-00A651?style=for-the-badge&labelColor=00A651)
+![Banco do Brasil](https://img.shields.io/badge/Banco_do_Brasil-Extratos-F9DD16?style=for-the-badge&labelColor=0038A8)
+![Focus NFe](https://img.shields.io/badge/Focus_NFe-NF--e-FF7A00?style=for-the-badge)
 ![Cloudflare R2](https://img.shields.io/badge/Cloudflare_R2-Storage-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
 ![Google Drive](https://img.shields.io/badge/Google_Drive-Backup-4285F4?style=for-the-badge&logo=googledrive&logoColor=white)
-![SendGrid](https://img.shields.io/badge/SendGrid-E--mail-1A82E2?style=for-the-badge&logo=twilio&logoColor=white)
-![OpenWeather](https://img.shields.io/badge/OpenWeather-Forecast-EB6E4B?style=for-the-badge&logo=openweathermap&logoColor=white)
+![SendGrid](https://img.shields.io/badge/SendGrid-E--mail-1A82E2?style=for-the-badge)
+![OpenWeather](https://img.shields.io/badge/OpenWeather-Forecast-EB6E4B?style=for-the-badge)
 ![Railway](https://img.shields.io/badge/Railway-Deploy-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
 
 ---

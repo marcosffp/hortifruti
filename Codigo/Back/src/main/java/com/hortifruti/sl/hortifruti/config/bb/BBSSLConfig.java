@@ -1,7 +1,6 @@
 package com.hortifruti.sl.hortifruti.config.bb;
 
 import com.hortifruti.sl.hortifruti.config.Base64FileDecoder;
-import com.hortifruti.sl.hortifruti.config.LoggingX509KeyManager;
 import com.hortifruti.sl.hortifruti.exception.BBApiException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -10,6 +9,7 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.config.TlsConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -32,6 +32,7 @@ import org.springframework.web.client.RestTemplate;
  * aqui porque o token (form-urlencoded) e o extrato (json) precisam de Content-Type diferentes por
  * requisicao.
  */
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class BBSSLConfig {
@@ -59,7 +60,7 @@ public class BBSSLConfig {
           KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
       keyManagerFactory.init(keyStore, pfxPassword.toCharArray());
 
-      KeyManager[] keyManagers = LoggingX509KeyManager.wrap(keyManagerFactory.getKeyManagers(), "BB");
+      KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
 
       SSLContext sslContext = SSLContext.getInstance("TLS");
       sslContext.init(keyManagers, null, null);

@@ -1,7 +1,6 @@
 package com.hortifruti.sl.hortifruti.config.billet;
 
 import com.hortifruti.sl.hortifruti.config.Base64FileDecoder;
-import com.hortifruti.sl.hortifruti.config.LoggingX509KeyManager;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -57,7 +56,7 @@ public class BilletSSLConfig {
           KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
       keyManagerFactory.init(keyStore, pfxPassword.toCharArray());
 
-      KeyManager[] keyManagers = LoggingX509KeyManager.wrap(keyManagerFactory.getKeyManagers(), "Sicoob");
+      KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
 
       SSLContext sslContext = SSLContext.getInstance("TLS");
       sslContext.init(keyManagers, null, null);
@@ -104,7 +103,6 @@ public class BilletSSLConfig {
     } catch (BilletException e) {
       throw e;
     } catch (Exception e) {
-      e.printStackTrace();
       throw new BilletException("Erro ao configurar SSL para o Sicoob: " + e.getMessage(), e);
     }
   }
