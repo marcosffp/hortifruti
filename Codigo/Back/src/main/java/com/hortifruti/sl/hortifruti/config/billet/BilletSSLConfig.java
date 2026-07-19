@@ -1,11 +1,13 @@
 package com.hortifruti.sl.hortifruti.config.billet;
 
 import com.hortifruti.sl.hortifruti.config.Base64FileDecoder;
+import com.hortifruti.sl.hortifruti.config.LoggingX509KeyManager;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.security.KeyStore;
 import java.util.Arrays;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import lombok.RequiredArgsConstructor;
@@ -55,8 +57,10 @@ public class BilletSSLConfig {
           KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
       keyManagerFactory.init(keyStore, pfxPassword.toCharArray());
 
+      KeyManager[] keyManagers = LoggingX509KeyManager.wrap(keyManagerFactory.getKeyManagers(), "Sicoob");
+
       SSLContext sslContext = SSLContext.getInstance("TLS");
-      sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+      sslContext.init(keyManagers, null, null);
 
       TlsSocketStrategy tlsSocketStrategy =
           ClientTlsStrategyBuilder.create()
