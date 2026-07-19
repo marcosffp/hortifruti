@@ -5,13 +5,20 @@ import com.hortifruti.sl.hortifruti.config.LoggingX509KeyManager;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hc.client5.http.EndpointInfo;
+import org.apache.hc.client5.http.classic.ExecChain;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.config.TlsConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -20,6 +27,9 @@ import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.client5.http.ssl.TlsSocketStrategy;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.http.ssl.TLS;
 import org.apache.hc.core5.util.Timeout;
@@ -107,6 +117,7 @@ public class BilletSSLConfig {
                       new BasicHeader("Content-Type", "application/json"),
                       new BasicHeader("User-Agent", "Hortifruti-SL/1.0")))
               .setDefaultRequestConfig(requestConfig)
+              .addExecInterceptorLast("sicoob-tls-diagnostics", this::logTlsSessionAfterExchange)
               .build();
 
       HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
@@ -119,6 +130,53 @@ public class BilletSSLConfig {
     } catch (Exception e) {
       e.printStackTrace();
       throw new BilletException("Erro ao configurar SSL para o Sicoob: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Loga o que a conexão TLS efetivamente negociou com o Sicoob (protocolo, cipher, certificado
+   * do peer e se um certificado de cliente foi de fato enviado), pra comparar local vs Railway.
+   * Complementa o {@link LoggingX509KeyManager}, que só loga a escolha do alias — não se o
+   * handshake que aconteceu depois disso realmente incluiu esse certificado.
+   */
+  private ClassicHttpResponse logTlsSessionAfterExchange(
+      ClassicHttpRequest request, ExecChain.Scope scope, ExecChain chain)
+      throws IOException, HttpException {
+    ClassicHttpResponse response = chain.proceed(request, scope);
+    logTlsSessionDetails(scope);
+    return response;
+  }
+
+  private void logTlsSessionDetails(ExecChain.Scope scope) {
+    try {
+      EndpointInfo endpointInfo = scope.execRuntime.getEndpointInfo();
+      SSLSession sslSession = endpointInfo != null ? endpointInfo.getSslSession() : null;
+      if (sslSession == null) {
+        log.info("[Sicoob][tls] host={} conexao sem TLS (sslSession nula)", scope.route.getTargetHost());
+        return;
+      }
+
+      String peerSubject;
+      try {
+        Certificate[] peerCerts = sslSession.getPeerCertificates();
+        peerSubject =
+            peerCerts.length > 0 && peerCerts[0] instanceof X509Certificate x509
+                ? x509.getSubjectX500Principal().getName()
+                : "?";
+      } catch (SSLPeerUnverifiedException ex) {
+        peerSubject = "(peer nao verificado: " + ex.getMessage() + ")";
+      }
+
+      Certificate[] localCerts = sslSession.getLocalCertificates();
+      log.info(
+          "[Sicoob][tls] host={} protocolo={} cipher={} peerSubject='{}' localCerts={}",
+          scope.route.getTargetHost(),
+          sslSession.getProtocol(),
+          sslSession.getCipherSuite(),
+          peerSubject,
+          localCerts == null ? 0 : localCerts.length);
+    } catch (Exception ex) {
+      log.warn("[Sicoob][tls] falha ao logar detalhes da sessao TLS: {}", ex.getMessage());
     }
   }
 }

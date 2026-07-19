@@ -68,6 +68,13 @@ public class SicoobToken {
       return accessToken;
 
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
+      long elapsedMs = System.currentTimeMillis() - startedAt;
+      log.error(
+          "[Sicoob][token] falha HTTP {} - corpo={} elapsedMs={} egressIp={}",
+          ex.getStatusCode(),
+          ex.getResponseBodyAsString(),
+          elapsedMs,
+          egressIpLogger.currentEgressIp());
       throw new BilletException(
           "Erro ao obter token de acesso: " + ex.getResponseBodyAsString(), ex);
     } catch (ResourceAccessException ex) {

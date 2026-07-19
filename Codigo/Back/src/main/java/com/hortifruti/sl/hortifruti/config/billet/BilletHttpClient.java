@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
@@ -38,19 +39,23 @@ public class BilletHttpClient {
   private final EgressIpLogger egressIpLogger;
 
   public JsonNode get(String endpoint) throws IOException {
+    long startedAt = System.currentTimeMillis();
     try {
       return processResponse(doGet(endpoint));
     } catch (HttpClientErrorException.Unauthorized ex) {
       sicoobToken.invalidateToken();
+      long retryStartedAt = System.currentTimeMillis();
       try {
         return processResponse(doGet(endpoint));
       } catch (HttpClientErrorException | HttpServerErrorException retryEx) {
+        logHttpFailure("GET " + endpoint + " (retry)", retryEx, retryStartedAt);
         throw new BilletException(
             "Erro GET após renovação de token: " + retryEx.getResponseBodyAsString(), retryEx);
       } catch (Exception retryEx) {
         throw new BilletException("Erro inesperado GET após renovação de token.", retryEx);
       }
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
+      logHttpFailure("GET " + endpoint, ex, startedAt);
       throw new BilletException(
           "Erro ao realizar requisição GET: " + ex.getResponseBodyAsString(), ex);
     } catch (Exception ex) {
@@ -59,21 +64,23 @@ public class BilletHttpClient {
   }
 
   public JsonNode post(String endpoint, Object body) throws IOException {
+    long startedAt = System.currentTimeMillis();
     try {
       return processResponse(doPost(endpoint, body));
     } catch (HttpClientErrorException.Unauthorized ex) {
       sicoobToken.invalidateToken();
+      long retryStartedAt = System.currentTimeMillis();
       try {
         return processResponse(doPost(endpoint, body));
       } catch (HttpClientErrorException | HttpServerErrorException retryEx) {
+        logHttpFailure("POST " + endpoint + " (retry)", retryEx, retryStartedAt);
         throw new BilletException(
             "Erro POST após renovação de token: " + retryEx.getResponseBodyAsString(), retryEx);
       } catch (Exception retryEx) {
         throw new BilletException("Erro inesperado POST após renovação de token.", retryEx);
       }
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
-      System.err.println("Erro HTTP - Status: " + ex.getStatusCode());
-      System.err.println("Resposta do servidor: " + ex.getResponseBodyAsString());
+      logHttpFailure("POST " + endpoint, ex, startedAt);
       throw new BilletException(
           "Erro ao realizar requisição POST: " + ex.getResponseBodyAsString(), ex);
     } catch (Exception ex) {
@@ -82,6 +89,7 @@ public class BilletHttpClient {
   }
 
   public JsonNode postCancel(String endpoint, Object body) throws IOException {
+    long startedAt = System.currentTimeMillis();
     try {
       ResponseEntity<String> response = doPost(endpoint, body);
       if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
@@ -90,6 +98,7 @@ public class BilletHttpClient {
       return processResponse(response);
     } catch (HttpClientErrorException.Unauthorized ex) {
       sicoobToken.invalidateToken();
+      long retryStartedAt = System.currentTimeMillis();
       try {
         ResponseEntity<String> response = doPost(endpoint, body);
         if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
@@ -97,6 +106,7 @@ public class BilletHttpClient {
         }
         return processResponse(response);
       } catch (HttpClientErrorException | HttpServerErrorException retryEx) {
+        logHttpFailure("POST-cancel " + endpoint + " (retry)", retryEx, retryStartedAt);
         throw new BilletException(
             "Erro POST-cancel após renovação de token: " + retryEx.getResponseBodyAsString(),
             retryEx);
@@ -104,6 +114,7 @@ public class BilletHttpClient {
         throw new BilletException("Erro inesperado POST-cancel após renovação de token.", retryEx);
       }
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
+      logHttpFailure("POST-cancel " + endpoint, ex, startedAt);
       throw new BilletException(
           "Erro ao realizar requisição POST: " + ex.getResponseBodyAsString(), ex);
     } catch (Exception ex) {
@@ -112,19 +123,23 @@ public class BilletHttpClient {
   }
 
   public ResponseEntity<String> put(String endpoint, Object body) throws IOException {
+    long startedAt = System.currentTimeMillis();
     try {
       return doPut(endpoint, body);
     } catch (HttpClientErrorException.Unauthorized ex) {
       sicoobToken.invalidateToken();
+      long retryStartedAt = System.currentTimeMillis();
       try {
         return doPut(endpoint, body);
       } catch (HttpClientErrorException | HttpServerErrorException retryEx) {
+        logHttpFailure("PUT " + endpoint + " (retry)", retryEx, retryStartedAt);
         throw new BilletException(
             "Erro PUT após renovação de token: " + retryEx.getResponseBodyAsString(), retryEx);
       } catch (Exception retryEx) {
         throw new BilletException("Erro inesperado PUT após renovação de token.", retryEx);
       }
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
+      logHttpFailure("PUT " + endpoint, ex, startedAt);
       throw new BilletException(
           "Erro ao realizar requisição PUT: " + ex.getResponseBodyAsString(), ex);
     } catch (Exception ex) {
@@ -133,19 +148,23 @@ public class BilletHttpClient {
   }
 
   public ResponseEntity<String> delete(String endpoint) throws IOException {
+    long startedAt = System.currentTimeMillis();
     try {
       return doDelete(endpoint);
     } catch (HttpClientErrorException.Unauthorized ex) {
       sicoobToken.invalidateToken();
+      long retryStartedAt = System.currentTimeMillis();
       try {
         return doDelete(endpoint);
       } catch (HttpClientErrorException | HttpServerErrorException retryEx) {
+        logHttpFailure("DELETE " + endpoint + " (retry)", retryEx, retryStartedAt);
         throw new BilletException(
             "Erro DELETE após renovação de token: " + retryEx.getResponseBodyAsString(), retryEx);
       } catch (Exception retryEx) {
         throw new BilletException("Erro inesperado DELETE após renovação de token.", retryEx);
       }
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
+      logHttpFailure("DELETE " + endpoint, ex, startedAt);
       throw new BilletException(
           "Erro ao realizar requisição DELETE: " + ex.getResponseBodyAsString(), ex);
     } catch (Exception ex) {
@@ -154,19 +173,23 @@ public class BilletHttpClient {
   }
 
   public ResponseEntity<JsonNode> getWithResponse(String endpoint) throws IOException {
+    long startedAt = System.currentTimeMillis();
     try {
       return toJsonResponse(doGet(endpoint));
     } catch (HttpClientErrorException.Unauthorized ex) {
       sicoobToken.invalidateToken();
+      long retryStartedAt = System.currentTimeMillis();
       try {
         return toJsonResponse(doGet(endpoint));
       } catch (HttpClientErrorException | HttpServerErrorException retryEx) {
+        logHttpFailure("GET " + endpoint + " (retry)", retryEx, retryStartedAt);
         throw new BilletException(
             "Erro GET após renovação de token: " + retryEx.getResponseBodyAsString(), retryEx);
       } catch (Exception retryEx) {
         throw new BilletException("Erro inesperado GET após renovação de token.", retryEx);
       }
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
+      logHttpFailure("GET " + endpoint, ex, startedAt);
       throw new BilletException(
           "Erro ao realizar requisição GET: " + ex.getResponseBodyAsString(), ex);
     } catch (Exception ex) {
@@ -218,6 +241,17 @@ public class BilletHttpClient {
       logNetworkFailure("DELETE " + endpoint, ex, startedAt);
       throw ex;
     }
+  }
+
+  private void logHttpFailure(String operation, HttpStatusCodeException ex, long startedAt) {
+    long elapsedMs = System.currentTimeMillis() - startedAt;
+    log.error(
+        "[Sicoob][api] operacao={} falha HTTP {} - corpo={} elapsedMs={} egressIp={}",
+        operation,
+        ex.getStatusCode(),
+        ex.getResponseBodyAsString(),
+        elapsedMs,
+        egressIpLogger.currentEgressIp());
   }
 
   private void logNetworkFailure(String operation, ResourceAccessException ex, long startedAt) {
