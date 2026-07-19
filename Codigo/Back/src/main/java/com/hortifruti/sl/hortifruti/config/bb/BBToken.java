@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.config.bb;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hortifruti.sl.hortifruti.config.RestTemplateDiagnostics;
 import com.hortifruti.sl.hortifruti.exception.BBApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +59,7 @@ public class BBToken {
       }
 
       HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+      RestTemplateDiagnostics.logIdentity("BBToken.getAccessToken", restTemplate);
       ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
       processTokenResponse(response);

@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.config.bb;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hortifruti.sl.hortifruti.config.RestTemplateDiagnostics;
 import com.hortifruti.sl.hortifruti.exception.BBApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +69,7 @@ public class BBExtratoClient {
     }
 
     try {
+      RestTemplateDiagnostics.logIdentity("BBExtratoClient.doGet", restTemplate);
       ResponseEntity<String> response =
           restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), String.class);
       if (response.getBody() == null) {

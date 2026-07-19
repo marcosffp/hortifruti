@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.config.billet;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hortifruti.sl.hortifruti.config.RestTemplateDiagnostics;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
@@ -201,6 +202,7 @@ public class BilletHttpClient {
     long startedAt = System.currentTimeMillis();
     try {
       HttpEntity<String> entity = new HttpEntity<>(createHeaders());
+      RestTemplateDiagnostics.logIdentity("BilletHttpClient.doGet", restTemplate);
       return restTemplate.exchange(apiUrl + endpoint, HttpMethod.GET, entity, String.class);
     } catch (ResourceAccessException ex) {
       logNetworkFailure("GET " + endpoint, ex, startedAt);
@@ -213,6 +215,7 @@ public class BilletHttpClient {
     try {
       String jsonBody = objectMapper.writeValueAsString(body);
       HttpEntity<String> entity = new HttpEntity<>(jsonBody, createHeaders());
+      RestTemplateDiagnostics.logIdentity("BilletHttpClient.doPost", restTemplate);
       return restTemplate.postForEntity(apiUrl + endpoint, entity, String.class);
     } catch (ResourceAccessException ex) {
       logNetworkFailure("POST " + endpoint, ex, startedAt);

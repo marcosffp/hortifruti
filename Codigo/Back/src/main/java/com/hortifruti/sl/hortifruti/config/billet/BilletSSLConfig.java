@@ -15,6 +15,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
+import javax.net.ssl.X509KeyManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.EndpointInfo;
@@ -81,6 +82,7 @@ public class BilletSSLConfig {
       keyManagerFactory.init(keyStore, pfxPassword.toCharArray());
 
       KeyManager[] keyManagers = LoggingX509KeyManager.wrap(keyManagerFactory.getKeyManagers(), "Sicoob");
+      logKeyManagerSelfTest(keyManagers);
 
       SSLContext sslContext = SSLContext.getInstance("TLS");
       sslContext.init(keyManagers, null, null);
@@ -123,6 +125,11 @@ public class BilletSSLConfig {
       HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
       factory.setHttpClient(httpClient);
 
+      log.info(
+          "[Sicoob][bean] billetRestTemplate construído. httpClient={} sslContext={}",
+          System.identityHashCode(httpClient),
+          System.identityHashCode(sslContext));
+
       return new RestTemplate(factory);
 
     } catch (BilletException e) {
@@ -131,6 +138,27 @@ public class BilletSSLConfig {
       e.printStackTrace();
       throw new BilletException("Erro ao configurar SSL para o Sicoob: " + e.getMessage(), e);
     }
+  }
+
+  /**
+   * Diagnostico temporario (ver diagnostico-mtls.md): consulta o alias diretamente no bean,
+   * na hora da construcao, para confirmar se o KeyManager resolve um certificado *neste*
+   * runtime — independente do que acontecer depois no handshake TLS real. Se isso logar
+   * "NENHUM alias selecionado" (ou nao logar nada, indicando que o array nem foi encapsulado
+   * por {@link LoggingX509KeyManager}), o problema esta no KeyStore/KeyManagerFactory deste
+   * ambiente, nao na conexao de rede.
+   */
+  private void logKeyManagerSelfTest(KeyManager[] keyManagers) {
+    if (keyManagers.length == 0 || !(keyManagers[0] instanceof X509KeyManager km)) {
+      log.warn("[Sicoob][bean][selftest] nenhum X509KeyManager disponivel para autoteste.");
+      return;
+    }
+    String selfTestAlias = km.chooseClientAlias(new String[] {"RSA"}, null, null);
+    log.info(
+        "[Sicoob][bean][selftest] chooseClientAlias direto no bean (fora do handshake real) "
+            + "retornou alias='{}' kmClass={}",
+        selfTestAlias,
+        km.getClass().getName());
   }
 
   /**

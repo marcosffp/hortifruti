@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.config.billet;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hortifruti.sl.hortifruti.config.RestTemplateDiagnostics;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +60,8 @@ public class SicoobToken {
       body.add("scope", scope);
 
       HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+
+      RestTemplateDiagnostics.logIdentity("SicoobToken.getAccessToken", restTemplate);
 
       startedAt = System.currentTimeMillis();
       ResponseEntity<String> response = restTemplate.postForEntity(authUrl, request, String.class);
