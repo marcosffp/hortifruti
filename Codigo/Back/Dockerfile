@@ -13,6 +13,12 @@ RUN mvn dependency:go-offline -B
 # Copia o código fonte
 COPY src ./src
 
+# lombok.config precisa estar presente durante o build (mvn package) para que
+# lombok.copyableAnnotations funcione — sem ele, @Qualifier em campos usados com
+# @RequiredArgsConstructor e descartado silenciosamente no construtor gerado, e o
+# Spring cai no fallback de autowiring por nome (bug real: ver diagnostico-mtls.md)
+COPY lombok.config ./
+
 # Build da aplicação
 RUN mvn clean package -DskipTests
 

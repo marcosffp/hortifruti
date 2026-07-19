@@ -2,7 +2,45 @@
 
 # Diagnóstico do Handshake mTLS (BB e Sicoob)
 
-## Veredito
+## CAUSA RAIZ CONFIRMADA (2026-07-19, rodada com logs de diagnóstico em `Sem Título.rtf`)
+
+O `Dockerfile` copiava `pom.xml` e `src/` para dentro do estágio de build do Maven, mas
+**nunca copiava `lombok.config`**. Sem esse arquivo presente durante `mvn clean package`
+dentro do container, a diretiva `lombok.copyableAnnotations +=
+org.springframework.beans.factory.annotation.Qualifier` nunca é aplicada — o Lombok descarta
+silenciosamente o `@Qualifier` do campo ao gerar o construtor via `@RequiredArgsConstructor`
+em `BBToken`, `BBExtratoClient`, `SicoobToken` e `BilletHttpClient`.
+
+Sem `@Qualifier` no construtor, o Spring cai no fallback de autowiring por **nome do
+parâmetro** — que é literalmente `restTemplate` nessas quatro classes — e isso batia por
+acidente com o bean `RestTemplateConfig.restTemplate()` (um `RestTemplate` genérico, sem
+`SSLContext`/certificado). Era esse bean, e não `bbRestTemplate`/`billetRestTemplate`, que
+estava sendo injetado em produção.
+
+Confirmado com o log `[mTLS:diag]` de `RestTemplateDiagnostics` na EC2:
+`requestFactory=org.springframework.http.client.SimpleClientHttpRequestFactory httpClient=n/a
+(nao e HttpComponentsClientHttpRequestFactory)` — o factory padrão do Spring, não o
+`HttpComponentsClientHttpRequestFactory` com o `SSLContext` mTLS configurado nos beans. O
+self-test do `KeyManager` no boot (`[mTLS:BB][bean][selftest]` /
+`[Sicoob][bean][selftest]`) resolveu o alias corretamente nos dois casos — confirmando que o
+`KeyStore`/PFX sempre esteve correto; o problema era puramente qual `RestTemplate` chegava
+até `SicoobToken`/`BBExtratoClient`/`BBToken`/`BilletHttpClient` em runtime.
+
+**Correções aplicadas:**
+1. `Dockerfile`: `COPY lombok.config ./` adicionado ao estágio de build, antes do
+   `mvn clean package` — restaura o comportamento pretendido de `lombok.copyableAnnotations`.
+2. `RestTemplateConfig.java`: bean genérico renomeado de `restTemplate` para
+   `genericRestTemplate`, para que uma futura perda de `@Qualifier` (por qualquer motivo) não
+   volte a colidir por nome com o bean errado. `WhatsAppService` (único outro consumidor do
+   bean genérico) atualizado com `@Qualifier("genericRestTemplate")` explícito.
+
+Confirmado via bytecode (`javap -v`) que o construtor gerado pelo Lombok agora carrega
+`RuntimeVisibleParameterAnnotations` com `@Qualifier("billetRestTemplate")` no parâmetro —
+com `lombok.config` presente no build.
+
+---
+
+## Veredito (histórico — antes da causa raiz acima ser encontrada)
 
 **A causa não é infraestrutura de rede (Railway/Render/WAF/IP), é código: o app real, em
 execução, não está enviando o certificado de cliente nas chamadas ao BB e ao Sicoob — e não
