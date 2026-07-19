@@ -1,6 +1,5 @@
+import { API_BASE_URL } from "@/config/api";
 import { getAuthHeaders } from "@/utils/httpUtils";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export interface TransactionResponse {
   id: number;
@@ -49,18 +48,26 @@ export const transactionService = {
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
     return {
-      startDate: firstDay.toISOString().split('T')[0], // formato YYYY-MM-DD
-      endDate: lastDay.toISOString().split('T')[0]
+      startDate: firstDay.toISOString().split("T")[0], // formato YYYY-MM-DD
+      endDate: lastDay.toISOString().split("T")[0],
     };
   },
 
-  async getTotalRevenueForCurrentMonth(startDate?: string, endDate?: string): Promise<number> {
+  async getTotalRevenueForCurrentMonth(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<number> {
     try {
-      const { startDate: defaultStartDate, endDate: defaultEndDate } = this.getDateRange(startDate, endDate);
-      const response = await fetch(`${API_BASE_URL}/transactions/revenue?startDate=${defaultStartDate}&endDate=${defaultEndDate}`, {
-        method: "GET",
-        headers: getAuthHeaders(),
-      });
+      const { startDate: defaultStartDate, endDate: defaultEndDate } =
+        this.getDateRange(startDate, endDate);
+      const response = await fetch(
+        `${API_BASE_URL}/transactions/revenue?startDate=${defaultStartDate}&endDate=${defaultEndDate}`,
+        {
+          method: "GET",
+          headers: getAuthHeaders(),
+          credentials: "include",
+        },
+      );
       if (!response.ok) {
         throw new Error(`Erro ao buscar receita total: ${response.statusText}`);
       }
@@ -72,13 +79,21 @@ export const transactionService = {
     }
   },
 
-  async getTotalExpensesForCurrentMonth(startDate?: string, endDate?: string): Promise<number> {
+  async getTotalExpensesForCurrentMonth(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<number> {
     try {
-      const { startDate: defaultStartDate, endDate: defaultEndDate } = this.getDateRange(startDate, endDate);
-      const response = await fetch(`${API_BASE_URL}/transactions/expenses?startDate=${defaultStartDate}&endDate=${defaultEndDate}`, {
-        method: "GET",
-        headers: getAuthHeaders(),
-      });
+      const { startDate: defaultStartDate, endDate: defaultEndDate } =
+        this.getDateRange(startDate, endDate);
+      const response = await fetch(
+        `${API_BASE_URL}/transactions/expenses?startDate=${defaultStartDate}&endDate=${defaultEndDate}`,
+        {
+          method: "GET",
+          headers: getAuthHeaders(),
+          credentials: "include",
+        },
+      );
       if (!response.ok) {
         throw new Error(
           `Erro ao buscar despesas totais: ${response.statusText}`,
@@ -92,13 +107,21 @@ export const transactionService = {
     }
   },
 
-  async getTotalBalanceForCurrentMonth(startDate?: string, endDate?: string): Promise<number> {
+  async getTotalBalanceForCurrentMonth(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<number> {
     try {
-      const { startDate: defaultStartDate, endDate: defaultEndDate } = this.getDateRange(startDate, endDate);
-      const response = await fetch(`${API_BASE_URL}/transactions/balance?startDate=${defaultStartDate}&endDate=${defaultEndDate}`, {
-        method: "GET",
-        headers: getAuthHeaders(),
-      });
+      const { startDate: defaultStartDate, endDate: defaultEndDate } =
+        this.getDateRange(startDate, endDate);
+      const response = await fetch(
+        `${API_BASE_URL}/transactions/balance?startDate=${defaultStartDate}&endDate=${defaultEndDate}`,
+        {
+          method: "GET",
+          headers: getAuthHeaders(),
+          credentials: "include",
+        },
+      );
       if (!response.ok) {
         throw new Error(`Erro ao buscar saldo total: ${response.statusText}`);
       }
@@ -129,31 +152,28 @@ export const transactionService = {
     const queryString = params.toString();
     const url = `${API_BASE_URL}/transactions${queryString ? `?${queryString}` : ""}`;
 
-
-
     const response = await fetch(url, {
       method: "GET",
       headers: getAuthHeaders(),
+      credentials: "include",
     });
-    
+
     if (!response.ok) {
       throw new Error(
         `Erro ao buscar todas as transações: ${response.statusText}`,
       );
     }
-    
+
     const data = await response.json();
 
-    
     const result: PageResult<TransactionResponse> = {
       content: data.content || [],
       totalPages: data.totalPages || data.page?.totalPages || 0,
       totalElements: data.totalElements || data.page?.totalElements || 0,
       size: data.size || data.page?.size || 0,
-      number: data.number || data.page?.number || 0
+      number: data.number || data.page?.number || 0,
     };
-    
-    
+
     return result;
   },
 
@@ -165,13 +185,16 @@ export const transactionService = {
       const response = await fetch(`${API_BASE_URL}/transactions/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        credentials: "include",
         body: JSON.stringify(transaction),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Resposta de erro do servidor:", errorText);
-        throw new Error(`Erro ao atualizar transação: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Erro ao atualizar transação: ${response.status} ${response.statusText}`,
+        );
       }
 
       const data = await response.json();
@@ -187,6 +210,7 @@ export const transactionService = {
       const response = await fetch(`${API_BASE_URL}/transactions/${id}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
       if (!response.ok) {
         throw new Error(`Erro ao deletar transação: ${response.statusText}`);
@@ -197,7 +221,10 @@ export const transactionService = {
     }
   },
 
-  async exportTransactionsAsExcel(startDate?: string, endDate?: string): Promise<Blob> {
+  async exportTransactionsAsExcel(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<Blob> {
     try {
       const params = new URLSearchParams();
       if (startDate) params.append("startDate", startDate);
@@ -209,6 +236,7 @@ export const transactionService = {
         {
           method: "POST",
           headers: getAuthHeaders(),
+          credentials: "include",
         },
       );
       if (!response.ok) {
@@ -224,12 +252,18 @@ export const transactionService = {
 
   async exportTransactionsComplete(): Promise<Blob> {
     try {
-      const response = await fetch(`${API_BASE_URL}/transactions/export-complete`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/transactions/export-complete`,
+        {
+          method: "POST",
+          headers: getAuthHeaders(),
+          credentials: "include",
+        },
+      );
       if (!response.ok) {
-        throw new Error(`Erro ao exportar relatório completo: ${response.statusText}`);
+        throw new Error(
+          `Erro ao exportar relatório completo: ${response.statusText}`,
+        );
       }
       const blob = await response.blob();
       return blob;
@@ -242,6 +276,7 @@ export const transactionService = {
   async getAllCategories(): Promise<string[]> {
     const response = await fetch(`${API_BASE_URL}/transactions/categories`, {
       headers: getAuthHeaders(),
+      credentials: "include",
     });
     if (!response.ok) throw new Error("Erro ao buscar categorias");
     return await response.json();

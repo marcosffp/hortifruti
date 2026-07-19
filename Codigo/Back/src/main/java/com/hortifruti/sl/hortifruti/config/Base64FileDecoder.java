@@ -18,8 +18,14 @@ public class Base64FileDecoder {
   @Value("${document.pfx}")
   private String pfx;
 
+  @Value("${document.pem}")
+  private String pem;
+
   @Value("${pfx.temp.directory}")
   private String pfxTempDirectory;
+
+  @Value("${pem.temp.directory}")
+  private String pemTempDirectory;
 
   @Value("${google.temp.directory}")
   private String googleTempDirectory;
@@ -41,13 +47,30 @@ public class Base64FileDecoder {
     }
     String outputPath = pfxTempDirectory + "/HORTIFRUTISANTALUZIALTDA275409060001552025.pfx";
     File decodedFile = decodeBase64ToFile(pfx, outputPath);
-    if (decodedFile == null) {
+    if (decodedFile == null || !decodedFile.exists()) {
       throw new BilletException("Falha ao decodificar o arquivo PFX.");
     }
-    if (decodedFile.exists()) {
-    } else {
-      System.err.println("[ERROR] Falha ao decodificar o arquivo PFX.");
+    return decodedFile;
+  }
+
+  public File decodePem() throws IOException {
+    if (pem == null || pem.isEmpty()) {
+      throw new BilletException("A propriedade 'document.pem' está vazia ou não foi configurada.");
     }
+
+    File tempDir = new File(pemTempDirectory);
+    if (!tempDir.exists() && !tempDir.mkdirs()) {
+      throw new BilletException(
+          "Não foi possível criar o diretório temporário: " + pemTempDirectory);
+    }
+
+    String outputPath = pemTempDirectory + "/empresa.pem";
+    File decodedFile = decodeBase64ToFile(pem, outputPath);
+
+    if (decodedFile == null || !decodedFile.exists()) {
+      throw new BilletException("Falha ao decodificar o arquivo PEM.");
+    }
+
     return decodedFile;
   }
 
@@ -70,6 +93,11 @@ public class Base64FileDecoder {
 
   public File getPfxFile() {
     File file = new File(pfxTempDirectory + "/HORTIFRUTISANTALUZIALTDA275409060001552025.pfx");
+    return file.exists() ? file : null;
+  }
+
+  public File getPemFile() {
+    File file = new File(pemTempDirectory + "/empresa.pem");
     return file.exists() ? file : null;
   }
 }

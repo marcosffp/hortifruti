@@ -1,6 +1,5 @@
+import { API_BASE_URL } from "@/config/api";
 import { getAuthHeaders } from "@/utils/httpUtils";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export const reportService = {
   async fetchMonthlyReport(startDate: string, endDate: string): Promise<Blob> {
@@ -8,11 +7,11 @@ export const reportService = {
     const eDate = endDate;
     const response = await fetch(
       `${API_BASE_URL}/icms-report/monthly/${sDate}/${eDate}`,
-      { headers: getAuthHeaders() }
+      { headers: getAuthHeaders(), credentials: "include" },
     );
     if (!response.ok) {
       throw new Error("Failed to fetch monthly report");
     }
     return await response.blob();
-  }
+  },
 };

@@ -27,9 +27,9 @@ export function useStatement() {
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + " B";
-    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
-    else return (bytes / 1048576).toFixed(1) + " MB";
+    if (bytes < 1024) return `${bytes} B`;
+    else if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+    else return `${(bytes / 1048576).toFixed(1)} MB`;
   };
 
   const processFiles = async (files: File[]) => {
@@ -43,8 +43,10 @@ export function useStatement() {
 
       const response = await statementService.uploadStatements(files);
       return response;
-    } catch (err: any) {
-      setError(err.message || "Erro ao processar os arquivos.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao processar os arquivos.",
+      );
       throw err;
     } finally {
       setIsLoading(false);

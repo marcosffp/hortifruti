@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { dashboardService, DashboardData } from "@/services/dashboardService";
+import {
+  type DashboardData,
+  dashboardService,
+} from "@/services/dashboardService";
 
 export function useDashboard() {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,15 +14,23 @@ export function useDashboard() {
     startDate: string,
     endDate: string,
     month: number,
-    year: number
+    year: number,
   ): Promise<DashboardData | null> => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await dashboardService.getDashboardData(startDate, endDate, month, year);
+      const data = await dashboardService.getDashboardData(
+        startDate,
+        endDate,
+        month,
+        year,
+      );
       return data;
-    } catch (err: any) {
-      const errorMessage = err.message || "Erro ao buscar dados do dashboard.";
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Erro ao buscar dados do dashboard.";
       setError(errorMessage);
       console.error("Erro no hook useDashboard:", err);
       return null;

@@ -44,6 +44,7 @@ public class SecurityConfig {
             auth ->
                 auth.requestMatchers(
                         "/auth",
+                        "/auth/logout",
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/scheduler/**",
@@ -51,9 +52,9 @@ public class SecurityConfig {
                         "/chatbot/webhook")
                     .permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.GET, "/clients/**")
-                    .permitAll()
+                    .hasAnyRole("EMPLOYEE", "MANAGER")
                     .requestMatchers("/users")
-                    .hasRole("EMPLOYEE")
+                    .hasAnyRole("EMPLOYEE", "MANAGER")
                     .requestMatchers("/products/**")
                     .hasRole("MANAGER")
                     .requestMatchers("/api/recommendations/**")

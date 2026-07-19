@@ -1,11 +1,11 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
-import RoleGuard from "@/components/auth/RoleGuard";
 import { useEffect, useState } from "react";
+import RoleGuard from "@/components/auth/RoleGuard";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ProfilePage() {
-  const { userName, userRoles, isAuthenticated } = useAuth();
+  const { userName, userRoles } = useAuth();
   const [loginTime, setLoginTime] = useState<string>("");
 
   useEffect(() => {

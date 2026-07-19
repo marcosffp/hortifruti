@@ -18,11 +18,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
@@ -63,10 +65,9 @@ public class NotificationController {
           notificationService.sendGenericFilesToAccounting(files, request);
       return ResponseEntity.ok(response);
     } catch (Exception e) {
+      log.error("Erro ao enviar arquivos para contabilidade", e);
       return ResponseEntity.badRequest()
-          .body(
-              new NotificationResponse(
-                  false, "Erro ao enviar arquivos para contabilidade: " + e.getMessage()));
+          .body(new NotificationResponse(false, "Erro ao enviar arquivos para contabilidade."));
     }
   }
 
@@ -92,10 +93,9 @@ public class NotificationController {
       NotificationResponse response = notificationService.sendDocumentsToClient(files, request);
       return ResponseEntity.ok(response);
     } catch (Exception e) {
+      log.error("Erro ao enviar documentos para cliente {}", clientId, e);
       return ResponseEntity.badRequest()
-          .body(
-              new NotificationResponse(
-                  false, "Erro ao enviar documentos para cliente: " + e.getMessage()));
+          .body(new NotificationResponse(false, "Erro ao enviar documentos para o cliente."));
     }
   }
 
@@ -132,9 +132,10 @@ public class NotificationController {
       return ResponseEntity.ok(response);
 
     } catch (Exception e) {
+      log.error("Erro ao enviar email de teste de armazenamento", e);
       Map<String, Object> errorResponse = new HashMap<>();
       errorResponse.put("success", false);
-      errorResponse.put("message", "Erro ao enviar email de teste: " + e.getMessage());
+      errorResponse.put("message", "Erro ao enviar email de teste.");
       errorResponse.put("timestamp", LocalDateTime.now());
 
       return ResponseEntity.internalServerError().body(errorResponse);
@@ -180,9 +181,10 @@ public class NotificationController {
       return ResponseEntity.ok(response);
 
     } catch (Exception e) {
+      log.error("Erro ao executar verificação de boletos vencidos", e);
       Map<String, Object> errorResponse = new HashMap<>();
       errorResponse.put("success", false);
-      errorResponse.put("message", "Erro ao executar verificação: " + e.getMessage());
+      errorResponse.put("message", "Erro ao executar verificação de boletos vencidos.");
       errorResponse.put("timestamp", LocalDateTime.now());
       errorResponse.put("overdueCount", 0);
 
@@ -210,10 +212,9 @@ public class NotificationController {
       return ResponseEntity.badRequest()
           .body(BulkNotificationResponse.failure(e.getMessage(), List.of()));
     } catch (Exception e) {
+      log.error("Erro ao processar notificações em massa", e);
       return ResponseEntity.status(500)
-          .body(
-              BulkNotificationResponse.failure(
-                  "Erro ao processar notificações: " + e.getMessage(), List.of()));
+          .body(BulkNotificationResponse.failure("Erro ao processar notificações.", List.of()));
     }
   }
 }

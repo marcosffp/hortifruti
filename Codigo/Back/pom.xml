@@ -50,6 +50,7 @@
         <commons-csv.version>1.14.1</commons-csv.version>
         <bucket4j.version>8.0.1</bucket4j.version>
         <zip4j.version>2.11.5</zip4j.version>
+        <awssdk.version>2.29.52</awssdk.version>
     </properties>
 
     <dependencies>
@@ -197,6 +198,11 @@
             <groupId>com.sendgrid</groupId>
             <artifactId>sendgrid-java</artifactId>
             <version>4.10.0</version>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>${awssdk.version}</version>
         </dependency>
     </dependencies>
 

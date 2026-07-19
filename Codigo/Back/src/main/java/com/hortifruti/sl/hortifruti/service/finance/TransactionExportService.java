@@ -24,6 +24,7 @@ public class TransactionExportService {
   private final TransactionExcelExportService transactionExcelExportService;
   private final TransactionPdfExportService transactionPdfExportService;
   private final TransactionRepository transactionRepository;
+  private final StatementService statementService;
 
   public Map<String, byte[]> exportTransactionsAsZip() throws IOException {
     Map<String, byte[]> excelData =
@@ -68,7 +69,8 @@ public class TransactionExportService {
 
     int statementCount = 1;
     for (Statement statement : referencedStatements) {
-      if (statement.getFilePath() != null && statement.getFilePath().length > 0) {
+      byte[] fileContent = statementService.getFileContent(statement);
+      if (fileContent != null && fileContent.length > 0) {
         String statementFileName = sanitizeFileName(statement.getName());
         if (!statementFileName.toLowerCase().endsWith(".pdf")) {
           statementFileName += ".pdf";
@@ -79,7 +81,7 @@ public class TransactionExportService {
                 "%02d_%s_%s",
                 statementCount++, statement.getBank().toString().toLowerCase(), statementFileName);
 
-        allFiles.put(finalFileName, statement.getFilePath());
+        allFiles.put(finalFileName, fileContent);
       }
     }
 

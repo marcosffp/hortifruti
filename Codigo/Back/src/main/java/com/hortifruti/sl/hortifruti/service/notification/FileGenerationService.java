@@ -3,6 +3,7 @@ package com.hortifruti.sl.hortifruti.service.notification;
 import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
 import com.hortifruti.sl.hortifruti.model.finance.Statement;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
+import com.hortifruti.sl.hortifruti.service.finance.StatementService;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 public class FileGenerationService {
 
   private final StatementSelectionService statementSelectionService;
+  private final StatementService statementService;
 
   public byte[] createZipWithStatements(int month, int year) throws IOException {
     List<Statement> statements = statementSelectionService.getBestStatementsForMonth(month, year);
@@ -33,12 +35,13 @@ public class FileGenerationService {
       ZipParameters zipParameters = new ZipParameters();
 
       for (Statement statement : statements) {
-        if (statement.getFilePath() != null) {
+        byte[] fileContent = statementService.getFileContent(statement);
+        if (fileContent != null) {
           String fileName = statement.getName() + "_" + statement.getBank().name() + ".pdf";
 
           String tempPdfPath = System.getProperty("java.io.tmpdir") + "/" + fileName;
           try (FileOutputStream fos = new FileOutputStream(tempPdfPath)) {
-            fos.write(statement.getFilePath());
+            fos.write(fileContent);
           }
 
           zipParameters.setFileNameInZip(fileName);

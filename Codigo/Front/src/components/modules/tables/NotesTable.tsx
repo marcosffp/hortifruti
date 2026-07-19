@@ -1,13 +1,21 @@
 export default function NotesTable() {
   return (
     <div>
-      <h2 className="text-lg font-semibold text-gray-800 mb-4">Notas Fiscais</h2>
+      <h2 className="text-lg font-semibold text-gray-800 mb-4">
+        Notas Fiscais
+      </h2>
       <table className="min-w-full border border-gray-200">
         <thead>
           <tr>
-            <th className="px-4 py-2 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-700">Número</th>
-            <th className="px-4 py-2 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-700">Data</th>
-            <th className="px-4 py-2 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-700">Valor</th>
+            <th className="px-4 py-2 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-700">
+              Número
+            </th>
+            <th className="px-4 py-2 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-700">
+              Data
+            </th>
+            <th className="px-4 py-2 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-700">
+              Valor
+            </th>
           </tr>
         </thead>
         <tbody>

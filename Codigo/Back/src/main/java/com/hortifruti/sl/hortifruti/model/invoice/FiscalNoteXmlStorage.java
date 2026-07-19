@@ -34,15 +34,38 @@ public class FiscalNoteXmlStorage {
   @Column(name = "issued_at", nullable = false)
   private LocalDate issuedAt;
 
+  /** Legado: XMLs salvos antes da migração para R2. Novos registros usam {@link #objectKey}. */
   @Lob
-  @Column(name = "xml_content", columnDefinition = "LONGTEXT", nullable = false)
+  @Column(name = "xml_content", columnDefinition = "LONGTEXT")
   private String xmlContent;
+
+  @Column(name = "object_key", length = 500)
+  private String objectKey;
+
+  @Column(name = "danfe_object_key", length = 500)
+  private String danfeObjectKey;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "status", nullable = false, length = 20)
+  @Builder.Default
+  private Status status = Status.ACTIVE;
+
+  @Column(name = "cancelled_at")
+  private LocalDateTime cancelledAt;
 
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
+  public enum Status {
+    ACTIVE,
+    CANCELLED
+  }
+
   @PrePersist
   protected void onCreate() {
     this.createdAt = LocalDateTime.now();
+    if (this.status == null) {
+      this.status = Status.ACTIVE;
+    }
   }
 }

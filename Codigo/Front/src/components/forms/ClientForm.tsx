@@ -1,22 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { ArrowLeft, Save } from "lucide-react";
-import Button from "@/components/ui/Button";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import Button from "@/components/ui/Button";
 import { cepService } from "@/services/cepService";
 import { showError, showSuccess } from "@/services/notificationService";
 import {
+  formatarCEP,
+  formatarCNPJ,
+  formatarCPF,
+  formatarIEMinasGerais,
+  formatarTelefone,
+  validarCEP,
   validarCPFouCNPJ,
   validarEmail,
   validarTelefone,
-  validarCEP,
-  formatarCPF,
-  formatarCNPJ,
-  formatarTelefone,
-  formatarCEP,
-  formatarIEMinasGerais,
-  validarIEMinasGerais
 } from "@/utils/validationUtils";
 
 export interface ClientFormData {
@@ -53,7 +52,7 @@ export default function ClientForm({
   isSubmitting,
   title,
   subtitle,
-  submitButtonText
+  submitButtonText,
 }: ClientFormProps) {
   const [formData, setFormData] = useState<ClientFormData>({
     nome: "",
@@ -72,7 +71,7 @@ export default function ClientForm({
     stateIndicator: "9", // Padrão: Não contribuinte
     cideCode: "",
     onlyBillet: "false",
-    ...initialData
+    ...initialData,
   });
 
   const [formErrors, setFormErrors] = useState({
@@ -90,13 +89,13 @@ export default function ClientForm({
     cideCode: "",
   });
 
-  const isCNPJ = formData.cpfCnpj.replace(/\D/g, "").length > 11;
+  const isCNPJ = formData.cpfCnpj.replace(/[^0-9A-Za-z]/g, "").length > 11;
 
   useEffect(() => {
     if (initialData) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        ...initialData
+        ...initialData,
       }));
     }
   }, [initialData]);
@@ -104,13 +103,13 @@ export default function ClientForm({
   // Quando mudar o indicador estadual para "não contribuinte", limpa a IE
   useEffect(() => {
     if (formData.stateIndicator !== "1") {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        stateRegistration: ""
+        stateRegistration: "",
       }));
-      setFormErrors(prev => ({
+      setFormErrors((prev) => ({
         ...prev,
-        stateRegistration: ""
+        stateRegistration: "",
       }));
     }
   }, [formData.stateIndicator]);
@@ -120,9 +119,9 @@ export default function ClientForm({
       if (cep.replace(/\D/g, "").length < 8) return;
 
       showSuccess("Buscando informações do CEP...");
-      
+
       const endereco = await cepService.consultarCep(cep);
-      
+
       if (!endereco) {
         showError("CEP não encontrado");
         return;
@@ -152,17 +151,21 @@ export default function ClientForm({
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value } = e.target;
     let formattedValue = value;
 
     if (name === "cpfCnpj") {
-      const numericValue = value.replace(/[^\d]/g, '');
-      if (numericValue.length <= 11) {
-        formattedValue = formatarCPF(numericValue);
+      // CNPJ passa a aceitar letras (A-Z) a partir de ago/2026 — só remove a máscara,
+      // sem descartar letras. CPF continua só numérico.
+      const cleanedValue = value.replace(/[^0-9A-Za-z]/g, "").toUpperCase();
+      if (!/[A-Z]/.test(cleanedValue) && cleanedValue.length <= 11) {
+        formattedValue = formatarCPF(cleanedValue);
       } else {
-        formattedValue = formatarCNPJ(numericValue);
+        formattedValue = formatarCNPJ(cleanedValue);
       }
     } else if (name === "telefone") {
       formattedValue = formatarTelefone(value);
@@ -180,7 +183,7 @@ export default function ClientForm({
     if (formErrors[name as keyof typeof formErrors]) {
       setFormErrors({
         ...formErrors,
-        [name]: ""
+        [name]: "",
       });
     }
   };
@@ -188,14 +191,14 @@ export default function ClientForm({
   const handleCepBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
     const { value } = e.target;
     const cep = value.replace(/\D/g, "");
-    
+
     if (cep.length === 8) {
       await buscarEnderecoPorCEP(cep);
     }
-    
+
     setFormErrors({
       ...formErrors,
-      cep: validateField("cep", value)
+      cep: validateField("cep", value),
     });
   };
 
@@ -206,7 +209,9 @@ export default function ClientForm({
       case "email":
         return !validarEmail(value) ? "Email inválido" : "";
       case "telefone":
-        return !validarTelefone(value) ? "Telefone inválido. Formato: (XX) XXXXX-XXXX" : "";
+        return !validarTelefone(value)
+          ? "Telefone inválido. Formato: (XX) XXXXX-XXXX"
+          : "";
       case "cpfCnpj":
         if (!value) return "CPF/CNPJ é obrigatório";
         return !validarCPFouCNPJ(value) ? "CPF/CNPJ inválido" : "";
@@ -225,14 +230,15 @@ export default function ClientForm({
         return !value.trim() ? "Estado é obrigatório" : "";
       case "stateRegistration":
         return "";
-      case "cideCode":
+      case "cideCode": {
         // Código CIDE é obrigatório apenas para CNPJ
-        const documento = formData.cpfCnpj.replace(/\D/g, "");
+        const documento = formData.cpfCnpj.replace(/[^0-9A-Za-z]/g, "");
         const isCNPJ = documento.length > 11;
         if (isCNPJ && !value.trim()) {
           return "Código CIDE é obrigatório para empresas (CNPJ)";
         }
         return "";
+      }
       default:
         return "";
     }
@@ -250,12 +256,15 @@ export default function ClientForm({
       bairro: validateField("bairro", formData.bairro),
       cidade: validateField("cidade", formData.cidade),
       estado: validateField("estado", formData.estado),
-      stateRegistration: validateField("stateRegistration", formData.stateRegistration),
+      stateRegistration: validateField(
+        "stateRegistration",
+        formData.stateRegistration,
+      ),
       cideCode: validateField("cideCode", formData.cideCode),
     };
-    
+
     setFormErrors(errors);
-    return !Object.values(errors).some(error => error);
+    return !Object.values(errors).some((error) => error);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -295,7 +304,10 @@ export default function ClientForm({
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="nome"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Nome Completo *
                 </label>
                 <input
@@ -304,17 +316,27 @@ export default function ClientForm({
                   name="nome"
                   value={formData.nome}
                   onChange={handleChange}
-                  onBlur={(e) => setFormErrors({...formErrors, nome: validateField("nome", e.target.value)})}
+                  onBlur={(e) =>
+                    setFormErrors({
+                      ...formErrors,
+                      nome: validateField("nome", e.target.value),
+                    })
+                  }
                   required
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.nome ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Digite o nome completo"
                 />
-                {formErrors.nome && <p className="text-red-500 text-xs mt-1">{formErrors.nome}</p>}
+                {formErrors.nome && (
+                  <p className="text-red-500 text-xs mt-1">{formErrors.nome}</p>
+                )}
               </div>
               <div>
-                <label htmlFor="cpfCnpj" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="cpfCnpj"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   CPF/CNPJ *
                 </label>
                 <input
@@ -323,17 +345,29 @@ export default function ClientForm({
                   name="cpfCnpj"
                   value={formData.cpfCnpj}
                   onChange={handleChange}
-                  onBlur={(e) => setFormErrors({...formErrors, cpfCnpj: validateField("cpfCnpj", e.target.value)})}
+                  onBlur={(e) =>
+                    setFormErrors({
+                      ...formErrors,
+                      cpfCnpj: validateField("cpfCnpj", e.target.value),
+                    })
+                  }
                   required
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.cpfCnpj ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="000.000.000-00 ou 00.000.000/0000-00"
                 />
-                {formErrors.cpfCnpj && <p className="text-red-500 text-xs mt-1">{formErrors.cpfCnpj}</p>}
+                {formErrors.cpfCnpj && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {formErrors.cpfCnpj}
+                  </p>
+                )}
               </div>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   E-mail *
                 </label>
                 <input
@@ -342,17 +376,29 @@ export default function ClientForm({
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  onBlur={(e) => setFormErrors({...formErrors, email: validateField("email", e.target.value)})}
+                  onBlur={(e) =>
+                    setFormErrors({
+                      ...formErrors,
+                      email: validateField("email", e.target.value),
+                    })
+                  }
                   required
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.email ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="exemplo@email.com"
                 />
-                {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
+                {formErrors.email && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {formErrors.email}
+                  </p>
+                )}
               </div>
               <div>
-                <label htmlFor="telefone" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="telefone"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Telefone *
                 </label>
                 <input
@@ -361,14 +407,23 @@ export default function ClientForm({
                   name="telefone"
                   value={formData.telefone}
                   onChange={handleChange}
-                  onBlur={(e) => setFormErrors({...formErrors, telefone: validateField("telefone", e.target.value)})}
+                  onBlur={(e) =>
+                    setFormErrors({
+                      ...formErrors,
+                      telefone: validateField("telefone", e.target.value),
+                    })
+                  }
                   required
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.telefone ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="(00) 00000-0000"
                 />
-                {formErrors.telefone && <p className="text-red-500 text-xs mt-1">{formErrors.telefone}</p>}
+                {formErrors.telefone && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {formErrors.telefone}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -380,7 +435,10 @@ export default function ClientForm({
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="stateIndicator" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="stateIndicator"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Indicador de IE *
                   </label>
                   <select
@@ -400,7 +458,10 @@ export default function ClientForm({
                   </p>
                 </div>
                 <div>
-                  <label htmlFor="stateRegistration" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="stateRegistration"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Inscrição Estadual {formData.stateIndicator === "1" && "*"}
                   </label>
                   <input
@@ -409,26 +470,41 @@ export default function ClientForm({
                     name="stateRegistration"
                     value={formData.stateRegistration}
                     onChange={handleChange}
-                    onBlur={(e) => setFormErrors({...formErrors, stateRegistration: validateField("stateRegistration", e.target.value)})}
+                    onBlur={(e) =>
+                      setFormErrors({
+                        ...formErrors,
+                        stateRegistration: validateField(
+                          "stateRegistration",
+                          e.target.value,
+                        ),
+                      })
+                    }
                     disabled={formData.stateIndicator !== "1"}
                     required={formData.stateIndicator === "1"}
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
-                      formErrors.stateRegistration ? "border-red-500" : "border-gray-300"
+                      formErrors.stateRegistration
+                        ? "border-red-500"
+                        : "border-gray-300"
                     } ${formData.stateIndicator !== "1" ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     placeholder="000.000.000.0000"
                     maxLength={16}
                   />
                   {formErrors.stateRegistration && (
-                    <p className="text-red-500 text-xs mt-1">{formErrors.stateRegistration}</p>
+                    <p className="text-red-500 text-xs mt-1">
+                      {formErrors.stateRegistration}
+                    </p>
                   )}
                   <p className="text-xs text-gray-500 mt-1">
-                    {formData.stateIndicator === "1" 
-                      ? "Obrigatório para contribuintes ICMS" 
+                    {formData.stateIndicator === "1"
+                      ? "Obrigatório para contribuintes ICMS"
                       : "Disponível apenas para contribuintes ICMS"}
                   </p>
                 </div>
                 <div>
-                  <label htmlFor="cideCode" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="cideCode"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Código do Município do Destinatário *
                   </label>
                   <input
@@ -437,7 +513,12 @@ export default function ClientForm({
                     name="cideCode"
                     value={formData.cideCode}
                     onChange={handleChange}
-                    onBlur={(e) => setFormErrors({...formErrors, cideCode: validateField("cideCode", e.target.value)})}
+                    onBlur={(e) =>
+                      setFormErrors({
+                        ...formErrors,
+                        cideCode: validateField("cideCode", e.target.value),
+                      })
+                    }
                     required
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                       formErrors.cideCode ? "border-red-500" : "border-gray-300"
@@ -446,7 +527,9 @@ export default function ClientForm({
                     maxLength={20}
                   />
                   {formErrors.cideCode && (
-                    <p className="text-red-500 text-xs mt-1">{formErrors.cideCode}</p>
+                    <p className="text-red-500 text-xs mt-1">
+                      {formErrors.cideCode}
+                    </p>
                   )}
                   <p className="text-xs text-gray-500 mt-1">
                     Obrigatório para empresas (CNPJ)
@@ -460,7 +543,10 @@ export default function ClientForm({
             <h2 className="text-lg font-medium mb-4 text-primary">Endereço</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label htmlFor="cep" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="cep"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   CEP
                 </label>
                 <div className="flex items-center space-x-2">
@@ -487,10 +573,15 @@ export default function ClientForm({
                     Buscar
                   </button>
                 </div>
-                {formErrors.cep && <p className="text-red-500 text-xs mt-1">{formErrors.cep}</p>}
+                {formErrors.cep && (
+                  <p className="text-red-500 text-xs mt-1">{formErrors.cep}</p>
+                )}
               </div>
               <div className="md:col-span-2">
-                <label htmlFor="endereco" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="endereco"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Endereço *
                 </label>
                 <input
@@ -499,17 +590,29 @@ export default function ClientForm({
                   name="endereco"
                   value={formData.endereco}
                   onChange={handleChange}
-                  onBlur={(e) => setFormErrors({...formErrors, endereco: validateField("endereco", e.target.value)})}
+                  onBlur={(e) =>
+                    setFormErrors({
+                      ...formErrors,
+                      endereco: validateField("endereco", e.target.value),
+                    })
+                  }
                   required
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.endereco ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Rua, Avenida, etc."
                 />
-                {formErrors.endereco && <p className="text-red-500 text-xs mt-1">{formErrors.endereco}</p>}
+                {formErrors.endereco && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {formErrors.endereco}
+                  </p>
+                )}
               </div>
               <div>
-                <label htmlFor="numero" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="numero"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Número *
                 </label>
                 <input
@@ -518,17 +621,29 @@ export default function ClientForm({
                   name="numero"
                   value={formData.numero}
                   onChange={handleChange}
-                  onBlur={(e) => setFormErrors({...formErrors, numero: validateField("numero", e.target.value)})}
+                  onBlur={(e) =>
+                    setFormErrors({
+                      ...formErrors,
+                      numero: validateField("numero", e.target.value),
+                    })
+                  }
                   required
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.numero ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="123"
                 />
-                {formErrors.numero && <p className="text-red-500 text-xs mt-1">{formErrors.numero}</p>}
+                {formErrors.numero && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {formErrors.numero}
+                  </p>
+                )}
               </div>
               <div>
-                <label htmlFor="complemento" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="complemento"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Complemento
                 </label>
                 <input
@@ -542,7 +657,10 @@ export default function ClientForm({
                 />
               </div>
               <div>
-                <label htmlFor="bairro" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="bairro"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Bairro *
                 </label>
                 <input
@@ -551,17 +669,29 @@ export default function ClientForm({
                   name="bairro"
                   value={formData.bairro}
                   onChange={handleChange}
-                  onBlur={(e) => setFormErrors({...formErrors, bairro: validateField("bairro", e.target.value)})}
+                  onBlur={(e) =>
+                    setFormErrors({
+                      ...formErrors,
+                      bairro: validateField("bairro", e.target.value),
+                    })
+                  }
                   required
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.bairro ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Nome do bairro"
                 />
-                {formErrors.bairro && <p className="text-red-500 text-xs mt-1">{formErrors.bairro}</p>}
+                {formErrors.bairro && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {formErrors.bairro}
+                  </p>
+                )}
               </div>
               <div>
-                <label htmlFor="cidade" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="cidade"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Cidade *
                 </label>
                 <input
@@ -570,17 +700,29 @@ export default function ClientForm({
                   name="cidade"
                   value={formData.cidade}
                   onChange={handleChange}
-                  onBlur={(e) => setFormErrors({...formErrors, cidade: validateField("cidade", e.target.value)})}
+                  onBlur={(e) =>
+                    setFormErrors({
+                      ...formErrors,
+                      cidade: validateField("cidade", e.target.value),
+                    })
+                  }
                   required
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.cidade ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Nome da cidade"
                 />
-                {formErrors.cidade && <p className="text-red-500 text-xs mt-1">{formErrors.cidade}</p>}
+                {formErrors.cidade && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {formErrors.cidade}
+                  </p>
+                )}
               </div>
               <div>
-                <label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="estado"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Estado *
                 </label>
                 <select
@@ -588,7 +730,12 @@ export default function ClientForm({
                   name="estado"
                   value={formData.estado}
                   onChange={handleChange}
-                  onBlur={(e) => setFormErrors({...formErrors, estado: validateField("estado", e.target.value)})}
+                  onBlur={(e) =>
+                    setFormErrors({
+                      ...formErrors,
+                      estado: validateField("estado", e.target.value),
+                    })
+                  }
                   required
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.estado ? "border-red-500" : "border-gray-300"
@@ -623,7 +770,11 @@ export default function ClientForm({
                   <option value="SE">Sergipe</option>
                   <option value="TO">Tocantins</option>
                 </select>
-                {formErrors.estado && <p className="text-red-500 text-xs mt-1">{formErrors.estado}</p>}
+                {formErrors.estado && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {formErrors.estado}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -634,7 +785,10 @@ export default function ClientForm({
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="variablePrice" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="variablePrice"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Tipo de Preço *
                 </label>
                 <select
@@ -649,11 +803,15 @@ export default function ClientForm({
                   <option value="true">Preço Variável</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Selecione "Preço Variável" se o cliente tiver valores negociados caso a caso.
+                  Selecione "Preço Variável" se o cliente tiver valores
+                  negociados caso a caso.
                 </p>
               </div>
               <div>
-                <label htmlFor="onlyBillet" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="onlyBillet"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Forma de Cobrança *
                 </label>
                 <select
@@ -668,7 +826,8 @@ export default function ClientForm({
                   <option value="true">Somente Boleto</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Selecione "Somente Boleto" se o cliente nunca deve receber nota fiscal.
+                  Selecione "Somente Boleto" se o cliente nunca deve receber
+                  nota fiscal.
                 </p>
               </div>
             </div>

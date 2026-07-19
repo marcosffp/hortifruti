@@ -5,16 +5,19 @@ import com.hortifruti.sl.hortifruti.config.billet.BilletHttpClient;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
+import com.hortifruti.sl.hortifruti.service.storage.BilletFileStorageService;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class BilletCancel {
@@ -24,6 +27,7 @@ public class BilletCancel {
   private final BilletConstants billetConstants;
   private final BilletValidation billetValidation;
   private final BilletInfoCombinedAndClient billetInfoCombinedAndClient;
+  private final BilletFileStorageService billetFileStorageService;
 
   /**
    * Realiza a baixa (cancelamento) de um boleto através da API do Sicoob.
@@ -51,10 +55,11 @@ public class BilletCancel {
     } catch (HttpClientErrorException.BadRequest e) {
       return handleBadRequest(e);
     } catch (HttpClientErrorException e) {
-      throw new BilletException(
-          "Erro na requisição para baixar o boleto: " + e.getResponseBodyAsString());
+      log.error("Erro na requisição para baixar o boleto: {}", e.getResponseBodyAsString());
+      throw new BilletException("Erro na requisição para baixar o boleto.");
     } catch (HttpServerErrorException e) {
-      throw new BilletException("Erro interno do servidor ao baixar o boleto: " + e.getMessage());
+      log.error("Erro interno do servidor ao baixar o boleto: {}", e.getResponseBodyAsString());
+      throw new BilletException("Erro interno do servidor ao baixar o boleto.");
     } catch (IOException e) {
       throw new BilletException("Erro de comunicação ao baixar o boleto: " + e.getMessage());
     } catch (Exception e) {
@@ -77,6 +82,7 @@ public class BilletCancel {
       JsonNode response, CombinedScore combinedScore) {
     if (response == null) {
       combinedScoreService.updateStatusAfterBilletCancellation(combinedScore.getYourNumber());
+      billetFileStorageService.cancelBilletFileAfterCommit(combinedScore.getId());
       return ResponseEntity.noContent().build();
     }
     return ResponseEntity.ok("Boleto baixado com sucesso.");
@@ -88,6 +94,7 @@ public class BilletCancel {
       return ResponseEntity.status(HttpStatus.CONFLICT)
           .body("O boleto já está em processo de cancelamento ou já foi liquidado.");
     }
-    throw new BilletException("Erro na requisição para baixar o boleto: " + errorBody);
+    log.error("Erro na requisição para baixar o boleto: {}", errorBody);
+    throw new BilletException("Erro na requisição para baixar o boleto.");
   }
 }

@@ -9,11 +9,13 @@ import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
 import com.hortifruti.sl.hortifruti.repository.FreightConfigRepository;
 import com.hortifruti.sl.hortifruti.repository.ProductRepository;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
+import java.security.SecureRandom;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -23,11 +25,16 @@ import org.springframework.stereotype.Component;
 @Order(1)
 public class UserInitializer implements CommandLineRunner {
 
+  private static final String BOOTSTRAP_PASSWORD_CHARS =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*";
+  private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final ProductRepository productRepository;
   private final FreightConfigRepository freightConfigRepository;
   private final Base64FileDecoder base64FileDecoder;
+  private final Environment environment;
 
   @Override
   public void run(String... args) throws Exception {
@@ -61,6 +68,7 @@ public class UserInitializer implements CommandLineRunner {
       log.info("Decodificando arquivos Base64...");
       base64FileDecoder.decodeGoogleDriveCredentials();
       base64FileDecoder.decodePfx();
+      base64FileDecoder.decodePem();
       log.info("Arquivos Base64 decodificados com sucesso!");
     } catch (Exception e) {
       log.error("Erro ao decodificar arquivos Base64: ", e);
@@ -69,8 +77,12 @@ public class UserInitializer implements CommandLineRunner {
 
   private void initializeUsers() {
     if (userRepository.count() == 0) {
-      createUser("root", "root", Role.MANAGER, "Desenvolvedor");
-      createUser("admin", "admin", Role.EMPLOYEE, "Administrador");
+      if (environment.matchesProfiles("local")) {
+        createUser("root", "root", Role.MANAGER, "Desenvolvedor");
+        createUser("admin", "admin", Role.EMPLOYEE, "Administrador");
+      } else {
+        createBootstrapManager();
+      }
     }
 
     if (productRepository.count() == 0) {
@@ -329,6 +341,25 @@ public class UserInitializer implements CommandLineRunner {
             TemperatureCategory.AMENO,
             List.of(Month.JUNHO, Month.JULHO, Month.AGOSTO),
             List.of(Month.OUTUBRO, Month.ABRIL)));
+  }
+
+  private void createBootstrapManager() {
+    String password = generateSecurePassword();
+    createUser("admin", password, Role.MANAGER, "Administrador");
+    log.warn(
+        "Nenhum usuário encontrado. Conta administrativa inicial criada — usuário: 'admin',"
+            + " senha temporária: '{}'. Faça login e troque a senha imediatamente.",
+        password);
+  }
+
+  private String generateSecurePassword() {
+    StringBuilder password = new StringBuilder(20);
+    for (int i = 0; i < 20; i++) {
+      password.append(
+          BOOTSTRAP_PASSWORD_CHARS.charAt(
+              SECURE_RANDOM.nextInt(BOOTSTRAP_PASSWORD_CHARS.length())));
+    }
+    return password.toString();
   }
 
   private void createUser(String username, String password, Role role, String position) {

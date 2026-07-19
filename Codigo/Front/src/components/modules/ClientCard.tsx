@@ -1,17 +1,14 @@
 "use client";
 
-import React from "react";
-import { 
+import {
   Calendar,
-  CircleCheck,
   DollarSign,
-  Edit, 
-  Eye,
-  Mail, 
-  MapPin, 
-  Phone, 
-  Trash2, 
-  User 
+  Edit,
+  Mail,
+  MapPin,
+  Phone,
+  Trash2,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -53,7 +50,9 @@ export default function ClientCard({
                 </div>
               </div>
               <div>
-                <h3 className="font-medium text-lg text-gray-800 group-hover:text-green-600 transition-colors">{nome}</h3>
+                <h3 className="font-medium text-lg text-gray-800 group-hover:text-green-600 transition-colors">
+                  {nome}
+                </h3>
                 <div className="mt-1 flex items-center">
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -62,7 +61,14 @@ export default function ClientCard({
                         : "bg-blue-100 text-blue-800 border border-blue-200"
                     }`}
                   >
-                    <DollarSign size={12} className={status === "preco-fixo" ? "mr-1 text-green-600" : "mr-1 text-blue-600"} />
+                    <DollarSign
+                      size={12}
+                      className={
+                        status === "preco-fixo"
+                          ? "mr-1 text-green-600"
+                          : "mr-1 text-blue-600"
+                      }
+                    />
                     {status === "preco-fixo" ? "Preço Fixo" : "Preço Variável"}
                   </span>
                 </div>
@@ -70,7 +76,10 @@ export default function ClientCard({
             </div>
             <div className="bg-gray-50 px-3 py-2 rounded-lg">
               <div className="font-medium text-gray-800 flex items-center justify-end">
-                <DollarSign size={14} className="text-gray-400 mr-1 flex-shrink-0" />
+                <DollarSign
+                  size={14}
+                  className="text-gray-400 mr-1 flex-shrink-0"
+                />
                 <span>{totalCompras.toFixed(2).replace(".", ",")}</span>
               </div>
               <div className="text-xs text-gray-500 text-right mt-0.5">
@@ -84,21 +93,33 @@ export default function ClientCard({
               {/* Email - altura fixa para manter proporção */}
               <div className="h-10 flex items-center text-sm text-gray-600 bg-white p-2.5 rounded border border-gray-100">
                 <Mail size={16} className="mr-2 text-gray-400" />
-                <span className="truncate">{email || "Sem e-mail cadastrado"}</span>
+                <span className="truncate">
+                  {email || "Sem e-mail cadastrado"}
+                </span>
               </div>
-              
+
               {/* Telefone - altura fixa para manter proporção */}
               <div className="h-10 flex items-center text-sm text-gray-600 bg-white p-2.5 rounded border border-gray-100">
                 <Phone size={16} className="mr-2 text-gray-400" />
                 <span>{telefone || "Sem telefone cadastrado"}</span>
               </div>
-              
+
               {/* Endereço - altura fixa para manter proporção */}
               <div className="h-10 flex items-center text-sm text-gray-600 relative group/tooltip bg-white p-2.5 rounded border border-gray-100">
-                <MapPin size={16} className="mr-2 flex-shrink-0 text-gray-400" />
-                <span className="truncate">{endereco || "Sem endereço cadastrado"}</span>
+                <MapPin
+                  size={16}
+                  className="mr-2 flex-shrink-0 text-gray-400"
+                />
+                <span className="truncate">
+                  {endereco || "Sem endereço cadastrado"}
+                </span>
                 {endereco && endereco.length > 35 && (
-                  <span className="text-xs text-blue-500 cursor-help ml-1" title="Ver endereço completo">...</span>
+                  <span
+                    className="text-xs text-blue-500 cursor-help ml-1"
+                    title="Ver endereço completo"
+                  >
+                    ...
+                  </span>
                 )}
                 {/* Tooltip para endereço completo no modo grid */}
                 {endereco && endereco.length > 0 && (
@@ -114,21 +135,27 @@ export default function ClientCard({
             <div className="h-10 flex items-center text-sm bg-white p-2.5 rounded border border-gray-100 w-1/2">
               <Calendar size={16} className="mr-2 text-gray-400" />
               <div className="flex items-center truncate">
-                <span className="text-xs text-gray-500 whitespace-nowrap">Última compra:</span>
-                <span className="font-medium text-gray-700 ml-1.5 truncate">{ultimaCompra || 'Nenhuma'}</span>
+                <span className="text-xs text-gray-500 whitespace-nowrap">
+                  Última compra:
+                </span>
+                <span className="font-medium text-gray-700 ml-1.5 truncate">
+                  {ultimaCompra || "Nenhuma"}
+                </span>
               </div>
             </div>
             <div className="flex space-x-1">
               <Link href={`/comercio/clientes/editar/${id}`}>
                 <button
+                  type="button"
                   className="h-10 w-10 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-all"
                   aria-label="Editar cliente"
                 >
                   <Edit size={16} />
                 </button>
               </Link>
-            
+
               <button
+                type="button"
                 className="h-10 w-10 flex items-center justify-center text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-all"
                 aria-label="Excluir cliente"
                 onClick={(e) => {
@@ -155,8 +182,12 @@ export default function ClientCard({
           </div>
         </div>
         <div>
-          <div className="font-medium text-gray-800 group-hover:text-green-600 transition-colors">{nome}</div>
-          <div className="text-sm text-gray-500 mt-0.5">{email || "Sem e-mail cadastrado"}</div>
+          <div className="font-medium text-gray-800 group-hover:text-green-600 transition-colors">
+            {nome}
+          </div>
+          <div className="text-sm text-gray-500 mt-0.5">
+            {email || "Sem e-mail cadastrado"}
+          </div>
         </div>
       </div>
       <div className="col-span-12 sm:col-span-2 text-gray-700 flex items-center">
@@ -174,7 +205,12 @@ export default function ClientCard({
           <MapPin size={14} className="text-gray-400 flex-shrink-0" />
           <div className="truncate max-w-[250px]">{endereco}</div>
           {endereco.length > 30 && (
-            <span className="text-xs text-blue-500 cursor-help" title="Ver endereço completo">...</span>
+            <span
+              className="text-xs text-blue-500 cursor-help"
+              title="Ver endereço completo"
+            >
+              ...
+            </span>
           )}
         </div>
         <div className="hidden group-hover/tooltip:block absolute z-10 bg-gray-800 text-white p-2 rounded shadow-lg text-sm max-w-xs left-0 mt-1">
@@ -189,7 +225,14 @@ export default function ClientCard({
               : "bg-blue-100 text-blue-800 border border-blue-200"
           }`}
         >
-          <DollarSign size={12} className={status === "preco-fixo" ? "mr-1 text-green-600" : "mr-1 text-blue-600"} />
+          <DollarSign
+            size={12}
+            className={
+              status === "preco-fixo"
+                ? "mr-1 text-green-600"
+                : "mr-1 text-blue-600"
+            }
+          />
           {status === "preco-fixo" ? "Preço Fixo" : "Preço Variável"}
         </span>
       </div>
@@ -197,8 +240,12 @@ export default function ClientCard({
         <div className="flex items-center">
           <Calendar size={14} className="text-gray-400 mr-1.5 flex-shrink-0" />
           <div className="flex flex-col">
-            <span className="text-xs text-gray-500 leading-tight">Última compra</span>
-            <span className="font-medium text-gray-700 text-sm leading-tight">{ultimaCompra || 'Nenhuma'}</span>
+            <span className="text-xs text-gray-500 leading-tight">
+              Última compra
+            </span>
+            <span className="font-medium text-gray-700 text-sm leading-tight">
+              {ultimaCompra || "Nenhuma"}
+            </span>
           </div>
         </div>
       </div>
@@ -211,6 +258,7 @@ export default function ClientCard({
       <div className="col-span-6 sm:col-span-1 flex justify-end space-x-1">
         <Link href={`/comercio/clientes/editar/${id}`}>
           <button
+            type="button"
             className="h-9 w-9 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-all"
             aria-label="Editar cliente"
             title="Editar cliente"
@@ -219,6 +267,7 @@ export default function ClientCard({
           </button>
         </Link>
         <button
+          type="button"
           className="h-9 w-9 flex items-center justify-center text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-all"
           aria-label="Excluir cliente"
           title="Excluir cliente"
@@ -231,6 +280,5 @@ export default function ClientCard({
         </button>
       </div>
     </div>
-
   );
 }

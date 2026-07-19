@@ -26,7 +26,7 @@ export function parseAddressFromBackend(fullAddress: string): ParsedAddress {
   if (!fullAddress) return defaultAddress;
 
   try {
-    const parts = fullAddress.split(',').map(p => p.trim());
+    const parts = fullAddress.split(",").map((p) => p.trim());
 
     // Formato vindo do backend: Rua X, 123, Complemento (opcional), Bairro, Cidade - UF, CEP: XXXXX-XXX
     const endereco = parts[0] || "";
@@ -36,7 +36,7 @@ export function parseAddressFromBackend(fullAddress: string): ParsedAddress {
     const cidadeUf = parts[parts.length - 2] || "";
     const cepPart = parts[parts.length - 1] || "";
 
-    const [cidade, estado] = cidadeUf.split(' - ').map(p => p.trim());
+    const [cidade, estado] = cidadeUf.split(" - ").map((p) => p.trim());
 
     const cepMatch = cepPart.match(/CEP:\s*(.*)/);
     const cep = cepMatch ? cepMatch[1].trim() : "";
@@ -60,7 +60,9 @@ export function parseAddressFromBackend(fullAddress: string): ParsedAddress {
  * Formata o endereço para enviar ao backend no formato:
  * "Rua X, 123, Complemento (opcional), Bairro, Cidade - UF, CEP: XXXXX-XXX"
  */
-export function formatAddressForBackend(address: Partial<ParsedAddress>): string {
+export function formatAddressForBackend(
+  address: Partial<ParsedAddress>,
+): string {
   return `
     ${address.endereco || ""}, 
     ${address.numero || ""}

@@ -1,7 +1,7 @@
 "use client";
 
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
 import { authService } from "@/services/authService";
 
 const publicPages = ["/login"];
@@ -14,18 +14,29 @@ export default function AuthGuard({
   const [isAuthChecked, setIsAuthChecked] = useState(false);
 
   useEffect(() => {
-    const isPublicPage = publicPages.includes(pathname);
-    const isAuthenticated = authService.isAuthenticated();
+    let cancelled = false;
 
-    if (!isAuthenticated && !isPublicPage) {
-      router.push("/login");
-    }
+    (async () => {
+      const isPublicPage = publicPages.includes(pathname);
+      const user = await authService.me();
+      const isAuthenticated = !!user;
 
-    if (isAuthenticated && pathname === "/login") {
-      router.push("/");
-    }
+      if (cancelled) return;
 
-    setIsAuthChecked(true);
+      if (!isAuthenticated && !isPublicPage) {
+        router.push("/login");
+      }
+
+      if (isAuthenticated && pathname === "/login") {
+        router.push("/");
+      }
+
+      setIsAuthChecked(true);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [pathname, router]);
 
   if (!isAuthChecked && !publicPages.includes(pathname)) {

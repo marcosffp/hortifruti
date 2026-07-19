@@ -1,9 +1,12 @@
 "use client";
 
+import { API_BASE_URL } from "@/config/api";
+import type {
+  ClientRequest,
+  ClientResponse,
+  ClientSelectionInfo,
+} from "@/types/clientType";
 import { getAuthHeaders } from "@/utils/httpUtils";
-import { ClientResponse, ClientRequest, ClientSelectionInfo } from "@/types/clientType";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export const clientService = {
   async getAllClients(): Promise<ClientResponse[]> {
@@ -12,6 +15,7 @@ export const clientService = {
         method: "GET",
         headers: getAuthHeaders(),
         cache: "no-store",
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -31,6 +35,7 @@ export const clientService = {
         method: "GET",
         headers: getAuthHeaders(),
         cache: "no-store",
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -49,6 +54,7 @@ export const clientService = {
       const response = await fetch(`${API_BASE_URL}/clients/register`, {
         method: "POST",
         headers: getAuthHeaders(),
+        credentials: "include",
         body: JSON.stringify(clientData),
       });
 
@@ -75,6 +81,7 @@ export const clientService = {
       const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
         method: "PUT",
         headers: getAuthHeaders(),
+        credentials: "include",
         body: JSON.stringify(clientData),
       });
 
@@ -94,6 +101,7 @@ export const clientService = {
       const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -113,6 +121,7 @@ export const clientService = {
           method: "GET",
           headers: getAuthHeaders(),
           cache: "no-store",
+          credentials: "include",
         },
       );
 
@@ -133,10 +142,13 @@ export const clientService = {
         method: "GET",
         headers: getAuthHeaders(),
         cache: "no-store",
+        credentials: "include",
       });
 
       if (!response.ok) {
-        throw new Error(`Erro ao buscar clientes para seleção: ${response.status}`);
+        throw new Error(
+          `Erro ao buscar clientes para seleção: ${response.status}`,
+        );
       }
 
       return await response.json();

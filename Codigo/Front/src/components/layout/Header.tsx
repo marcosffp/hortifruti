@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, User, LogOut, MenuIcon } from "lucide-react";
+import { LogOut, MenuIcon, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,9 +29,15 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <div className="menu md:hidden" onClick={onMenuClick} title="Menu">
+          <button
+            type="button"
+            className="menu md:hidden"
+            onClick={onMenuClick}
+            title="Menu"
+            aria-label="Abrir menu"
+          >
             <MenuIcon className="text-gray-100 cursor-pointer " size={25} />
-          </div>
+          </button>
           <span className="text-gray-100 text-sm">(31) 3649-7064</span>
           <div className="flex items-center gap-2" title="Perfil">
             <Link href="/perfil" className="flex items-center gap-2">

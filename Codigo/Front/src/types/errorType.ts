@@ -3,11 +3,15 @@ export interface ErrorType {
   code?: number;
 }
 
-export function isErrorType(error: any): error is ErrorType {
-  return error && typeof error.message === "string";
+export function isErrorType(error: unknown): error is ErrorType {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    typeof (error as ErrorType).message === "string"
+  );
 }
 
-export function getErrorMessage(error: any): string {
+export function getErrorMessage(error: unknown): string {
   if (isErrorType(error)) {
     return error.message;
   }

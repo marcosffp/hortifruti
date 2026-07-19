@@ -4,14 +4,14 @@ services:
     container_name: hortifruti-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQLPASSWORD}
-      MYSQL_DATABASE: ${MYSQLDATABASE}
+      MYSQL_ROOT_PASSWORD: ${LOCAL_MYSQLPASSWORD}
+      MYSQL_DATABASE: ${LOCAL_MYSQLDATABASE}
     ports:
-      - "${MYSQLPORT:-3306}:3306"
+      - "${LOCAL_MYSQLPORT:-3306}:3306"
     volumes:
       - hortifruti_mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQLPASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${LOCAL_MYSQLPASSWORD}"]
       interval: 5s
       timeout: 5s
       retries: 20
