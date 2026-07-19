@@ -40,15 +40,14 @@ RUN mkdir -p /app/temp/cert/bb_upload /app/temp/google /app/temp/notifications &
     chmod -R 755 /app/temp
 
 # Variáveis de ambiente para Railway
-# javax.net.debug=ssl:handshake foi testado para diagnostico do mTLS (BB/Sicoob) e revertido:
-# o dump do truststore default a cada SSLContext (R2, Google Drive, SendGrid, Focus NFe, etc.)
-# excede o rate limit de log do Railway (500/s) e derruba as linhas que importam.
-# Ver diagnostico-mtls.md - o diagnostico passou a usar o LoggingX509KeyManager (1 linha/handshake).
+# Para depurar handshake mTLS (Sicoob/BB) de novo no futuro, descomente as duas linhas abaixo
+# na declaração de JAVA_OPTS — é bem verboso, então mantenha comentado fora de uma janela de
+# diagnóstico:
+#   -Djavax.net.debug=ssl,handshake \
+#   -Djava.security.debug=certpath
 ENV JAVA_OPTS="-XX:+UseContainerSupport \
 -XX:MaxRAMPercentage=75.0 \
--XX:+UseG1GC \
--Djavax.net.debug=ssl,handshake \
--Djava.security.debug=certpath"
+-XX:+UseG1GC"
 
 ENV SPRING_PROFILES_ACTIVE="prod"
 ENV PORT=8080

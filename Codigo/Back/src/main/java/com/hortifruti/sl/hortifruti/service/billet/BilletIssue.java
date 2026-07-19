@@ -12,10 +12,12 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class BilletIssue {
@@ -43,8 +45,8 @@ public class BilletIssue {
       return ResponseEntity.ok(responseMap);
 
     } catch (HttpClientErrorException e) {
-      throw new BilletException(
-          "Erro na requisição para emitir o boleto: " + e.getResponseBodyAsString(), e);
+      log.error("Erro na requisição para emitir o boleto: {}", e.getResponseBodyAsString());
+      throw new BilletException("Erro na requisição para emitir o boleto.", e);
     } catch (IOException e) {
       throw new BilletException("Erro ao processar a resposta da API ao emitir o boleto.", e);
     } catch (Exception e) {

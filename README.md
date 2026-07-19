@@ -15,6 +15,14 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-Auth0-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
+![Swagger](https://img.shields.io/badge/Swagger-OpenAPI_3-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)
+![Sicoob](https://img.shields.io/badge/Sicoob-Boletos-00A651?style=for-the-badge&labelColor=00A651)
+![Banco do Brasil](https://img.shields.io/badge/Banco_do_Brasil-Extratos-F9DD16?style=for-the-badge&labelColor=0038A8)
+![Focus NFe](https://img.shields.io/badge/Focus_NFe-NF--e-FF7A00?style=for-the-badge)
+![Google Drive](https://img.shields.io/badge/Google_Drive-Backup-4285F4?style=for-the-badge&logo=googledrive&logoColor=white)
+![SendGrid](https://img.shields.io/badge/SendGrid-E--mail-1A82E2?style=for-the-badge)
+![OpenWeather](https://img.shields.io/badge/OpenWeather-Forecast-EB6E4B?style=for-the-badge)
 ![Docker](https://img.shields.io/badge/Docker-Multi--stage-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Cloudflare R2](https://img.shields.io/badge/Cloudflare_R2-Storage-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
 ![Railway](https://img.shields.io/badge/Railway-Backend-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
@@ -230,9 +238,11 @@ As instruções completas de configuração — incluindo todas as variáveis de
 
 | Camada | Tecnologias principais |
 |---|---|
-| **Backend** | Java 25 · Spring Boot 4.1 (Web, Security, Data JPA) · MySQL + HikariCP · JWT (Auth0) · MapStruct · Springdoc OpenAPI · Apache PDFBox/POI · Bucket4J · AWS SDK S3 (Cloudflare R2) · Docker |
+| **Backend** | Java 25 · Spring Boot 4.1 (Web, WebFlux, Security, Data JPA) · MySQL + HikariCP · JWT (Auth0) · Springdoc OpenAPI (Swagger UI) · MapStruct · Bucket4J (rate limiting) · Apache PDFBox/POI · Apache HttpComponents Client5 · AWS SDK S3 (Cloudflare R2) |
 | **Frontend** | Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Material UI · Chart.js · Leaflet/OSRM · Biome |
-| **Infraestrutura** | MySQL 8.0 · Cloudflare R2 · Docker (multi-stage) · Railway (backend) · Vercel (frontend) |
+| **Integrações bancárias/fiscais** | Sicoob (boletos, mTLS) · Banco do Brasil (extratos, mTLS) · Focus NFe (NF-e) |
+| **Integrações de suporte** | Google Drive (backup) · Google Maps (frete) · SendGrid (e-mail) · Ultramsg (WhatsApp) · OpenWeather (clima) |
+| **Infraestrutura** | MySQL 8.0 · Cloudflare R2 (storage) · Docker (multi-stage) · Railway (backend) · Vercel (frontend) |
 | **Qualidade** | Spotless + Google Java Format (backend) · Biome (frontend) |
 
 > A lista completa de dependências e versões está nas tabelas "Tecnologias e dependências" de cada subprojeto: [Backend](Codigo/Back/README.md#-tecnologias-e-dependências) · [Frontend](Codigo/Front/README.md#-tecnologias-e-dependências)

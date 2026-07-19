@@ -1,7 +1,6 @@
 package com.hortifruti.sl.hortifruti.config.bb;
 
 import com.hortifruti.sl.hortifruti.config.Base64FileDecoder;
-import com.hortifruti.sl.hortifruti.config.LoggingX509KeyManager;
 import com.hortifruti.sl.hortifruti.exception.BBApiException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,7 +8,6 @@ import java.security.KeyStore;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.X509KeyManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -62,8 +60,7 @@ public class BBSSLConfig {
           KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
       keyManagerFactory.init(keyStore, pfxPassword.toCharArray());
 
-      KeyManager[] keyManagers = LoggingX509KeyManager.wrap(keyManagerFactory.getKeyManagers(), "BB");
-      logKeyManagerSelfTest(keyManagers);
+      KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
 
       SSLContext sslContext = SSLContext.getInstance("TLS");
       sslContext.init(keyManagers, null, null);
@@ -99,11 +96,6 @@ public class BBSSLConfig {
       HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
       factory.setHttpClient(httpClient);
 
-      log.info(
-          "[mTLS:BB][bean] bbRestTemplate construído. httpClient={} sslContext={}",
-          System.identityHashCode(httpClient),
-          System.identityHashCode(sslContext));
-
       return new RestTemplate(factory);
 
     } catch (BBApiException e) {
@@ -111,26 +103,5 @@ public class BBSSLConfig {
     } catch (Exception e) {
       throw new BBApiException("Erro ao configurar SSL (mTLS) para o BB: " + e.getMessage(), e);
     }
-  }
-
-  /**
-   * Diagnostico temporario (ver diagnostico-mtls.md): consulta o alias diretamente no bean,
-   * na hora da construcao, para confirmar se o KeyManager resolve um certificado *neste*
-   * runtime — independente do que acontecer depois no handshake TLS real. Se isso logar
-   * "NENHUM alias selecionado" (ou nao logar nada, indicando que o array nem foi encapsulado
-   * por {@link LoggingX509KeyManager}), o problema esta no KeyStore/KeyManagerFactory deste
-   * ambiente, nao na conexao de rede.
-   */
-  private void logKeyManagerSelfTest(KeyManager[] keyManagers) {
-    if (keyManagers.length == 0 || !(keyManagers[0] instanceof X509KeyManager km)) {
-      log.warn("[mTLS:BB][bean][selftest] nenhum X509KeyManager disponivel para autoteste.");
-      return;
-    }
-    String selfTestAlias = km.chooseClientAlias(new String[] {"RSA"}, null, null);
-    log.info(
-        "[mTLS:BB][bean][selftest] chooseClientAlias direto no bean (fora do handshake real) "
-            + "retornou alias='{}' kmClass={}",
-        selfTestAlias,
-        km.getClass().getName());
   }
 }

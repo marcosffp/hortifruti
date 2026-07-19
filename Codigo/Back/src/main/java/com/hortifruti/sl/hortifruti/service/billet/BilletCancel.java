@@ -10,12 +10,14 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class BilletCancel {
@@ -53,10 +55,11 @@ public class BilletCancel {
     } catch (HttpClientErrorException.BadRequest e) {
       return handleBadRequest(e);
     } catch (HttpClientErrorException e) {
-      throw new BilletException(
-          "Erro na requisição para baixar o boleto: " + e.getResponseBodyAsString());
+      log.error("Erro na requisição para baixar o boleto: {}", e.getResponseBodyAsString());
+      throw new BilletException("Erro na requisição para baixar o boleto.");
     } catch (HttpServerErrorException e) {
-      throw new BilletException("Erro interno do servidor ao baixar o boleto: " + e.getMessage());
+      log.error("Erro interno do servidor ao baixar o boleto: {}", e.getResponseBodyAsString());
+      throw new BilletException("Erro interno do servidor ao baixar o boleto.");
     } catch (IOException e) {
       throw new BilletException("Erro de comunicação ao baixar o boleto: " + e.getMessage());
     } catch (Exception e) {
@@ -91,6 +94,7 @@ public class BilletCancel {
       return ResponseEntity.status(HttpStatus.CONFLICT)
           .body("O boleto já está em processo de cancelamento ou já foi liquidado.");
     }
-    throw new BilletException("Erro na requisição para baixar o boleto: " + errorBody);
+    log.error("Erro na requisição para baixar o boleto: {}", errorBody);
+    throw new BilletException("Erro na requisição para baixar o boleto.");
   }
 }
