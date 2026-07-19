@@ -3,6 +3,7 @@ FROM maven:3.9.16-eclipse-temurin-25 AS builder
 
 WORKDIR /app
 
+
 # Copia apenas o pom.xml primeiro para aproveitar cache do Docker
 COPY pom.xml ./
 
