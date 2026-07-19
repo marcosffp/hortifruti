@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import {
+  type PageResult,
+  type TransactionRequest,
+  type TransactionResponse,
   transactionService,
-  TransactionRequest,
-  TransactionResponse,
-  PageResult,
 } from "@/services/transactionService";
 
 export function useTransaction() {
@@ -30,8 +30,10 @@ export function useTransaction() {
         size,
       );
       return data;
-    } catch (err: any) {
-      setError(err.message || "Erro ao buscar transações.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao buscar transações.",
+      );
       throw err;
     } finally {
       setIsLoading(false);
@@ -50,8 +52,10 @@ export function useTransaction() {
         endDate,
       );
       return data;
-    } catch (err: any) {
-      setError(err.message || "Erro ao buscar receita total.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao buscar receita total.",
+      );
       throw err;
     } finally {
       setIsLoading(false);
@@ -70,8 +74,10 @@ export function useTransaction() {
         endDate,
       );
       return data;
-    } catch (err: any) {
-      setError(err.message || "Erro ao buscar despesas totais.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao buscar despesas totais.",
+      );
       throw err;
     } finally {
       setIsLoading(false);
@@ -90,8 +96,10 @@ export function useTransaction() {
         endDate,
       );
       return data;
-    } catch (err: any) {
-      setError(err.message || "Erro ao buscar saldo total.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao buscar saldo total.",
+      );
       throw err;
     } finally {
       setIsLoading(false);
@@ -104,8 +112,10 @@ export function useTransaction() {
     try {
       const data = await transactionService.getAllCategories();
       return data;
-    } catch (err: any) {
-      setError(err.message || "Erro ao buscar categorias.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao buscar categorias.",
+      );
       throw err;
     } finally {
       setIsLoading(false);
@@ -121,8 +131,10 @@ export function useTransaction() {
     try {
       const data = await transactionService.updateTransaction(id, transaction);
       return data;
-    } catch (err: any) {
-      setError(err.message || "Erro ao atualizar transação.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao atualizar transação.",
+      );
       throw err;
     } finally {
       setIsLoading(false);
@@ -134,8 +146,10 @@ export function useTransaction() {
     setError(null);
     try {
       await transactionService.deleteTransaction(id);
-    } catch (err: any) {
-      setError(err.message || "Erro ao deletar transação.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao deletar transação.",
+      );
       throw err;
     } finally {
       setIsLoading(false);
@@ -149,7 +163,10 @@ export function useTransaction() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await transactionService.exportTransactionsAsExcel(startDate, endDate);
+      const data = await transactionService.exportTransactionsAsExcel(
+        startDate,
+        endDate,
+      );
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement("a");
       link.href = url;
@@ -166,8 +183,10 @@ export function useTransaction() {
       link.remove();
       window.URL.revokeObjectURL(url);
       return data;
-    } catch (err: any) {
-      setError(err.message || "Erro ao exportar transações.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao exportar transações.",
+      );
       throw err;
     } finally {
       setIsLoading(false);
@@ -183,14 +202,21 @@ export function useTransaction() {
       const link = document.createElement("a");
       link.href = url;
       const { month, year } = getPreviousMonth();
-      link.setAttribute("download", `Relatorio-Hortifruti-Santa-Luzia-${month}-${year}.zip`);
+      link.setAttribute(
+        "download",
+        `Relatorio-Hortifruti-Santa-Luzia-${month}-${year}.zip`,
+      );
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
       return data;
-    } catch (err: any) {
-      setError(err.message || "Erro ao exportar relatório completo.");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Erro ao exportar relatório completo.",
+      );
       throw err;
     } finally {
       setIsLoading(false);
@@ -207,7 +233,7 @@ export function useTransaction() {
     }
     const monthStr = month.toString().padStart(2, "0");
     return { month: monthStr, year };
-  }
+  };
 
   return {
     isLoading,

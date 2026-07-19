@@ -1,12 +1,11 @@
 "use client";
 
+import { API_BASE_URL } from "@/config/api";
 import { getAuthHeadersForFormData } from "@/utils/httpUtils";
 
 export interface BackupResponseDTO {
   message: string;
 }
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 function buildQuery(params: Record<string, string | undefined>) {
   const usp = new URLSearchParams();
@@ -18,10 +17,16 @@ function buildQuery(params: Record<string, string | undefined>) {
 }
 
 export const backupService = {
-  async getStorage(): Promise<{ current: number; max: number; raw: string; percentage: number }> {
+  async getStorage(): Promise<{
+    current: number;
+    max: number;
+    raw: string;
+    percentage: number;
+  }> {
     const response = await fetch(`${API_BASE_URL}/backup/storage`, {
       method: "GET",
       headers: getAuthHeadersForFormData(),
+      credentials: "include",
     });
 
     if (!response.ok) {
@@ -38,20 +43,22 @@ export const backupService = {
 
     const current = parseFloat((currentStr || "0").trim());
     const max = parseFloat(maxStr || "0");
-    const percentage = max > 0 ? Math.min(100, Math.round((current / max) * 100)) : 0;
+    const percentage =
+      max > 0 ? Math.min(100, Math.round((current / max) * 100)) : 0;
 
     return { current, max, raw, percentage };
   },
 
   async startBackup(
     startDate?: string,
-    endDate?: string
+    endDate?: string,
   ): Promise<{ message: string; requiresAuth: boolean; authUrl?: string }> {
     const query = buildQuery({ startDate, endDate });
 
     const response = await fetch(`${API_BASE_URL}/backup${query}`, {
       method: "POST",
       headers: getAuthHeadersForFormData(),
+      credentials: "include",
     });
 
     if (!response.ok) {
@@ -63,6 +70,10 @@ export const backupService = {
     const msg = data.message || "";
     const isUrl = /^https?:\/\//i.test(msg);
 
-    return { message: msg, requiresAuth: isUrl, authUrl: isUrl ? msg : undefined };
+    return {
+      message: msg,
+      requiresAuth: isUrl,
+      authUrl: isUrl ? msg : undefined,
+    };
   },
 };

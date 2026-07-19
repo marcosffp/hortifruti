@@ -15,11 +15,14 @@ public class InvoiceCancelService {
 
   private final CombinedScoreService combinedScoreService;
 
+  private final FiscalNoteXmlStorageService fiscalNoteXmlStorageService;
+
   @Transactional
   public String cancelInvoice(String ref, String justificativa) {
     try {
       String response = focusNfeApiClient.cancelInvoice(ref, justificativa);
       combinedScoreService.updateStatusAfterInvoiceCancellation(ref);
+      fiscalNoteXmlStorageService.cancelXmlFileAfterCommit(ref);
       return response;
     } catch (Exception e) {
       throw new InvoiceException("Erro ao cancelar a NF-e: " + e.getMessage(), e);

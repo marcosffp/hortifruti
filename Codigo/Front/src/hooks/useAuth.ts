@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { authService } from "@/services/authService";
 
 export function useAuth() {
@@ -11,28 +11,30 @@ export function useAuth() {
   const [userName, setUserName] = useState<string>("");
   const [userRoles, setUserRoles] = useState<string[]>([]);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  const checkAuth = useCallback(async () => {
+    const user = await authService.me();
+    setIsAuthenticated(!!user);
 
-  const checkAuth = () => {
-    const authenticated = authService.isAuthenticated();
-    setIsAuthenticated(authenticated);
-
-    if (authenticated) {
-      const userInfo = authService.getUserInfo();
-      setUserName(userInfo?.name || "");
-      setUserRoles(userInfo?.roles || []);
+    if (user) {
+      setUserName(user.name || "");
+      setUserRoles(user.roles || []);
+    } else {
+      setUserName("");
+      setUserRoles([]);
     }
 
     setIsLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const login = async (username: string, password: string) => {
     setIsLoading(true);
     try {
       await authService.login({ username, password });
-      checkAuth();
+      await checkAuth();
       return true;
     } catch (error) {
       console.error("Erro ao fazer login:", error);
@@ -42,8 +44,8 @@ export function useAuth() {
     }
   };
 
-  const logout = () => {
-    authService.logout();
+  const logout = async () => {
+    await authService.logout();
     setIsAuthenticated(false);
     setUserName("");
     setUserRoles([]);

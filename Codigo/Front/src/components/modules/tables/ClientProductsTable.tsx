@@ -1,26 +1,60 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import SkeletonTableLoading from "@/components/ui/SkeletonTableLoading";
 import { groupedProductsService } from "@/services/groupedProductsService";
-import { purchaseService } from "@/services/purchaseService";
-import { GroupedProductRequest } from "@/types/groupedType";
 import { showError, showSuccess } from "@/services/notificationService";
+import { purchaseService } from "@/services/purchaseService";
+import type { GroupedProductRequest } from "@/types/groupedType";
 
 interface ClientProductsTableProps {
   clientId: number | undefined;
   refreshKey?: number;
 }
 
-export default function ClientProductsTable({ clientId, refreshKey }: ClientProductsTableProps) {
-  const [groupBy, setGroupBy] = useState<'week' | 'month' | 'custom'>('custom');
+function getWeekInterval() {
+  const today = new Date();
+  const lastMonday = new Date(today);
+  lastMonday.setDate(today.getDate() - ((today.getDay() + 6) % 7) - 7);
+  lastMonday.setHours(0, 0, 0, 0);
+
+  const lastSaturday = new Date(lastMonday);
+  lastSaturday.setDate(lastMonday.getDate() + 6);
+  lastSaturday.setHours(23, 59, 59, 999);
+
+  return {
+    start: lastMonday.toISOString().split("T")[0],
+    end: lastSaturday.toISOString().split("T")[0],
+  };
+}
+
+function getLastMonthInterval() {
+  const today = new Date();
+  const year =
+    today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+  const month = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+
+  return {
+    start: firstDay.toISOString().split("T")[0],
+    end: lastDay.toISOString().split("T")[0],
+  };
+}
+
+export default function ClientProductsTable({
+  clientId,
+  refreshKey,
+}: ClientProductsTableProps) {
+  const [groupBy, setGroupBy] = useState<"week" | "month" | "custom">("custom");
   const [startDate, setStartDate] = useState(() => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    return firstDay.toISOString().split('T')[0];
+    return firstDay.toISOString().split("T")[0];
   });
   const [endDate, setEndDate] = useState(() => {
     const now = new Date();
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return lastDay.toISOString().split('T')[0];
+    return lastDay.toISOString().split("T")[0];
   });
 
   const [products, setProducts] = useState<GroupedProductRequest[]>([]);
@@ -30,42 +64,12 @@ export default function ClientProductsTable({ clientId, refreshKey }: ClientProd
   // Debounce refs
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
-  function getWeekInterval() {
-    const today = new Date();
-    let lastMonday = new Date(today);
-    lastMonday.setDate(today.getDate() - ((today.getDay() + 6) % 7) - 7);
-    lastMonday.setHours(0, 0, 0, 0);
-
-    let lastSaturday = new Date(lastMonday);
-    lastSaturday.setDate(lastMonday.getDate() + 6);
-    lastSaturday.setHours(23, 59, 59, 999);
-
-    return {
-      start: lastMonday.toISOString().split('T')[0],
-      end: lastSaturday.toISOString().split('T')[0],
-    };
-  }
-
-  function getLastMonthInterval() {
-    const today = new Date();
-    const year = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
-    const month = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
-
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-
-    return {
-      start: firstDay.toISOString().split('T')[0],
-      end: lastDay.toISOString().split('T')[0],
-    };
-  }
-
   useEffect(() => {
-    if (groupBy === 'week') {
+    if (groupBy === "week") {
       const { start, end } = getWeekInterval();
       setStartDate(start);
       setEndDate(end);
-    } else if (groupBy === 'month') {
+    } else if (groupBy === "month") {
       const { start, end } = getLastMonthInterval();
       setStartDate(start);
       setEndDate(end);
@@ -74,6 +78,7 @@ export default function ClientProductsTable({ clientId, refreshKey }: ClientProd
   }, [groupBy]);
 
   // Debounced fetch
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey is intentionally unused inside the effect — it only exists to force a refetch when the parent bumps it
   useEffect(() => {
     if (!clientId) return;
 
@@ -84,10 +89,18 @@ export default function ClientProductsTable({ clientId, refreshKey }: ClientProd
         setIsLoading(true);
         setError(null);
         try {
-          const products = await purchaseService.fetchClientProducts(clientId, startDate, endDate);
+          const products = await purchaseService.fetchClientProducts(
+            clientId,
+            startDate,
+            endDate,
+          );
           setProducts(products);
-        } catch (err: any) {
-          setError(err.message || "Erro ao buscar produtos do cliente");
+        } catch (err) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Erro ao buscar produtos do cliente",
+          );
         } finally {
           setIsLoading(false);
         }
@@ -102,15 +115,19 @@ export default function ClientProductsTable({ clientId, refreshKey }: ClientProd
   }, [clientId, startDate, endDate, refreshKey]);
 
   const handleConfirmGrouping = () => {
-    groupedProductsService.confirmGrouping(clientId!, products)
+    if (!clientId) return;
+    groupedProductsService
+      .confirmGrouping(clientId, products)
       .then(() => {
         showSuccess("Agrupamento confirmado com sucesso!");
       })
       .catch((err) => {
         console.error(err);
-        showError(err.message || "Erro ao confirmar agrupamento.");
+        showError(
+          err instanceof Error ? err.message : "Erro ao confirmar agrupamento.",
+        );
       });
-  }
+  };
 
   // Mapeamento das colunas para display
   const columnLabels: Record<keyof GroupedProductRequest, string> = {
@@ -118,7 +135,7 @@ export default function ClientProductsTable({ clientId, refreshKey }: ClientProd
     name: "Produto",
     quantity: "Quantidade",
     price: "Preço",
-    totalValue: "Valor Total"
+    totalValue: "Valor Total",
   };
 
   // Filtro de datas
@@ -126,13 +143,19 @@ export default function ClientProductsTable({ clientId, refreshKey }: ClientProd
     <div className="mb-4 p-4 bg-white">
       <div className="flex flex-wrap *:flex-grow items-end gap-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="client-products-groupby"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Tipo de Agrupamento
           </label>
           <select
+            id="client-products-groupby"
             className="px-3 w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             value={groupBy}
-            onChange={(e) => setGroupBy(e.target.value as 'week' | 'month' | 'custom')}
+            onChange={(e) =>
+              setGroupBy(e.target.value as "week" | "month" | "custom")
+            }
           >
             <option value="custom">Intervalo Personalizado</option>
             <option value="week">Semanal</option>
@@ -140,33 +163,42 @@ export default function ClientProductsTable({ clientId, refreshKey }: ClientProd
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="client-products-data-inicial"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Data Inicial
           </label>
           <input
+            id="client-products-data-inicial"
             type="date"
             value={startDate}
-            disabled={groupBy !== 'custom'}
+            disabled={groupBy !== "custom"}
             onChange={(e) => setStartDate(e.target.value)}
-            className={`px-3 w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${groupBy !== 'custom' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+            className={`px-3 w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${groupBy !== "custom" ? "bg-gray-100 cursor-not-allowed" : ""}`}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="client-products-data-final"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Data Final
           </label>
           <input
+            id="client-products-data-final"
             type="date"
             value={endDate}
-            disabled={groupBy !== 'custom'}
+            disabled={groupBy !== "custom"}
             onChange={(e) => setEndDate(e.target.value)}
-            className={`px-3 w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${groupBy !== 'custom' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+            className={`px-3 w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${groupBy !== "custom" ? "bg-gray-100 cursor-not-allowed" : ""}`}
           />
         </div>
         <div>
           <button
+            type="button"
             onClick={handleConfirmGrouping}
-            className={`px-4 w-full py-2 bg-[var(--primary-light)] text-white rounded-lg hover:bg-[var(--primary-dark)] cursor-pointer transition-colors ${products.length === 0 ? 'opacity-50 cursor-not-allowed hover:bg-[var(--primary-light)]' : ''}`}
+            className={`px-4 w-full py-2 bg-[var(--primary-light)] text-white rounded-lg hover:bg-[var(--primary-dark)] cursor-pointer transition-colors ${products.length === 0 ? "opacity-50 cursor-not-allowed hover:bg-[var(--primary-light)]" : ""}`}
             disabled={products.length === 0}
           >
             Confirmar Agrupamento
@@ -178,7 +210,12 @@ export default function ClientProductsTable({ clientId, refreshKey }: ClientProd
 
   // Skeleton loading
   if (isLoading || !clientId) {
-    return <SkeletonTableLoading title="Produtos do Cliente" cols={["Código", "Produto", "Preço", "Quantidade", "Valor Total"]} />;
+    return (
+      <SkeletonTableLoading
+        title="Produtos do Cliente"
+        cols={["Código", "Produto", "Preço", "Quantidade", "Valor Total"]}
+      />
+    );
   }
 
   if (error) {
@@ -194,16 +231,22 @@ export default function ClientProductsTable({ clientId, refreshKey }: ClientProd
   if (!products.length) {
     return (
       <div className="text-gray-800">
-        <h2 className="text-lg font-semibold text-gray-800">Produtos do Cliente</h2>
+        <h2 className="text-lg font-semibold text-gray-800">
+          Produtos do Cliente
+        </h2>
         {renderDateFilter()}
-        <p className="text-center text-gray-500">Nenhum produto encontrado para este cliente no período selecionado.</p>
+        <p className="text-center text-gray-500">
+          Nenhum produto encontrado para este cliente no período selecionado.
+        </p>
       </div>
     );
   }
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-gray-800">Produtos do Cliente</h2>
+      <h2 className="text-lg font-semibold text-gray-800">
+        Produtos do Cliente
+      </h2>
       {renderDateFilter()}
       <table className="min-w-full border border-gray-200">
         <thead>
@@ -224,17 +267,17 @@ export default function ClientProductsTable({ clientId, refreshKey }: ClientProd
               {Object.keys(columnLabels).map((col) => {
                 const key = col as keyof GroupedProductRequest;
                 const value = prod[key];
-                
+
                 return (
                   <td
                     key={col}
                     className="px-4 py-2 border-b border-gray-100 text-sm text-gray-800 whitespace-nowrap"
                   >
-                    {(key === "totalValue" || key === "price")
+                    {key === "totalValue" || key === "price"
                       ? `R$ ${Number(value).toLocaleString("pt-BR", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}`
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}`
                       : value}
                   </td>
                 );

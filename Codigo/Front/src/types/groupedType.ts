@@ -1,4 +1,4 @@
-import { Pageable, Sort } from "./PagesType";
+import type { Pageable, Sort } from "./PagesType";
 
 export interface GroupedScoreType {
   id: number;

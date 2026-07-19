@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { authService } from './authService';
+import { API_BASE_URL } from "@/config/api";
 
 interface UserRequest {
   username: string;
@@ -16,36 +16,19 @@ interface UserResponse {
   role: "MANAGER" | "EMPLOYEE";
 }
 
-const getAuthHeaders = () => {
-  const token = authService.getToken();
-  
-  if (token) {
-    
-    if (authService.isTokenExpired(token)) {
-      window.location.href = '/login';
-      throw new Error('Token expirado. Redirecionando para login.');
-    }
-  }
-  
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
-  return headers;
-};
+const getAuthHeaders = (): HeadersInit => ({
+  "Content-Type": "application/json",
+});
 
 class UserService {
-  private baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  private baseURL = API_BASE_URL;
 
   async createUser(userData: UserRequest): Promise<UserResponse> {
     try {
       const response = await fetch(`${this.baseURL}/users/register`, {
-        method: 'POST',
+        method: "POST",
         headers: getAuthHeaders(),
+        credentials: "include",
         body: JSON.stringify(userData),
       });
 
@@ -55,7 +38,7 @@ class UserService {
 
       return await response.json();
     } catch (error) {
-      console.error('Falha ao criar usuário:', error);
+      console.error("Falha ao criar usuário:", error);
       throw error;
     }
   }
@@ -63,9 +46,10 @@ class UserService {
   async getAllUsers(): Promise<UserResponse[]> {
     try {
       const response = await fetch(`${this.baseURL}/users/all`, {
-        method: 'GET',
+        method: "GET",
         headers: getAuthHeaders(),
-        cache: 'no-store',
+        credentials: "include",
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -74,7 +58,7 @@ class UserService {
 
       return await response.json();
     } catch (error) {
-      console.error('Falha ao obter usuários:', error);
+      console.error("Falha ao obter usuários:", error);
       throw error;
     }
   }
@@ -83,7 +67,7 @@ class UserService {
   async getUserByUsername(username: string): Promise<UserResponse | null> {
     try {
       const users = await this.getAllUsers();
-      return users.find(user => user.username === username) || null;
+      return users.find((user) => user.username === username) || null;
     } catch (error) {
       console.error(`Falha ao obter usuário ${username}:`, error);
       throw error;
@@ -93,8 +77,9 @@ class UserService {
   async updateUser(userData: UserRequest): Promise<UserResponse> {
     try {
       const response = await fetch(`${this.baseURL}/users/update`, {
-        method: 'PUT',
+        method: "PUT",
         headers: getAuthHeaders(),
+        credentials: "include",
         body: JSON.stringify(userData),
       });
 
@@ -109,11 +94,15 @@ class UserService {
     }
   }
 
-  async updateUserById(id: number, userData: UserRequest): Promise<UserResponse> {
+  async updateUserById(
+    id: number,
+    userData: UserRequest,
+  ): Promise<UserResponse> {
     try {
       const response = await fetch(`${this.baseURL}/users/update/${id}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: getAuthHeaders(),
+        credentials: "include",
         body: JSON.stringify(userData),
       });
 
@@ -130,10 +119,14 @@ class UserService {
 
   async deleteUser(username: string): Promise<void> {
     try {
-      const response = await fetch(`${this.baseURL}/users/delete/${encodeURIComponent(username)}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-      });
+      const response = await fetch(
+        `${this.baseURL}/users/delete/${encodeURIComponent(username)}`,
+        {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+          credentials: "include",
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`Erro ao excluir usuário: ${response.status}`);

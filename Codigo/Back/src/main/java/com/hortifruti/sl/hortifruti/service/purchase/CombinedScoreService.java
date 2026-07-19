@@ -264,22 +264,22 @@ public class CombinedScoreService {
 
   @Transactional
   public void updateStatusAfterBilletCancellation(String nossoNumero) {
-    CombinedScore combinedScore =
-        combinedScoreRepository
-            .findByYourNumber(nossoNumero)
-            .orElseThrow(
-                () ->
-                    new CombinedScoreException(
-                        "CombinedScore com o número " + nossoNumero + " não encontrado."));
-
-    if (combinedScore.isHasInvoice()) {
-      combinedScore.setStatus(Status.CANCELADO_BOLETO);
-    } else {
-      combinedScore.setStatus(Status.CANCELADO);
+    List<CombinedScore> combinedScores = combinedScoreRepository.findAllByYourNumber(nossoNumero);
+    if (combinedScores.isEmpty()) {
+      throw new CombinedScoreException(
+          "CombinedScore com o número " + nossoNumero + " não encontrado.");
     }
-    combinedScore.setHasBillet(false);
 
-    combinedScoreRepository.save(combinedScore);
+    for (CombinedScore combinedScore : combinedScores) {
+      if (combinedScore.isHasInvoice()) {
+        combinedScore.setStatus(Status.CANCELADO_BOLETO);
+      } else {
+        combinedScore.setStatus(Status.CANCELADO);
+      }
+      combinedScore.setHasBillet(false);
+    }
+
+    combinedScoreRepository.saveAll(combinedScores);
   }
 
   @Transactional

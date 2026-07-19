@@ -1,7 +1,8 @@
 "use client";
 
-import { Geolocation } from "@/types/addressType";
-import { FreightConfigDTO } from "@/types/freightType";
+import { API_BASE_URL } from "@/config/api";
+import type { Geolocation } from "@/types/addressType";
+import type { FreightConfigDTO } from "@/types/freightType";
 import { getAuthHeaders } from "@/utils/httpUtils";
 
 export interface FreightRequest {
@@ -15,8 +16,6 @@ export interface FreightResponse {
   freight: number;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-
 export const freightService = {
   async calculateFreight(
     origin: Geolocation,
@@ -26,6 +25,7 @@ export const freightService = {
       const response = await fetch(`${API_BASE_URL}/distance`, {
         method: "POST",
         headers: getAuthHeaders(),
+        credentials: "include",
         body: JSON.stringify({ origin, destination }),
       });
 
@@ -45,10 +45,13 @@ export const freightService = {
       const response = await fetch(`${API_BASE_URL}/distance/freight-config`, {
         method: "GET",
         headers: getAuthHeaders(),
+        credentials: "include",
       });
 
       if (!response.ok) {
-        throw new Error(`Erro ao buscar configurações de frete: ${response.status}`);
+        throw new Error(
+          `Erro ao buscar configurações de frete: ${response.status}`,
+        );
       }
 
       return response.json();
@@ -58,17 +61,21 @@ export const freightService = {
     }
   },
 
-  async updateFreightConfig(config: Partial<FreightConfigDTO>): Promise<FreightConfigDTO> {
+  async updateFreightConfig(
+    config: Partial<FreightConfigDTO>,
+  ): Promise<FreightConfigDTO> {
     try {
       const response = await fetch(`${API_BASE_URL}/distance/freight-config`, {
         method: "PATCH",
         headers: getAuthHeaders(),
         body: JSON.stringify(config),
-        credentials: 'include',
+        credentials: "include",
       });
 
       if (!response.ok) {
-        throw new Error(`Erro ao atualizar configurações de frete: ${response.status}`);
+        throw new Error(
+          `Erro ao atualizar configurações de frete: ${response.status}`,
+        );
       }
 
       return await response.json();
@@ -76,5 +83,5 @@ export const freightService = {
       console.error("Falha ao atualizar configurações de frete:", error);
       throw error;
     }
-  }
+  },
 };

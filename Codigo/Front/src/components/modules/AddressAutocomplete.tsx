@@ -1,7 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from "react";
 import { MapPin, X } from "lucide-react";
-import { AddressSuggestion, AddressType } from "@/types/addressType";
-import { getPlacesAutocomplete, getPlaceDetails } from "@/hooks/useAutocomplete";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  getPlaceDetails,
+  getPlacesAutocomplete,
+} from "@/hooks/useAutocomplete";
+import type { AddressSuggestion, AddressType } from "@/types/addressType";
 
 interface AddressAutocompleteProps {
   value: string;
@@ -9,6 +12,7 @@ interface AddressAutocompleteProps {
   placeholder?: string;
   onAddressSelect?: (addressData: AddressType) => void;
   className?: string;
+  id?: string;
 }
 
 const AddressAutocomplete = ({
@@ -17,6 +21,7 @@ const AddressAutocomplete = ({
   placeholder = "Digite o endereço...",
   onAddressSelect,
   className = "",
+  id,
 }: AddressAutocompleteProps) => {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -24,32 +29,34 @@ const AddressAutocomplete = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  const searchAddresses = useCallback(
-    async (query: string) => {
-      if (query.length < 3) {
-        setSuggestions([]);
-        return;
-      }
+  const searchAddresses = useCallback(async (query: string) => {
+    if (query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
 
-      setIsLoading(true);
-      try {
-        const results = await getPlacesAutocomplete(query);
-        setSuggestions(
-          results.map((prediction: any, idx: number) => ({
+    setIsLoading(true);
+    try {
+      const results = await getPlacesAutocomplete(query);
+      setSuggestions(
+        results.map(
+          (
+            prediction: { description: string; place_id: string },
+            idx: number,
+          ) => ({
             id: idx,
             description: prediction.description,
             place_id: prediction.place_id,
-          }))
-        );
-        setShowSuggestions(true);
-      } catch (error) {
-        console.error("Error fetching suggestions:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    []
-  );
+          }),
+        ),
+      );
+      setShowSuggestions(true);
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => searchAddresses(value), 300);
@@ -57,12 +64,12 @@ const AddressAutocomplete = ({
   }, [value, searchAddresses]);
 
   useEffect(() => {
-    const handleClickOutside = (event: any) => {
+    const handleClickOutside = (event: MouseEvent) => {
       if (
         inputRef.current &&
-        !inputRef.current.contains(event.target) &&
+        !inputRef.current.contains(event.target as Node) &&
         suggestionsRef.current &&
-        !suggestionsRef.current.contains(event.target)
+        !suggestionsRef.current.contains(event.target as Node)
       ) {
         setShowSuggestions(false);
       }
@@ -129,9 +136,13 @@ const AddressAutocomplete = ({
   return (
     <div className={`relative ${className}`}>
       <div className="relative">
-        <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <MapPin
+          size={18}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+        />
         <input
           ref={inputRef}
+          id={id}
           type="text"
           placeholder={placeholder}
           className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -141,6 +152,7 @@ const AddressAutocomplete = ({
         />
         {value && (
           <button
+            type="button"
             onClick={clearInput}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
@@ -162,16 +174,22 @@ const AddressAutocomplete = ({
           ) : suggestions.length > 0 ? (
             suggestions.map((address) => (
               <button
+                type="button"
                 key={address.id}
                 onClick={() => handleSuggestionClick(address)}
                 className="w-full text-left p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 flex items-start"
               >
-                <MapPin size={16} className="text-gray-400 mt-1 mr-3 flex-shrink-0" />
+                <MapPin
+                  size={16}
+                  className="text-gray-400 mt-1 mr-3 flex-shrink-0"
+                />
                 <span className="text-gray-700">{address.description}</span>
               </button>
             ))
           ) : value.length >= 3 ? (
-            <div className="p-4 text-center text-gray-500">Nenhum endereço encontrado</div>
+            <div className="p-4 text-center text-gray-500">
+              Nenhum endereço encontrado
+            </div>
           ) : null}
         </div>
       )}

@@ -1,18 +1,21 @@
 "use client";
 
+import { API_BASE_URL as API_URL } from "@/config/api";
 import { fetchWithAuth } from "@/utils/httpUtils";
+
+export type TemperatureCategory = "CONGELANDO" | "FRIO" | "AMENO" | "QUENTE";
 
 export interface ProductRecommendation {
   productId: number;
   name: string;
-  temperatureCategory: 'CONGELANDO' | 'FRIO' | 'AMENO' | 'QUENTE';
+  temperatureCategory: TemperatureCategory;
   score: number;
-  tag: 'BOM' | 'MEDIO' | 'RUIM';
+  tag: "BOM" | "MEDIO" | "RUIM";
 }
 
 export interface ProductRequest {
   name: string;
-  temperatureCategory: 'CONGELANDO' | 'FRIO' | 'AMENO' | 'QUENTE';
+  temperatureCategory: TemperatureCategory;
   peakSalesMonths: number[];
   lowSalesMonths: number[];
 }
@@ -20,12 +23,10 @@ export interface ProductRequest {
 export interface ProductResponse {
   id: number;
   name: string;
-  temperatureCategory: 'CONGELANDO' | 'FRIO' | 'AMENO' | 'QUENTE';
+  temperatureCategory: TemperatureCategory;
   peakSalesMonths: number[];
   lowSalesMonths: number[];
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export interface WeatherForecast {
   city: string;
@@ -49,35 +50,39 @@ export const productService = {
     const response = await fetchWithAuth(
       `${API_URL}/api/weather/forecast/5days`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
-      console.error('Erro na resposta:', response.status, response.statusText);
-      throw new Error(`Erro ao buscar previsão do tempo: ${response.statusText}`);
+      console.error("Erro na resposta:", response.status, response.statusText);
+      throw new Error(
+        `Erro ao buscar previsão do tempo: ${response.statusText}`,
+      );
     }
 
     const data = await response.json();
     return data;
   },
 
-  async getRecommendationsByDate(date: string): Promise<ProductRecommendation[]> {
+  async getRecommendationsByDate(
+    date: string,
+  ): Promise<ProductRecommendation[]> {
     const response = await fetchWithAuth(
       `${API_URL}/api/recommendations/by-date?date=${date}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
-      console.error('Erro na resposta:', response.status, response.statusText);
+      console.error("Erro na resposta:", response.status, response.statusText);
       throw new Error(`Erro ao buscar recomendações: ${response.statusText}`);
     }
 
@@ -85,15 +90,17 @@ export const productService = {
     return data;
   },
 
-  async getRecommendationsByTemperature(category: string): Promise<ProductRecommendation[]> {
+  async getRecommendationsByTemperature(
+    category: string,
+  ): Promise<ProductRecommendation[]> {
     const response = await fetchWithAuth(
       `${API_URL}/api/recommendations/by-temperature/${category}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -105,9 +112,9 @@ export const productService = {
 
   async createProduct(product: ProductRequest): Promise<ProductResponse> {
     const response = await fetchWithAuth(`${API_URL}/products`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(product),
     });
@@ -121,9 +128,9 @@ export const productService = {
 
   async getAllProducts(): Promise<ProductResponse[]> {
     const response = await fetchWithAuth(`${API_URL}/products`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
@@ -134,11 +141,14 @@ export const productService = {
     return response.json();
   },
 
-  async updateProduct(id: number, product: ProductRequest): Promise<ProductResponse> {
+  async updateProduct(
+    id: number,
+    product: ProductRequest,
+  ): Promise<ProductResponse> {
     const response = await fetchWithAuth(`${API_URL}/products/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(product),
     });
@@ -152,7 +162,7 @@ export const productService = {
 
   async deleteProduct(id: number): Promise<void> {
     const response = await fetchWithAuth(`${API_URL}/products/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
 
     if (!response.ok) {

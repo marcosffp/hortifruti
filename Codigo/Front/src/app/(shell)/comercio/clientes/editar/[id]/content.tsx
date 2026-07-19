@@ -1,20 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import ClientForm, { type ClientFormData } from "@/components/forms/ClientForm";
+import Button from "@/components/ui/Button";
 import { clientService } from "@/services/clientService";
 import { showError, showSuccess } from "@/services/notificationService";
-import { parseAddressFromBackend, formatAddressForBackend } from "@/utils/addressUtils";
-import ClientForm, { ClientFormData } from "@/components/forms/ClientForm";
-import { ArrowLeft } from "lucide-react";
-import Button from "@/components/ui/Button";
-import Link from "next/link";
+import {
+  formatAddressForBackend,
+  parseAddressFromBackend,
+} from "@/utils/addressUtils";
 
 interface EditarClientePageProps {
-  id: string
+  id: string;
 }
 
-export default function EditarClientePageContent({ id }: EditarClientePageProps) {
+export default function EditarClientePageContent({
+  id,
+}: EditarClientePageProps) {
   const router = useRouter();
   const clientId = parseInt(id, 10);
 
@@ -87,7 +92,9 @@ export default function EditarClientePageContent({ id }: EditarClientePageProps)
         variablePrice: formData.variablePrice === "true",
         document: formData.cpfCnpj,
         stateRegistration: formData.stateRegistration || null,
-        stateIndicator: formData.stateIndicator ? parseInt(formData.stateIndicator) : null,
+        stateIndicator: formData.stateIndicator
+          ? parseInt(formData.stateIndicator, 10)
+          : null,
         cideCode: formData.cideCode || null,
         onlyBillet: formData.onlyBillet === "true",
       };
@@ -117,7 +124,9 @@ export default function EditarClientePageContent({ id }: EditarClientePageProps)
               />
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Editar Cliente</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Editar Cliente
+              </h1>
               <p className="mt-1 text-sm text-gray-500">
                 Carregando dados do cliente...
               </p>
@@ -144,7 +153,9 @@ export default function EditarClientePageContent({ id }: EditarClientePageProps)
               />
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Editar Cliente</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Editar Cliente
+              </h1>
             </div>
           </div>
           <div className="bg-red-50 border border-red-200 p-4 rounded-md">

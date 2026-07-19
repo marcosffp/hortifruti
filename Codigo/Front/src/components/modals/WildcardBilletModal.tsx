@@ -7,9 +7,16 @@ interface WildcardBilletModalProps {
 }
 
 const formatCentsToBRL = (cents: number) =>
-  (cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  (cents / 100).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
-export default function WildcardBilletModal({ open, onClose, onConfirm }: WildcardBilletModalProps) {
+export default function WildcardBilletModal({
+  open,
+  onClose,
+  onConfirm,
+}: WildcardBilletModalProps) {
   const [number, setNumber] = useState("113");
   const [valueCents, setValueCents] = useState(0);
   const [dueDate, setDueDate] = useState("");
@@ -48,23 +55,31 @@ export default function WildcardBilletModal({ open, onClose, onConfirm }: Wildca
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="wildcard-billet-number"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Número identificador do cliente *
             </label>
             <input
+              id="wildcard-billet-number"
               type="text"
               className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
               placeholder="Digite o número identificador"
               value={number}
-              onChange={e => setNumber(e.target.value)}
+              onChange={(e) => setNumber(e.target.value)}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="wildcard-billet-value"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Valor (R$) *
             </label>
             <input
+              id="wildcard-billet-value"
               type="text"
               inputMode="numeric"
               className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -75,14 +90,18 @@ export default function WildcardBilletModal({ open, onClose, onConfirm }: Wildca
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="wildcard-billet-due-date"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Data de vencimento (opcional)
             </label>
             <input
+              id="wildcard-billet-due-date"
               type="date"
               className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
               value={dueDate}
-              onChange={e => setDueDate(e.target.value)}
+              onChange={(e) => setDueDate(e.target.value)}
             />
             <p className="text-xs text-gray-500 mt-1">
               Se não informada, será usada a data padrão calculada
@@ -92,12 +111,14 @@ export default function WildcardBilletModal({ open, onClose, onConfirm }: Wildca
 
         <div className="flex justify-end gap-2 mt-6">
           <button
+            type="button"
             className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200"
             onClick={handleClose}
           >
             Cancelar
           </button>
           <button
+            type="button"
             className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
             onClick={handleConfirm}
             disabled={!number.trim() || !isValueValid}

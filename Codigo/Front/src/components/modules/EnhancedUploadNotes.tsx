@@ -1,17 +1,20 @@
 "use client";
 
-import { useState, useRef } from "react";
 import { ArrowUp } from "lucide-react";
+import { useRef, useState } from "react";
 import Loading from "@/components/ui/Loading";
-import { showError, showSuccess } from "@/services/notificationService";
 import { useUpload } from "@/hooks/useUpload";
+import { showError, showSuccess } from "@/services/notificationService";
 
 type EnhancedUploadNotesProps = {
   clientId: number | undefined;
   onUploadSuccess?: () => void;
 };
 
-export default function EnhancedUploadNotes({ clientId, onUploadSuccess }: EnhancedUploadNotesProps) {
+export default function EnhancedUploadNotes({
+  clientId,
+  onUploadSuccess,
+}: EnhancedUploadNotesProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +33,7 @@ export default function EnhancedUploadNotes({ clientId, onUploadSuccess }: Enhan
 
       showSuccess(`O arquivo "${file.name}" foi processado com sucesso!`);
       if (onUploadSuccess) onUploadSuccess();
-    } catch (err) {
+    } catch (_err) {
       showError(`Erro ao processar o arquivo "${file.name}".`);
     } finally {
       setLoading(false);
@@ -43,14 +46,14 @@ export default function EnhancedUploadNotes({ clientId, onUploadSuccess }: Enhan
       handleFileUpload(selectedFile);
     }
     // Limpa o valor do input para permitir selecionar o mesmo arquivo novamente
-    e.target.value = '';
+    e.target.value = "";
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
 
-    if(!clientId) {
+    if (!clientId) {
       showError("Selecione um cliente antes de enviar arquivos.");
       return;
     }
@@ -81,9 +84,10 @@ export default function EnhancedUploadNotes({ clientId, onUploadSuccess }: Enhan
       {/* Loading overlay */}
       {loading && <Loading />}
 
-      <div
-        className={`w-full h-full max-h-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center p-2 transition-colors ${isDragging ? "border-primary bg-primary-bg" : "border-gray-300"
-          }`}
+      <section
+        className={`w-full h-full max-h-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center p-2 transition-colors ${
+          isDragging ? "border-primary bg-primary-bg" : "border-gray-300"
+        }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -97,7 +101,9 @@ export default function EnhancedUploadNotes({ clientId, onUploadSuccess }: Enhan
           <p className="text-base font-medium mb-2">
             Clique ou arraste um arquivo
           </p>
-          <p className="text-gray-500 text-sm mb-4">Apenas arquivos PDF com no máximo 10MB</p>
+          <p className="text-gray-500 text-sm mb-4">
+            Apenas arquivos PDF com no máximo 10MB
+          </p>
           <button
             onClick={handleButtonClick}
             type="button"
@@ -114,7 +120,7 @@ export default function EnhancedUploadNotes({ clientId, onUploadSuccess }: Enhan
             onChange={handleFileChange}
           />
         </div>
-      </div>
+      </section>
     </div>
   );
 }

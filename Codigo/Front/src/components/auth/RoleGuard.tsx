@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
+import type React from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface RoleGuardProps {
   roles: string | string[];
@@ -27,7 +28,7 @@ export default function RoleGuard({
   redirectTo = "/acesso-negado",
   ignoreRedirect = false,
 }: RoleGuardProps) {
-  const { hasRole, isAuthenticated } = useAuth();
+  const { hasRole, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [hasVerified, setHasVerified] = useState(false);
 
@@ -35,19 +36,27 @@ export default function RoleGuard({
   const hasPermission = roleArray.some((role) => hasRole(role));
 
   useEffect(() => {
+    if (isLoading) return;
     if (isAuthenticated && !hasPermission && !ignoreRedirect) {
       router.push(redirectTo);
     }
     setHasVerified(true);
-  }, [hasPermission, ignoreRedirect, isAuthenticated, redirectTo, router]);
+  }, [
+    hasPermission,
+    ignoreRedirect,
+    isAuthenticated,
+    isLoading,
+    redirectTo,
+    router,
+  ]);
 
-  if (!hasVerified && !ignoreRedirect) {
+  if (isLoading || (!hasVerified && !ignoreRedirect)) {
     return null;
   }
 
   if (ignoreRedirect) {
-    return hasPermission ? <>{children}</> : <>{fallback}</>;
+    return hasPermission ? children : fallback;
   }
 
-  return hasPermission ? <>{children}</> : null;
+  return hasPermission ? children : null;
 }

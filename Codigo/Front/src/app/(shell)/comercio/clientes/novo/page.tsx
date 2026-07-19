@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import ClientForm, { type ClientFormData } from "@/components/forms/ClientForm";
 import { clientService } from "@/services/clientService";
 import { showError, showSuccess } from "@/services/notificationService";
 import { formatAddressForBackend } from "@/utils/addressUtils";
-import ClientForm, { ClientFormData } from "@/components/forms/ClientForm";
 
 export default function NovoClientePage() {
   const router = useRouter();
@@ -24,7 +24,7 @@ export default function NovoClientePage() {
         numero: formData.numero,
         complemento: formData.complemento,
       });
-      
+
       const clientData = {
         clientName: formData.nome,
         email: formData.email,
@@ -33,7 +33,9 @@ export default function NovoClientePage() {
         variablePrice: formData.variablePrice === "true",
         document: formData.cpfCnpj,
         stateRegistration: formData.stateRegistration || null,
-        stateIndicator: formData.stateIndicator ? parseInt(formData.stateIndicator) : null,
+        stateIndicator: formData.stateIndicator
+          ? parseInt(formData.stateIndicator, 10)
+          : null,
         cideCode: formData.cideCode || null,
         onlyBillet: formData.onlyBillet === "true",
       };

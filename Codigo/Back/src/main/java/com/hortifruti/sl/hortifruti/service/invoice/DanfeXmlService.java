@@ -84,19 +84,7 @@ public class DanfeXmlService {
             "Arquivo não disponível ou vazio. A nota fiscal pode ainda estar sendo processada.");
       }
 
-      Resource resource = new ByteArrayResource(fileBytes);
-
-      return ResponseEntity.ok()
-          .contentType(mediaType)
-          .header(
-              HttpHeaders.CONTENT_DISPOSITION,
-              "attachment; filename=\""
-                  + filePrefix
-                  + "-"
-                  + ref
-                  + getFileExtension(mediaType)
-                  + "\"")
-          .body(resource);
+      return buildFileResponse(fileBytes, ref, mediaType, filePrefix);
 
     } catch (org.springframework.web.reactive.function.client.WebClientRequestException e) {
       throw new InvoiceException(
@@ -105,6 +93,17 @@ public class DanfeXmlService {
     } catch (Exception e) {
       throw new InvoiceException("Erro ao fazer download do arquivo: " + e.getMessage(), e);
     }
+  }
+
+  private ResponseEntity<Resource> buildFileResponse(
+      byte[] fileBytes, String ref, MediaType mediaType, String filePrefix) {
+    Resource resource = new ByteArrayResource(fileBytes);
+    return ResponseEntity.ok()
+        .contentType(mediaType)
+        .header(
+            HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=\"" + filePrefix + "-" + ref + getFileExtension(mediaType) + "\"")
+        .body(resource);
   }
 
   private String getFileExtension(MediaType mediaType) {
@@ -170,7 +169,26 @@ public class DanfeXmlService {
 
   @Transactional
   protected ResponseEntity<Resource> downloadDanfe(String ref) {
-    return downloadWithRetry(ref, "danfe", MediaType.APPLICATION_PDF, "danfe", 4000);
+    byte[] storedDanfe = fiscalNoteXmlStorageService.getDanfeContent(ref);
+    if (storedDanfe != null && storedDanfe.length > 0) {
+      return buildFileResponse(storedDanfe, ref, MediaType.APPLICATION_PDF, "danfe");
+    }
+
+    ResponseEntity<Resource> result =
+        downloadWithRetry(ref, "danfe", MediaType.APPLICATION_PDF, "danfe", 4000);
+    try {
+      if (result.getBody() != null) {
+        byte[] danfeBytes = ((ByteArrayResource) result.getBody()).getByteArray();
+        fiscalNoteXmlStorageService.saveDanfeIfAbsent(ref, danfeBytes);
+      }
+    } catch (Exception e) {
+      System.err.println(
+          "[DanfeXmlService] Falha ao salvar DANFE no banco para ref="
+              + ref
+              + ": "
+              + e.getMessage());
+    }
+    return result;
   }
 
   @Transactional

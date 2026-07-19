@@ -27,7 +27,9 @@ public class Recipient {
 
     AddressRequest addressDto = parseAddress(client.getAddress(), client);
 
-    String documentoLimpo = client.getDocument().replaceAll("[^0-9]", "");
+    // CNPJ passa a aceitar letras (A-Z) a partir de ago/2026 — remove só a máscara
+    // (pontos/traço/barra), preservando eventuais letras. CPF continua só numérico.
+    String documentoLimpo = client.getDocument().replaceAll("[^0-9A-Za-z]", "").toUpperCase();
 
     if (documentoLimpo.isEmpty()) {
       throw new InvoiceException("Cliente não possui CPF ou CNPJ cadastrado");

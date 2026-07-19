@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
+  Edit,
   Plus,
   Search,
-  User,
-  Edit,
-  Trash2,
-  UserCog,
   Shield,
+  Trash2,
+  User,
+  UserCog,
 } from "lucide-react";
-import Button from "@/components/ui/Button";
 import Link from "next/link";
-import { showError, showSuccess } from "@/services/notificationService";
+import { useCallback, useEffect, useState } from "react";
+import Button from "@/components/ui/Button";
 import { backupService } from "@/services/acessoService";
+import { showError, showSuccess } from "@/services/notificationService";
 
 interface UsuarioUI {
   id: number;
@@ -29,7 +29,7 @@ export default function AcessoPage() {
   const [usuarios, setUsuarios] = useState<UsuarioUI[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [usuarioParaExcluir, setUsuarioParaExcluir] = useState<number | null>(
-    null
+    null,
   );
   const [viewMode, setViewMode] = useState<"lista" | "cards">("lista");
 
@@ -40,7 +40,7 @@ export default function AcessoPage() {
     }
   }, []);
 
-  const fetchUsuarios = async () => {
+  const fetchUsuarios = useCallback(async () => {
     try {
       setIsLoading(true);
       const usuariosFormatados = await backupService.getFormattedUsers();
@@ -52,11 +52,11 @@ export default function AcessoPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchUsuarios();
-  }, []);
+  }, [fetchUsuarios]);
 
   // Recarregar usuários quando a página voltar ao foco (útil quando volta da página de criação/edição)
   useEffect(() => {
@@ -90,19 +90,19 @@ export default function AcessoPage() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       clearInterval(interval);
     };
-  }, []);
+  }, [fetchUsuarios]);
 
   const filteredUsuarios = usuarios.filter(
     (usuario) =>
       (usuario.nome ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (usuario.cargo ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (usuario.perfil ?? "").toLowerCase().includes(searchTerm.toLowerCase())
+      (usuario.perfil ?? "").toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const totalUsuarios = usuarios.length;
   const totalGestores = usuarios.filter((u) => u.perfil === "Gestor").length;
   const totalFuncionarios = usuarios.filter(
-    (u) => u.perfil === "Funcionário"
+    (u) => u.perfil === "Funcionário",
   ).length;
 
   const handleExcluirUsuario = async (id: number) => {
@@ -192,11 +192,15 @@ export default function AcessoPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+              <Search
+                className="absolute left-3 top-3 text-gray-400"
+                size={18}
+              />
             </div>
 
             <div className="flex border border-gray-300 rounded-lg overflow-hidden">
               <button
+                type="button"
                 onClick={() => {
                   setViewMode("lista");
                   localStorage.setItem("accessViewMode", "lista");
@@ -209,7 +213,18 @@ export default function AcessoPage() {
                 aria-label="Visualizar em lista"
                 title="Visualizar em lista"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <line x1="8" y1="6" x2="21" y2="6"></line>
                   <line x1="8" y1="12" x2="21" y2="12"></line>
                   <line x1="8" y1="18" x2="21" y2="18"></line>
@@ -219,6 +234,7 @@ export default function AcessoPage() {
                 </svg>
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setViewMode("cards");
                   localStorage.setItem("accessViewMode", "cards");
@@ -231,7 +247,18 @@ export default function AcessoPage() {
                 aria-label="Visualizar em cards"
                 title="Visualizar em cards"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <rect x="3" y="3" width="7" height="7"></rect>
                   <rect x="14" y="3" width="7" height="7"></rect>
                   <rect x="14" y="14" width="7" height="7"></rect>
@@ -282,12 +309,16 @@ export default function AcessoPage() {
                     {searchTerm ? (
                       <>
                         <Search size={48} className="text-gray-300 mb-2" />
-                        <p className="text-gray-500">Nenhum usuário encontrado com o termo "{searchTerm}"</p>
+                        <p className="text-gray-500">
+                          Nenhum usuário encontrado com o termo "{searchTerm}"
+                        </p>
                       </>
                     ) : (
                       <>
                         <User size={48} className="text-gray-300 mb-2" />
-                        <p className="text-gray-500">Nenhum usuário cadastrado</p>
+                        <p className="text-gray-500">
+                          Nenhum usuário cadastrado
+                        </p>
                       </>
                     )}
                   </div>
@@ -353,12 +384,16 @@ export default function AcessoPage() {
 
                         <div className="col-span-3 flex justify-end space-x-2">
                           <Link href={`/acesso/editar/${usuario.id}`}>
-                            <button className="inline-flex items-center gap-1 text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-colors cursor-pointer">
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1 text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+                            >
                               <Edit size={16} />
                               <span className="max-lg:hidden">Editar</span>
                             </button>
                           </Link>
                           <button
+                            type="button"
                             onClick={() => handleExcluirUsuario(usuario.id)}
                             className="inline-flex items-center gap-1 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md transition-colors cursor-pointer"
                           >
@@ -385,7 +420,9 @@ export default function AcessoPage() {
                   {searchTerm ? (
                     <>
                       <Search size={48} className="text-gray-300 mb-2" />
-                      <p className="text-gray-500">Nenhum usuário encontrado com o termo "{searchTerm}"</p>
+                      <p className="text-gray-500">
+                        Nenhum usuário encontrado com o termo "{searchTerm}"
+                      </p>
                     </>
                   ) : (
                     <>
@@ -397,21 +434,33 @@ export default function AcessoPage() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredUsuarios.map((usuario) => (
-                    <div 
-                      key={usuario.id} 
+                    <div
+                      key={usuario.id}
                       className={`border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow ${
-                        usuario.perfil === "Gestor" ? "border-green-200" : "border-orange-200"
+                        usuario.perfil === "Gestor"
+                          ? "border-green-200"
+                          : "border-orange-200"
                       }`}
                     >
-                      <div className={`${
-                        usuario.perfil === "Gestor" ? "bg-green-50" : "bg-orange-50"
-                      } p-4 border-b ${
-                        usuario.perfil === "Gestor" ? "border-green-100" : "border-orange-100"
-                      }`}>
+                      <div
+                        className={`${
+                          usuario.perfil === "Gestor"
+                            ? "bg-green-50"
+                            : "bg-orange-50"
+                        } p-4 border-b ${
+                          usuario.perfil === "Gestor"
+                            ? "border-green-100"
+                            : "border-orange-100"
+                        }`}
+                      >
                         <div className="flex items-center gap-3">
-                          <span className={`${
-                            usuario.perfil === "Gestor" ? "bg-green-100" : "bg-orange-100"
-                          } p-2.5 rounded-full`}>
+                          <span
+                            className={`${
+                              usuario.perfil === "Gestor"
+                                ? "bg-green-100"
+                                : "bg-orange-100"
+                            } p-2.5 rounded-full`}
+                          >
                             {usuario.perfil === "Gestor" ? (
                               <UserCog className="text-green-600" size={24} />
                             ) : (
@@ -419,20 +468,28 @@ export default function AcessoPage() {
                             )}
                           </span>
                           <div>
-                            <h3 className="font-semibold text-gray-900 truncate">{usuario.nome}</h3>
-                            <p className="text-sm text-gray-600 truncate">{usuario.cargo}</p>
+                            <h3 className="font-semibold text-gray-900 truncate">
+                              {usuario.nome}
+                            </h3>
+                            <p className="text-sm text-gray-600 truncate">
+                              {usuario.cargo}
+                            </p>
                           </div>
                         </div>
                       </div>
                       <div className="p-4">
                         <div className="flex flex-col space-y-2">
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Perfil:</span>
-                            <span className={`inline-flex items-center gap-1 ${
-                              usuario.perfil === "Gestor"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-orange-100 text-orange-800"
-                            } px-2.5 py-0.5 rounded-full font-medium text-sm`}>
+                            <span className="text-sm text-gray-600">
+                              Perfil:
+                            </span>
+                            <span
+                              className={`inline-flex items-center gap-1 ${
+                                usuario.perfil === "Gestor"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-orange-100 text-orange-800"
+                              } px-2.5 py-0.5 rounded-full font-medium text-sm`}
+                            >
                               {usuario.perfil === "Gestor" ? (
                                 <Shield className="text-green-600" size={12} />
                               ) : (
@@ -442,30 +499,45 @@ export default function AcessoPage() {
                             </span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Cadastrado:</span>
-                            <span className="text-sm text-gray-800">{usuario.cadastrado}</span>
+                            <span className="text-sm text-gray-600">
+                              Cadastrado:
+                            </span>
+                            <span className="text-sm text-gray-800">
+                              {usuario.cadastrado}
+                            </span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Status:</span>
-                            <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                              usuario.status === "ativo" 
-                                ? "bg-green-100 text-green-800" 
-                                : "bg-red-100 text-red-800"
-                            }`}>
+                            <span className="text-sm text-gray-600">
+                              Status:
+                            </span>
+                            <span
+                              className={`inline-block px-2 py-1 text-xs rounded-full ${
+                                usuario.status === "ativo"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
                               {usuario.status === "ativo" ? "Ativo" : "Inativo"}
                             </span>
                           </div>
                         </div>
                       </div>
                       <div className="flex border-t">
-                        <Link href={`/acesso/editar/${usuario.id}`} className="flex-1">
-                          <button className="w-full py-2 flex items-center justify-center gap-1 text-blue-600 hover:bg-blue-50 transition-colors">
+                        <Link
+                          href={`/acesso/editar/${usuario.id}`}
+                          className="flex-1"
+                        >
+                          <button
+                            type="button"
+                            className="w-full py-2 flex items-center justify-center gap-1 text-blue-600 hover:bg-blue-50 transition-colors"
+                          >
                             <Edit size={16} />
                             <span>Editar</span>
                           </button>
                         </Link>
                         <div className="w-px bg-gray-200"></div>
-                        <button 
+                        <button
+                          type="button"
                           onClick={() => handleExcluirUsuario(usuario.id)}
                           className="flex-1 py-2 flex items-center justify-center gap-1 text-red-600 hover:bg-red-50 transition-colors"
                         >
@@ -494,12 +566,14 @@ export default function AcessoPage() {
             </p>
             <div className="flex justify-end gap-3">
               <button
+                type="button"
                 onClick={cancelarExclusao}
                 className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
               >
                 Cancelar
               </button>
               <button
+                type="button"
                 onClick={confirmarEExcluirUsuario}
                 className="px-4 py-2 bg-red-600/80 text-white rounded-md hover:bg-red-700 transition-colors"
               >

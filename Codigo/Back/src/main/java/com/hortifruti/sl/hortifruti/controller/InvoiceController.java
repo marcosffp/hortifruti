@@ -3,7 +3,9 @@ package com.hortifruti.sl.hortifruti.controller;
 import com.hortifruti.sl.hortifruti.dto.invoice.FiscalNoteXmlStorageResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
+import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceWithBilletResponse;
 import com.hortifruti.sl.hortifruti.service.invoice.InvoiceService;
+import com.hortifruti.sl.hortifruti.service.invoice.IssueInvoiceWithBilletService;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 public class InvoiceController {
 
   private final InvoiceService invoiceService;
+  private final IssueInvoiceWithBilletService issueInvoiceWithBilletService;
 
   @PostMapping("/issue/{combinedScoreId}")
   public ResponseEntity<InvoiceResponse> issueInvoice(
@@ -30,6 +33,23 @@ public class InvoiceController {
       @RequestParam(value = "dadosAdicionais", required = false, defaultValue = "")
           String dadosAdicionais) {
     InvoiceResponse response = invoiceService.issueInvoice(combinedScoreId, dadosAdicionais);
+    return ResponseEntity.ok(response);
+  }
+
+  /**
+   * Emite a NF e, em seguida, o boleto vinculado a ela (usando o número da NF como identificador do
+   * boleto). Se qualquer etapa após a emissão da NF falhar, a NF é cancelada automaticamente.
+   * Retorna a NF (DANFE + XML) e o boleto, todos em base64.
+   */
+  @PostMapping("/issue-with-billet/{combinedScoreId}")
+  public ResponseEntity<InvoiceWithBilletResponse> issueInvoiceWithBillet(
+      @PathVariable Long combinedScoreId,
+      @RequestParam(value = "dadosAdicionais", required = false, defaultValue = "")
+          String dadosAdicionais,
+      @RequestParam(required = false) String dueDate) {
+    InvoiceWithBilletResponse response =
+        issueInvoiceWithBilletService.issueInvoiceAndBillet(
+            combinedScoreId, dadosAdicionais, dueDate);
     return ResponseEntity.ok(response);
   }
 
@@ -56,9 +76,8 @@ public class InvoiceController {
       String response = invoiceService.cancelInvoice(ref, justificativa);
       return ResponseEntity.ok(response);
     } catch (Exception e) {
-      log.error("Erro ao cancelar a NF-e para ref {}: {}", ref, e.getMessage(), e);
-      return ResponseEntity.internalServerError()
-          .body("Erro ao cancelar a NF-e: " + e.getMessage());
+      log.error("Erro ao cancelar a NF-e para ref {}", ref, e);
+      return ResponseEntity.internalServerError().body("Erro ao cancelar a NF-e.");
     }
   }
 

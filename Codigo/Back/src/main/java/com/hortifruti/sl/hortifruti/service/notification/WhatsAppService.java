@@ -3,6 +3,7 @@ package com.hortifruti.sl.hortifruti.service.notification;
 import com.hortifruti.sl.hortifruti.exception.NotificationException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -26,6 +27,7 @@ public class WhatsAppService {
   @Value("${ultramsg.base.url}")
   private String baseUrl;
 
+  @Qualifier("genericRestTemplate")
   private final RestTemplate restTemplate;
 
   /**

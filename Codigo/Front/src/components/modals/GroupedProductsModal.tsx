@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { combinedScoreService } from "@/services/combinedScoreService";
-import { GroupedProductType } from "@/types/combinedScoreType";
+import type { GroupedProductType } from "@/types/combinedScoreType";
 
 interface GroupedProductsModalProps {
   combinedScoreId: number;
@@ -20,10 +20,11 @@ export default function GroupedProductsModal({
   const [products, setProducts] = useState<GroupedProductType[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await combinedScoreService.fetchGroupedProducts(combinedScoreId);
+      const data =
+        await combinedScoreService.fetchGroupedProducts(combinedScoreId);
       setProducts(data);
     } catch (error) {
       toast.error("Erro ao carregar produtos");
@@ -31,11 +32,11 @@ export default function GroupedProductsModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [combinedScoreId]);
 
   useEffect(() => {
     fetchProducts();
-  }, [combinedScoreId]);
+  }, [fetchProducts]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -52,6 +53,7 @@ export default function GroupedProductsModal({
             Produtos do Agrupamento {scoreNumber}
           </h2>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
@@ -63,7 +65,11 @@ export default function GroupedProductsModal({
           {loading ? (
             <div className="space-y-2">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-16 bg-gray-200 animate-pulse rounded-lg" />
+                <div
+                  // biome-ignore lint/suspicious/noArrayIndexKey: static-length skeleton placeholder list, no stable identity available
+                  key={i}
+                  className="h-16 bg-gray-200 animate-pulse rounded-lg"
+                />
               ))}
             </div>
           ) : products.length === 0 ? (
@@ -78,13 +84,18 @@ export default function GroupedProductsModal({
                     <th className="text-left p-3 font-semibold">Código</th>
                     <th className="text-left p-3 font-semibold">Produto</th>
                     <th className="text-right p-3 font-semibold">Quantidade</th>
-                    <th className="text-right p-3 font-semibold">Preço Unit.</th>
+                    <th className="text-right p-3 font-semibold">
+                      Preço Unit.
+                    </th>
                     <th className="text-right p-3 font-semibold">Total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((product, index) => (
-                    <tr key={`${product.code}-${index}`} className="border-gray-300 border-b hover:bg-gray-50">
+                  {products.map((product) => (
+                    <tr
+                      key={`${product.code}-${product.quantity}-${product.totalValue}`}
+                      className="border-gray-300 border-b hover:bg-gray-50"
+                    >
                       <td className="p-3">{product.code}</td>
                       <td className="p-3">{product.name}</td>
                       <td className="p-3 text-right">
@@ -93,7 +104,9 @@ export default function GroupedProductsModal({
                           maximumFractionDigits: 3,
                         }).format(parseFloat(product.quantity.toString()))}
                       </td>
-                      <td className="p-3 text-right">{formatCurrency(product.price)}</td>
+                      <td className="p-3 text-right">
+                        {formatCurrency(product.price)}
+                      </td>
                       <td className="p-3 text-right font-semibold">
                         {formatCurrency(product.totalValue)}
                       </td>
@@ -107,7 +120,7 @@ export default function GroupedProductsModal({
                     </td>
                     <td className="p-3 text-right">
                       {formatCurrency(
-                        products.reduce((sum, p) => sum + p.totalValue, 0)
+                        products.reduce((sum, p) => sum + p.totalValue, 0),
                       )}
                     </td>
                   </tr>

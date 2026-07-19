@@ -2,17 +2,22 @@ package com.hortifruti.sl.hortifruti.config.auth;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.hortifruti.sl.hortifruti.exception.TokenException;
 import com.hortifruti.sl.hortifruti.model.enumeration.Role;
 import jakarta.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class TokenConfiguration {
+  private final TokenBlocklist tokenBlocklist;
+
   @Value("${jwt.secret}")
   private String secretKey;
 
@@ -42,6 +47,11 @@ public class TokenConfiguration {
   }
 
   public String validateToken(String token) {
+    if (tokenBlocklist.isRevoked(token)) {
+      throw new TokenException(
+          "O token fornecido é inválido ou expirou. Por favor, faça login novamente.");
+    }
+
     try {
       return JWT.require(algoritmo).withIssuer("auth").build().verify(token).getSubject();
 
@@ -51,8 +61,22 @@ public class TokenConfiguration {
     }
   }
 
+  /** Revoga o token imediatamente, mesmo que ele ainda não tenha expirado (usado no logout). */
+  public void revokeToken(String token) {
+    try {
+      DecodedJWT decoded = JWT.require(algoritmo).withIssuer("auth").build().verify(token);
+      tokenBlocklist.revoke(token, decoded.getExpiresAtAsInstant());
+    } catch (Exception e) {
+      // Token já inválido/expirado: nada a revogar.
+    }
+  }
+
   private Instant generateExpirationDate() {
     return LocalDateTime.now().plusMinutes(minutosExpiracao).toInstant(ZoneOffset.of("-03:00"));
+  }
+
+  public long getExpirationSeconds() {
+    return minutosExpiracao * 60;
   }
 
   public Role getRoleFromToken(String token) {
