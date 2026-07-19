@@ -25,6 +25,9 @@ public class NotificationService {
   @Value("${accounting.email}")
   private String accountingEmail;
 
+  @Value("${notification.sender-name:}")
+  private String senderName;
+
   public NotificationResponse sendGenericFilesToAccounting(
       List<MultipartFile> files, GenericFilesAccountingRequest request) {
 
@@ -146,16 +149,16 @@ public class NotificationService {
     Map<String, String> variables = new HashMap<>();
     variables.put("CLIENT_NAME", client.getClientName());
 
-    LocalDate today = LocalDate.now();
+    LocalDate today = EmailGreetingUtil.today();
     variables.put("CURRENT_DATE", today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+    variables.put("GREETING", EmailGreetingUtil.timeOfDayGreeting());
+    variables.put("PERIOD_RANGE", EmailGreetingUtil.weekPeriodLabel(today));
+    variables.put("SENDER_NAME", senderName);
 
-    if (request.customMessage() != null && !request.customMessage().isEmpty()) {
-      variables.put("CUSTOM_MESSAGE", request.customMessage());
-      variables.put("DEFAULT_MESSAGE", "");
-    } else {
-      variables.put("CUSTOM_MESSAGE", "");
-      variables.put("DEFAULT_MESSAGE", "true");
-    }
+    variables.put("DEFAULT_MESSAGE", "true");
+    variables.put(
+        "CUSTOM_MESSAGE",
+        request.customMessage() != null ? request.customMessage() : "");
 
     return emailTemplateService.processTemplate("client-documents", variables);
   }
