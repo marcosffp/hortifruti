@@ -199,6 +199,14 @@ public class BulkNotificationService {
           failedRecipients.add(client.getClientName());
         }
 
+      } catch (NotificationException e) {
+        if (e.getMessage() != null
+            && e.getMessage().startsWith("Autorização do Gmail necessária:")) {
+          // Falha de autorização afeta todos os envios igualmente, não faz sentido continuar
+          // tentando cliente por cliente.
+          return BulkNotificationResponse.failure(e.getMessage(), failedRecipients);
+        }
+        failedRecipients.add("Cliente ID: " + clientId + " (erro)");
       } catch (Exception e) {
         failedRecipients.add("Cliente ID: " + clientId + " (erro)");
       }

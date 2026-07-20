@@ -1,9 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.notification;
 
-import com.hortifruti.sl.hortifruti.exception.NotificationException;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -16,10 +14,9 @@ import org.springframework.stereotype.Service;
  * outro código precisa mudar. Isso permite manter os outros provedores intactos mesmo quando um
  * deles está ativo, sem quebrar quem já depende de {@link EmailService}.
  */
+@Slf4j
 @Service
 public class EmailService {
-
-  private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
   @Value("${email.provider:sendgrid}")
   private String provider;
@@ -38,50 +35,12 @@ public class EmailService {
   }
 
   public boolean sendSimpleEmail(String to, String subject, String text) {
-    EmailSender sender = resolveSender();
-    log.info(
-        "[Email] provider={} sendSimpleEmail to={} subject={}", sender.providerName(), to, subject);
-    try {
-      boolean result = sender.sendSimpleEmail(to, subject, text);
-      log.info(
-          "[Email] provider={} sendSimpleEmail concluído com sucesso to={}",
-          sender.providerName(),
-          to);
-      return result;
-    } catch (NotificationException e) {
-      log.error(
-          "[Email] provider={} sendSimpleEmail FALHOU to={}: {}",
-          sender.providerName(),
-          to,
-          e.getMessage());
-      throw e;
-    }
+    return resolveSender().sendSimpleEmail(to, subject, text);
   }
 
   public boolean sendEmailWithAttachments(
       String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
-    EmailSender sender = resolveSender();
-    log.info(
-        "[Email] provider={} sendEmailWithAttachments to={} subject={} anexos={}",
-        sender.providerName(),
-        to,
-        subject,
-        attachments == null ? 0 : attachments.size());
-    try {
-      boolean result = sender.sendEmailWithAttachments(to, subject, text, attachments, fileNames);
-      log.info(
-          "[Email] provider={} sendEmailWithAttachments concluído com sucesso to={}",
-          sender.providerName(),
-          to);
-      return result;
-    } catch (NotificationException e) {
-      log.error(
-          "[Email] provider={} sendEmailWithAttachments FALHOU to={}: {}",
-          sender.providerName(),
-          to,
-          e.getMessage());
-      throw e;
-    }
+    return resolveSender().sendEmailWithAttachments(to, subject, text, attachments, fileNames);
   }
 
   public boolean sendEmailWithSingleAttachment(
@@ -100,8 +59,8 @@ public class EmailService {
       return sendGridEmailSender;
     }
     log.warn(
-        "[Email] Valor de email.provider='{}' não reconhecido (use 'sendgrid', 'gmail' ou"
-            + " 'gmail-api'). Usando SendGrid como padrão.",
+        "email.provider='{}' não reconhecido (use 'sendgrid', 'gmail' ou 'gmail-api'). Usando"
+            + " SendGrid como padrão.",
         provider);
     return sendGridEmailSender;
   }
