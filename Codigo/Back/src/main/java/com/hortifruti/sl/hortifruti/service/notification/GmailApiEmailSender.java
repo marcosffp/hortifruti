@@ -77,12 +77,16 @@ public class GmailApiEmailSender implements EmailSender {
 
   private boolean doSend(
       String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
-    if (senderAddress == null || senderAddress.isBlank()) {
-      throw new NotificationException("Conta do Gmail não configurada (GMAIL)");
-    }
-
     try {
+      // Verifica a autorização OAuth antes do endereço remetente: se a conta Google nunca
+      // foi autorizada, é mais útil o usuário ver o link de autorização (acionável) do que o
+      // erro de configuração abaixo, que exige acesso ao servidor para corrigir.
       Gmail gmail = buildGmailClient();
+
+      if (senderAddress == null || senderAddress.isBlank()) {
+        throw new NotificationException("Conta do Gmail não configurada (GMAIL)");
+      }
+
       MimeMessage mimeMessage = buildMimeMessage(to, subject, text, attachments, fileNames);
       Message message = toGmailMessage(mimeMessage);
 
