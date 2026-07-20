@@ -9,11 +9,12 @@ import org.springframework.stereotype.Service;
 
 /**
  * Fachada de envio de email. Delega para o {@link EmailSender} configurado em
- * {@code email.provider} (sendgrid | gmail), sem expor detalhes do provedor aos chamadores.
+ * {@code email.provider} (sendgrid | gmail | gmail-api), sem expor detalhes do provedor aos
+ * chamadores.
  *
  * <p>Para trocar de provedor basta alterar a variável de ambiente {@code EMAIL_PROVIDER} — nenhum
- * outro código precisa mudar. Isso permite manter o SendGrid intacto mesmo quando o Gmail está
- * ativo (ou vice-versa), sem quebrar quem já depende de {@link EmailService}.
+ * outro código precisa mudar. Isso permite manter os outros provedores intactos mesmo quando um
+ * deles está ativo, sem quebrar quem já depende de {@link EmailService}.
  */
 @Service
 public class EmailService {
@@ -25,11 +26,15 @@ public class EmailService {
 
   private final SendGridEmailSender sendGridEmailSender;
   private final GmailSmtpEmailSender gmailSmtpEmailSender;
+  private final GmailApiEmailSender gmailApiEmailSender;
 
   public EmailService(
-      SendGridEmailSender sendGridEmailSender, GmailSmtpEmailSender gmailSmtpEmailSender) {
+      SendGridEmailSender sendGridEmailSender,
+      GmailSmtpEmailSender gmailSmtpEmailSender,
+      GmailApiEmailSender gmailApiEmailSender) {
     this.sendGridEmailSender = sendGridEmailSender;
     this.gmailSmtpEmailSender = gmailSmtpEmailSender;
+    this.gmailApiEmailSender = gmailApiEmailSender;
   }
 
   public boolean sendSimpleEmail(String to, String subject, String text) {
@@ -88,12 +93,15 @@ public class EmailService {
     if ("gmail".equalsIgnoreCase(provider)) {
       return gmailSmtpEmailSender;
     }
+    if ("gmail-api".equalsIgnoreCase(provider)) {
+      return gmailApiEmailSender;
+    }
     if ("sendgrid".equalsIgnoreCase(provider)) {
       return sendGridEmailSender;
     }
     log.warn(
-        "[Email] Valor de email.provider='{}' não reconhecido (use 'sendgrid' ou 'gmail')."
-            + " Usando SendGrid como padrão.",
+        "[Email] Valor de email.provider='{}' não reconhecido (use 'sendgrid', 'gmail' ou"
+            + " 'gmail-api'). Usando SendGrid como padrão.",
         provider);
     return sendGridEmailSender;
   }
