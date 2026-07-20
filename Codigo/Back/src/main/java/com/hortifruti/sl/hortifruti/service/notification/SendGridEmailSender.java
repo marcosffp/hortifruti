@@ -9,17 +9,15 @@ import com.sendgrid.helpers.mail.objects.Email;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 /** Envio de email via SendGrid API. Ativado quando {@code email.provider=sendgrid}. */
+@Slf4j
 @Component
 public class SendGridEmailSender implements EmailSender {
-
-  private static final Logger log = LoggerFactory.getLogger(SendGridEmailSender.class);
 
   @Value("${sendgrid.api.key:}")
   private String sendGridApiKey;
@@ -45,24 +43,10 @@ public class SendGridEmailSender implements EmailSender {
 
   private boolean doSend(
       String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
-    long start = System.currentTimeMillis();
-    log.info(
-        "[SendGrid] Iniciando envio de email to={} subject={} anexos={} fromConfigurado={}",
-        to,
-        subject,
-        attachments == null ? 0 : attachments.size(),
-        fromEmail != null && !fromEmail.isBlank());
-
     if (sendGridApiKey == null || sendGridApiKey.isBlank()) {
-      log.error(
-          "[SendGrid] SENDGRID_API_KEY não configurada. Verifique a variável de ambiente antes de"
-              + " tentar enviar email.");
       throw new NotificationException("SendGrid API key não configurada");
     }
     if (fromEmail == null || fromEmail.isBlank()) {
-      log.error(
-          "[SendGrid] SENDGRID_FROM_EMAIL não configurado. Verifique a variável de ambiente antes"
-              + " de tentar enviar email.");
       throw new NotificationException("SendGrid from email não configurado");
     }
 
@@ -91,36 +75,22 @@ public class SendGridEmailSender implements EmailSender {
       request.setEndpoint("mail/send");
       request.setBody(mail.build());
 
-      log.debug("[SendGrid] Enviando requisição POST mail/send para to={}", to);
       Response response = sg.api(request);
-      long elapsed = System.currentTimeMillis() - start;
 
       if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
-        log.info(
-            "[SendGrid] Email enviado com sucesso to={} status={} em {}ms",
-            to,
-            response.getStatusCode(),
-            elapsed);
         return true;
       } else {
         log.error(
-            "[SendGrid] Falha ao enviar email to={} status={} body={} em {}ms",
+            "SendGrid recusou o envio para {}: status={} body={}",
             to,
             response.getStatusCode(),
-            response.getBody(),
-            elapsed);
+            response.getBody());
         throw new NotificationException(
             "Erro ao enviar email. Status: " + response.getStatusCode());
       }
 
     } catch (IOException e) {
-      long elapsed = System.currentTimeMillis() - start;
-      log.error(
-          "[SendGrid] Exceção de IO ao enviar email to={} apos {}ms: {}",
-          to,
-          elapsed,
-          e.getMessage(),
-          e);
+      log.error("Falha de IO ao enviar email via SendGrid para {}: {}", to, e.getMessage());
       throw new NotificationException("Falha ao enviar email: " + e.getMessage(), e);
     }
   }
@@ -141,12 +111,9 @@ public class SendGridEmailSender implements EmailSender {
         logo.setContentId("logo");
 
         mail.addAttachments(logo);
-      } else {
-        log.warn("[SendGrid] Logo inline static/images/logo.png não encontrado no classpath.");
       }
 
-    } catch (IOException e) {
-      log.warn("[SendGrid] Falha ao anexar logo inline: {}", e.getMessage());
+    } catch (IOException ignored) {
     }
   }
 }

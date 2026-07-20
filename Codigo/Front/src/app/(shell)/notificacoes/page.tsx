@@ -19,7 +19,11 @@ import {
   bulkNotificationService,
 } from "@/services/bulkNotificationService";
 import { clientService } from "@/services/clientService";
-import { showError, showSuccess } from "@/services/notificationService";
+import {
+  showError,
+  showErrorWithLink,
+  showSuccess,
+} from "@/services/notificationService";
 
 interface Cliente {
   id: number;
@@ -262,6 +266,8 @@ export default function NotificacoesPage() {
 
         setCardValue("");
         setCashValue("");
+      } else if (response.authorizationUrl) {
+        showErrorWithLink(response.message, response.authorizationUrl);
       } else {
         showError(response.message);
 

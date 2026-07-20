@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.controller.notification;
 
 import com.hortifruti.sl.hortifruti.dto.notification.*;
+import com.hortifruti.sl.hortifruti.exception.NotificationException;
 import com.hortifruti.sl.hortifruti.model.enumeration.NotificationChannel;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.service.notification.BulkNotificationService;
@@ -64,6 +65,9 @@ public class NotificationController {
       NotificationResponse response =
           notificationService.sendGenericFilesToAccounting(files, request);
       return ResponseEntity.ok(response);
+    } catch (NotificationException e) {
+      log.error("Erro ao enviar arquivos para contabilidade: {}", e.getMessage());
+      return ResponseEntity.badRequest().body(new NotificationResponse(false, e.getMessage()));
     } catch (Exception e) {
       log.error("Erro ao enviar arquivos para contabilidade", e);
       return ResponseEntity.badRequest()
@@ -92,6 +96,9 @@ public class NotificationController {
               clientId, NotificationChannel.valueOf(channel.toUpperCase()), customMessage);
       NotificationResponse response = notificationService.sendDocumentsToClient(files, request);
       return ResponseEntity.ok(response);
+    } catch (NotificationException e) {
+      log.error("Erro ao enviar documentos para cliente {}: {}", clientId, e.getMessage());
+      return ResponseEntity.badRequest().body(new NotificationResponse(false, e.getMessage()));
     } catch (Exception e) {
       log.error("Erro ao enviar documentos para cliente {}", clientId, e);
       return ResponseEntity.badRequest()
@@ -210,6 +217,10 @@ public class NotificationController {
 
     } catch (IllegalArgumentException e) {
       return ResponseEntity.badRequest()
+          .body(BulkNotificationResponse.failure(e.getMessage(), List.of()));
+    } catch (NotificationException e) {
+      log.error("Erro ao processar notificações em massa: {}", e.getMessage());
+      return ResponseEntity.status(500)
           .body(BulkNotificationResponse.failure(e.getMessage(), List.of()));
     } catch (Exception e) {
       log.error("Erro ao processar notificações em massa", e);
