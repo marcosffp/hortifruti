@@ -240,7 +240,8 @@ public class BilletHttpClient {
   private void logNetworkFailure(String operation, ResourceAccessException ex, long startedAt) {
     long elapsedMs = System.currentTimeMillis() - startedAt;
     Throwable rootCause = ex.getCause();
-    String causeClass = rootCause != null ? rootCause.getClass().getSimpleName() : ex.getClass().getSimpleName();
+    String causeClass =
+        rootCause != null ? rootCause.getClass().getSimpleName() : ex.getClass().getSimpleName();
     log.error(
         "[Sicoob][api] operacao={} falha de rede/TLS - causaRaiz={} elapsedMs={}",
         operation,

@@ -8,10 +8,13 @@ const apiOrigin = /^https?:\/\//.test(apiUrl) ? apiUrl : "";
 
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  // Em dev o React usa eval() para reconstruir stack traces; isso nunca
+  // acontece em build de produção, então só relaxamos o CSP localmente.
+  const isDev = process.env.NODE_ENV !== "production";
 
   const csp = [
     `default-src 'self'`,
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
     `style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com`,
     `img-src 'self' data: blob:`,
     `font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com`,

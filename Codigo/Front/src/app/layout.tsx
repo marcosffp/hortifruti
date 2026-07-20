@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
+import FetchInterceptorInit from "@/components/auth/FetchInterceptorInit";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,6 +41,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <FetchInterceptorInit />
         {children}
         <ToastContainer aria-label={undefined} />
       </body>

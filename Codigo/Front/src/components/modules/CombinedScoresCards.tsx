@@ -631,69 +631,69 @@ export default function CombinedScoresCards({
                   </button>
 
                   {/* Botões de Boleto e Nota Fiscal */}
-                  <div
-                    className={`grid gap-2 ${client?.onlyBillet ? "grid-cols-1" : "grid-cols-2"}`}
-                  >
+                  <div className="space-y-2">
                     {!client?.onlyBillet &&
-                    !score.hasBillet &&
-                    !score.hasInvoice ? (
-                      <button
-                        type="button"
-                        onClick={() => handleCombinedButtonClick(score)}
-                        className="col-span-2 flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
-                      >
-                        <FileText className="w-3 h-3" />
-                        Gerar NF + Boleto
-                      </button>
-                    ) : (
-                      <>
-                        {score.hasBillet ? (
+                      !score.hasBillet &&
+                      !score.hasInvoice && (
+                        <button
+                          type="button"
+                          onClick={() => handleCombinedButtonClick(score)}
+                          className="w-full flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
+                        >
+                          <FileText className="w-3 h-3" />
+                          Gerar NF + Boleto
+                        </button>
+                      )}
+
+                    <div
+                      className={`grid gap-2 ${client?.onlyBillet ? "grid-cols-1" : "grid-cols-2"}`}
+                    >
+                      {score.hasBillet ? (
+                        <button
+                          type="button"
+                          onClick={() => handleShowBillet(score)}
+                          className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs cursor-pointer"
+                        >
+                          <Info className="w-3 h-3" />
+                          Ver Boleto
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setClientNumberModal({
+                              state: true,
+                              groupId: score.id,
+                            })
+                          }
+                          className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
+                        >
+                          <FileText className="w-3 h-3" />
+                          Gerar Boleto
+                        </button>
+                      )}
+
+                      {!client?.onlyBillet &&
+                        (score.hasInvoice ? (
                           <button
                             type="button"
-                            onClick={() => handleShowBillet(score)}
+                            onClick={() => handleShowInvoice(score)}
                             className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs cursor-pointer"
                           >
                             <Info className="w-3 h-3" />
-                            Ver Boleto
+                            Ver NF
                           </button>
                         ) : (
                           <button
                             type="button"
-                            onClick={() =>
-                              setClientNumberModal({
-                                state: true,
-                                groupId: score.id,
-                              })
-                            }
+                            onClick={() => handleInvoiceButtonClick(score)}
                             className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
                           >
                             <FileText className="w-3 h-3" />
-                            Gerar Boleto
+                            Gerar NF
                           </button>
-                        )}
-
-                        {!client?.onlyBillet &&
-                          (score.hasInvoice ? (
-                            <button
-                              type="button"
-                              onClick={() => handleShowInvoice(score)}
-                              className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs cursor-pointer"
-                            >
-                              <Info className="w-3 h-3" />
-                              Ver NF
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => handleInvoiceButtonClick(score)}
-                              className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
-                            >
-                              <FileText className="w-3 h-3" />
-                              Gerar NF
-                            </button>
-                          ))}
-                      </>
-                    )}
+                        ))}
+                    </div>
                   </div>
 
                   {/* Confirmar Pagamento e Deletar */}

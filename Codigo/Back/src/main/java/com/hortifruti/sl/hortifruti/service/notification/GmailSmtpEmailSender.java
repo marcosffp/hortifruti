@@ -135,7 +135,8 @@ public class GmailSmtpEmailSender implements EmailSender {
 
     } catch (MessagingException e) {
       log.error("Erro ao montar mensagem MIME para {}: {}", to, e.getMessage());
-      throw new NotificationException("Falha ao montar email para Gmail SMTP: " + e.getMessage(), e);
+      throw new NotificationException(
+          "Falha ao montar email para Gmail SMTP: " + e.getMessage(), e);
     }
   }
 

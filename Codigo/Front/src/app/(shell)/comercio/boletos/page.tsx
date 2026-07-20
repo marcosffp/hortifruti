@@ -18,7 +18,6 @@ import {
   UserSearch,
   X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import ClientSelector from "@/components/modules/ClientSelector";
@@ -217,7 +216,6 @@ function BilletRowActions({
 }
 
 export default function BoletosPage() {
-  const router = useRouter();
   const {
     getOpenBillets,
     getClientBillets,
@@ -548,7 +546,11 @@ export default function BoletosPage() {
   };
 
   const goToGrouping = (clientId: number) => {
-    router.push(`/comercio/compras?clientId=${clientId}&tab=grouped`);
+    window.open(
+      `/comercio/compras?clientId=${clientId}&tab=grouped`,
+      "_blank",
+      "noopener,noreferrer",
+    );
   };
 
   const cancelConfirmTitle = (() => {
@@ -732,6 +734,9 @@ export default function BoletosPage() {
                         </th>
                         <th className="py-3 px-3 font-semibold">Cliente</th>
                         <th className="py-3 px-3 font-semibold">Agrupamento</th>
+                        <th className="py-3 px-3 font-semibold">
+                          Nº do Boleto
+                        </th>
                         <th className="py-3 px-3 font-semibold">Valor</th>
                         <th className="py-3 px-3 font-semibold">Vencimento</th>
                         <th className="py-3 px-3 font-semibold">Situação</th>
@@ -766,6 +771,9 @@ export default function BoletosPage() {
                           </td>
                           <td className="py-3 px-3 text-gray-500">
                             #{billet.combinedScoreId}
+                          </td>
+                          <td className="py-3 px-3 text-gray-500">
+                            {billet.yourNumber || "—"}
                           </td>
                           <td className="py-3 px-3">
                             {formatCurrency(billet.totalValue)}
@@ -831,6 +839,9 @@ export default function BoletosPage() {
                           </p>
                           <p className="text-xs text-gray-500 mt-0.5">
                             Agrupamento #{billet.combinedScoreId}
+                            {billet.yourNumber
+                              ? ` · Boleto ${billet.yourNumber}`
+                              : ""}
                           </p>
                         </div>
                       </div>
