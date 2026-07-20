@@ -64,7 +64,11 @@ public class AuthController {
 
   @GetMapping("/me")
   public ResponseEntity<AuthUserResponse> me() {
-    User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    var authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (!(authentication != null && authentication.getPrincipal() instanceof User user)) {
+      return ResponseEntity.ok(null);
+    }
+
     return ResponseEntity.ok(toResponse(user));
   }
 
