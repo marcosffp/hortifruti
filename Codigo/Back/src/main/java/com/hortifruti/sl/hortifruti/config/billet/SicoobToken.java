@@ -67,13 +67,13 @@ public class SicoobToken {
 
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
       long elapsedMs = System.currentTimeMillis() - startedAt;
-      log.error(
-          "[Sicoob][token] falha HTTP {} elapsedMs={}", ex.getStatusCode(), elapsedMs);
+      log.error("[Sicoob][token] falha HTTP {} elapsedMs={}", ex.getStatusCode(), elapsedMs);
       throw new BilletException("Erro ao obter token de acesso ao Sicoob.", ex);
     } catch (ResourceAccessException ex) {
       long elapsedMs = System.currentTimeMillis() - startedAt;
       Throwable rootCause = ex.getCause();
-      String causeClass = rootCause != null ? rootCause.getClass().getSimpleName() : ex.getClass().getSimpleName();
+      String causeClass =
+          rootCause != null ? rootCause.getClass().getSimpleName() : ex.getClass().getSimpleName();
       log.error(
           "[Sicoob][token] falha de rede/TLS - causaRaiz={} elapsedMs={}", causeClass, elapsedMs);
       throw new BilletException("Erro de rede/TLS ao obter token de acesso ao Sicoob.", ex);

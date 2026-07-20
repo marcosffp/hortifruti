@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import RoleGuard from "@/components/auth/RoleGuard";
+import MobileQuickAccess from "@/components/layout/MobileQuickAccess";
 import BankBalanceCard from "@/components/modules/BankBalanceCard";
 import CashFlow from "@/components/modules/CashFlow";
 import Alerts from "@/components/ui/Alerts";
@@ -61,6 +62,8 @@ export default function Dashboard() {
           <BankBalanceCard />
         </div>
       </RoleGuard>
+
+      <MobileQuickAccess />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <Card title="Bem-vindo ao Hortifruti SL">

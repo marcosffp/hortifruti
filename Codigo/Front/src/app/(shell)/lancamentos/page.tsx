@@ -452,96 +452,184 @@ export default function FinancialLaunchesPage() {
           </select>
         </div>
 
-        <div className="overflow-x-auto">
+        <div>
           {isLoading ? (
             <Loading />
           ) : error ? (
             <p>Erro ao carregar lançamentos: {error}</p>
           ) : transactions && transactions.length > 0 ? (
-            <table className="min-w-full bg-white">
-              <thead>
-                <tr className="text-left text-gray-600 border-b border-gray-200">
-                  <th className="py-3 px-4 font-semibold">Data</th>
-                  <th className="py-3 px-4 font-semibold">Histórico</th>
-                  <th className="py-3 px-4 font-semibold">Categoria</th>
-                  <th className="py-3 px-4 font-semibold">Tipo</th>
-                  <th className="py-3 px-4 font-semibold">Valor</th>
-                  <th className="py-3 px-4 font-semibold">Banco</th>
-                  <th className="py-3 px-4 font-semibold">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.map((transaction) => (
-                  <tr key={transaction.id} className="border-b border-gray-100">
-                    <td className="py-3 px-4">
-                      {(() => {
-                        // Se vier "2024-09-10", force como local:
-                        const [year, month, day] =
-                          transaction.transactionDate.split("-");
-                        const localDate = new Date(
-                          Number(year),
-                          Number(month) - 1,
-                          Number(day),
-                        );
-                        return localDate.toLocaleDateString("pt-BR");
-                      })()}
-                    </td>
-                    <td className="py-3 px-4">
-                      {transaction.history.slice(0, 30)}...
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="border border-[var(--neutral-300)] text-xs font-medium px-2.5 py-0.5 rounded-full ">
-                        {transaction.category}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-                          transaction.transactionType === "CREDITO"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
+            <>
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full bg-white">
+                  <thead>
+                    <tr className="text-left text-gray-600 border-b border-gray-200">
+                      <th className="py-3 px-4 font-semibold">Data</th>
+                      <th className="py-3 px-4 font-semibold">Histórico</th>
+                      <th className="py-3 px-4 font-semibold">Categoria</th>
+                      <th className="py-3 px-4 font-semibold">Tipo</th>
+                      <th className="py-3 px-4 font-semibold">Valor</th>
+                      <th className="py-3 px-4 font-semibold">Banco</th>
+                      <th className="py-3 px-4 font-semibold">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.map((transaction) => (
+                      <tr
+                        key={transaction.id}
+                        className="border-b border-gray-100"
                       >
-                        {transaction.transactionType === "CREDITO"
-                          ? "Entrada"
-                          : "Saída"}
-                      </span>
-                    </td>
-                    <td
-                      className={`py-3 px-4 ${
-                        transaction.transactionType === "CREDITO"
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
+                        <td className="py-3 px-4">
+                          {(() => {
+                            // Se vier "2024-09-10", force como local:
+                            const [year, month, day] =
+                              transaction.transactionDate.split("-");
+                            const localDate = new Date(
+                              Number(year),
+                              Number(month) - 1,
+                              Number(day),
+                            );
+                            return localDate.toLocaleDateString("pt-BR");
+                          })()}
+                        </td>
+                        <td className="py-3 px-4">
+                          {transaction.history.slice(0, 30)}...
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="border border-[var(--neutral-300)] text-xs font-medium px-2.5 py-0.5 rounded-full ">
+                            {transaction.category}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
+                              transaction.transactionType === "CREDITO"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {transaction.transactionType === "CREDITO"
+                              ? "Entrada"
+                              : "Saída"}
+                          </span>
+                        </td>
+                        <td
+                          className={`py-3 px-4 ${
+                            transaction.transactionType === "CREDITO"
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {`${
+                            transaction.transactionType === "CREDITO"
+                              ? "+"
+                              : "-"
+                          }R$ ${(transaction.amount || 0)
+                            .toFixed(2)
+                            .replace(".", ",")}`}
+                        </td>
+                        <td className="py-3 px-4">{transaction.bank}</td>
+                        <td className="py-3 px-4 flex space-x-2">
+                          <button
+                            type="button"
+                            className="text-gray-700 hover:text-gray-900"
+                            onClick={() => handleEdit(transaction)}
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            type="button"
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => handleDelete(transaction.id)}
+                            disabled={isLoading}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="md:hidden space-y-3">
+                {transactions.map((transaction) => {
+                  const [year, month, day] =
+                    transaction.transactionDate.split("-");
+                  const localDate = new Date(
+                    Number(year),
+                    Number(month) - 1,
+                    Number(day),
+                  );
+                  const isCredit = transaction.transactionType === "CREDITO";
+
+                  return (
+                    <div
+                      key={transaction.id}
+                      className="border border-gray-200 rounded-lg p-4"
                     >
-                      {`${
-                        transaction.transactionType === "CREDITO" ? "+" : "-"
-                      }R$ ${(transaction.amount || 0)
-                        .toFixed(2)
-                        .replace(".", ",")}`}
-                    </td>
-                    <td className="py-3 px-4">{transaction.bank}</td>
-                    <td className="py-3 px-4 flex space-x-2">
-                      <button
-                        type="button"
-                        className="text-gray-700 hover:text-gray-900"
-                        onClick={() => handleEdit(transaction)}
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button
-                        type="button"
-                        className="text-red-500 hover:text-red-700"
-                        onClick={() => handleDelete(transaction.id)}
-                        disabled={isLoading}
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-800 break-words">
+                            {transaction.history}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {localDate.toLocaleDateString("pt-BR")} ·{" "}
+                            {transaction.bank}
+                          </p>
+                        </div>
+                        <p
+                          className={`shrink-0 font-semibold ${
+                            isCredit ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
+                          {`${isCredit ? "+" : "-"}R$ ${(
+                            transaction.amount || 0
+                          )
+                            .toFixed(2)
+                            .replace(".", ",")}`}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-2">
+                          <span className="border border-[var(--neutral-300)] text-xs font-medium px-2.5 py-0.5 rounded-full">
+                            {transaction.category}
+                          </span>
+                          <span
+                            className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
+                              isCredit
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {isCredit ? "Entrada" : "Saída"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            className="text-gray-700 hover:text-gray-900"
+                            onClick={() => handleEdit(transaction)}
+                            aria-label="Editar lançamento"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            type="button"
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => handleDelete(transaction.id)}
+                            disabled={isLoading}
+                            aria-label="Excluir lançamento"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           ) : (
             <p>Nenhum lançamento encontrado.</p>
           )}

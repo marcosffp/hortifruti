@@ -30,7 +30,6 @@ public class IssueInvoiceWithBilletService {
 
   private static final int MAX_NUMBER_POLL_ATTEMPTS = 12;
   private static final long NUMBER_POLL_INTERVAL_MS = 10_000;
-  private static final String BILLET_NUMBER_PREFIX = "NF-";
 
   public InvoiceWithBilletResponse issueInvoiceAndBillet(
       Long combinedScoreId, String dadosAdicionais, String dueDate) {
@@ -39,7 +38,7 @@ public class IssueInvoiceWithBilletService {
 
     try {
       InvoiceResponseGet invoiceInfo = waitForInvoiceNumber(ref);
-      String billetNumber = BILLET_NUMBER_PREFIX + invoiceInfo.number();
+      String billetNumber = invoiceInfo.number();
 
       byte[] danfeBytes = extractBytes(invoiceService.downloadDanfe(ref));
       byte[] xmlBytes = extractBytes(invoiceService.downloadXml(ref));

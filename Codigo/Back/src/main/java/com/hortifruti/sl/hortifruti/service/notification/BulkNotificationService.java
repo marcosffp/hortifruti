@@ -32,6 +32,9 @@ public class BulkNotificationService {
   @Value("${accounting.email}")
   private String accountingEmail;
 
+  @Value("${notification.sender-name:}")
+  private String senderName;
+
   public BulkNotificationResponse sendBulkNotifications(
       List<MultipartFile> files,
       List<Long> clientIds,
@@ -196,6 +199,14 @@ public class BulkNotificationService {
           failedRecipients.add(client.getClientName());
         }
 
+      } catch (NotificationException e) {
+        if (e.getMessage() != null
+            && e.getMessage().startsWith("Autorização do Gmail necessária:")) {
+          // Falha de autorização afeta todos os envios igualmente, não faz sentido continuar
+          // tentando cliente por cliente.
+          return BulkNotificationResponse.failure(e.getMessage(), failedRecipients);
+        }
+        failedRecipients.add("Cliente ID: " + clientId + " (erro)");
       } catch (Exception e) {
         failedRecipients.add("Cliente ID: " + clientId + " (erro)");
       }
@@ -237,18 +248,16 @@ public class BulkNotificationService {
     variables.put("CLIENT_NAME", client.getClientName());
     variables.put("FILES_COUNT", String.valueOf(filesCount));
 
-    java.time.LocalDate today = java.time.LocalDate.now();
+    java.time.LocalDate today = EmailGreetingUtil.today();
     java.time.format.DateTimeFormatter formatter =
         java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
     variables.put("CURRENT_DATE", today.format(formatter));
+    variables.put("GREETING", EmailGreetingUtil.timeOfDayGreeting());
+    variables.put("PERIOD_RANGE", EmailGreetingUtil.weekPeriodLabel(today));
+    variables.put("SENDER_NAME", senderName);
 
-    if (customMessage != null && !customMessage.isEmpty()) {
-      variables.put(CUSTOM_MESSAGE, customMessage);
-      variables.put(DEFAULT_MESSAGE, EMPTY_STRING);
-    } else {
-      variables.put(CUSTOM_MESSAGE, EMPTY_STRING);
-      variables.put(DEFAULT_MESSAGE, "true");
-    }
+    variables.put(DEFAULT_MESSAGE, "true");
+    variables.put(CUSTOM_MESSAGE, customMessage != null ? customMessage : EMPTY_STRING);
 
     return emailTemplateService.processTemplate("client-documents", variables);
   }

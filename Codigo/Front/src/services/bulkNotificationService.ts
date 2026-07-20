@@ -19,6 +19,13 @@ export interface BulkNotificationResponse {
   totalSent: number;
   totalFailed: number;
   failedRecipients: string[];
+  authorizationUrl?: string;
+}
+
+function parseAuthorizationUrl(message: string | undefined | null): string | null {
+  if (!message) return null;
+  const match = message.match(/(https?:\/\/\S+)/);
+  return match ? match[1] : null;
 }
 
 export const bulkNotificationService = {
@@ -78,6 +85,17 @@ export const bulkNotificationService = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
+      const authorizationUrl = parseAuthorizationUrl(errorData?.message);
+      if (authorizationUrl) {
+        return {
+          success: false,
+          message: "É necessário autorizar o envio de emails novamente.",
+          totalSent: 0,
+          totalFailed: 1,
+          failedRecipients: ["Contabilidade"],
+          authorizationUrl,
+        };
+      }
       throw new Error(
         errorData?.message || `Erro ao enviar notificações: ${response.status}`,
       );
@@ -143,6 +161,22 @@ export const bulkNotificationService = {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => null);
+          const authorizationUrl = parseAuthorizationUrl(errorData?.message);
+          if (authorizationUrl) {
+            // Falha de autorização afeta todos os envios igualmente, não faz sentido
+            // continuar tentando cliente por cliente.
+            return {
+              success: false,
+              message: "É necessário autorizar o envio de emails novamente.",
+              totalSent: results.totalSent,
+              totalFailed: results.totalFailed + 1,
+              failedRecipients: [
+                ...results.failedRecipients,
+                `Cliente ID: ${clientId}`,
+              ],
+              authorizationUrl,
+            };
+          }
           results.totalFailed++;
           results.failedRecipients.push(`Cliente ID: ${clientId}`);
           console.error(`Erro ao enviar para cliente ${clientId}:`, errorData);
