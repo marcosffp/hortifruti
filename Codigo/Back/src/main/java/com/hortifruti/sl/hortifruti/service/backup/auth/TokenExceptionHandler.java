@@ -7,12 +7,12 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.DriveScopes;
+import com.google.api.services.gmail.GmailScopes;
 import com.hortifruti.sl.hortifruti.exception.BackupException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -23,7 +23,7 @@ public class TokenExceptionHandler {
 
   private final AuthorizationHandler authorizationHandler;
 
-  private static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE);
+  private static final List<String> SCOPES = List.of(DriveScopes.DRIVE, GmailScopes.GMAIL_SEND);
 
   protected Credential handleTokenException(
       com.google.api.client.auth.oauth2.TokenResponseException e,

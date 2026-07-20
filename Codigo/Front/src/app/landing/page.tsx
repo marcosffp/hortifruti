@@ -5,16 +5,13 @@ import {
   CheckCircle,
   DollarSign,
   LogIn,
-  Menu,
   Phone,
   ShoppingCart,
   TruckIcon,
   Users,
-  X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
 import FeaturesCarousel from "@/components/landing/FeaturesCarousel";
 import SmoothScroll from "@/components/landing/SmoothScroll";
 import StatsSection from "@/components/landing/StatsSection";
@@ -88,8 +85,6 @@ const features = [
 ];
 
 export default function LandingPage() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
   return (
     <div className="min-h-screen bg-white">
       <SmoothScroll />
@@ -108,13 +103,21 @@ export default function LandingPage() {
               <span className="text-2xl font-bold text-white">Hortifruti</span>
             </div>
 
-            <div className="hidden md:flex items-center space-x-6">
+            <div className="flex items-center space-x-3 sm:space-x-6">
               <a
                 href="tel:+5531364970064"
-                className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors"
+                aria-label="Ligar para (31) 3649-7064"
+                className="hidden sm:flex items-center space-x-2 text-white hover:text-white/80 transition-colors"
               >
                 <Phone className="w-4 h-4" />
                 <span>(31) 3649-7064</span>
+              </a>
+              <a
+                href="tel:+5531364970064"
+                aria-label="Ligar para (31) 3649-7064"
+                className="sm:hidden flex items-center justify-center w-10 h-10 text-white"
+              >
+                <Phone className="w-5 h-5" />
               </a>
               <Link
                 href="/login"
@@ -124,42 +127,7 @@ export default function LandingPage() {
                 <span>Entrar</span>
               </Link>
             </div>
-
-            <button
-              type="button"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2"
-            >
-              {isMobileMenuOpen ? (
-                <X className="w-6 h-6 text-white" />
-              ) : (
-                <Menu className="w-6 h-6 text-white" />
-              )}
-            </button>
           </div>
-
-          {isMobileMenuOpen && (
-            <div className="md:hidden border-t border-white/20 py-4">
-              <nav className="flex flex-col space-y-4">
-                <a
-                  href="tel:+5531364970064"
-                  className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors px-4 py-2"
-                >
-                  <Phone className="w-4 h-4" />
-                  <span>(31) 3649-7064</span>
-                </a>
-                <div className="pt-4 border-t border-white/20 space-y-2">
-                  <Link
-                    href="/login"
-                    className="group w-full inline-flex items-center justify-center space-x-2 px-4 py-3 bg-white text-primary border border-white rounded-md hover:bg-white/90 hover:shadow-md transition-all duration-300 font-medium"
-                  >
-                    <LogIn className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
-                    <span>Entrar</span>
-                  </Link>
-                </div>
-              </nav>
-            </div>
-          )}
         </div>
       </header>
 

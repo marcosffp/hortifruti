@@ -248,8 +248,8 @@ export default function PurchaseFilesTable({
         </div>
       ) : (
         <>
-          {/* Tabela */}
-          <div className="overflow-x-auto">
+          {/* Tabela (desktop) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-100 border-b border-gray-300">
@@ -298,6 +298,49 @@ export default function PurchaseFilesTable({
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Cards (mobile) */}
+          <div className="md:hidden space-y-3">
+            {purchases.map((purchase) => (
+              <div
+                key={purchase.id}
+                className="border border-gray-200 rounded-lg p-4"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs text-gray-500">Data da compra</p>
+                    <p className="font-medium text-gray-800">
+                      {formatDate(purchase.purchaseDate)}
+                    </p>
+                  </div>
+                  <p className="font-semibold text-gray-800">
+                    {formatCurrency(purchase.total)}
+                  </p>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Última atualização: {formatDate(purchase.updatedAt)}
+                </p>
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => handleViewProducts(purchase)}
+                    className="flex-1 flex items-center justify-center gap-1.5 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Ver produtos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(purchase.id)}
+                    className="flex-1 flex items-center justify-center gap-1.5 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
+                  >
+                    <Trash className="w-4 h-4" />
+                    Deletar
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Paginação */}

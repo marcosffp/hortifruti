@@ -19,7 +19,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import RoleGuard from "@/components/auth/RoleGuard";
 
-interface MenuItem {
+export interface MenuItem {
   label: string;
   icon: LucideIcon;
   href: string;
@@ -32,7 +32,7 @@ interface MenuItem {
   roles?: string[];
 }
 
-const menu: MenuItem[] = [
+export const menu: MenuItem[] = [
   {
     label: "Módulo Lançamentos",
     icon: BadgeDollarSign,

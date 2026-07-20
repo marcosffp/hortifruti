@@ -2,10 +2,14 @@ package com.hortifruti.sl.hortifruti.controller.user;
 
 import com.hortifruti.sl.hortifruti.config.auth.Auth;
 import com.hortifruti.sl.hortifruti.config.auth.Auth.AuthResult;
+import com.hortifruti.sl.hortifruti.config.auth.RefreshTokenService;
+import com.hortifruti.sl.hortifruti.config.auth.RefreshTokenService.RotationResult;
 import com.hortifruti.sl.hortifruti.config.auth.TokenConfiguration;
 import com.hortifruti.sl.hortifruti.dto.user.AuthRequest;
 import com.hortifruti.sl.hortifruti.dto.user.AuthUserResponse;
+import com.hortifruti.sl.hortifruti.exception.TokenException;
 import com.hortifruti.sl.hortifruti.model.User;
+import com.hortifruti.sl.hortifruti.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -13,6 +17,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,9 +32,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
   private static final String COOKIE_NAME = "auth_token";
+  private static final String REFRESH_COOKIE_NAME = "refresh_token";
 
   private final Auth auth;
   private final TokenConfiguration tokenConfiguration;
+  private final RefreshTokenService refreshTokenService;
+  private final UserRepository userRepository;
 
   @Value("${auth.cookie.secure:false}")
   private boolean cookieSecure;
@@ -40,18 +48,65 @@ public class AuthController {
   @PostMapping()
   public ResponseEntity<AuthUserResponse> login(@Valid @RequestBody AuthRequest authRequest) {
     AuthResult result = auth.autenticar(authRequest);
+    String refreshToken = refreshTokenService.issueToken(result.user().getId());
 
-    ResponseCookie cookie = buildCookie(result.token(), tokenConfiguration.getExpirationSeconds());
+    ResponseCookie accessCookie =
+        buildCookie(COOKIE_NAME, result.token(), tokenConfiguration.getExpirationSeconds(), "/");
+    ResponseCookie refreshCookie =
+        buildCookie(
+            REFRESH_COOKIE_NAME, refreshToken, refreshTokenService.getExpirationSeconds(), "/auth");
 
     return ResponseEntity.ok()
-        .header(HttpHeaders.SET_COOKIE, cookie.toString())
+        .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+        .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
         .body(toResponse(result.user()));
   }
 
   @GetMapping("/me")
   public ResponseEntity<AuthUserResponse> me() {
-    User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    var authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (!(authentication != null && authentication.getPrincipal() instanceof User user)) {
+      return ResponseEntity.ok(null);
+    }
+
     return ResponseEntity.ok(toResponse(user));
+  }
+
+  @PostMapping("/refresh")
+  public ResponseEntity<AuthUserResponse> refresh(HttpServletRequest request) {
+    String refreshToken = recoverRefreshToken(request);
+    if (refreshToken == null) {
+      return clearedCookiesResponse();
+    }
+
+    RotationResult rotation;
+    try {
+      rotation = refreshTokenService.rotate(refreshToken);
+    } catch (TokenException e) {
+      return clearedCookiesResponse();
+    }
+
+    User user = userRepository.findById(rotation.userId()).orElse(null);
+    if (user == null) {
+      return clearedCookiesResponse();
+    }
+
+    String accessToken =
+        tokenConfiguration.generateToken(user.getId(), user.getUsername(), user.getRole());
+
+    ResponseCookie accessCookie =
+        buildCookie(COOKIE_NAME, accessToken, tokenConfiguration.getExpirationSeconds(), "/");
+    ResponseCookie refreshCookie =
+        buildCookie(
+            REFRESH_COOKIE_NAME,
+            rotation.rawToken(),
+            refreshTokenService.getExpirationSeconds(),
+            "/auth");
+
+    return ResponseEntity.ok()
+        .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+        .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+        .body(toResponse(user));
   }
 
   @PostMapping("/logout")
@@ -61,8 +116,28 @@ public class AuthController {
       tokenConfiguration.revokeToken(token);
     }
 
-    ResponseCookie cookie = buildCookie("", 0);
-    return ResponseEntity.noContent().header(HttpHeaders.SET_COOKIE, cookie.toString()).build();
+    String refreshToken = recoverRefreshToken(request);
+    if (refreshToken != null) {
+      refreshTokenService.revokeByRawToken(refreshToken);
+    }
+
+    ResponseCookie accessCookie = buildCookie(COOKIE_NAME, "", 0, "/");
+    ResponseCookie refreshCookie = buildCookie(REFRESH_COOKIE_NAME, "", 0, "/auth");
+
+    return ResponseEntity.noContent()
+        .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+        .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+        .build();
+  }
+
+  private ResponseEntity<AuthUserResponse> clearedCookiesResponse() {
+    ResponseCookie accessCookie = buildCookie(COOKIE_NAME, "", 0, "/");
+    ResponseCookie refreshCookie = buildCookie(REFRESH_COOKIE_NAME, "", 0, "/auth");
+
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+        .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+        .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+        .build();
   }
 
   private String recoverToken(HttpServletRequest request) {
@@ -71,9 +146,17 @@ public class AuthController {
       return authHeader.substring(7);
     }
 
+    return recoverCookie(request, COOKIE_NAME);
+  }
+
+  private String recoverRefreshToken(HttpServletRequest request) {
+    return recoverCookie(request, REFRESH_COOKIE_NAME);
+  }
+
+  private String recoverCookie(HttpServletRequest request, String name) {
     if (request.getCookies() != null) {
       for (Cookie cookie : request.getCookies()) {
-        if (COOKIE_NAME.equals(cookie.getName()) && !cookie.getValue().isEmpty()) {
+        if (name.equals(cookie.getName()) && !cookie.getValue().isEmpty()) {
           return cookie.getValue();
         }
       }
@@ -82,12 +165,12 @@ public class AuthController {
     return null;
   }
 
-  private ResponseCookie buildCookie(String token, long maxAgeSeconds) {
-    return ResponseCookie.from(COOKIE_NAME, token)
+  private ResponseCookie buildCookie(String name, String token, long maxAgeSeconds, String path) {
+    return ResponseCookie.from(name, token)
         .httpOnly(true)
         .secure(cookieSecure)
         .sameSite(cookieSameSite)
-        .path("/")
+        .path(path)
         .maxAge(maxAgeSeconds)
         .build();
   }

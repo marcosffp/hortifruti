@@ -1,97 +1,45 @@
 package com.hortifruti.sl.hortifruti.service.notification;
 
-import com.hortifruti.sl.hortifruti.exception.NotificationException;
-import com.sendgrid.*;
-import com.sendgrid.helpers.mail.Mail;
-import com.sendgrid.helpers.mail.objects.Attachments;
-import com.sendgrid.helpers.mail.objects.Content;
-import com.sendgrid.helpers.mail.objects.Email;
-import java.io.IOException;
-import java.util.Base64;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+/**
+ * Fachada de envio de email. Delega para o {@link EmailSender} configurado em {@code
+ * email.provider} (sendgrid | gmail | gmail-api), sem expor detalhes do provedor aos chamadores.
+ *
+ * <p>Para trocar de provedor basta alterar a variável de ambiente {@code EMAIL_PROVIDER} — nenhum
+ * outro código precisa mudar. Isso permite manter os outros provedores intactos mesmo quando um
+ * deles está ativo, sem quebrar quem já depende de {@link EmailService}.
+ */
+@Slf4j
 @Service
 public class EmailService {
 
-  @Value("${sendgrid.api.key}")
-  private String sendGridApiKey;
+  @Value("${email.provider:sendgrid}")
+  private String provider;
 
-  @Value("${sendgrid.from.email}")
-  private String fromEmail;
+  private final SendGridEmailSender sendGridEmailSender;
+  private final GmailSmtpEmailSender gmailSmtpEmailSender;
+  private final GmailApiEmailSender gmailApiEmailSender;
+
+  public EmailService(
+      SendGridEmailSender sendGridEmailSender,
+      GmailSmtpEmailSender gmailSmtpEmailSender,
+      GmailApiEmailSender gmailApiEmailSender) {
+    this.sendGridEmailSender = sendGridEmailSender;
+    this.gmailSmtpEmailSender = gmailSmtpEmailSender;
+    this.gmailApiEmailSender = gmailApiEmailSender;
+  }
 
   public boolean sendSimpleEmail(String to, String subject, String text) {
-    try {
-
-      Email from = new Email(fromEmail);
-      Email toEmail = new Email(to);
-      Content content = new Content("text/html", text);
-      Mail mail = new Mail(from, subject, toEmail, content);
-
-      addInlineLogo(mail);
-
-      SendGrid sg = new SendGrid(sendGridApiKey);
-      Request request = new Request();
-      request.setMethod(Method.POST);
-      request.setEndpoint("mail/send");
-      request.setBody(mail.build());
-
-      Response response = sg.api(request);
-
-      if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
-        return true;
-      } else {
-        throw new NotificationException(
-            "Erro ao enviar email. Status: " + response.getStatusCode());
-      }
-
-    } catch (IOException e) {
-      throw new NotificationException("Falha ao enviar email: " + e.getMessage());
-    }
+    return resolveSender().sendSimpleEmail(to, subject, text);
   }
 
   public boolean sendEmailWithAttachments(
       String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
-    try {
-
-      Email from = new Email(fromEmail);
-      Email toEmail = new Email(to);
-      Content content = new Content("text/html", text);
-      Mail mail = new Mail(from, subject, toEmail, content);
-
-      addInlineLogo(mail);
-
-      if (attachments != null && fileNames != null) {
-        for (int i = 0; i < attachments.size() && i < fileNames.size(); i++) {
-          Attachments attachment = new Attachments();
-          String encodedFile = Base64.getEncoder().encodeToString(attachments.get(i));
-          attachment.setContent(encodedFile);
-          attachment.setFilename(fileNames.get(i));
-          attachment.setDisposition("attachment");
-          mail.addAttachments(attachment);
-        }
-      }
-
-      SendGrid sg = new SendGrid(sendGridApiKey);
-      Request request = new Request();
-      request.setMethod(Method.POST);
-      request.setEndpoint("mail/send");
-      request.setBody(mail.build());
-
-      Response response = sg.api(request);
-
-      if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
-        return true;
-      } else {
-        throw new NotificationException(
-            "Erro ao enviar email com anexos. Status: " + response.getStatusCode());
-      }
-
-    } catch (IOException e) {
-      throw new NotificationException("Falha ao enviar email com anexos: " + e.getMessage());
-    }
+    return resolveSender().sendEmailWithAttachments(to, subject, text, attachments, fileNames);
   }
 
   public boolean sendEmailWithSingleAttachment(
@@ -99,25 +47,20 @@ public class EmailService {
     return sendEmailWithAttachments(to, subject, text, List.of(attachment), List.of(fileName));
   }
 
-  private void addInlineLogo(Mail mail) {
-    try {
-      ClassPathResource logoResource = new ClassPathResource("static/images/logo.png");
-
-      if (logoResource.exists()) {
-        byte[] logoBytes = logoResource.getInputStream().readAllBytes();
-        String encodedLogo = Base64.getEncoder().encodeToString(logoBytes);
-
-        Attachments logo = new Attachments();
-        logo.setContent(encodedLogo);
-        logo.setType("image/png");
-        logo.setFilename("logo.png");
-        logo.setDisposition("inline");
-        logo.setContentId("logo");
-
-        mail.addAttachments(logo);
-      }
-
-    } catch (IOException ignored) {
+  private EmailSender resolveSender() {
+    if ("gmail".equalsIgnoreCase(provider)) {
+      return gmailSmtpEmailSender;
     }
+    if ("gmail-api".equalsIgnoreCase(provider)) {
+      return gmailApiEmailSender;
+    }
+    if ("sendgrid".equalsIgnoreCase(provider)) {
+      return sendGridEmailSender;
+    }
+    log.warn(
+        "email.provider='{}' não reconhecido (use 'sendgrid', 'gmail' ou 'gmail-api'). Usando"
+            + " SendGrid como padrão.",
+        provider);
+    return sendGridEmailSender;
   }
 }
