@@ -28,6 +28,9 @@ public class SecurityFilter extends OncePerRequestFilter {
           HttpMethod.PATCH.name(),
           HttpMethod.DELETE.name());
 
+  private static final Set<String> PUBLIC_AUTH_PATHS =
+      Set.of("/auth", "/auth/logout", "/auth/refresh");
+
   private final TokenConfiguration tokenConfiguration;
   private final UserRepository userRepository;
 
@@ -49,6 +52,11 @@ public class SecurityFilter extends OncePerRequestFilter {
       response
           .getWriter()
           .write("{\"erro\": \"Acesso negado: origem da requisição não permitida\"}");
+      return;
+    }
+
+    if (PUBLIC_AUTH_PATHS.contains(request.getRequestURI())) {
+      filterChain.doFilter(request, response);
       return;
     }
 

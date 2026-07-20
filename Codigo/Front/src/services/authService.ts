@@ -15,6 +15,7 @@ export interface AuthUser {
 }
 
 let pendingMeRequest: Promise<AuthUser | null> | null = null;
+let pendingRefreshRequest: Promise<boolean> | null = null;
 
 export const authService = {
   async login(credentials: AuthRequest): Promise<AuthUser> {
@@ -63,6 +64,27 @@ export const authService = {
     })();
 
     return pendingMeRequest;
+  },
+
+  async refresh(): Promise<boolean> {
+    if (pendingRefreshRequest) return pendingRefreshRequest;
+
+    pendingRefreshRequest = (async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: "POST",
+          credentials: "include",
+        });
+
+        return response.ok;
+      } catch {
+        return false;
+      } finally {
+        pendingRefreshRequest = null;
+      }
+    })();
+
+    return pendingRefreshRequest;
   },
 
   async logout() {

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { authService } from "@/services/authService";
 
 const publicPages = ["/login"];
+const SILENT_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
 
 export default function AuthGuard({
   children,
@@ -12,6 +13,7 @@ export default function AuthGuard({
   const router = useRouter();
   const pathname = usePathname();
   const [isAuthChecked, setIsAuthChecked] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -19,18 +21,19 @@ export default function AuthGuard({
     (async () => {
       const isPublicPage = publicPages.includes(pathname);
       const user = await authService.me();
-      const isAuthenticated = !!user;
+      const authenticated = !!user;
 
       if (cancelled) return;
 
-      if (!isAuthenticated && !isPublicPage) {
+      if (!authenticated && !isPublicPage) {
         router.push("/login");
       }
 
-      if (isAuthenticated && pathname === "/login") {
+      if (authenticated && pathname === "/login") {
         router.push("/");
       }
 
+      setIsAuthenticated(authenticated);
       setIsAuthChecked(true);
     })();
 
@@ -38,6 +41,16 @@ export default function AuthGuard({
       cancelled = true;
     };
   }, [pathname, router]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const intervalId = setInterval(() => {
+      authService.refresh();
+    }, SILENT_REFRESH_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [isAuthenticated]);
 
   if (!isAuthChecked && !publicPages.includes(pathname)) {
     return null;

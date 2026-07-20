@@ -112,8 +112,7 @@ public class GmailApiEmailSender implements EmailSender {
 
     } catch (MessagingException e) {
       log.error("Falha ao montar email para Gmail API: {}", e.getMessage());
-      throw new NotificationException(
-          "Falha ao montar email para Gmail API: " + e.getMessage(), e);
+      throw new NotificationException("Falha ao montar email para Gmail API: " + e.getMessage(), e);
     }
   }
 

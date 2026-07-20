@@ -156,9 +156,7 @@ public class NotificationService {
     variables.put("SENDER_NAME", senderName);
 
     variables.put("DEFAULT_MESSAGE", "true");
-    variables.put(
-        "CUSTOM_MESSAGE",
-        request.customMessage() != null ? request.customMessage() : "");
+    variables.put("CUSTOM_MESSAGE", request.customMessage() != null ? request.customMessage() : "");
 
     return emailTemplateService.processTemplate("client-documents", variables);
   }

@@ -45,6 +45,7 @@ public class SecurityConfig {
                 auth.requestMatchers(
                         "/auth",
                         "/auth/logout",
+                        "/auth/refresh",
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/scheduler/**",

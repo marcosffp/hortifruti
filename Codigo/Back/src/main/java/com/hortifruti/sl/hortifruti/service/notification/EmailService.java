@@ -6,9 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * Fachada de envio de email. Delega para o {@link EmailSender} configurado em
- * {@code email.provider} (sendgrid | gmail | gmail-api), sem expor detalhes do provedor aos
- * chamadores.
+ * Fachada de envio de email. Delega para o {@link EmailSender} configurado em {@code
+ * email.provider} (sendgrid | gmail | gmail-api), sem expor detalhes do provedor aos chamadores.
  *
  * <p>Para trocar de provedor basta alterar a variável de ambiente {@code EMAIL_PROVIDER} — nenhum
  * outro código precisa mudar. Isso permite manter os outros provedores intactos mesmo quando um
