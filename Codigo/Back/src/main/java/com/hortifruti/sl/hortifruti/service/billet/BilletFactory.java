@@ -28,6 +28,9 @@ public class BilletFactory {
   private Integer INSTALLMENT_NUMBER = 1;
   private Boolean GENERATE_PDF = true;
 
+  private static final int ENDERECO_MAX_LENGTH = 40;
+  private static final int BAIRRO_MAX_LENGTH = 30;
+
   public BilletRequest createCompleteBoletoRequest(BilletRequestSimplified boletoSimplificado) {
     return new BilletRequest(
         clientNumber, // numeroCliente
@@ -130,6 +133,23 @@ public class BilletFactory {
 
       String enderecoCompleto =
           rua + ", " + numero + (complemento.isEmpty() ? "" : ", " + complemento);
+
+      // O Sicoob trunca silenciosamente (sem erro) os campos de endereço/bairro do
+      // pagador que excedem o limite do boleto, cortando o texto no meio da palavra.
+      // Validamos aqui para avisar o usuário em vez de gerar um boleto com endereço cortado.
+      if (enderecoCompleto.length() > ENDERECO_MAX_LENGTH) {
+        throw new BilletException(
+            "Endereço do cliente muito longo para o boleto (máximo "
+                + ENDERECO_MAX_LENGTH
+                + " caracteres, incluindo rua, número e complemento). Reduza o complemento ou"
+                + " o endereço do cliente.");
+      }
+      if (bairro.length() > BAIRRO_MAX_LENGTH) {
+        throw new BilletException(
+            "Bairro do cliente muito longo para o boleto (máximo "
+                + BAIRRO_MAX_LENGTH
+                + " caracteres). Reduza o bairro cadastrado do cliente.");
+      }
 
       return new Pagador(
           // CNPJ passa a aceitar letras (A-Z) a partir de ago/2026 — remove só a máscara,
