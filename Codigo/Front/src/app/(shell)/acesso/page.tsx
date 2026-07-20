@@ -290,7 +290,7 @@ export default function AcessoPage() {
           </div>
 
           {viewMode === "lista" && (
-            <>
+            <div className="hidden md:block">
               <div className="flex justify-between gap-4 px-6 py-3 border-b bg-gray-50 font-medium text-gray-700">
                 <div className="col-span-3">Nome</div>
                 <div className="col-span-2">Cargo</div>
@@ -406,11 +406,153 @@ export default function AcessoPage() {
                   </div>
                 )}
               </div>
-            </>
+            </div>
           )}
 
+          {/* No mobile, sempre exibe em cards — a tabela não cabe bem na tela pequena */}
+          <div className="md:hidden p-4">
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+              </div>
+            ) : filteredUsuarios.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                {searchTerm ? (
+                  <>
+                    <Search size={48} className="text-gray-300 mb-2" />
+                    <p className="text-gray-500">
+                      Nenhum usuário encontrado com o termo "{searchTerm}"
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <User size={48} className="text-gray-300 mb-2" />
+                    <p className="text-gray-500">Nenhum usuário cadastrado</p>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {filteredUsuarios.map((usuario) => (
+                  <div
+                    key={usuario.id}
+                    className={`border rounded-lg overflow-hidden shadow-sm ${
+                      usuario.perfil === "Gestor"
+                        ? "border-green-200"
+                        : "border-orange-200"
+                    }`}
+                  >
+                    <div
+                      className={`${
+                        usuario.perfil === "Gestor"
+                          ? "bg-green-50"
+                          : "bg-orange-50"
+                      } p-4 border-b ${
+                        usuario.perfil === "Gestor"
+                          ? "border-green-100"
+                          : "border-orange-100"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`${
+                            usuario.perfil === "Gestor"
+                              ? "bg-green-100"
+                              : "bg-orange-100"
+                          } p-2.5 rounded-full`}
+                        >
+                          {usuario.perfil === "Gestor" ? (
+                            <UserCog className="text-green-600" size={24} />
+                          ) : (
+                            <User className="text-orange-600" size={24} />
+                          )}
+                        </span>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 truncate">
+                            {usuario.nome}
+                          </h3>
+                          <p className="text-sm text-gray-600 truncate">
+                            {usuario.cargo}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex flex-col space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">
+                            Perfil:
+                          </span>
+                          <span
+                            className={`inline-flex items-center gap-1 ${
+                              usuario.perfil === "Gestor"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-orange-100 text-orange-800"
+                            } px-2.5 py-0.5 rounded-full font-medium text-sm`}
+                          >
+                            {usuario.perfil === "Gestor" ? (
+                              <Shield className="text-green-600" size={12} />
+                            ) : (
+                              <User className="text-orange-600" size={12} />
+                            )}
+                            {usuario.perfil}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">
+                            Cadastrado:
+                          </span>
+                          <span className="text-sm text-gray-800">
+                            {usuario.cadastrado}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">
+                            Status:
+                          </span>
+                          <span
+                            className={`inline-block px-2 py-1 text-xs rounded-full ${
+                              usuario.status === "ativo"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {usuario.status === "ativo" ? "Ativo" : "Inativo"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex border-t">
+                      <Link
+                        href={`/acesso/editar/${usuario.id}`}
+                        className="flex-1"
+                      >
+                        <button
+                          type="button"
+                          className="w-full py-2 flex items-center justify-center gap-1 text-blue-600 hover:bg-blue-50 transition-colors"
+                        >
+                          <Edit size={16} />
+                          <span>Editar</span>
+                        </button>
+                      </Link>
+                      <div className="w-px bg-gray-200"></div>
+                      <button
+                        type="button"
+                        onClick={() => handleExcluirUsuario(usuario.id)}
+                        className="flex-1 py-2 flex items-center justify-center gap-1 text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                        <span>Excluir</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {viewMode === "cards" && (
-            <div className="p-4">
+            <div className="hidden md:block p-4">
               {isLoading ? (
                 <div className="flex justify-center items-center h-64">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
