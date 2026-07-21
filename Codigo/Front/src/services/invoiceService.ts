@@ -4,6 +4,7 @@ import type {
   InvoiceResponseGet,
   InvoiceWithBilletResponse,
   InvoiceWithBilletResult,
+  OpenInvoiceResponse,
 } from "@/types/invoiceType";
 import { getAuthHeaders } from "@/utils/httpUtils";
 
@@ -155,6 +156,28 @@ export const invoiceService = {
       };
     } catch (error) {
       console.error("Falha ao gerar nota fiscal e boleto vinculado:", error);
+      throw error;
+    }
+  },
+
+  async getOpenInvoiceOnly(): Promise<OpenInvoiceResponse[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/invoices/open`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Erro ao buscar notas fiscais em aberto: ${response.status}`,
+        );
+      }
+
+      const result: OpenInvoiceResponse[] = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Falha ao buscar notas fiscais em aberto:", error);
       throw error;
     }
   },

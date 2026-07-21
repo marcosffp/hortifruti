@@ -3,6 +3,8 @@ package com.hortifruti.sl.hortifruti.service.invoice;
 import com.hortifruti.sl.hortifruti.dto.invoice.FiscalNoteXmlStorageResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
+import com.hortifruti.sl.hortifruti.dto.invoice.OpenInvoiceResponse;
+import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.util.List;
@@ -20,6 +22,7 @@ public class InvoiceService {
   private final DanfeXmlService danfeXmlService;
   private final InvoiceCancelService invoiceCancelService;
   private final FiscalNoteXmlStorageService fiscalNoteXmlStorageService;
+  private final CombinedScoreService combinedScoreService;
 
   @Transactional
   public InvoiceResponse issueInvoice(Long combinedScoreId, String dadosAdicionais) {
@@ -54,5 +57,10 @@ public class InvoiceService {
 
   public byte[] getStoredXmlContent(String ref) {
     return fiscalNoteXmlStorageService.getXmlContent(ref);
+  }
+
+  @Transactional
+  public List<OpenInvoiceResponse> listOpenInvoiceOnlyScores() {
+    return combinedScoreService.listOpenInvoiceOnlyScores();
   }
 }

@@ -5,6 +5,7 @@ import { invoiceService } from "@/services/invoiceService";
 import type {
   InvoiceResponseGet,
   InvoiceWithBilletResult,
+  OpenInvoiceResponse,
 } from "@/types/invoiceType";
 
 export function useInvoice() {
@@ -107,6 +108,24 @@ export function useInvoice() {
     }
   };
 
+  const getOpenInvoiceOnly = async (): Promise<OpenInvoiceResponse[]> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await invoiceService.getOpenInvoiceOnly();
+      return result;
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Erro ao buscar notas fiscais em aberto",
+      );
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const cancelInvoice = async (ref: string, justificativa: string) => {
     setIsLoading(true);
     setError(null);
@@ -129,6 +148,7 @@ export function useInvoice() {
     getInvoiceInfo,
     getDanfe,
     getXml,
+    getOpenInvoiceOnly,
     cancelInvoice,
     isLoading,
     error,

@@ -4,6 +4,7 @@ import com.hortifruti.sl.hortifruti.dto.invoice.FiscalNoteXmlStorageResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceWithBilletResponse;
+import com.hortifruti.sl.hortifruti.dto.invoice.OpenInvoiceResponse;
 import com.hortifruti.sl.hortifruti.service.invoice.InvoiceService;
 import com.hortifruti.sl.hortifruti.service.invoice.IssueInvoiceWithBilletService;
 import java.time.LocalDate;
@@ -51,6 +52,15 @@ public class InvoiceController {
         issueInvoiceWithBilletService.issueInvoiceAndBillet(
             combinedScoreId, dadosAdicionais, dueDate);
     return ResponseEntity.ok(response);
+  }
+
+  /**
+   * Lista agrupamentos que só têm nota fiscal emitida (sem boleto), ainda pendentes de confirmação
+   * manual de pagamento — usado pela aba "NF sem Boleto" da tela de Boletos.
+   */
+  @GetMapping("/open")
+  public ResponseEntity<List<OpenInvoiceResponse>> listOpenInvoiceOnly() {
+    return ResponseEntity.ok(invoiceService.listOpenInvoiceOnlyScores());
   }
 
   @GetMapping("/consulta/{ref}")

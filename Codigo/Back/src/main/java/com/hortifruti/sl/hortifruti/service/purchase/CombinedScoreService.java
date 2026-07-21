@@ -5,6 +5,7 @@ import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.WildcardBilletRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientLastGroupingResponse;
+import com.hortifruti.sl.hortifruti.dto.invoice.OpenInvoiceResponse;
 import com.hortifruti.sl.hortifruti.exception.ClientException;
 import com.hortifruti.sl.hortifruti.exception.CombinedScoreException;
 import com.hortifruti.sl.hortifruti.exception.PurchaseException;
@@ -24,6 +25,8 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +40,7 @@ public class CombinedScoreService {
   private static final String WILDCARD_PRODUCT_CODE = "113";
   private static final String WILDCARD_PRODUCT_NAME = "PRODUTO CORINGA";
   private static final BigDecimal WILDCARD_PRODUCT_PRICE = new BigDecimal("1.00");
+  private static final int INVOICE_ONLY_DUE_DAYS = 20;
 
   private final CombinedScoreRepository combinedScoreRepository;
   private final CombinedScoreMapper combinedScoreMapper;
@@ -325,5 +329,42 @@ public class CombinedScoreService {
   @Transactional(readOnly = true)
   public List<CombinedScore> getCombinedScoresWithInvoice(LocalDate startDate, LocalDate endDate) {
     return combinedScoreRepository.findByHasInvoiceTrueAndConfirmedAtBetween(startDate, endDate);
+  }
+
+  /**
+   * Lista agrupamentos que só têm nota fiscal emitida (sem boleto), ainda pendentes de confirmação
+   * manual de pagamento. Como não há boleto para confirmar o status junto ao Sicoob, o vencimento
+   * exibido é sempre a data de emissão da NF acrescida de {@value #INVOICE_ONLY_DUE_DAYS} dias,
+   * independentemente do dueDate calculado na criação do agrupamento.
+   */
+  @Transactional(readOnly = true)
+  public List<OpenInvoiceResponse> listOpenInvoiceOnlyScores() {
+    List<CombinedScore> scores = combinedScoreRepository.findAllOpenInvoiceOnly();
+    if (scores.isEmpty()) {
+      return List.of();
+    }
+
+    List<Long> clientIds = scores.stream().map(CombinedScore::getClientId).distinct().toList();
+    Map<Long, String> clientNamesById =
+        clientRepository.findAllById(clientIds).stream()
+            .collect(Collectors.toMap(Client::getId, Client::getClientName));
+
+    return scores.stream()
+        .map(
+            cs ->
+                new OpenInvoiceResponse(
+                    cs.getId(),
+                    cs.getClientId(),
+                    clientNamesById.getOrDefault(cs.getClientId(), "Cliente não encontrado"),
+                    cs.getTotalValue(),
+                    cs.getConfirmedAt(),
+                    cs.getConfirmedAt() == null
+                        ? null
+                        : cs.getConfirmedAt().plusDays(INVOICE_ONLY_DUE_DAYS),
+                    cs.getInvoiceRef()))
+        .sorted(
+            Comparator.comparing(
+                OpenInvoiceResponse::dueDate, Comparator.nullsLast(Comparator.naturalOrder())))
+        .toList();
   }
 }
