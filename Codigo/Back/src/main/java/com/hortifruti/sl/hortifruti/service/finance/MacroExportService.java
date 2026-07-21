@@ -72,7 +72,7 @@ public class MacroExportService {
     String folderName = createMacroFolder(startDate);
     Path folderPath = Path.of(folderName);
 
-    generateTransactionReports(folderPath);
+    generateTransactionReports(folderPath, startDate);
 
     generateTaxReports(startDate, endDate, folderPath);
 
@@ -96,16 +96,21 @@ public class MacroExportService {
     return folderName;
   }
 
-  private void generateTransactionReports(Path folderPath) throws IOException {
+  private void generateTransactionReports(Path folderPath, LocalDate startDate) throws IOException {
     try {
       Map<String, byte[]> transactionData = transactionExportService.exportTransactionsAsZip();
+
+      String monthName =
+          startDate.format(DateTimeFormatter.ofPattern("MMMM", Locale.of("pt", "BR")));
+      Path bankFolder =
+          folderPath.resolve("Relatorios_Bancarios_" + capitalizeFirstLetter(monthName));
 
       for (Map.Entry<String, byte[]> entry : transactionData.entrySet()) {
         String fileName = entry.getKey();
         byte[] fileContent = entry.getValue();
 
         if (fileContent != null && fileContent.length > 0) {
-          saveFile(folderPath.resolve(fileName), fileContent);
+          saveFile(bankFolder.resolve(fileName), fileContent);
         } else {
           System.err.println("Arquivo de transação está vazio: " + fileName);
         }
@@ -158,6 +163,7 @@ public class MacroExportService {
   }
 
   private void saveFile(Path filePath, byte[] content) throws IOException {
+    Files.createDirectories(filePath.getParent());
     try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
       fos.write(content);
     }

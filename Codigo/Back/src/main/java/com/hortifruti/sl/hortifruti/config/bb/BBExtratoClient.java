@@ -3,6 +3,8 @@ package com.hortifruti.sl.hortifruti.config.bb;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.exception.BBApiException;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -48,6 +50,8 @@ public class BBExtratoClient {
   private final BBToken bbToken;
   private final ObjectMapper objectMapper;
 
+  private static final int MAX_PAGINAS = 40;
+
   public JsonNode getExtratoPage(int pagina, String dataInicio, String dataFim) {
     try {
       return doGet(pagina, dataInicio, dataFim, bbToken.getAccessToken());
@@ -55,6 +59,27 @@ public class BBExtratoClient {
       bbToken.invalidateToken();
       return doGet(pagina, dataInicio, dataFim, bbToken.getAccessToken());
     }
+  }
+
+  /**
+   * Busca todos os lançamentos do período (dataInicio/dataFim no formato DDMMAAAA), percorrendo
+   * todas as páginas via {@code numeroPaginaProximo} — diferente de {@link BBSaldoService}, que só
+   * consulta o dia de hoje e por isso nunca precisa de mais de uma página na prática.
+   */
+  public List<JsonNode> getExtratoPeriodo(String dataInicio, String dataFim) {
+    List<JsonNode> lancamentos = new ArrayList<>();
+    int pagina = 1;
+    while (pagina <= MAX_PAGINAS) {
+      JsonNode body = getExtratoPage(pagina, dataInicio, dataFim);
+      body.path("listaLancamento").forEach(lancamentos::add);
+
+      int proxima = body.path("numeroPaginaProximo").asInt(0);
+      if (proxima == 0 || proxima == pagina) {
+        break;
+      }
+      pagina = proxima;
+    }
+    return lancamentos;
   }
 
   private JsonNode doGet(int pagina, String dataInicio, String dataFim, String token) {

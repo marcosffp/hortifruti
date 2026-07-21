@@ -5,12 +5,9 @@ import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequestDate;
 import com.hortifruti.sl.hortifruti.dto.transaction.TransactionResponse;
 import com.hortifruti.sl.hortifruti.exception.TransactionException;
 import com.hortifruti.sl.hortifruti.mapper.TransactionMapper;
-import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
 import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
-import com.hortifruti.sl.hortifruti.model.finance.Statement;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
@@ -21,69 +18,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class TransactionProcessingService {
 
-  private final TransactionSicoobService transactionSicoobService;
-  private final TransactionBBService transactionBBService;
   private final TransactionRepository transactionRepository;
   private final TransactionMapper transactionMapper;
-
-  @Async
-  public void processFileAsync(byte[] fileBytes, String fileName, Statement statement) {
-
-    try {
-      if (statement.getBank() == Bank.SICOOB) {
-        importStatement(fileBytes, fileName, statement);
-      } else {
-        importStatement(fileBytes, fileName, statement);
-      }
-    } catch (Exception e) {
-
-      if (e.getCause() != null) {
-        System.out.println(
-            "Causa raiz: "
-                + e.getCause().getClass().getSimpleName()
-                + " - "
-                + e.getCause().getMessage());
-      }
-      e.printStackTrace();
-      throw new TransactionException("Erro ao processar o arquivo: " + e.getMessage(), e);
-    }
-  }
-
-  private void importStatement(byte[] fileBytes, String fileName, Statement statement)
-      throws IOException {
-
-    if (fileBytes == null || fileBytes.length == 0) {
-      throw new TransactionException("Nenhum arquivo foi fornecido para importação.");
-    }
-
-    if (fileName == null) {
-      throw new TransactionException("O arquivo não possui um nome válido.");
-    }
-
-    processFileByType(statement.getBank(), fileBytes, fileName, statement);
-  }
-
-  private void processFileByType(Bank bank, byte[] fileBytes, String fileName, Statement statement)
-      throws IOException {
-
-    switch (bank) {
-      case SICOOB:
-        transactionSicoobService.importStatement(fileBytes, fileName, statement);
-        break;
-      case BANCO_DO_BRASIL:
-        transactionBBService.importStatement(fileBytes, fileName, statement);
-        break;
-      default:
-        throw new TransactionException("Tipo de arquivo não suportado: " + bank.toString());
-    }
-  }
 
   public List<TransactionResponse> getAllTransactions() {
     return transactionRepository.findAll().stream()

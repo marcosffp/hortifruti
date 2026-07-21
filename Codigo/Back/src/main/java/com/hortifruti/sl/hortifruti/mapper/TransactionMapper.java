@@ -16,6 +16,7 @@ import org.mapstruct.ReportingPolicy;
 public interface TransactionMapper {
 
   @Mapping(target = "bank", source = "transaction.statement.bank")
+  @Mapping(target = "origin", source = "transaction.statement.origin")
   TransactionResponse toResponse(Transaction transaction);
 
   void updateTransaction(@MappingTarget Transaction target, Transaction source);
