@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.dto.transaction;
 
 import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
 import com.hortifruti.sl.hortifruti.model.enumeration.Category;
+import com.hortifruti.sl.hortifruti.model.enumeration.StatementOrigin;
 import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -14,4 +15,5 @@ public record TransactionResponse(
     TransactionType transactionType,
     LocalDate transactionDate,
     BigDecimal amount,
-    Bank bank) {}
+    Bank bank,
+    StatementOrigin origin) {}

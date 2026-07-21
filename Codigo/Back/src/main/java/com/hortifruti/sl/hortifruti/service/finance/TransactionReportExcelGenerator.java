@@ -2,15 +2,11 @@ package com.hortifruti.sl.hortifruti.service.finance;
 
 import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
-import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
+import com.hortifruti.sl.hortifruti.util.TransactionUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -23,65 +19,33 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.http.HttpHeaders;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Service
-@RequiredArgsConstructor
-public class TransactionExcelExportService {
+/**
+ * Gera o relatório consolidado de transações (BB + Sicoob juntos, em ordem cronológica) em Excel.
+ */
+@Component
+public class TransactionReportExcelGenerator {
 
-  private final TransactionRepository transactionRepository;
+  private static final DateTimeFormatter DATA_CURTA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-  public Map<String, byte[]> exportTransactionsAsExcel(LocalDate startDate, LocalDate endDate)
-      throws IOException {
-    LocalDate now = LocalDate.now();
-    LocalDate periodStart = startDate != null ? startDate : now.minusMonths(1).withDayOfMonth(1);
-    LocalDate periodEnd = endDate != null ? endDate : now.withDayOfMonth(1).minusDays(1);
-
-    List<Transaction> transactions =
-        transactionRepository.findByTransactionDateBetweenAndStatementBank(
-            periodStart, periodEnd, Bank.BANCO_DO_BRASIL);
-
-    Map<String, byte[]> excelData = new HashMap<>();
+  public byte[] generate(List<Transaction> transacoes) throws IOException {
     try (Workbook workbook = new XSSFWorkbook();
         ByteArrayOutputStream excelOut = new ByteArrayOutputStream()) {
-      Sheet sheet = workbook.createSheet("Transactions");
+      Sheet sheet = workbook.createSheet("Relatório de Transações");
 
       createHeaderRow(sheet, workbook);
-      populateDataRows(sheet, workbook, transactions);
+      populateDataRows(sheet, workbook, transacoes);
       adjustColumnWidths(sheet);
 
       workbook.write(excelOut);
-      byte[] excelBytes = excelOut.toByteArray();
-
-      DateTimeFormatter fileNameFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-      String excelFileName =
-          "HORTIFRUTI_SANTA_LUZIA-"
-              + periodStart.format(fileNameFormatter)
-              + "_a_"
-              + periodEnd.format(fileNameFormatter)
-              + ".xlsx";
-
-      HttpHeaders headers = new HttpHeaders();
-      headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + excelFileName);
-      excelData.put(excelFileName, excelBytes);
+      return excelOut.toByteArray();
     }
-    return excelData;
   }
 
   private void createHeaderRow(Sheet sheet, Workbook workbook) {
     Row headerRow = sheet.createRow(0);
-    String[] columnHeaders = {
-      "Data",
-      "Documento",
-      "Cod.Histórico",
-      "Histórico",
-      "Agência de Origem",
-      "Lote",
-      "R$ Valor",
-      "Info.",
-      "Complemento"
-    };
+    String[] columnHeaders = {"Data", "Banco", "Categoria", "Descrição", "R$ Valor"};
 
     for (int i = 0; i < columnHeaders.length; i++) {
       Cell cell = headerRow.createCell(i);
@@ -90,31 +54,35 @@ public class TransactionExcelExportService {
     }
   }
 
-  private void populateDataRows(Sheet sheet, Workbook workbook, List<Transaction> transactions) {
+  private void populateDataRows(Sheet sheet, Workbook workbook, List<Transaction> transacoes) {
     int rowIdx = 1;
-    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
-    for (Transaction transaction : transactions) {
+    for (Transaction transacao : transacoes) {
       Row row = sheet.createRow(rowIdx++);
-      populateRowData(row, workbook, transaction, dateFormatter);
+      populateRowData(row, workbook, transacao);
     }
   }
 
-  private void populateRowData(
-      Row row, Workbook workbook, Transaction transaction, DateTimeFormatter dateFormatter) {
+  private void populateRowData(Row row, Workbook workbook, Transaction transacao) {
     CellStyle dataCellStyle = createDataCellStyle(workbook);
 
+    createAndStyleCell(row, 0, transacao.getTransactionDate().format(DATA_CURTA), dataCellStyle);
+    createAndStyleCell(row, 1, bankLabel(transacao), dataCellStyle);
     createAndStyleCell(
-        row, 0, transaction.getTransactionDate().format(dateFormatter), dataCellStyle);
-    createAndStyleCell(row, 1, transaction.getDocument(), dataCellStyle);
-    createAndStyleCell(row, 2, transaction.getCodHistory(), dataCellStyle);
-    createAndStyleCell(row, 3, transaction.getHistory(), dataCellStyle);
-    createAndStyleCell(row, 4, transaction.getSourceAgency(), dataCellStyle);
-    createAndStyleCell(row, 5, transaction.getBatch(), dataCellStyle);
+        row, 2, TransactionUtil.categoryLabel(transacao.getCategory()), dataCellStyle);
+    createAndStyleCell(row, 3, transacao.getHistory(), dataCellStyle);
+    setAmountCell(row, 4, transacao, workbook);
+  }
 
-    setAmountCell(row, 6, transaction, workbook);
-    createAndStyleCell(row, 7, transaction.getTransactionType().toString(), dataCellStyle);
-    createAndStyleCell(row, 8, determineComplement(transaction), dataCellStyle);
+  private String bankLabel(Transaction transacao) {
+    if (transacao.getStatement() == null || transacao.getStatement().getBank() == null) {
+      return "-";
+    }
+    Bank bank = transacao.getStatement().getBank();
+    return switch (bank) {
+      case BANCO_DO_BRASIL -> "BB";
+      case SICOOB -> "Sicoob";
+      case UNKNOWN -> "-";
+    };
   }
 
   private void createAndStyleCell(Row row, int column, String value, CellStyle style) {
@@ -123,9 +91,9 @@ public class TransactionExcelExportService {
     cell.setCellStyle(style);
   }
 
-  private void setAmountCell(Row row, int column, Transaction transaction, Workbook workbook) {
+  private void setAmountCell(Row row, int column, Transaction transacao, Workbook workbook) {
     Cell cell = row.createCell(column);
-    double amountValue = transaction.getAmount().doubleValue();
+    double amountValue = transacao.getAmount().doubleValue();
 
     if (amountValue < 0) {
       cell.setCellValue(-amountValue);
@@ -136,33 +104,12 @@ public class TransactionExcelExportService {
     }
   }
 
-  private String determineComplement(Transaction transaction) {
-    if (transaction.getHistory() != null && transaction.getHistory().contains("Marlucia")) {
-      return "Pagamento de fornecedor";
-    }
-    if (transaction.getHistory() != null && transaction.getHistory().contains("Alexandre")) {
-      return "Pagamento de fornecedor";
-    }
-
-    return switch (transaction.getCategory()) {
-      case VENDAS_CARTAO -> "Antecipação dos Recebíveis";
-      case VENDAS_PIX -> "Recebimento de vendas";
-      case FORNECEDOR -> "Pagamento de fornecedor";
-      case CEMIG, COPASA, FISCAL, SERVICOS_TELEFONICOS -> "Pagamento de serviço";
-      case FUNCIONARIO -> "Pagamento de funcionário";
-      case FAMÍLIA -> "Pagamento de serviços externos";
-      case SERVICOS_BANCARIOS -> "Pagamento de serviços bancários";
-      case IMPOSTOS -> "Pagamento de imposto";
-      default -> transaction.getCategory().toString();
-    };
-  }
-
   private void adjustColumnWidths(Sheet sheet) {
-    sheet.setColumnWidth(3, 256 * 70);
-    sheet.setColumnWidth(6, 256 * 15);
+    sheet.setColumnWidth(3, 256 * 60);
+    sheet.setColumnWidth(4, 256 * 15);
 
-    for (int i = 0; i < 9; i++) {
-      if (i != 3 && i != 6) {
+    for (int i = 0; i < 5; i++) {
+      if (i != 3 && i != 4) {
         sheet.autoSizeColumn(i);
       }
     }

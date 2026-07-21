@@ -70,14 +70,6 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
-  @ExceptionHandler(StatementException.class)
-  public ResponseEntity<Map<String, String>> handleStatementException(StatementException ex) {
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de Extrato");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-  }
-
   @ExceptionHandler(TransactionException.class)
   public ResponseEntity<Map<String, String>> handleTransactionException(TransactionException ex) {
     Map<String, String> response = new HashMap<>();
@@ -164,6 +156,15 @@ public class GlobalExceptionHandler {
   public ResponseEntity<Map<String, String>> handleBBApiException(BBApiException ex) {
     Map<String, String> response = new HashMap<>();
     response.put("error", "Erro na Integração com o Banco do Brasil");
+    response.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(response);
+  }
+
+  @ExceptionHandler(SicoobExtratoException.class)
+  public ResponseEntity<Map<String, String>> handleSicoobExtratoException(
+      SicoobExtratoException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("error", "Erro ao consultar extrato do Sicoob");
     response.put("message", ex.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(response);
   }

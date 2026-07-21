@@ -27,7 +27,7 @@ public class TransactionUtil {
     Map<String, Category> map = new HashMap<>();
 
     // Serviços Bancários
-    map.put("giro pronampe", Category.SERVICOS_BANCARIOS);
+    map.put("pronampe", Category.SERVICOS_BANCARIOS);
     map.put("emprestimo", Category.SERVICOS_BANCARIOS);
     map.put("rende fácil", Category.SERVICOS_BANCARIOS);
     map.put("tar. agrupadas", Category.SERVICOS_BANCARIOS);
@@ -39,16 +39,20 @@ public class TransactionUtil {
     map.put("déb.tit", Category.SERVICOS_BANCARIOS);
     map.put("créd.liquidação", Category.SERVICOS_BANCARIOS);
     map.put("cessão créd liquid princ", Category.SERVICOS_BANCARIOS);
+    map.put("seg créd proteg", Category.SERVICOS_BANCARIOS);
+    map.put("seguro cred prot", Category.SERVICOS_BANCARIOS);
+    map.put("devolução", Category.SERVICOS_BANCARIOS);
+    map.put("devolucao", Category.SERVICOS_BANCARIOS);
+    map.put("estorno", Category.SERVICOS_BANCARIOS);
 
     // Vendas Cartão
     map.put("cielo", Category.VENDAS_CARTAO);
     map.put("alelo", Category.VENDAS_CARTAO);
     map.put("hortifruti", Category.VENDAS_CARTAO);
-    map.put("pluxeee", Category.VENDAS_CARTAO);
+    map.put("pluxee", Category.VENDAS_CARTAO);
     map.put("ted-crédito", Category.VENDAS_CARTAO);
     map.put("cr compras", Category.VENDAS_CARTAO);
     map.put("cr anteci", Category.VENDAS_CARTAO);
-    map.put("Recebimento Fornecedor", Category.VENDAS_CARTAO);
 
     // Funcionário
     map.put("alexandre c", Category.FUNCIONARIO);
@@ -123,6 +127,22 @@ public class TransactionUtil {
         .findFirst()
         .orElseGet(
             () -> "D".equalsIgnoreCase(balanceType) ? Category.FORNECEDOR : Category.VENDAS_PIX);
+  }
+
+  public static String categoryLabel(Category category) {
+    return switch (category) {
+      case VENDAS_CARTAO -> "Vendas Cartão";
+      case VENDAS_PIX -> "Vendas PIX";
+      case SERVICOS_BANCARIOS -> "Serviços Bancários";
+      case FORNECEDOR -> "Fornecedor";
+      case FAMÍLIA -> "Família";
+      case FUNCIONARIO -> "Funcionário";
+      case SERVICOS_TELEFONICOS -> "Serviços Telefônicos";
+      case CEMIG -> "Cemig";
+      case COPASA -> "Copasa";
+      case FISCAL -> "Fiscal";
+      case IMPOSTOS -> "Impostos";
+    };
   }
 
   public static BigDecimal parseAmount(String value, String type) {

@@ -1,25 +1,33 @@
 "use client";
 
 import {
+  AlertCircle,
   ArrowDown,
   ArrowLeft,
   ArrowRight,
   ArrowUp,
+  CheckCircle2,
   Download,
   Edit,
   FileArchive,
+  Info,
+  RefreshCw,
   Search,
   Trash2,
   Wallet,
   X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
-import EnhancedUploadExtract from "@/components/modules/EnhancedUploadExtract";
+import RoleGuard from "@/components/auth/RoleGuard";
 import Button from "@/components/ui/Button";
 import Loading from "@/components/ui/Loading";
 import { useTransaction } from "@/hooks/useTransaction";
-import { showError, showSuccess } from "@/services/notificationService";
+import {
+  showError,
+  showInfo,
+  showSuccess,
+} from "@/services/notificationService";
+import { statementApiService } from "@/services/statementApiService";
 import type {
   PageResult,
   TransactionRequest,
@@ -27,8 +35,36 @@ import type {
 } from "@/services/transactionService";
 import { getErrorMessage } from "@/types/errorType";
 
+type BankGenerateStatus = "success" | "alreadyProcessed" | "error";
+
+interface SicoobGenerateResult {
+  status: BankGenerateStatus;
+  message: string;
+  mes: number;
+  ano: number;
+  diaInicial: number;
+  diaFinal: number;
+}
+
+interface BBGenerateResult {
+  status: BankGenerateStatus;
+  message: string;
+  dataInicio: string;
+  dataFim: string;
+}
+
+function triggerBlobDownload(blob: Blob, fileName: string) {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", fileName);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 export default function FinancialLaunchesPage() {
-  const router = useRouter();
   const {
     isLoading,
     error,
@@ -58,6 +94,11 @@ export default function FinancialLaunchesPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentTransaction, setCurrentTransaction] =
     useState<TransactionResponse | null>(null);
+  const [isGeneratingExtratos, setIsGeneratingExtratos] = useState(false);
+  const [sicoobResult, setSicoobResult] = useState<SicoobGenerateResult | null>(
+    null,
+  );
+  const [bbResult, setBbResult] = useState<BBGenerateResult | null>(null);
 
   const [startDate, setStartDate] = useState(() => {
     const now = new Date();
@@ -178,8 +219,183 @@ export default function FinancialLaunchesPage() {
     }
   };
 
-  const _navigateToUpload = () => {
-    router.push("/financeiro/upload");
+  const [startYearStr, startMonthStr] = startDate.split("-");
+  const [endYearStr, endMonthStr] = endDate.split("-");
+  const isSameMonth =
+    startYearStr === endYearStr && startMonthStr === endMonthStr;
+
+  const summaryMessage = (
+    alreadyProcessed: boolean,
+    periodStart: string,
+    periodEnd: string,
+    totalSaved: number,
+    totalDuplicatedSkipped: number,
+  ) =>
+    alreadyProcessed
+      ? `Período já processado (${periodStart} a ${periodEnd}).`
+      : `${totalSaved} lançamento(s) novo(s) salvo(s) (${totalDuplicatedSkipped} já existiam).`;
+
+  const handleGenerateExtratos = async () => {
+    if (!isSameMonth || isGeneratingExtratos) return;
+
+    setIsGeneratingExtratos(true);
+    setSicoobResult(null);
+    setBbResult(null);
+
+    const ano = Number(startYearStr);
+    const mes = Number(startMonthStr);
+    const diaInicial = Number(startDate.split("-")[2]);
+    const diaFinal = Number(endDate.split("-")[2]);
+
+    const [sicoobSettled, bbSettled] = await Promise.allSettled([
+      statementApiService.importSicoob(mes, ano, diaInicial, diaFinal),
+      statementApiService.importBB(startDate, endDate),
+    ]);
+
+    if (sicoobSettled.status === "fulfilled") {
+      const summary = sicoobSettled.value;
+      const message = summaryMessage(
+        summary.alreadyProcessed,
+        summary.periodStart,
+        summary.periodEnd,
+        summary.totalSaved,
+        summary.totalDuplicatedSkipped,
+      );
+      setSicoobResult({
+        status: summary.alreadyProcessed ? "alreadyProcessed" : "success",
+        message,
+        mes,
+        ano,
+        diaInicial,
+        diaFinal,
+      });
+      if (summary.alreadyProcessed) {
+        showInfo(`Sicoob: ${message}`);
+      } else {
+        showSuccess(`Sicoob: ${message}`);
+      }
+    } else {
+      const message = getErrorMessage(sicoobSettled.reason);
+      setSicoobResult({
+        status: "error",
+        message,
+        mes,
+        ano,
+        diaInicial,
+        diaFinal,
+      });
+      showError(`Sicoob: ${message}`);
+    }
+
+    if (bbSettled.status === "fulfilled") {
+      const summary = bbSettled.value;
+      const message = summaryMessage(
+        summary.alreadyProcessed,
+        summary.periodStart,
+        summary.periodEnd,
+        summary.totalSaved,
+        summary.totalDuplicatedSkipped,
+      );
+      setBbResult({
+        status: summary.alreadyProcessed ? "alreadyProcessed" : "success",
+        message,
+        dataInicio: startDate,
+        dataFim: endDate,
+      });
+      if (summary.alreadyProcessed) {
+        showInfo(`BB: ${message}`);
+      } else {
+        showSuccess(`BB: ${message}`);
+      }
+    } else {
+      const message = getErrorMessage(bbSettled.reason);
+      setBbResult({
+        status: "error",
+        message,
+        dataInicio: startDate,
+        dataFim: endDate,
+      });
+      showError(`BB: ${message}`);
+    }
+
+    setIsGeneratingExtratos(false);
+
+    const anySucceeded =
+      (sicoobSettled.status === "fulfilled" &&
+        !sicoobSettled.value.alreadyProcessed) ||
+      (bbSettled.status === "fulfilled" && !bbSettled.value.alreadyProcessed);
+    if (anySucceeded) {
+      fetchSummaryData();
+      fetchTransactionsData();
+    }
+  };
+
+  const handleDownloadSicoobPdf = async () => {
+    if (!sicoobResult) return;
+    try {
+      const blob = await statementApiService.downloadSicoobPdf(
+        sicoobResult.mes,
+        sicoobResult.ano,
+        sicoobResult.diaInicial,
+        sicoobResult.diaFinal,
+      );
+      triggerBlobDownload(
+        blob,
+        `extrato-sicoob_${sicoobResult.ano}${String(sicoobResult.mes).padStart(2, "0")}.pdf`,
+      );
+    } catch (err) {
+      showError(`Erro ao baixar PDF do Sicoob: ${getErrorMessage(err)}`);
+    }
+  };
+
+  const handleDownloadSicoobExcel = async () => {
+    if (!sicoobResult) return;
+    try {
+      const blob = await statementApiService.downloadSicoobExcel(
+        sicoobResult.mes,
+        sicoobResult.ano,
+        sicoobResult.diaInicial,
+        sicoobResult.diaFinal,
+      );
+      triggerBlobDownload(
+        blob,
+        `extrato-sicoob_${sicoobResult.ano}${String(sicoobResult.mes).padStart(2, "0")}.xlsx`,
+      );
+    } catch (err) {
+      showError(`Erro ao baixar Excel do Sicoob: ${getErrorMessage(err)}`);
+    }
+  };
+
+  const handleDownloadBBPdf = async () => {
+    if (!bbResult) return;
+    try {
+      const blob = await statementApiService.downloadBBPdf(
+        bbResult.dataInicio,
+        bbResult.dataFim,
+      );
+      triggerBlobDownload(
+        blob,
+        `extrato-bb_${bbResult.dataInicio}_a_${bbResult.dataFim}.pdf`,
+      );
+    } catch (err) {
+      showError(`Erro ao baixar PDF do BB: ${getErrorMessage(err)}`);
+    }
+  };
+
+  const handleDownloadBBExcel = async () => {
+    if (!bbResult) return;
+    try {
+      const blob = await statementApiService.downloadBBExcel(
+        bbResult.dataInicio,
+        bbResult.dataFim,
+      );
+      triggerBlobDownload(
+        blob,
+        `extrato-bb_${bbResult.dataInicio}_a_${bbResult.dataFim}.xlsx`,
+      );
+    } catch (err) {
+      showError(`Erro ao baixar Excel do BB: ${getErrorMessage(err)}`);
+    }
   };
 
   return (
@@ -194,11 +410,11 @@ export default function FinancialLaunchesPage() {
       </div>
 
       <div className="flex flex-wrap gap-6 mb-8 h-fit">
-        <div className="bg-white rounded-lg shadow-sm p-4 min-h-full flex-1">
+        <div className="bg-white rounded-lg shadow-sm p-4 min-h-full w-full">
           <h3 className="text-lg font-medium text-gray-800 mb-3">
             Filtro de Período (Resumo e Exportação)
           </h3>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-end gap-4">
             <div>
               <label
                 htmlFor="lancamentos-data-inicial"
@@ -229,33 +445,144 @@ export default function FinancialLaunchesPage() {
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
-            <div>
-              <button
-                type="button"
-                onClick={() => {
-                  const now = new Date();
-                  const firstDay = new Date(
-                    now.getFullYear(),
-                    now.getMonth(),
-                    1,
-                  );
-                  const lastDay = new Date(
-                    now.getFullYear(),
-                    now.getMonth() + 1,
-                    0,
-                  );
-                  setStartDate(firstDay.toISOString().split("T")[0]);
-                  setEndDate(lastDay.toISOString().split("T")[0]);
-                }}
-                className="px-4 py-2 bg-[var(--primary-light)] text-white rounded-lg hover:bg-[var(--primary-dark)] cursor-pointer transition-colors"
+            <button
+              type="button"
+              onClick={() => {
+                const now = new Date();
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                const lastDay = new Date(
+                  now.getFullYear(),
+                  now.getMonth() + 1,
+                  0,
+                );
+                setStartDate(firstDay.toISOString().split("T")[0]);
+                setEndDate(lastDay.toISOString().split("T")[0]);
+              }}
+              className="px-4 py-2 bg-[var(--primary-light)] text-white rounded-lg hover:bg-[var(--primary-dark)] cursor-pointer transition-colors"
+            >
+              Mês Atual
+            </button>
+            <RoleGuard roles="MANAGER" ignoreRedirect>
+              <Button
+                variant="outline"
+                onClick={handleGenerateExtratos}
+                disabled={!isSameMonth || isGeneratingExtratos}
+                title={
+                  !isSameMonth
+                    ? "Selecione um período dentro de um único mês"
+                    : undefined
+                }
+                className="border border-gray-300 text-gray-700 px-4 py-2"
+                icon={
+                  isGeneratingExtratos ? undefined : <RefreshCw size={18} />
+                }
               >
-                Mês Atual
-              </button>
-            </div>
+                {isGeneratingExtratos ? "Gerando..." : "Gerar Extratos"}
+              </Button>
+            </RoleGuard>
           </div>
-        </div>
+          {!isSameMonth && (
+            <p className="text-xs text-amber-600 mt-2">
+              A busca de extratos via API só funciona dentro de um único mês.
+            </p>
+          )}
 
-        <EnhancedUploadExtract />
+          {(sicoobResult || bbResult) && (
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {sicoobResult && (
+                <div
+                  className={`rounded-lg border p-4 ${
+                    sicoobResult.status === "error"
+                      ? "border-red-200 bg-red-50"
+                      : sicoobResult.status === "alreadyProcessed"
+                        ? "border-blue-200 bg-blue-50"
+                        : "border-green-200 bg-green-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    {sicoobResult.status === "error" ? (
+                      <AlertCircle className="text-red-500" size={18} />
+                    ) : sicoobResult.status === "alreadyProcessed" ? (
+                      <Info className="text-blue-500" size={18} />
+                    ) : (
+                      <CheckCircle2 className="text-green-500" size={18} />
+                    )}
+                    <span className="font-medium text-gray-800">Sicoob</span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {sicoobResult.message}
+                  </p>
+                  {sicoobResult.status !== "error" && (
+                    <div className="flex gap-2 mt-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDownloadSicoobPdf}
+                        icon={<Download size={16} />}
+                      >
+                        Baixar PDF
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDownloadSicoobExcel}
+                        icon={<Download size={16} />}
+                      >
+                        Baixar Excel
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {bbResult && (
+                <div
+                  className={`rounded-lg border p-4 ${
+                    bbResult.status === "error"
+                      ? "border-red-200 bg-red-50"
+                      : bbResult.status === "alreadyProcessed"
+                        ? "border-blue-200 bg-blue-50"
+                        : "border-green-200 bg-green-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    {bbResult.status === "error" ? (
+                      <AlertCircle className="text-red-500" size={18} />
+                    ) : bbResult.status === "alreadyProcessed" ? (
+                      <Info className="text-blue-500" size={18} />
+                    ) : (
+                      <CheckCircle2 className="text-green-500" size={18} />
+                    )}
+                    <span className="font-medium text-gray-800">
+                      Banco do Brasil
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">{bbResult.message}</p>
+                  {bbResult.status !== "error" && (
+                    <div className="flex gap-2 mt-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDownloadBBPdf}
+                        icon={<Download size={16} />}
+                      >
+                        Baixar PDF
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDownloadBBExcel}
+                        icon={<Download size={16} />}
+                      >
+                        Baixar Excel
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
