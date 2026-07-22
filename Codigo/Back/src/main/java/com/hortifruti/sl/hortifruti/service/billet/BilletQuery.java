@@ -5,11 +5,10 @@ import com.hortifruti.sl.hortifruti.config.billet.BilletHttpClient;
 import com.hortifruti.sl.hortifruti.dto.billet.BilletResponse;
 import com.hortifruti.sl.hortifruti.exception.BilletException;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
-import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
+import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,7 +25,7 @@ public class BilletQuery {
   private final BilletHttpClient httpClient;
   private final BilletValidation billetValidation;
   private final BilletInfoCombinedAndClient billetInfoCombinedAndClient;
-  private final CombinedScoreRepository combinedScoreRepository;
+  private final CombinedScoreService combinedScoreService;
 
   /**
    * Lista os boletos em aberto de um pagador específico.
@@ -161,11 +160,7 @@ public class BilletQuery {
 
   private BilletResponse mapJsonToBilletResponse(JsonNode boletoNode) {
     String seuNumero = boletoNode.path("seuNumero").asText();
-    Long combinedScoreId =
-        combinedScoreRepository.findAllByYourNumber(seuNumero).stream()
-            .max(Comparator.comparing(CombinedScore::getId))
-            .map(CombinedScore::getId)
-            .orElse(null);
+    Long combinedScoreId = combinedScoreService.findLatestIdByYourNumber(seuNumero);
 
     return new BilletResponse(
         boletoNode.path("pagador").path("nome").asText(),

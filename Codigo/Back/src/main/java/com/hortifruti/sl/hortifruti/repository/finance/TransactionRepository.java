@@ -26,13 +26,6 @@ public interface TransactionRepository
   List<Transaction> findByTransactionDateBetweenAndStatementBank(
       @Param("startDate") LocalDate startDate,
       @Param("endDate") LocalDate endDate,
-      @Param("bank") Bank bank);
-
-  @Query(
-      "SELECT t FROM Transaction t WHERE t.transactionDate BETWEEN :startDate AND :endDate AND t.statement.bank = :bank")
-  List<Transaction> findByTransactionDateBetweenAndStatementBank(
-      @Param("startDate") LocalDate startDate,
-      @Param("endDate") LocalDate endDate,
       @Param("bank") Bank bank,
       Pageable pageable);
 

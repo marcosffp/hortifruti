@@ -269,35 +269,29 @@ variante próxima com colunas diferentes. Constantes de layout (`leftMargin=50`,
   nesta passada — é uma mudança de risco maior (toca repositórios, queries e call sites) e deve ser
   avaliada caso a caso seguindo a regra agora documentada.
 
-### 5.4 Índices ausentes em colunas de consulta frequente
-- `BilletFileRepository.findByCombinedScoreIdAndStatus` consulta `combined_score_id`
-  (`BilletFile.java:37`, coluna simples, sem índice).
-- `ChatSessionRepository` consulta `phoneNumber` (`ChatSession.java:20`, sem índice) em toda
-  chamada de webhook do chatbot — rota de alto tráfego.
-- Só `model/RefreshToken.java:24-26` declara `@Index` explícito.
-- **Correção sugerida:** adicionar índice nessas colunas (migração de banco), priorizando `phoneNumber`
-  por ser hot path do chatbot.
+### 5.4 Índices ausentes em colunas de consulta frequente — ✅ corrigido
+- Adicionado `@Index` explícito em `BilletFile` (`combined_score_id`) e `ChatSession`
+  (`phone_number`), seguindo o padrão já usado em `model/RefreshToken.java:24-26`.
 
-### 5.5 Query sem garantia de resultado único
-- `repository/chatbot/ChatSessionRepository.java:14-18` — `findActiveSessionByPhoneNumber` devolve
-  `Optional<ChatSession>` de uma JPQL sem `LIMIT`/`Top`, ordenando por `createdAt DESC`, mas
-  `phoneNumber` não tem constraint de unicidade. Duas sessões vivas pro mesmo telefone derrubam a
-  query com `IncorrectResultSizeDataAccessException` em runtime.
-- **Correção sugerida:** usar `findFirstByPhoneNumberOrderByCreatedAtDesc` (ou `Pageable.ofSize(1)`)
-  em vez de esperar resultado único.
+### 5.5 Query sem garantia de resultado único — ✅ corrigido
+- `ChatSessionRepository.findActiveSessionByPhoneNumber` (JPQL sem `LIMIT`) trocado por
+  `findFirstByPhoneNumberOrderByCreatedAtDesc` (query method derivado, `Optional<ChatSession>`),
+  eliminando o risco de `IncorrectResultSizeDataAccessException` quando há mais de uma sessão viva
+  pro mesmo telefone. Chamadas atualizadas em `ChatSessionService`.
 
-### 5.6 Duplicação e magic strings no repositório
-- `TransactionRepository` tem dois `findByTransactionDateBetweenAndStatementBank` (com/sem
-  `Pageable`) com a mesma query JPQL copiada.
-- `CombinedScoreRepository` tem `'PENDENTE'` hardcoded como literal de string (não `:status` ligado
-  ao enum `Status`) em 7 queries diferentes — se o valor do enum mudar de nome, essas queries param
-  de bater silenciosamente, sem erro de compilação.
-- `TransactionRepository` tem pelo menos 7 finders não paginados sobre intervalo de data, mesmo a
-  interface já estendendo `JpaSpecificationExecutor<Transaction>` (que resolveria isso com Specifications).
-- `UserRepository` escreve `@Query` manual pra algo que o Spring Data derivaria sozinho
-  (`findByUsername`), enquanto `ClientRepository` usa query method derivado normalmente.
-- **Correção sugerida:** consolidar os finders de data em Specifications; trocar `'PENDENTE'` por
-  bind de enum; remover a query manual redundante do `UserRepository`.
+### 5.6 Duplicação e magic strings no repositório — parcialmente corrigido
+- ✅ Removido o `findByTransactionDateBetweenAndStatementBank` sem `Pageable` (duplicata exata da
+  versão paginada; confirmado via grep que só a versão paginada tinha chamador em
+  `TransactionExportService`).
+- ✅ `CombinedScoreRepository`: as 7 queries com `'PENDENTE'` hardcoded agora usam o literal de enum
+  JPQL `com.hortifruti.sl.hortifruti.model.enumeration.Status.PENDENTE` em vez da string solta —
+  Hibernate valida o literal contra o enum real, então um rename do valor quebra a query de forma
+  explícita (erro no parse) em vez de silenciosamente não bater com nada.
+- ✅ `UserRepository.findByUsername`: removida a `@Query` manual, trocado por query method derivado
+  (`User findByUsername(String username)`), no mesmo padrão de `ClientRepository`.
+- Pendente (não feito nesta passada, é mudança de risco maior — Fase 3): consolidar os 7+ finders
+  não paginados de `TransactionRepository` em `Specifications`, já que a interface estende
+  `JpaSpecificationExecutor<Transaction>`.
 
 ---
 
@@ -322,17 +316,26 @@ Hoje não existe uma regra única para "quando um domínio ganha subpacote próp
   `BilletIssue`/`BilletCancel`.
 
 **Correção sugerida (a decisão mais importante de arquitetura deste documento):** escolher UMA convenção
-e documentá-la em `README.md` ou um `ARQUITETURA.md` curto, por exemplo:
-
-> Todo domínio de negócio (billet, invoice, purchase, finance, chatbot, backup, climate, freight...)
-> tem subpacote homônimo em `controller/`, `service/`, `dto/`, `model/` e `repository/` quando aplicável.
-> Dentro de `service/<dominio>/`, usar no máximo 3 papéis por classe: `XService` (orquestração +
-> regra de negócio pública), `XClient`/`XHttpClient` (só chamada externa), `XRepository` acesso a dados
-> (via Spring Data, sem lógica). Evitar `XQuery`/`XFactory`/`XValidation` como classes soltas — ou
-> documentar explicitamente o que cada uma faz e quando criar uma nova.
+e documentá-la em `README.md` ou um `ARQUITETURA.md` curto — ✅ feito, ver `ARQUITETURA.md` na raiz
+do backend.
 
 Isso sozinho é o que mais reduz o "preciso ler tudo pra saber onde mexer" — uma vez que a convenção
 existe e é seguida, dá pra prever onde uma feature nova deveria morar sem precisar explorar o projeto inteiro.
+
+**Migração — prova de conceito com `billet` (✅ feito, ver `ARQUITETURA.md`):**
+- `BilletController` movido de `controller/` (flat) para `controller/billet/`.
+- `BilletQuery` injetava `CombinedScoreRepository` direto (violando a regra de "um domínio só
+  acessa o próprio repositório" — seção 3.6); trocado por uma chamada a
+  `CombinedScoreService.findLatestIdByYourNumber` (método novo, mesma lógica que já existia
+  inline em `BilletQuery`).
+- Papel de cada uma das 8 classes de `service/billet` documentado em
+  `service/billet/package-info.java`, em vez de forçar a fusão delas em menos classes: a lógica de
+  emissão/baixa/consulta de boleto tem bastante tratamento de erro específico da API do Sicoob, e
+  fundir sem testes de regressão cobrindo esses caminhos é mais risco do que ganho de organização
+  nesta passada.
+- Demais domínios (restante de `controller/` flat, `service/finance` com 20 arquivos,
+  `exception/` com 20 arquivos, `dto/invoice` com 15 arquivos etc.) ainda não migrados — fazer
+  conforme forem tocados por outro motivo, seguindo a regra em `ARQUITETURA.md`.
 
 ---
 

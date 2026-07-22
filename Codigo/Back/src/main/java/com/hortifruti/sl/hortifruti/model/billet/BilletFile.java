@@ -8,6 +8,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
@@ -18,7 +19,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "billet_files")
+@Table(
+    name = "billet_files",
+    indexes = @Index(name = "idx_billet_files_combined_score_id", columnList = "combined_score_id"))
 @Getter
 @Setter
 @NoArgsConstructor

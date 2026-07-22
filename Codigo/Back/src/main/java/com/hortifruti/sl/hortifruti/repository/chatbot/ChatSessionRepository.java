@@ -13,12 +13,10 @@ public interface ChatSessionRepository extends JpaRepository<ChatSession, Long> 
 
   /**
    * Busca a sessão ativa mais recente de um número de telefone (simplificado: qualquer sessão
-   * existente é ativa, sessões concluídas são deletadas)
+   * existente é ativa, sessões concluídas são deletadas). Usa "First" pois phoneNumber não tem
+   * constraint de unicidade e pode haver mais de uma sessão viva para o mesmo telefone.
    */
-  @Query(
-      "SELECT cs FROM ChatSession cs WHERE cs.phoneNumber = :phoneNumber "
-          + "ORDER BY cs.createdAt DESC")
-  Optional<ChatSession> findActiveSessionByPhoneNumber(@Param("phoneNumber") String phoneNumber);
+  Optional<ChatSession> findFirstByPhoneNumberOrderByCreatedAtDesc(String phoneNumber);
 
   @Query(
       "SELECT cs FROM ChatSession cs WHERE cs.status = 'AWAITING_HUMAN' "

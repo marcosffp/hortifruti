@@ -8,8 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface UserRepository extends JpaRepository<User, Long> {
-  @Query("SELECT u FROM User u WHERE u.username = :username")
-  User findByUsername(@Param("username") String username);
+  User findByUsername(String username);
 
   @Query("SELECT u FROM User u WHERE u.role = :role")
   List<User> findByRole(@Param("role") Role role);

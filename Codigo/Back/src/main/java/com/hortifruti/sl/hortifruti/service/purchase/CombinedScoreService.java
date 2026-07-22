@@ -267,6 +267,18 @@ public class CombinedScoreService {
         .toList();
   }
 
+  /**
+   * yourNumber (seuNumero) não é único entre agrupamentos (ver {@link
+   * CombinedScoreRepository#findAllByYourNumber}) — retorna o ID do agrupamento mais recente
+   * (maior ID) para esse número, ou {@code null} se nenhum for encontrado.
+   */
+  public Long findLatestIdByYourNumber(String yourNumber) {
+    return combinedScoreRepository.findAllByYourNumber(yourNumber).stream()
+        .max(Comparator.comparing(CombinedScore::getId))
+        .map(CombinedScore::getId)
+        .orElse(null);
+  }
+
   @Transactional
   public void updateStatusAfterBilletCancellation(String nossoNumero) {
     List<CombinedScore> combinedScores = combinedScoreRepository.findAllByYourNumber(nossoNumero);
