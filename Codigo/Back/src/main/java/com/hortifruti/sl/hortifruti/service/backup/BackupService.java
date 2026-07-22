@@ -11,8 +11,10 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class BackupService {
@@ -47,7 +49,7 @@ public class BackupService {
         try {
           Files.delete(Paths.get(filePath));
         } catch (IOException e) {
-          System.out.println("Não foi possível deletar o arquivo temporário: " + filePath);
+          log.warn("Não foi possível deletar o arquivo temporário: {}", filePath, e);
         }
       }
 

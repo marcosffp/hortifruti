@@ -12,8 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class RegisterCalculator {
@@ -78,7 +80,6 @@ public class RegisterCalculator {
   }
 
   private void logProcessingError(CombinedScore combinedScore, Exception e) {
-    System.err.println("Erro ao processar CombinedScore ID: " + combinedScore.getId());
-    e.printStackTrace();
+    log.error("Erro ao processar CombinedScore ID: {}", combinedScore.getId(), e);
   }
 }

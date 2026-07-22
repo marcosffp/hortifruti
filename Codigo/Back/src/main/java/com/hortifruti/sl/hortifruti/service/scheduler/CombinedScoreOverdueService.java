@@ -16,10 +16,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+/**
+ * Não usa {@code @Scheduled} — é acionada por chamada HTTP externa (endpoint {@code
+ * /scheduler/check-overdue}, protegido por token estático) ou manualmente por um MANAGER (endpoint
+ * {@code /api/notifications/overdue/check}), não por agendamento interno do Spring.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CombinedScoreSchedulerService {
+public class CombinedScoreOverdueService {
 
   private final ClientRepository clientRepository;
   private final EmailTemplateService emailTemplateService;

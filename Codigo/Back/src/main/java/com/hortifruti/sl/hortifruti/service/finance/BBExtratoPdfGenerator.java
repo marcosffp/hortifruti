@@ -10,12 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -34,15 +29,12 @@ public class BBExtratoPdfGenerator {
   @Value("${company.name}")
   private String companyName;
 
-  private static final float MARGIN = 40;
   private static final float COL_DATA_X = 0;
   private static final float COL_AG_X = 46;
   private static final float COL_LOTE_X = 78;
   private static final float COL_DOC_X = 112;
   private static final float COL_HIST_X = 185;
   private static final float COL_VALOR_WIDTH = 75;
-  private static final PDFont FONT = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
-  private static final PDFont FONT_BOLD = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
 
   public byte[] generate(
       LocalDate dataInicio,
@@ -66,17 +58,11 @@ public class BBExtratoPdfGenerator {
    * Estado de escrita de uma execução (página atual, posição Y) — evita campos de instância
    * mutáveis compartilhados entre chamadas concorrentes ao gerador.
    */
-  private class PageWriter {
-    private final PDDocument document;
+  private class PageWriter extends AbstractPdfPageWriter {
     private final LocalDate dataInicio;
     private final LocalDate dataFim;
     private final String agencia;
     private final String conta;
-    private PDPage page;
-    private PDPageContentStream cs;
-    private float y;
-    private float pageWidth;
-    private float pageHeight;
 
     PageWriter(
         PDDocument document,
@@ -84,7 +70,7 @@ public class BBExtratoPdfGenerator {
         LocalDate dataFim,
         String agencia,
         String conta) {
-      this.document = document;
+      super(document);
       this.dataInicio = dataInicio;
       this.dataFim = dataFim;
       this.agencia = agencia;
@@ -102,23 +88,6 @@ public class BBExtratoPdfGenerator {
       }
 
       cs.close();
-    }
-
-    private void newPage() throws IOException {
-      page = new PDPage(PDRectangle.A4);
-      document.addPage(page);
-      pageWidth = page.getMediaBox().getWidth();
-      pageHeight = page.getMediaBox().getHeight();
-      cs = new PDPageContentStream(document, page);
-      y = pageHeight - MARGIN;
-    }
-
-    private void ensureSpace() throws IOException {
-      if (y < MARGIN + 30) {
-        cs.close();
-        newPage();
-        drawTableHeader();
-      }
     }
 
     private void drawHeader() throws IOException {
@@ -164,7 +133,8 @@ public class BBExtratoPdfGenerator {
       y -= 18;
     }
 
-    private void drawTableHeader() throws IOException {
+    @Override
+    protected void drawTableHeader() throws IOException {
       cs.setNonStrokingColor(0.85f, 0.85f, 0.85f);
       cs.addRect(MARGIN, y - 4, pageWidth - 2 * MARGIN, 16);
       cs.fill();
@@ -227,37 +197,6 @@ public class BBExtratoPdfGenerator {
       }
 
       y -= 12;
-    }
-
-    private void text(PDFont font, float size, float x, float yPos, String value, float[] rgb)
-        throws IOException {
-      if (value == null || value.isEmpty()) {
-        return;
-      }
-      cs.beginText();
-      cs.setFont(font, size);
-      cs.setNonStrokingColor(
-          rgb != null ? rgb[0] : 0f, rgb != null ? rgb[1] : 0f, rgb != null ? rgb[2] : 0f);
-      cs.newLineAtOffset(x, yPos);
-      cs.showText(value);
-      cs.endText();
-    }
-
-    private void textRightAligned(
-        PDFont font, float size, float rightEdge, float yPos, String value) throws IOException {
-      textRightAligned(font, size, rightEdge, yPos, value, null);
-    }
-
-    private void textRightAligned(
-        PDFont font, float size, float rightEdge, float yPos, String value, float[] rgb)
-        throws IOException {
-      float width = font.getStringWidth(value) / 1000 * size;
-      text(font, size, rightEdge - width, yPos, value, rgb);
-    }
-
-    private String truncate(String value, int maxLength) {
-      if (value == null) return "";
-      return value.length() > maxLength ? value.substring(0, maxLength - 3) + "..." : value;
     }
   }
 }

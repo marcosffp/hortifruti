@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.invoice.tax.icms;
 
 import com.hortifruti.sl.hortifruti.dto.invoice.IcmsSalesReport;
+import com.hortifruti.sl.hortifruti.service.invoice.tax.PdfReportSupport;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -33,11 +34,11 @@ public class IcmsPdfGenerator {
     String periodStart = start.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     String periodEnd = end.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
-    float leftMargin = 50;
-    float tableWidth = 500;
-    float cellHeight = 25;
-    float lineHeight = 20;
-    float bottomMargin = 100;
+    float leftMargin = PdfReportSupport.LEFT_MARGIN;
+    float tableWidth = PdfReportSupport.TABLE_WIDTH;
+    float cellHeight = PdfReportSupport.CELL_HEIGHT;
+    float lineHeight = PdfReportSupport.LINE_HEIGHT;
+    float bottomMargin = PdfReportSupport.BOTTOM_MARGIN;
 
     String[] headers = {
       "CFOP", "Valores Cont.", "Base de Cál.", "Imposto Deb.", "Isen ou N/Trib.", "Outras"
@@ -50,24 +51,27 @@ public class IcmsPdfGenerator {
 
       PDPageContentStream contentStream = new PDPageContentStream(document, page);
 
-      float yPosition = 750;
+      float yPosition = PdfReportSupport.START_Y;
 
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
-      addText(contentStream, leftMargin, yPosition, "Registro de Apuração de ICMS");
+      PdfReportSupport.addText(
+          contentStream, leftMargin, yPosition, "Registro de Apuração de ICMS");
       yPosition -= lineHeight * 2;
 
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
 
-      addText(contentStream, leftMargin, yPosition, "FIRMA: " + companyName);
+      PdfReportSupport.addText(contentStream, leftMargin, yPosition, "FIRMA: " + companyName);
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition, "INSCRIÇÃO ESTADUAL: " + stateRegistration);
+      PdfReportSupport.addText(
+          contentStream, leftMargin, yPosition, "INSCRIÇÃO ESTADUAL: " + stateRegistration);
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
+      PdfReportSupport.addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition, "PERÍODO: " + periodStart + " a " + periodEnd);
+      PdfReportSupport.addText(
+          contentStream, leftMargin, yPosition, "PERÍODO: " + periodStart + " a " + periodEnd);
       yPosition -= lineHeight * 2;
 
       contentStream.setLineWidth(1);
@@ -77,10 +81,11 @@ public class IcmsPdfGenerator {
       yPosition -= lineHeight;
 
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 14);
-      addText(contentStream, leftMargin, yPosition, "SAÍDAS");
+      PdfReportSupport.addText(contentStream, leftMargin, yPosition, "SAÍDAS");
       yPosition -= lineHeight;
 
-      drawTableHeader(contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
+      PdfReportSupport.drawTableHeader(
+          contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
       yPosition -= cellHeight;
 
       BigDecimal subtotalOutras = BigDecimal.ZERO;
@@ -96,13 +101,14 @@ public class IcmsPdfGenerator {
 
           contentStream = new PDPageContentStream(document, page);
 
-          yPosition = 750;
+          yPosition = PdfReportSupport.START_Y;
 
-          drawTableHeader(contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
+          PdfReportSupport.drawTableHeader(
+              contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
           yPosition -= cellHeight;
         }
 
-        drawTableRow(
+        PdfReportSupport.drawTableRow(
             contentStream,
             leftMargin,
             yPosition,
@@ -121,7 +127,7 @@ public class IcmsPdfGenerator {
         yPosition -= cellHeight;
       }
 
-      drawTableRow(
+      PdfReportSupport.drawTableRow(
           contentStream,
           leftMargin,
           yPosition,
@@ -133,7 +139,7 @@ public class IcmsPdfGenerator {
 
       yPosition -= cellHeight;
 
-      drawTableRow(
+      PdfReportSupport.drawTableRow(
           contentStream,
           leftMargin,
           yPosition,
@@ -147,51 +153,53 @@ public class IcmsPdfGenerator {
 
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
 
-      addText(contentStream, leftMargin, yPosition, "Legenda:");
+      PdfReportSupport.addText(contentStream, leftMargin, yPosition, "Legenda:");
       yPosition -= lineHeight;
 
-      addText(
+      PdfReportSupport.addText(
           contentStream,
           leftMargin,
           yPosition,
           "CFOP: Código que identifica o tipo de operação fiscal.");
       yPosition -= lineHeight;
 
-      addText(
+      PdfReportSupport.addText(
           contentStream,
           leftMargin,
           yPosition,
           "Valores Contábeis: Valor total registrado da operação.");
       yPosition -= lineHeight;
 
-      addText(
+      PdfReportSupport.addText(
           contentStream,
           leftMargin,
           yPosition,
           "Base de Cálculo: Valor sobre o qual o ICMS é calculado.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition, "Imposto Debitado: Valor do ICMS devido.");
+      PdfReportSupport.addText(
+          contentStream, leftMargin, yPosition, "Imposto Debitado: Valor do ICMS devido.");
       yPosition -= lineHeight;
 
-      addText(
+      PdfReportSupport.addText(
           contentStream,
           leftMargin,
           yPosition,
           "Isentas ou Não Tributadas: Operações sem incidência de ICMS.");
       yPosition -= lineHeight;
 
-      addText(
+      PdfReportSupport.addText(
           contentStream,
           leftMargin,
           yPosition,
           "Outras: Valores que não entram na base de cálculo.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition, "Subtotal: Soma parcial das operações.");
+      PdfReportSupport.addText(
+          contentStream, leftMargin, yPosition, "Subtotal: Soma parcial das operações.");
       yPosition -= lineHeight;
 
-      addText(
+      PdfReportSupport.addText(
           contentStream,
           leftMargin,
           yPosition,
@@ -203,63 +211,6 @@ public class IcmsPdfGenerator {
         document.save(outputStream);
         return outputStream.toByteArray();
       }
-    }
-  }
-
-  private void addText(PDPageContentStream contentStream, float x, float y, String text)
-      throws IOException {
-
-    contentStream.beginText();
-    contentStream.newLineAtOffset(x, y);
-    contentStream.showText(text);
-    contentStream.endText();
-  }
-
-  private void drawTableHeader(
-      PDPageContentStream contentStream,
-      float x,
-      float y,
-      float width,
-      float height,
-      String[] headers)
-      throws IOException {
-
-    float cellWidth = width / headers.length;
-
-    for (int i = 0; i < headers.length; i++) {
-
-      contentStream.addRect(x + (cellWidth * i), y, cellWidth, -height);
-      contentStream.stroke();
-
-      contentStream.beginText();
-      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
-      contentStream.newLineAtOffset(x + (cellWidth * i) + 15, y - height + 10);
-      contentStream.showText(headers[i]);
-      contentStream.endText();
-    }
-  }
-
-  private void drawTableRow(
-      PDPageContentStream contentStream,
-      float x,
-      float y,
-      float width,
-      float height,
-      String[] values)
-      throws IOException {
-
-    float cellWidth = width / values.length;
-
-    for (int i = 0; i < values.length; i++) {
-
-      contentStream.addRect(x + (cellWidth * i), y, cellWidth, -height);
-      contentStream.stroke();
-
-      contentStream.beginText();
-      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
-      contentStream.newLineAtOffset(x + (cellWidth * i) + 15, y - height + 10);
-      contentStream.showText(values[i]);
-      contentStream.endText();
     }
   }
 

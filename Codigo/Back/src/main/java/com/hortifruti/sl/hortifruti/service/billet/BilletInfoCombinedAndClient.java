@@ -15,7 +15,7 @@ public class BilletInfoCombinedAndClient {
   private final CombinedScoreRepository combinedScoreRepository;
   private final ClientRepository clientRepository;
 
-  protected CombinedScore findCombinedScoreById(Long idCombinedScore) {
+  public CombinedScore findCombinedScoreById(Long idCombinedScore) {
     return combinedScoreRepository
         .findById(idCombinedScore)
         .orElseThrow(
@@ -24,7 +24,7 @@ public class BilletInfoCombinedAndClient {
                     "Agrupamento com o ID " + idCombinedScore + " não encontrado."));
   }
 
-  protected Client findClientById(Long clientId) {
+  public Client findClientById(Long clientId) {
     return clientRepository
         .findById(clientId)
         .orElseThrow(() -> new BilletException("Cliente com ID " + clientId + " não encontrado."));

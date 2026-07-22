@@ -26,7 +26,7 @@ public class PurchaseProcessingService {
   private final InvoiceProductRepository invoiceProductRepository;
 
   @Transactional
-  protected Purchase processPurchaseFile(MultipartFile file) throws IOException {
+  public Purchase processPurchaseFile(MultipartFile file) throws IOException {
     try {
       if (file == null || file.isEmpty()) {
         throw new PurchaseException("O arquivo enviado está vazio.");

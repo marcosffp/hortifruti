@@ -39,6 +39,8 @@ public class BBToken {
   @Qualifier("bbRestTemplate")
   private final RestTemplate restTemplate;
 
+  private final ObjectMapper objectMapper;
+
   public synchronized String getAccessToken() {
     if (accessToken != null && System.currentTimeMillis() < tokenExpiresAt - 30_000) {
       return accessToken;
@@ -85,8 +87,7 @@ public class BBToken {
     }
 
     try {
-      ObjectMapper mapper = new ObjectMapper();
-      JsonNode json = mapper.readTree(response.getBody());
+      JsonNode json = objectMapper.readTree(response.getBody());
 
       if (!json.hasNonNull("access_token")) {
         throw new BBApiException("Resposta de token da API do BB sem access_token.");

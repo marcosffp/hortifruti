@@ -33,7 +33,7 @@ public class InvoiceQuery {
   private final int COMPLETE = 1;
 
   @Transactional
-  protected InvoiceResponseGet consultInvoice(String ref) {
+  public InvoiceResponseGet consultInvoice(String ref) {
     try {
       String response = fetchInvoiceData(ref);
       JsonNode rootNode = parseJson(response);
@@ -86,14 +86,14 @@ public class InvoiceQuery {
 
     try {
       if (dataEmissaoStr == null || dataEmissaoStr.trim().isEmpty()) {
-        System.err.println("Data de emissão está vazia, usando data atual como fallback");
+        log.warn("Data de emissão está vazia, usando data atual como fallback");
         dataEmissao = LocalDateTime.now();
       } else {
         dataEmissao = OffsetDateTime.parse(dataEmissaoStr).toLocalDateTime();
       }
     } catch (Exception e) {
-      System.err.println(
-          "Erro ao converter data: " + dataEmissaoStr + " - usando data atual como fallback");
+      log.warn(
+          "Erro ao converter data: {} - usando data atual como fallback", dataEmissaoStr, e);
       dataEmissao = LocalDateTime.now();
     }
 
@@ -211,19 +211,18 @@ public class InvoiceQuery {
 
     try {
       if (dataEmissaoStr == null || dataEmissaoStr.trim().isEmpty()) {
-        System.err.println(
-            "Data de emissão está vazia para ref: " + ref + ", usando data atual como fallback");
+        log.warn(
+            "Data de emissão está vazia para ref: {}, usando data atual como fallback", ref);
         dataEmissao = LocalDateTime.now();
       } else {
         dataEmissao = OffsetDateTime.parse(dataEmissaoStr).toLocalDateTime();
       }
     } catch (Exception e) {
-      System.err.println(
-          "Erro ao converter data para ref: "
-              + ref
-              + " - data: "
-              + dataEmissaoStr
-              + " - usando data atual como fallback");
+      log.warn(
+          "Erro ao converter data para ref: {} - data: {} - usando data atual como fallback",
+          ref,
+          dataEmissaoStr,
+          e);
       dataEmissao = LocalDateTime.now();
     }
 

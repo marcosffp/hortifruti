@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.service;
 
 import com.hortifruti.sl.hortifruti.dto.user.UserRequest;
 import com.hortifruti.sl.hortifruti.dto.user.UserResponse;
+import com.hortifruti.sl.hortifruti.dto.user.UserUpdateRequest;
 import com.hortifruti.sl.hortifruti.dto.user.UsersCountResponse;
 import com.hortifruti.sl.hortifruti.exception.UserException;
 import com.hortifruti.sl.hortifruti.mapper.UserMapper;
@@ -27,7 +28,7 @@ public class UserService {
     return userMapper.toUserResponse(savedUser);
   }
 
-  public UserResponse updateUser(UserRequest userRequest) {
+  public UserResponse updateUser(UserUpdateRequest userRequest) {
     User user = userRepository.findByUsername(userRequest.username());
     if (user == null) {
       throw new UserException("Usuário não encontrado");
@@ -46,7 +47,7 @@ public class UserService {
     return userMapper.toUserResponse(updatedUser);
   }
 
-  public UserResponse updateUserById(Long id, UserRequest userRequest) {
+  public UserResponse updateUserById(Long id, UserUpdateRequest userRequest) {
     User user = userRepository.findById(id).orElse(null);
     if (user == null) {
       throw new UserException("Usuário não encontrado");

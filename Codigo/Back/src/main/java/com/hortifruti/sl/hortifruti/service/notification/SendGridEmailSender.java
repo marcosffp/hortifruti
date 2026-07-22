@@ -113,7 +113,8 @@ public class SendGridEmailSender implements EmailSender {
         mail.addAttachments(logo);
       }
 
-    } catch (IOException ignored) {
+    } catch (IOException e) {
+      log.warn("Não foi possível anexar o logo inline ao email: {}", e.getMessage());
     }
   }
 }

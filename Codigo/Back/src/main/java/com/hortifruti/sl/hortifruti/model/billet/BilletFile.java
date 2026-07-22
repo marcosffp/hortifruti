@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.model.billet;
 
+import com.hortifruti.sl.hortifruti.model.enumeration.FileStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -25,11 +26,6 @@ import lombok.Setter;
 @Builder
 public class BilletFile {
 
-  public enum Status {
-    ACTIVE,
-    CANCELLED
-  }
-
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -42,7 +38,7 @@ public class BilletFile {
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 20)
-  private Status status;
+  private FileStatus status;
 
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
@@ -54,7 +50,7 @@ public class BilletFile {
   protected void onCreate() {
     this.createdAt = LocalDateTime.now();
     if (this.status == null) {
-      this.status = Status.ACTIVE;
+      this.status = FileStatus.ACTIVE;
     }
   }
 }

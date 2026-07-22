@@ -28,6 +28,7 @@ public class BackupController {
       BackupResponse response = backupService.handleBackupRequestWithAuthLink(startDate, endDate);
       return ResponseEntity.ok(response);
     } catch (Exception e) {
+      log.error("Erro ao executar backup para o período {} a {}", startDate, endDate, e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
           .body(new BackupResponse("Erro: " + e.getMessage()));
     }

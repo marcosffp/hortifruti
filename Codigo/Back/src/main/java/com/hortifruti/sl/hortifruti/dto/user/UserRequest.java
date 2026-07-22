@@ -1,5 +1,14 @@
 package com.hortifruti.sl.hortifruti.dto.user;
 
 import com.hortifruti.sl.hortifruti.model.enumeration.Role;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
-public record UserRequest(String username, String password, String position, Role role) {}
+public record UserRequest(
+    @NotBlank(message = "Nome de usuário é obrigatório") String username,
+    @NotBlank(message = "Senha é obrigatória")
+        @Size(min = 4, max = 20, message = "A senha deve ter entre 4 e 20 caracteres")
+        String password,
+    @NotBlank(message = "Cargo é obrigatório") String position,
+    @NotNull(message = "Papel é obrigatório") Role role) {}

@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,6 +23,7 @@ public class PurchaseController {
 
   private final PurchaseService purchaseService;
 
+  @PreAuthorize("hasRole('MANAGER')")
   @PostMapping(value = "/process", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<?> processPurchase(@RequestParam("file") MultipartFile file) {
     try {
@@ -33,6 +35,7 @@ public class PurchaseController {
     }
   }
 
+  @PreAuthorize("hasRole('MANAGER')")
   @DeleteMapping("/{id}")
   public ResponseEntity<?> deletePurchase(@PathVariable Long id) {
     purchaseService.deletePurchaseById(id);

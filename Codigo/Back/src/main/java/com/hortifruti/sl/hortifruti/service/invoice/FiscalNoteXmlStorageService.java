@@ -5,12 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.config.FocusNfeApiClient;
 import com.hortifruti.sl.hortifruti.dto.invoice.FiscalNoteXmlStorageResponse;
 import com.hortifruti.sl.hortifruti.exception.InvoiceException;
+import com.hortifruti.sl.hortifruti.model.enumeration.FileStatus;
 import com.hortifruti.sl.hortifruti.model.invoice.FiscalNoteXmlStorage;
-import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.invoice.FiscalNoteXmlStorageRepository;
-import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
-import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
+import com.hortifruti.sl.hortifruti.service.purchase.ClientService;
+import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import com.hortifruti.sl.hortifruti.service.storage.R2StorageService;
 import com.hortifruti.sl.hortifruti.service.storage.StorageKeyGenerator;
 import jakarta.transaction.Transactional;
@@ -37,8 +37,8 @@ public class FiscalNoteXmlStorageService {
   private final FiscalNoteXmlStorageRepository repository;
   private final FocusNfeApiClient focusNfeApiClient;
   private final WebClient webClient;
-  private final CombinedScoreRepository combinedScoreRepository;
-  private final ClientRepository clientRepository;
+  private final CombinedScoreService combinedScoreService;
+  private final ClientService clientService;
   private final ObjectMapper objectMapper;
   private final R2StorageService r2StorageService;
 
@@ -242,7 +242,7 @@ public class FiscalNoteXmlStorageService {
       r2StorageService.moveToCancelled(storage.getObjectKey(), destinationKey);
 
       storage.setObjectKey(destinationKey);
-      storage.setStatus(FiscalNoteXmlStorage.Status.CANCELLED);
+      storage.setStatus(FileStatus.CANCELLED);
       storage.setCancelledAt(LocalDateTime.now());
       repository.save(storage);
     } catch (Exception e) {
@@ -342,11 +342,10 @@ public class FiscalNoteXmlStorageService {
 
   private String resolveClientName(String ref) {
     try {
-      return combinedScoreRepository
+      return combinedScoreService
           .findByInvoiceRef(ref)
           .map(CombinedScore::getClientId)
-          .flatMap(clientRepository::findById)
-          .map(Client::getClientName)
+          .flatMap(clientService::findClientName)
           .orElse("Cliente não identificado");
     } catch (Exception e) {
       return "Cliente não identificado";

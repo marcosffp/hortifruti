@@ -5,6 +5,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 @Component
+@RequiredArgsConstructor
 public class FocusNfeApiClient {
 
   @Value("${focus.nfe.token}")
@@ -22,9 +25,10 @@ public class FocusNfeApiClient {
   @Value("${focus.nfe.api.url}")
   private String focusNfeApiUrl;
 
-  private final String URL_BASE_POST = "/v2/nfe?ref=";
+  private static final String URL_BASE_POST = "/v2/nfe?ref=";
 
-  private final RestTemplate restTemplate = new RestTemplate();
+  @Qualifier("genericRestTemplate")
+  private final RestTemplate restTemplate;
 
   public String sendRequest(String ref, String payload) {
     try {

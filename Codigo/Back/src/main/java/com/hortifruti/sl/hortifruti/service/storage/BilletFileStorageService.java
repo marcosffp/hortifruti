@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.service.storage;
 
 import com.hortifruti.sl.hortifruti.exception.StorageException;
 import com.hortifruti.sl.hortifruti.model.billet.BilletFile;
+import com.hortifruti.sl.hortifruti.model.enumeration.FileStatus;
 import com.hortifruti.sl.hortifruti.repository.billet.BilletFileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +32,7 @@ public class BilletFileStorageService {
   public BilletFile saveBilletFile(Long combinedScoreId, byte[] pdfBytes) {
     var existing =
         billetFileRepository.findByCombinedScoreIdAndStatus(
-            combinedScoreId, BilletFile.Status.ACTIVE);
+            combinedScoreId, FileStatus.ACTIVE);
     if (existing.isPresent()) {
       log.info(
           "[BilletFileStorage] combinedScoreId={} já possui arquivo ativo (key={}),"
@@ -58,7 +59,7 @@ public class BilletFileStorageService {
   public byte[] getBilletFileContent(Long combinedScoreId) {
     BilletFile billetFile =
         billetFileRepository
-            .findByCombinedScoreIdAndStatus(combinedScoreId, BilletFile.Status.ACTIVE)
+            .findByCombinedScoreIdAndStatus(combinedScoreId, FileStatus.ACTIVE)
             .orElseThrow(
                 () ->
                     new StorageException(
@@ -91,7 +92,7 @@ public class BilletFileStorageService {
     try {
       var activeFile =
           billetFileRepository.findByCombinedScoreIdAndStatus(
-              combinedScoreId, BilletFile.Status.ACTIVE);
+              combinedScoreId, FileStatus.ACTIVE);
       if (activeFile.isEmpty()) {
         log.warn(
             "[BilletFileStorage] Cancelamento confirmado para combinedScoreId={}, mas nenhum"
@@ -106,7 +107,7 @@ public class BilletFileStorageService {
       r2StorageService.moveToCancelled(billetFile.getObjectKey(), destinationKey);
 
       billetFile.setObjectKey(destinationKey);
-      billetFile.setStatus(BilletFile.Status.CANCELLED);
+      billetFile.setStatus(FileStatus.CANCELLED);
       billetFile.setCancelledAt(java.time.LocalDateTime.now());
       billetFileRepository.save(billetFile);
     } catch (Exception e) {

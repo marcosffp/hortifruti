@@ -35,7 +35,7 @@ public class BilletIssue {
    * @return Resposta HTTP contendo o PDF do boleto emitido
    * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
-  protected ResponseEntity<Map<String, Object>> issueBillet(BilletRequestSimplified boleto)
+  public ResponseEntity<Map<String, Object>> issueBillet(BilletRequestSimplified boleto)
       throws IOException {
     try {
       JsonNode boletoJson = createBilletJson(boleto);
@@ -61,7 +61,7 @@ public class BilletIssue {
    * @return Resposta da API contendo o PDF do boleto emitido
    * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
-  protected ResponseEntity<byte[]> issueCopy(Long idCombinedScore) throws IOException {
+  public ResponseEntity<byte[]> issueCopy(Long idCombinedScore) throws IOException {
     CombinedScore combinedScore =
         billetInfoCombinedAndClient.findCombinedScoreById(idCombinedScore);
     billetValidation.validateHasBillet(combinedScore);

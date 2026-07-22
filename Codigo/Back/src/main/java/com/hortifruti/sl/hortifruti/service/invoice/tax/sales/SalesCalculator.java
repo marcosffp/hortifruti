@@ -2,18 +2,19 @@ package com.hortifruti.sl.hortifruti.service.invoice.tax.sales;
 
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceTaxDetails;
 import com.hortifruti.sl.hortifruti.dto.invoice.SalesSummaryDetails;
-import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
-import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.service.invoice.InvoiceQuery;
+import com.hortifruti.sl.hortifruti.service.purchase.ClientService;
 import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class SalesCalculator {
@@ -21,7 +22,7 @@ public class SalesCalculator {
 
   private final InvoiceQuery invoiceQuery;
   private final CombinedScoreService combinedScoreService;
-  private final ClientRepository clientRepository;
+  private final ClientService clientService;
 
   public List<SalesSummaryDetails> generateSalesSummaryDetails(
       LocalDate startDate, LocalDate endDate) {
@@ -52,10 +53,7 @@ public class SalesCalculator {
     if (clientId == null) {
       return CLIENTE_INDEFINIDO;
     }
-    return clientRepository
-        .findById(clientId)
-        .map(Client::getClientName)
-        .orElse(CLIENTE_INDEFINIDO);
+    return clientService.findClientName(clientId).orElse(CLIENTE_INDEFINIDO);
   }
 
   private SalesSummaryDetails createSalesSummaryDetails(
@@ -73,7 +71,6 @@ public class SalesCalculator {
   }
 
   private void logProcessingError(CombinedScore combinedScore, Exception e) {
-    System.err.println("Erro ao processar CombinedScore ID: " + combinedScore.getId());
-    e.printStackTrace();
+    log.error("Erro ao processar CombinedScore ID: {}", combinedScore.getId(), e);
   }
 }

@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.invoice.tax.registerReport;
 
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceSummaryDetails;
+import com.hortifruti.sl.hortifruti.service.invoice.tax.PdfReportSupport;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -31,11 +32,11 @@ public class RegisterPdfGenerator {
     String periodStart = startDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     String periodEnd = endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
-    float leftMargin = 50;
-    float tableWidth = 500;
-    float cellHeight = 25;
-    float lineHeight = 20;
-    float bottomMargin = 100;
+    float leftMargin = PdfReportSupport.LEFT_MARGIN;
+    float tableWidth = PdfReportSupport.TABLE_WIDTH;
+    float cellHeight = PdfReportSupport.CELL_HEIGHT;
+    float lineHeight = PdfReportSupport.LINE_HEIGHT;
+    float bottomMargin = PdfReportSupport.BOTTOM_MARGIN;
 
     String[] headers = {"Espécie", "Série", "Dia", "UF", "Valor", "Cod. Fiscal", "Aliq.", "Outras"};
 
@@ -46,21 +47,22 @@ public class RegisterPdfGenerator {
 
       PDPageContentStream contentStream = new PDPageContentStream(document, page);
 
-      float yPosition = 750;
+      float yPosition = PdfReportSupport.START_Y;
 
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
-      addText(
+      PdfReportSupport.addText(
           contentStream, leftMargin, yPosition, "Livro de Registro de Saídas - RE - Modelo P 2/A");
       yPosition -= lineHeight * 2;
 
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 12);
-      addText(contentStream, leftMargin, yPosition, "FIRMA: " + companyName);
+      PdfReportSupport.addText(contentStream, leftMargin, yPosition, "FIRMA: " + companyName);
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
+      PdfReportSupport.addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition, "PERÍODO: " + periodStart + " a " + periodEnd);
+      PdfReportSupport.addText(
+          contentStream, leftMargin, yPosition, "PERÍODO: " + periodStart + " a " + periodEnd);
       yPosition -= lineHeight * 2;
 
       contentStream.setLineWidth(1);
@@ -69,7 +71,8 @@ public class RegisterPdfGenerator {
       contentStream.stroke();
       yPosition -= lineHeight;
 
-      drawTableHeader(contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
+      PdfReportSupport.drawTableHeader(
+          contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
       yPosition -= cellHeight;
 
       for (InvoiceSummaryDetails summary : invoiceSummaries) {
@@ -83,13 +86,14 @@ public class RegisterPdfGenerator {
 
           contentStream = new PDPageContentStream(document, page);
 
-          yPosition = 750;
+          yPosition = PdfReportSupport.START_Y;
 
-          drawTableHeader(contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
+          PdfReportSupport.drawTableHeader(
+              contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
           yPosition -= cellHeight;
         }
 
-        drawTableRow(
+        PdfReportSupport.drawTableRow(
             contentStream,
             leftMargin,
             yPosition,
@@ -113,43 +117,47 @@ public class RegisterPdfGenerator {
 
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
 
-      addText(contentStream, leftMargin, yPosition, "Legenda:");
+      PdfReportSupport.addText(contentStream, leftMargin, yPosition, "Legenda:");
       yPosition -= lineHeight;
 
-      addText(
+      PdfReportSupport.addText(
           contentStream,
           leftMargin,
           yPosition,
           "Espécie: Tipo do documento fiscal emitido (ex.: NF-e, NFC-e, CF-e, etc.).");
       yPosition -= lineHeight;
 
-      addText(
+      PdfReportSupport.addText(
           contentStream,
           leftMargin,
           yPosition,
           "Série: Código que identifica a série da nota fiscal.");
       yPosition -= lineHeight;
 
-      addText(
+      PdfReportSupport.addText(
           contentStream, leftMargin, yPosition, "Número: Número sequencial do documento fiscal.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition, "Dia: Data de emissão do documento.");
+      PdfReportSupport.addText(
+          contentStream, leftMargin, yPosition, "Dia: Data de emissão do documento.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition, "UF: Unidade Federativa de destino.");
+      PdfReportSupport.addText(
+          contentStream, leftMargin, yPosition, "UF: Unidade Federativa de destino.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition, "Valor: Valor total do documento fiscal.");
+      PdfReportSupport.addText(
+          contentStream, leftMargin, yPosition, "Valor: Valor total do documento fiscal.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition, "Cod. Fiscal: Código CFOP da operação.");
+      PdfReportSupport.addText(
+          contentStream, leftMargin, yPosition, "Cod. Fiscal: Código CFOP da operação.");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition, "Aliq.: Alíquota do imposto.");
+      PdfReportSupport.addText(contentStream, leftMargin, yPosition, "Aliq.: Alíquota do imposto.");
       yPosition -= lineHeight;
 
-      addText(
+      PdfReportSupport.addText(
           contentStream,
           leftMargin,
           yPosition,
@@ -164,66 +172,7 @@ public class RegisterPdfGenerator {
     }
   }
 
-  private void addText(PDPageContentStream contentStream, float x, float y, String text)
-      throws IOException {
-
-    contentStream.beginText();
-    contentStream.newLineAtOffset(x, y);
-    contentStream.showText(text);
-    contentStream.endText();
-  }
-
-  private void drawTableHeader(
-      PDPageContentStream contentStream,
-      float x,
-      float y,
-      float width,
-      float height,
-      String[] headers)
-      throws IOException {
-
-    float cellWidth = width / headers.length;
-
-    for (int i = 0; i < headers.length; i++) {
-
-      contentStream.addRect(x + (cellWidth * i), y, cellWidth, -height);
-      contentStream.stroke();
-
-      contentStream.beginText();
-      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
-      contentStream.newLineAtOffset(x + (cellWidth * i) + 15, y - height + 10);
-      contentStream.showText(headers[i]);
-      contentStream.endText();
-    }
-  }
-
-  private void drawTableRow(
-      PDPageContentStream contentStream,
-      float x,
-      float y,
-      float width,
-      float height,
-      String[] values)
-      throws IOException {
-
-    float cellWidth = width / values.length;
-
-    for (int i = 0; i < values.length; i++) {
-
-      contentStream.addRect(x + (cellWidth * i), y, cellWidth, -height);
-      contentStream.stroke();
-
-      contentStream.beginText();
-      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
-      contentStream.newLineAtOffset(x + (cellWidth * i) + 15, y - height + 10);
-      contentStream.showText(values[i]);
-      contentStream.endText();
-    }
-  }
-
   private String formatValue(BigDecimal value) {
-    return value == null
-        ? "0,00"
-        : value.setScale(2, java.math.RoundingMode.HALF_UP).toString().replace(".", ",");
+    return PdfReportSupport.formatValueComma(value);
   }
 }

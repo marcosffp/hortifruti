@@ -1,11 +1,11 @@
 package com.hortifruti.sl.hortifruti.service.purchase;
 
+import com.hortifruti.sl.hortifruti.dto.invoice.OpenInvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.WildcardBilletRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientLastGroupingResponse;
-import com.hortifruti.sl.hortifruti.dto.invoice.OpenInvoiceResponse;
 import com.hortifruti.sl.hortifruti.exception.ClientException;
 import com.hortifruti.sl.hortifruti.exception.CombinedScoreException;
 import com.hortifruti.sl.hortifruti.exception.PurchaseException;
@@ -26,6 +26,7 @@ import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -337,6 +338,60 @@ public class CombinedScoreService {
    * exibido é sempre a data de emissão da NF acrescida de {@value #INVOICE_ONLY_DUE_DAYS} dias,
    * independentemente do dueDate calculado na criação do agrupamento.
    */
+  public List<CombinedScore> findAllPendingWithBilletByClient(Long clientId) {
+    return combinedScoreRepository.findAllPendingWithBilletByClient(clientId);
+  }
+
+  public List<CombinedScore> findAllPendingByClient(Long clientId) {
+    return combinedScoreRepository.findAllPendingByClient(clientId);
+  }
+
+  public List<CombinedScore> findAllOpenBillets() {
+    return combinedScoreRepository.findAllOpenBillets();
+  }
+
+  public List<CombinedScore> findOverdueUnpaidScores(LocalDate currentDate) {
+    return combinedScoreRepository.findOverdueUnpaidScores(currentDate);
+  }
+
+  public Optional<CombinedScore> findByInvoiceRef(String invoiceRef) {
+    return combinedScoreRepository.findByInvoiceRef(invoiceRef);
+  }
+
+  /** Agrupamentos com nota fiscal emitida, usado para localizar a ref pelo número da NF. */
+  public List<CombinedScore> findAllWithInvoiceRef() {
+    return combinedScoreRepository.findAll().stream()
+        .filter(cs -> cs.isHasInvoice() && cs.getInvoiceRef() != null && !cs.getInvoiceRef().isEmpty())
+        .toList();
+  }
+
+  public CombinedScore findById(Long id) {
+    return combinedScoreRepository
+        .findById(id)
+        .orElseThrow(
+            () -> new CombinedScoreException("Agrupamento com o ID " + id + " não encontrado."));
+  }
+
+  /**
+   * Atualiza o status de um agrupamento. Ponto único de escrita de status usado por outros
+   * domínios (ex: billet) para não precisarem acessar {@link CombinedScoreRepository} diretamente.
+   */
+  @Transactional
+  public CombinedScore updateStatus(Long id, Status status) {
+    CombinedScore combinedScore =
+        combinedScoreRepository
+            .findById(id)
+            .orElseThrow(
+                () -> new CombinedScoreException("Agrupamento com o ID " + id + " não encontrado."));
+    combinedScore.setStatus(status);
+    return combinedScoreRepository.save(combinedScore);
+  }
+
+  @Transactional
+  public CombinedScore save(CombinedScore combinedScore) {
+    return combinedScoreRepository.save(combinedScore);
+  }
+
   @Transactional(readOnly = true)
   public List<OpenInvoiceResponse> listOpenInvoiceOnlyScores() {
     List<CombinedScore> scores = combinedScoreRepository.findAllOpenInvoiceOnly();

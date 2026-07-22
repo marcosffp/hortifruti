@@ -209,21 +209,10 @@ public class DashboardService {
   public Map<String, Object> getCombinedScoreData(LocalDate startDate, LocalDate endDate) {
     Map<String, Object> combinedScoreData = new HashMap<>();
 
-    List<CombinedScore> combinedScores =
-        combinedScoreRepository.findAllByOrderByIdDesc(Pageable.unpaged()).stream()
-            .filter(
-                cs -> {
-                  if (cs.getConfirmedAt() == null) {
-                    return false;
-                  }
-                  LocalDate confirmedDate = cs.getConfirmedAt();
-                  return !confirmedDate.isBefore(startDate) && !confirmedDate.isAfter(endDate);
-                })
-            .collect(Collectors.toList());
+    List<CombinedScore> combinedScores = findCombinedScoresConfirmedBetween(startDate, endDate);
 
     Map<Integer, BigDecimal> weeklyScores =
         combinedScores.stream()
-            .filter(cs -> cs.getConfirmedAt() != null)
             .collect(
                 Collectors.groupingBy(
                     cs -> cs.getConfirmedAt().get(ChronoField.ALIGNED_WEEK_OF_YEAR),
@@ -243,17 +232,7 @@ public class DashboardService {
    * CONFIRMAÇÃO (confirmedAt) ao invés de vencimento (dueDate).
    */
   public List<Map<String, Object>> getTopSellingProducts(LocalDate startDate, LocalDate endDate) {
-    List<CombinedScore> combinedScores =
-        combinedScoreRepository.findAllByOrderByIdDesc(Pageable.unpaged()).stream()
-            .filter(
-                cs -> {
-                  if (cs.getConfirmedAt() == null) {
-                    return false;
-                  }
-                  LocalDate confirmedDate = cs.getConfirmedAt();
-                  return !confirmedDate.isBefore(startDate) && !confirmedDate.isAfter(endDate);
-                })
-            .collect(Collectors.toList());
+    List<CombinedScore> combinedScores = findCombinedScoresConfirmedBetween(startDate, endDate);
 
     List<GroupedProduct> groupedProducts =
         combinedScores.stream()
@@ -304,17 +283,7 @@ public class DashboardService {
    */
   public List<Map<String, Object>> getTopProductsByQuantity(
       LocalDate startDate, LocalDate endDate) {
-    List<CombinedScore> combinedScores =
-        combinedScoreRepository.findAllByOrderByIdDesc(Pageable.unpaged()).stream()
-            .filter(
-                cs -> {
-                  if (cs.getConfirmedAt() == null) {
-                    return false;
-                  }
-                  LocalDate confirmedDate = cs.getConfirmedAt();
-                  return !confirmedDate.isBefore(startDate) && !confirmedDate.isAfter(endDate);
-                })
-            .collect(Collectors.toList());
+    List<CombinedScore> combinedScores = findCombinedScoresConfirmedBetween(startDate, endDate);
 
     List<GroupedProduct> groupedProducts =
         combinedScores.stream()
@@ -346,5 +315,21 @@ public class DashboardService {
                 .compareTo((BigDecimal) p1.get("QuantidadeTotal")));
 
     return ranking.stream().limit(10).collect(Collectors.toList());
+  }
+
+  /**
+   * Busca todos os {@link CombinedScore} cuja data de CONFIRMAÇÃO (confirmedAt) está dentro de
+   * {@code [startDate, endDate]}. Filtro compartilhado por todas as consultas de fluxo de vendas
+   * do dashboard baseadas em confirmação (em vez de vencimento/dueDate).
+   */
+  private List<CombinedScore> findCombinedScoresConfirmedBetween(
+      LocalDate startDate, LocalDate endDate) {
+    return combinedScoreRepository.findAllByOrderByIdDesc(Pageable.unpaged()).stream()
+        .filter(
+            cs ->
+                cs.getConfirmedAt() != null
+                    && !cs.getConfirmedAt().isBefore(startDate)
+                    && !cs.getConfirmedAt().isAfter(endDate))
+        .collect(Collectors.toList());
   }
 }

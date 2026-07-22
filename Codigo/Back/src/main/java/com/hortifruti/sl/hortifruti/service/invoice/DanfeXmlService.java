@@ -8,6 +8,7 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class DanfeXmlService {
@@ -168,7 +170,7 @@ public class DanfeXmlService {
   }
 
   @Transactional
-  protected ResponseEntity<Resource> downloadDanfe(String ref) {
+  public ResponseEntity<Resource> downloadDanfe(String ref) {
     byte[] storedDanfe = fiscalNoteXmlStorageService.getDanfeContent(ref);
     if (storedDanfe != null && storedDanfe.length > 0) {
       return buildFileResponse(storedDanfe, ref, MediaType.APPLICATION_PDF, "danfe");
@@ -182,17 +184,13 @@ public class DanfeXmlService {
         fiscalNoteXmlStorageService.saveDanfeIfAbsent(ref, danfeBytes);
       }
     } catch (Exception e) {
-      System.err.println(
-          "[DanfeXmlService] Falha ao salvar DANFE no banco para ref="
-              + ref
-              + ": "
-              + e.getMessage());
+      log.error("Falha ao salvar DANFE no banco para ref={}", ref, e);
     }
     return result;
   }
 
   @Transactional
-  protected ResponseEntity<Resource> downloadXml(String ref) {
+  public ResponseEntity<Resource> downloadXml(String ref) {
     ResponseEntity<Resource> result =
         downloadWithRetry(ref, "xml", MediaType.APPLICATION_XML, "nota-fiscal", 0);
     try {
@@ -201,8 +199,7 @@ public class DanfeXmlService {
         fiscalNoteXmlStorageService.saveIfAbsent(ref, xmlBytes);
       }
     } catch (Exception e) {
-      System.err.println(
-          "[DanfeXmlService] Falha ao salvar XML no banco para ref=" + ref + ": " + e.getMessage());
+      log.error("Falha ao salvar XML no banco para ref={}", ref, e);
     }
     return result;
   }
@@ -215,8 +212,7 @@ public class DanfeXmlService {
               try {
                 return getXmlPath(ref);
               } catch (InvoiceException e) {
-                System.err.println("Erro ao buscar caminho XML para referência: " + ref);
-                e.printStackTrace();
+                log.error("Erro ao buscar caminho XML para referência: {}", ref, e);
                 return null;
               }
             })

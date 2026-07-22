@@ -78,21 +78,4 @@ public class TokenConfiguration {
   public long getExpirationSeconds() {
     return minutosExpiracao * 60;
   }
-
-  public Role getRoleFromToken(String token) {
-    try {
-      String roleString =
-          JWT.require(algoritmo)
-              .withIssuer("auth")
-              .build()
-              .verify(token)
-              .getClaim("role")
-              .asString();
-      return Role.fromString(roleString);
-    } catch (Exception e) {
-      throw new TokenException(
-          "Não foi possível extrair o papel do usuário do token. Por favor, forneça um token válido.",
-          e);
-    }
-  }
 }

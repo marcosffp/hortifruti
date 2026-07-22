@@ -4,12 +4,12 @@ import com.hortifruti.sl.hortifruti.dto.user.AuthRequest;
 import com.hortifruti.sl.hortifruti.exception.AuthException;
 import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class Auth {
 
   private final UserRepository userRepository;

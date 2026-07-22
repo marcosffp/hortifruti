@@ -377,7 +377,7 @@ public class UserInitializer implements CommandLineRunner {
     if (freightConfigRepository.count() == 0) {
       FreightConfig defaultConfig = createDefaultFreightConfig();
       freightConfigRepository.save(defaultConfig);
-      System.out.println("Configuração de frete padrão criada com sucesso!");
+      log.info("Configuração de frete padrão criada com sucesso!");
     }
   }
 

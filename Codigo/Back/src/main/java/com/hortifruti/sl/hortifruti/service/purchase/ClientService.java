@@ -15,6 +15,7 @@ import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -158,5 +159,24 @@ public class ClientService {
     return clientRepository.findAll().stream()
         .map(client -> new ClientSelectionInfo(client.getId(), client.getClientName()))
         .toList();
+  }
+
+  public Map<Long, String> getClientNamesByIds(List<Long> ids) {
+    return clientRepository.findAllById(ids).stream()
+        .collect(Collectors.toMap(Client::getId, Client::getClientName));
+  }
+
+  public Optional<String> findClientName(Long id) {
+    return clientRepository.findById(id).map(Client::getClientName);
+  }
+
+  public Client findById(Long id) {
+    return clientRepository
+        .findById(id)
+        .orElseThrow(() -> new ClientException("Cliente não encontrado"));
+  }
+
+  public Optional<Client> findByDocument(String document) {
+    return clientRepository.findByDocument(document);
   }
 }

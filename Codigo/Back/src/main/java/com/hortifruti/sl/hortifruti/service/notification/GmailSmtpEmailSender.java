@@ -146,7 +146,8 @@ public class GmailSmtpEmailSender implements EmailSender {
       if (logoResource.exists()) {
         helper.addInline("logo", logoResource);
       }
-    } catch (MessagingException ignored) {
+    } catch (MessagingException e) {
+      log.warn("Não foi possível anexar o logo inline ao email: {}", e.getMessage());
     }
   }
 }

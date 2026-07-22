@@ -36,149 +36,75 @@ public class BilletHttpClient {
 
   private final ObjectMapper objectMapper;
 
+  @FunctionalInterface
+  private interface RequestCall<T> {
+    T get() throws IOException;
+  }
+
   public JsonNode get(String endpoint) throws IOException {
-    long startedAt = System.currentTimeMillis();
-    try {
-      return processResponse(doGet(endpoint));
-    } catch (HttpClientErrorException.Unauthorized ex) {
-      sicoobToken.invalidateToken();
-      long retryStartedAt = System.currentTimeMillis();
-      try {
-        return processResponse(doGet(endpoint));
-      } catch (HttpClientErrorException | HttpServerErrorException retryEx) {
-        logHttpFailure("GET " + endpoint + " (retry)", retryEx, retryStartedAt);
-        throw new BilletException("Erro GET após renovação de token.", retryEx);
-      } catch (Exception retryEx) {
-        throw new BilletException("Erro inesperado GET após renovação de token.", retryEx);
-      }
-    } catch (HttpClientErrorException | HttpServerErrorException ex) {
-      logHttpFailure("GET " + endpoint, ex, startedAt);
-      throw new BilletException("Erro ao realizar requisição GET ao Sicoob.", ex);
-    } catch (Exception ex) {
-      throw new BilletException("Erro inesperado ao realizar requisição GET.", ex);
-    }
+    return executeWithRetry("GET", "GET", endpoint, () -> processResponse(doGet(endpoint)));
   }
 
   public JsonNode post(String endpoint, Object body) throws IOException {
-    long startedAt = System.currentTimeMillis();
-    try {
-      return processResponse(doPost(endpoint, body));
-    } catch (HttpClientErrorException.Unauthorized ex) {
-      sicoobToken.invalidateToken();
-      long retryStartedAt = System.currentTimeMillis();
-      try {
-        return processResponse(doPost(endpoint, body));
-      } catch (HttpClientErrorException | HttpServerErrorException retryEx) {
-        logHttpFailure("POST " + endpoint + " (retry)", retryEx, retryStartedAt);
-        throw new BilletException("Erro POST após renovação de token.", retryEx);
-      } catch (Exception retryEx) {
-        throw new BilletException("Erro inesperado POST após renovação de token.", retryEx);
-      }
-    } catch (HttpClientErrorException | HttpServerErrorException ex) {
-      logHttpFailure("POST " + endpoint, ex, startedAt);
-      throw new BilletException("Erro ao realizar requisição POST ao Sicoob.", ex);
-    } catch (Exception ex) {
-      throw new BilletException("Erro inesperado ao realizar requisição POST.", ex);
-    }
+    return executeWithRetry(
+        "POST", "POST", endpoint, () -> processResponse(doPost(endpoint, body)));
   }
 
   public JsonNode postCancel(String endpoint, Object body) throws IOException {
-    long startedAt = System.currentTimeMillis();
-    try {
-      ResponseEntity<String> response = doPost(endpoint, body);
-      if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
-        return null;
-      }
-      return processResponse(response);
-    } catch (HttpClientErrorException.Unauthorized ex) {
-      sicoobToken.invalidateToken();
-      long retryStartedAt = System.currentTimeMillis();
-      try {
-        ResponseEntity<String> response = doPost(endpoint, body);
-        if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
-          return null;
-        }
-        return processResponse(response);
-      } catch (HttpClientErrorException | HttpServerErrorException retryEx) {
-        logHttpFailure("POST-cancel " + endpoint + " (retry)", retryEx, retryStartedAt);
-        throw new BilletException("Erro POST-cancel após renovação de token.", retryEx);
-      } catch (Exception retryEx) {
-        throw new BilletException("Erro inesperado POST-cancel após renovação de token.", retryEx);
-      }
-    } catch (HttpClientErrorException | HttpServerErrorException ex) {
-      logHttpFailure("POST-cancel " + endpoint, ex, startedAt);
-      throw new BilletException("Erro ao realizar requisição POST ao Sicoob.", ex);
-    } catch (Exception ex) {
-      throw new BilletException("Erro inesperado ao realizar requisição POST.", ex);
-    }
+    return executeWithRetry(
+        "POST-cancel",
+        "POST",
+        endpoint,
+        () -> {
+          ResponseEntity<String> response = doPost(endpoint, body);
+          if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
+            return null;
+          }
+          return processResponse(response);
+        });
   }
 
   public ResponseEntity<String> put(String endpoint, Object body) throws IOException {
-    long startedAt = System.currentTimeMillis();
-    try {
-      return doPut(endpoint, body);
-    } catch (HttpClientErrorException.Unauthorized ex) {
-      sicoobToken.invalidateToken();
-      long retryStartedAt = System.currentTimeMillis();
-      try {
-        return doPut(endpoint, body);
-      } catch (HttpClientErrorException | HttpServerErrorException retryEx) {
-        logHttpFailure("PUT " + endpoint + " (retry)", retryEx, retryStartedAt);
-        throw new BilletException("Erro PUT após renovação de token.", retryEx);
-      } catch (Exception retryEx) {
-        throw new BilletException("Erro inesperado PUT após renovação de token.", retryEx);
-      }
-    } catch (HttpClientErrorException | HttpServerErrorException ex) {
-      logHttpFailure("PUT " + endpoint, ex, startedAt);
-      throw new BilletException("Erro ao realizar requisição PUT ao Sicoob.", ex);
-    } catch (Exception ex) {
-      throw new BilletException("Erro inesperado ao realizar requisição PUT.", ex);
-    }
+    return executeWithRetry("PUT", "PUT", endpoint, () -> doPut(endpoint, body));
   }
 
   public ResponseEntity<String> delete(String endpoint) throws IOException {
-    long startedAt = System.currentTimeMillis();
-    try {
-      return doDelete(endpoint);
-    } catch (HttpClientErrorException.Unauthorized ex) {
-      sicoobToken.invalidateToken();
-      long retryStartedAt = System.currentTimeMillis();
-      try {
-        return doDelete(endpoint);
-      } catch (HttpClientErrorException | HttpServerErrorException retryEx) {
-        logHttpFailure("DELETE " + endpoint + " (retry)", retryEx, retryStartedAt);
-        throw new BilletException("Erro DELETE após renovação de token.", retryEx);
-      } catch (Exception retryEx) {
-        throw new BilletException("Erro inesperado DELETE após renovação de token.", retryEx);
-      }
-    } catch (HttpClientErrorException | HttpServerErrorException ex) {
-      logHttpFailure("DELETE " + endpoint, ex, startedAt);
-      throw new BilletException("Erro ao realizar requisição DELETE ao Sicoob.", ex);
-    } catch (Exception ex) {
-      throw new BilletException("Erro inesperado ao realizar requisição DELETE.", ex);
-    }
+    return executeWithRetry("DELETE", "DELETE", endpoint, () -> doDelete(endpoint));
   }
 
   public ResponseEntity<JsonNode> getWithResponse(String endpoint) throws IOException {
+    return executeWithRetry(
+        "GET", "GET", endpoint, () -> toJsonResponse(doGet(endpoint)));
+  }
+
+  /**
+   * Executa {@code call}, e caso a resposta seja 401, invalida o token e tenta uma única vez de
+   * novo antes de embrulhar a falha em {@link BilletException}. {@code label} identifica a
+   * operação nos logs/mensagens de retry (ex.: "POST-cancel"); {@code verb} é o termo usado nas
+   * mensagens de falha na primeira tentativa (ex.: "POST", mesmo para {@code postCancel}).
+   */
+  private <T> T executeWithRetry(String label, String verb, String endpoint, RequestCall<T> call)
+      throws IOException {
     long startedAt = System.currentTimeMillis();
     try {
-      return toJsonResponse(doGet(endpoint));
+      return call.get();
     } catch (HttpClientErrorException.Unauthorized ex) {
       sicoobToken.invalidateToken();
       long retryStartedAt = System.currentTimeMillis();
       try {
-        return toJsonResponse(doGet(endpoint));
+        return call.get();
       } catch (HttpClientErrorException | HttpServerErrorException retryEx) {
-        logHttpFailure("GET " + endpoint + " (retry)", retryEx, retryStartedAt);
-        throw new BilletException("Erro GET após renovação de token.", retryEx);
+        logHttpFailure(label + " " + endpoint + " (retry)", retryEx, retryStartedAt);
+        throw new BilletException("Erro " + label + " após renovação de token.", retryEx);
       } catch (Exception retryEx) {
-        throw new BilletException("Erro inesperado GET após renovação de token.", retryEx);
+        throw new BilletException(
+            "Erro inesperado " + label + " após renovação de token.", retryEx);
       }
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
-      logHttpFailure("GET " + endpoint, ex, startedAt);
-      throw new BilletException("Erro ao realizar requisição GET ao Sicoob.", ex);
+      logHttpFailure(label + " " + endpoint, ex, startedAt);
+      throw new BilletException("Erro ao realizar requisição " + verb + " ao Sicoob.", ex);
     } catch (Exception ex) {
-      throw new BilletException("Erro inesperado ao realizar requisição GET.", ex);
+      throw new BilletException("Erro inesperado ao realizar requisição " + verb + ".", ex);
     }
   }
 

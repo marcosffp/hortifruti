@@ -39,6 +39,8 @@ public class SicoobToken {
   @Qualifier("billetRestTemplate")
   private final RestTemplate restTemplate;
 
+  private final ObjectMapper objectMapper;
+
   public synchronized String getAccessToken() {
     long startedAt = System.currentTimeMillis();
     try {
@@ -92,8 +94,7 @@ public class SicoobToken {
       throw new BilletException("Resposta de token vazia do servidor.");
     }
 
-    ObjectMapper mapper = new ObjectMapper();
-    JsonNode jsonResponse = mapper.readTree(response.getBody());
+    JsonNode jsonResponse = objectMapper.readTree(response.getBody());
 
     if (!jsonResponse.has("access_token") || jsonResponse.get("access_token").isNull()) {
       throw new BilletException("Token de acesso não encontrado na resposta.");

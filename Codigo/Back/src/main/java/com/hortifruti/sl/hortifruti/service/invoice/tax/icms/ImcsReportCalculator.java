@@ -12,8 +12,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @AllArgsConstructor
 public class ImcsReportCalculator {
@@ -99,7 +101,7 @@ public class ImcsReportCalculator {
   }
 
   private void handleProcessingError(CombinedScore combinedScore, Exception e) {
-    e.printStackTrace();
+    log.error("Erro ao processar CombinedScore ID: {}", combinedScore.getId(), e);
   }
 
   private IcmsSalesReport buildIcmsSalesReport(

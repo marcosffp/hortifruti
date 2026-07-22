@@ -12,12 +12,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.font.PDFont;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -33,15 +27,12 @@ public class TransactionReportPdfGenerator {
   @Value("${company.name}")
   private String companyName;
 
-  private static final float MARGIN = 40;
   private static final float COL_DATA_X = 0;
   private static final float COL_BANCO_X = 55;
   private static final float COL_CATEGORIA_X = 100;
   private static final float COL_HIST_X = 195;
   private static final float COL_VALOR_WIDTH = 75;
   private static final DateTimeFormatter DATA_CURTA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-  private static final PDFont FONT = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
-  private static final PDFont FONT_BOLD = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
 
   public byte[] generate(LocalDate dataInicio, LocalDate dataFim, List<Transaction> transacoes)
       throws IOException {
@@ -55,18 +46,12 @@ public class TransactionReportPdfGenerator {
     }
   }
 
-  private class PageWriter {
-    private final PDDocument document;
+  private class PageWriter extends AbstractPdfPageWriter {
     private final LocalDate dataInicio;
     private final LocalDate dataFim;
-    private PDPage page;
-    private PDPageContentStream cs;
-    private float y;
-    private float pageWidth;
-    private float pageHeight;
 
     PageWriter(PDDocument document, LocalDate dataInicio, LocalDate dataFim) {
-      this.document = document;
+      super(document);
       this.dataInicio = dataInicio;
       this.dataFim = dataFim;
     }
@@ -92,27 +77,6 @@ public class TransactionReportPdfGenerator {
       ensureSpace(60);
       drawResumo(transacoes.size(), totalEntradas, totalSaidas);
       cs.close();
-    }
-
-    private void newPage() throws IOException {
-      page = new PDPage(PDRectangle.A4);
-      document.addPage(page);
-      pageWidth = page.getMediaBox().getWidth();
-      pageHeight = page.getMediaBox().getHeight();
-      cs = new PDPageContentStream(document, page);
-      y = pageHeight - MARGIN;
-    }
-
-    private void ensureSpace() throws IOException {
-      ensureSpace(30);
-    }
-
-    private void ensureSpace(float needed) throws IOException {
-      if (y < MARGIN + needed) {
-        cs.close();
-        newPage();
-        drawTableHeader();
-      }
     }
 
     private void drawHeader() throws IOException {
@@ -142,7 +106,8 @@ public class TransactionReportPdfGenerator {
       y -= 22;
     }
 
-    private void drawTableHeader() throws IOException {
+    @Override
+    protected void drawTableHeader() throws IOException {
       cs.setNonStrokingColor(0.85f, 0.85f, 0.85f);
       cs.addRect(MARGIN, y - 4, pageWidth - 2 * MARGIN, 16);
       cs.fill();
@@ -242,32 +207,6 @@ public class TransactionReportPdfGenerator {
 
     private String formatValor(BigDecimal valor) {
       return (valor.signum() < 0 ? "-" : "") + SicoobExtratoFormatUtil.formatValorAbsoluto(valor);
-    }
-
-    private void text(PDFont font, float size, float x, float yPos, String value, float[] rgb)
-        throws IOException {
-      if (value == null || value.isEmpty()) {
-        return;
-      }
-      cs.beginText();
-      cs.setFont(font, size);
-      cs.setNonStrokingColor(
-          rgb != null ? rgb[0] : 0f, rgb != null ? rgb[1] : 0f, rgb != null ? rgb[2] : 0f);
-      cs.newLineAtOffset(x, yPos);
-      cs.showText(value);
-      cs.endText();
-    }
-
-    private void textRightAligned(
-        PDFont font, float size, float rightEdge, float yPos, String value, float[] rgb)
-        throws IOException {
-      float width = font.getStringWidth(value) / 1000 * size;
-      text(font, size, rightEdge - width, yPos, value, rgb);
-    }
-
-    private String truncate(String value, int maxLength) {
-      if (value == null) return "";
-      return value.length() > maxLength ? value.substring(0, maxLength - 3) + "..." : value;
     }
   }
 }

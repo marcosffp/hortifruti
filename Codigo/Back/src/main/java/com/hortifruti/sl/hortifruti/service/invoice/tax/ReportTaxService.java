@@ -5,7 +5,7 @@ import com.hortifruti.sl.hortifruti.service.invoice.tax.nfSales.NfSalesReport;
 import com.hortifruti.sl.hortifruti.service.invoice.tax.payment.PaymentReport;
 import com.hortifruti.sl.hortifruti.service.invoice.tax.registerReport.RegisterReport;
 import com.hortifruti.sl.hortifruti.service.invoice.tax.sales.SalesReport;
-import java.io.FileOutputStream;
+import com.hortifruti.sl.hortifruti.util.FileZipUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,11 +13,11 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class ReportTaxService {
@@ -40,20 +40,17 @@ public class ReportTaxService {
       byte[] zipBytes = Files.readAllBytes(zipPath);
       return zipBytes;
     } catch (IOException e) {
-      System.err.println("Erro de I/O durante geração de relatórios: " + e.getMessage());
-      e.printStackTrace();
+      log.error("Erro de I/O durante geração de relatórios", e);
       throw new RuntimeException("Erro ao processar arquivos", e);
     } catch (Exception e) {
-      System.err.println("Erro geral durante geração de relatórios: " + e.getMessage());
-      e.printStackTrace();
+      log.error("Erro geral durante geração de relatórios", e);
       throw new RuntimeException("Erro interno durante geração de relatórios", e);
     } finally {
       if (zipPath != null && Files.exists(zipPath)) {
         try {
           Files.delete(zipPath);
         } catch (IOException e) {
-          System.err.println("Erro ao excluir o arquivo: " + zipPath);
-          e.printStackTrace();
+          log.error("Erro ao excluir o arquivo: {}", zipPath, e);
         }
       }
     }
@@ -108,40 +105,45 @@ public class ReportTaxService {
     try {
       byte[] paymentData = generatePaymentReport(startDate, endDate);
       if (paymentData != null && paymentData.length > 0) {
-        saveFile(folderPath.resolve("Resumo_de_Vendas_por_Forma_de_Pagamento.pdf"), paymentData);
+        FileZipUtils.saveFile(
+            folderPath.resolve("Resumo_de_Vendas_por_Forma_de_Pagamento.pdf"), paymentData);
       }
     } catch (Exception e) {
+      log.error("Erro ao gerar relatório de pagamento - continuando sem ele", e);
     }
 
     try {
       byte[] registerData = generateRegisterReport(startDate, endDate);
       if (registerData != null && registerData.length > 0) {
-        saveFile(folderPath.resolve("Registro_de_saida_nf.pdf"), registerData);
+        FileZipUtils.saveFile(folderPath.resolve("Registro_de_saida_nf.pdf"), registerData);
       }
     } catch (Exception e) {
+      log.error("Erro ao gerar relatório de registro de saída - continuando sem ele", e);
     }
 
     try {
       byte[] salesData = generateSalesReport(startDate, endDate);
       if (salesData != null && salesData.length > 0) {
-        saveFile(folderPath.resolve("Relacao_de_Vendas.pdf"), salesData);
+        FileZipUtils.saveFile(folderPath.resolve("Relacao_de_Vendas.pdf"), salesData);
       }
     } catch (Exception e) {
+      log.error("Erro ao gerar relatório de vendas - continuando sem ele", e);
     }
 
     try {
       byte[] icmsData = generateIcmsReport(startDate, endDate);
       if (icmsData != null && icmsData.length > 0) {
-        saveFile(folderPath.resolve("Registro_Apuracao_ICMS.pdf"), icmsData);
+        FileZipUtils.saveFile(folderPath.resolve("Registro_Apuracao_ICMS.pdf"), icmsData);
       }
     } catch (Exception e) {
+      log.error("Erro ao gerar relatório de apuração de ICMS - continuando sem ele", e);
     }
   }
 
   private void generateAndMoveNfSalesZip(LocalDate startDate, LocalDate endDate, Path folderPath)
       throws IOException {
     String monthName = startDate.format(DateTimeFormatter.ofPattern("MMMM", Locale.of("pt", "BR")));
-    String nfSalesZipName = capitalizeFirstLetter(monthName) + "_NFE_SAIDAS.zip";
+    String nfSalesZipName = FileZipUtils.capitalizeFirstLetter(monthName) + "_NFE_SAIDAS.zip";
     String nfSalesZipPath = generateNfSalesZip(startDate, endDate);
 
     Path targetPath = folderPath.resolve(nfSalesZipName);
@@ -154,37 +156,6 @@ public class ReportTaxService {
   }
 
   private Path compressFolder(Path folderPath, String folderName) throws IOException {
-    String zipFileName = folderName + ".zip";
-    Path zipFilePath = Path.of(zipFileName);
-    zipFolder(folderPath, zipFilePath);
-    return zipFilePath;
-  }
-
-  private String capitalizeFirstLetter(String text) {
-    return text.substring(0, 1).toUpperCase() + text.substring(1);
-  }
-
-  private void saveFile(Path filePath, byte[] content) throws IOException {
-    try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
-      fos.write(content);
-    }
-  }
-
-  private void zipFolder(Path sourceFolderPath, Path zipPath) throws IOException {
-    try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipPath.toFile()))) {
-      Files.walk(sourceFolderPath)
-          .filter(path -> !Files.isDirectory(path))
-          .forEach(
-              path -> {
-                ZipEntry zipEntry = new ZipEntry(sourceFolderPath.relativize(path).toString());
-                try {
-                  zos.putNextEntry(zipEntry);
-                  Files.copy(path, zos);
-                  zos.closeEntry();
-                } catch (IOException e) {
-                  throw new RuntimeException("Erro ao compactar arquivo: " + path, e);
-                }
-              });
-    }
+    return FileZipUtils.compressFolder(folderPath, folderName);
   }
 }

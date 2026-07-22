@@ -13,13 +13,13 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 public class BilletValidation {
 
-  protected void validateHasBillet(CombinedScore combinedScore) {
+  public void validateHasBillet(CombinedScore combinedScore) {
     if (!combinedScore.isHasBillet()) {
       throw new CombinedScoreException("Agrupamento não possui boleto associado.");
     }
   }
 
-  protected void validateResponse(ResponseEntity<JsonNode> response) {
+  public void validateResponse(ResponseEntity<JsonNode> response) {
     if (response.getStatusCode() == HttpStatus.NO_CONTENT
         || response.getBody() == null
         || response.getBody().isEmpty()) {

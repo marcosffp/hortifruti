@@ -34,7 +34,7 @@ import lombok.Setter;
 public class Statement {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private long id;
+  private Long id;
 
   /** Legado: extratos salvos antes da migração para R2. Novos registros usam {@link #objectKey}. */
   @Lob
