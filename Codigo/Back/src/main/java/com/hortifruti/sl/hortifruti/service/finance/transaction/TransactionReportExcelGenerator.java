@@ -1,6 +1,6 @@
-package com.hortifruti.sl.hortifruti.service.finance;
+package com.hortifruti.sl.hortifruti.service.finance.transaction;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
+import com.hortifruti.sl.hortifruti.model.finance.Bank;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import com.hortifruti.sl.hortifruti.util.TransactionUtil;
 import java.io.ByteArrayOutputStream;

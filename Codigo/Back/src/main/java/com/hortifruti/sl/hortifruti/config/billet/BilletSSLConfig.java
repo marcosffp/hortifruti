@@ -2,7 +2,7 @@ package com.hortifruti.sl.hortifruti.config.billet;
 
 import com.hortifruti.sl.hortifruti.config.ssl.MtlsConnectionSettings;
 import com.hortifruti.sl.hortifruti.config.ssl.MtlsRestTemplateFactory;
-import com.hortifruti.sl.hortifruti.exception.BilletException;
+import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

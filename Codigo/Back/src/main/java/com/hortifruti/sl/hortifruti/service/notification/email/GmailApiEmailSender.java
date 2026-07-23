@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.service.notification;
+package com.hortifruti.sl.hortifruti.service.notification.email;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -8,8 +8,8 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.Message;
 import com.hortifruti.sl.hortifruti.config.Base64FileDecoder;
-import com.hortifruti.sl.hortifruti.exception.BackupException;
-import com.hortifruti.sl.hortifruti.exception.NotificationException;
+import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
+import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
 import com.hortifruti.sl.hortifruti.service.backup.auth.CredentialConfig;
 import com.hortifruti.sl.hortifruti.service.backup.auth.CredentialManager;
 import jakarta.mail.MessagingException;

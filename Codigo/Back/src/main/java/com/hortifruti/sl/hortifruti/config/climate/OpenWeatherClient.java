@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.config.climate;
 
-import com.hortifruti.sl.hortifruti.exception.WeatherApiException;
+import com.hortifruti.sl.hortifruti.exception.climate.WeatherApiException;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;

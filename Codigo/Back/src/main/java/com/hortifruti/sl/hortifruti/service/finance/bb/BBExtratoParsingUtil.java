@@ -1,6 +1,6 @@
-package com.hortifruti.sl.hortifruti.util;
+package com.hortifruti.sl.hortifruti.service.finance.bb;
 
-import com.hortifruti.sl.hortifruti.exception.BBApiException;
+import com.hortifruti.sl.hortifruti.exception.bb.BBApiException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;

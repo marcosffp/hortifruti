@@ -3,7 +3,7 @@ package com.hortifruti.sl.hortifruti.config.bb;
 import com.hortifruti.sl.hortifruti.config.Base64FileDecoder;
 import com.hortifruti.sl.hortifruti.config.ssl.MtlsConnectionSettings;
 import com.hortifruti.sl.hortifruti.config.ssl.MtlsRestTemplateFactory;
-import com.hortifruti.sl.hortifruti.exception.BBApiException;
+import com.hortifruti.sl.hortifruti.exception.bb.BBApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -30,12 +30,11 @@ public class BBSSLConfig {
             .maxConnTotal(10)
             .maxConnPerRoute(5)
             .missingCertificateException(
-                () ->
-                    new BBApiException(
-                        "Certificado mTLS do BB (arquivo PFX) não encontrado."))
+                () -> new BBApiException("Certificado mTLS do BB (arquivo PFX) não encontrado."))
             .exceptionWrapper(
                 (message, cause) ->
-                    new BBApiException("Erro ao configurar SSL (mTLS) para o BB: " + message, cause))
+                    new BBApiException(
+                        "Erro ao configurar SSL (mTLS) para o BB: " + message, cause))
             .build());
   }
 }

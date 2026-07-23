@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.invoice.tax.sales;
 
-import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceTaxDetails;
-import com.hortifruti.sl.hortifruti.dto.invoice.SalesSummaryDetails;
+import com.hortifruti.sl.hortifruti.dto.invoice.tax.InvoiceTaxDetails;
+import com.hortifruti.sl.hortifruti.dto.invoice.tax.sales.SalesSummaryDetails;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.service.invoice.InvoiceQuery;
 import com.hortifruti.sl.hortifruti.service.purchase.ClientService;

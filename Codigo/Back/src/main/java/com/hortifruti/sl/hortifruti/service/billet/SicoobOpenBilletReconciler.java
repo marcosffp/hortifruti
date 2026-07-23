@@ -1,8 +1,8 @@
 package com.hortifruti.sl.hortifruti.service.billet;
 
 import com.hortifruti.sl.hortifruti.dto.billet.BilletResponse;
-import com.hortifruti.sl.hortifruti.model.enumeration.Status;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
+import com.hortifruti.sl.hortifruti.model.purchase.Status;
 import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import com.hortifruti.sl.hortifruti.service.storage.BilletFileStorageService;
 import java.util.ArrayList;

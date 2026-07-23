@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.config.auth;
 
-import com.hortifruti.sl.hortifruti.exception.TokenException;
+import com.hortifruti.sl.hortifruti.exception.auth.TokenException;
 import com.hortifruti.sl.hortifruti.model.RefreshToken;
 import com.hortifruti.sl.hortifruti.repository.RefreshTokenRepository;
 import java.nio.charset.StandardCharsets;

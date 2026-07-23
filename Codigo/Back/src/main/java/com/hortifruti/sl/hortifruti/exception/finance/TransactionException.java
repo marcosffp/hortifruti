@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.exception;
+package com.hortifruti.sl.hortifruti.exception.finance;
 
 public class TransactionException extends RuntimeException {
   public TransactionException(String message) {

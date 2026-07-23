@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.model.enumeration;
+package com.hortifruti.sl.hortifruti.model.climate;
 
 /** Enum representando os meses do ano para sistema de temporadas */
 public enum Month {

@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.config;
 
-import com.hortifruti.sl.hortifruti.exception.InvoiceException;
+import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;

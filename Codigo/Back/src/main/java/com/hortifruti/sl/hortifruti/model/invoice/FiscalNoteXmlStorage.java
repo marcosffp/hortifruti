@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.model.invoice;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.FileStatus;
+import com.hortifruti.sl.hortifruti.model.FileStatus;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;

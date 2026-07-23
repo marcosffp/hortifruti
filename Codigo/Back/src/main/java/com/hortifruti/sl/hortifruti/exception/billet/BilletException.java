@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.exception;
+package com.hortifruti.sl.hortifruti.exception.billet;
 
 public class BilletException extends RuntimeException {
   public BilletException(String message) {

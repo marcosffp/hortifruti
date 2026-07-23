@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.service.notification;
+package com.hortifruti.sl.hortifruti.service.notification.email;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

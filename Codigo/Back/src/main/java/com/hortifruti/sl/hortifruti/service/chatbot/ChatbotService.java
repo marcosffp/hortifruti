@@ -1,8 +1,6 @@
-package com.hortifruti.sl.hortifruti.service.notification;
+package com.hortifruti.sl.hortifruti.service.chatbot;
 
-import com.hortifruti.sl.hortifruti.service.notification.chatbot.ChatbotConversationHandler;
-import com.hortifruti.sl.hortifruti.service.notification.chatbot.WhatsAppWebhookParser;
-import com.hortifruti.sl.hortifruti.service.notification.chatbot.WhatsAppWebhookParser.IncomingMessage;
+import com.hortifruti.sl.hortifruti.service.chatbot.WhatsAppWebhookParser.IncomingMessage;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

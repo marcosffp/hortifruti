@@ -1,9 +1,8 @@
-package com.hortifruti.sl.hortifruti.service.finance;
+package com.hortifruti.sl.hortifruti.service.finance.sicoob;
 
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobExtratoLinha;
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobExtratoResponse;
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobExtratoTransacao;
-import com.hortifruti.sl.hortifruti.util.SicoobExtratoParsingUtil;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;

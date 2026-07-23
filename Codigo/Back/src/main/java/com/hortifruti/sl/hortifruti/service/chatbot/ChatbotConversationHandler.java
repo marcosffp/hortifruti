@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.service.notification.chatbot;
+package com.hortifruti.sl.hortifruti.service.chatbot;
 
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
 import com.hortifruti.sl.hortifruti.model.chatbot.ChatSession;
@@ -7,9 +7,8 @@ import com.hortifruti.sl.hortifruti.model.chatbot.SessionStatus;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.service.billet.BilletService;
-import com.hortifruti.sl.hortifruti.service.chatbot.ChatSessionService;
 import com.hortifruti.sl.hortifruti.service.invoice.InvoiceService;
-import com.hortifruti.sl.hortifruti.service.notification.WhatsAppService;
+import com.hortifruti.sl.hortifruti.service.notification.whatsapp.WhatsAppService;
 import com.hortifruti.sl.hortifruti.service.purchase.ClientService;
 import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import java.util.ArrayList;

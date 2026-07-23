@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.invoice.tax.sales;
 
-import com.hortifruti.sl.hortifruti.dto.invoice.SalesSummaryDetails;
+import com.hortifruti.sl.hortifruti.dto.invoice.tax.sales.SalesSummaryDetails;
 import com.hortifruti.sl.hortifruti.service.invoice.tax.PdfReportSupport;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

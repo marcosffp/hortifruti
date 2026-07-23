@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.config.billet.BilletHttpClient;
 import com.hortifruti.sl.hortifruti.dto.billet.BilletRequest;
 import com.hortifruti.sl.hortifruti.dto.billet.BilletRequestSimplified;
-import com.hortifruti.sl.hortifruti.exception.BilletException;
+import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import java.io.IOException;
 import java.util.HashMap;

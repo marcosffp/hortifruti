@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.controller;
+package com.hortifruti.sl.hortifruti.controller.invoice;
 
 import com.hortifruti.sl.hortifruti.service.invoice.tax.ReportTaxService;
 import java.time.LocalDate;

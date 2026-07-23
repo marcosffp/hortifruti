@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.invoice;
 
 import com.hortifruti.sl.hortifruti.config.FocusNfeApiClient;
-import com.hortifruti.sl.hortifruti.exception.InvoiceException;
+import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;

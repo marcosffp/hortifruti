@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.controller;
+package com.hortifruti.sl.hortifruti.controller.invoice;
 
 import com.hortifruti.sl.hortifruti.dto.invoice.FiscalNoteXmlStorageResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;

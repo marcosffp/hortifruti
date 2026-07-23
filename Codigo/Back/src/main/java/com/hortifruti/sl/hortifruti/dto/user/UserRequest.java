@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.dto.user;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Role;
+import com.hortifruti.sl.hortifruti.model.Role;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

@@ -1,7 +1,7 @@
-package com.hortifruti.sl.hortifruti.repository;
+package com.hortifruti.sl.hortifruti.repository.climate;
 
-import com.hortifruti.sl.hortifruti.model.ClimateProduct;
-import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
+import com.hortifruti.sl.hortifruti.model.climate.ClimateProduct;
+import com.hortifruti.sl.hortifruti.model.climate.TemperatureCategory;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 

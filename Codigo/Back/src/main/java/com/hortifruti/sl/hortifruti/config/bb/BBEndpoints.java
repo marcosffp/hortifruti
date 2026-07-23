@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.config.bb;
 
-import com.hortifruti.sl.hortifruti.exception.BBApiException;
+import com.hortifruti.sl.hortifruti.exception.bb.BBApiException;
 
 /** Resolve as URLs da API do BB (OAuth2 e Extratos v2) a partir do ambiente configurado. */
 public final class BBEndpoints {

@@ -1,7 +1,7 @@
-package com.hortifruti.sl.hortifruti.dto.transaction;
+package com.hortifruti.sl.hortifruti.dto.finance;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
-import com.hortifruti.sl.hortifruti.model.enumeration.StatementOrigin;
+import com.hortifruti.sl.hortifruti.model.finance.Bank;
+import com.hortifruti.sl.hortifruti.model.finance.StatementOrigin;
 import java.time.LocalDateTime;
 
 public record StatementResponse(

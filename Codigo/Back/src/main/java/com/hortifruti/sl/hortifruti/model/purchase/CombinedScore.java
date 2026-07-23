@@ -1,6 +1,5 @@
 package com.hortifruti.sl.hortifruti.model.purchase;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Status;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;

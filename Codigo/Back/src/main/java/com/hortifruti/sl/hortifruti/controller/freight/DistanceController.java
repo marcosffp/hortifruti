@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.controller;
+package com.hortifruti.sl.hortifruti.controller.freight;
 
 import com.hortifruti.sl.hortifruti.dto.freight.DistanceFreightResponse;
 import com.hortifruti.sl.hortifruti.dto.freight.FreightConfigDTO;

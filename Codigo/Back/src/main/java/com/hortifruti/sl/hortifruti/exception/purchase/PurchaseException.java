@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.exception;
+package com.hortifruti.sl.hortifruti.exception.purchase;
 
 public class PurchaseException extends RuntimeException {
 

@@ -1,6 +1,6 @@
-package com.hortifruti.sl.hortifruti.model.enumeration;
+package com.hortifruti.sl.hortifruti.model.purchase;
 
-import com.hortifruti.sl.hortifruti.exception.PurchaseException;
+import com.hortifruti.sl.hortifruti.exception.purchase.PurchaseException;
 
 public enum Status {
   PENDENTE,

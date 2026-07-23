@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.dto.climate;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.RecommendationTag;
-import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
+import com.hortifruti.sl.hortifruti.model.climate.RecommendationTag;
+import com.hortifruti.sl.hortifruti.model.climate.TemperatureCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Recomendação de produto baseada em clima e sazonalidade")

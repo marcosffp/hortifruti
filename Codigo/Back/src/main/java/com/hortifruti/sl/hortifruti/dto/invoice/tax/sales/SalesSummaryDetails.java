@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.dto.invoice;
+package com.hortifruti.sl.hortifruti.dto.invoice.tax.sales;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;

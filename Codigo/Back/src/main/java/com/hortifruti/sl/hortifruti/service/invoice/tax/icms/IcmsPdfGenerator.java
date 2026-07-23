@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.invoice.tax.icms;
 
-import com.hortifruti.sl.hortifruti.dto.invoice.IcmsSalesReport;
+import com.hortifruti.sl.hortifruti.dto.invoice.tax.icms.IcmsSalesReport;
 import com.hortifruti.sl.hortifruti.service.invoice.tax.PdfReportSupport;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

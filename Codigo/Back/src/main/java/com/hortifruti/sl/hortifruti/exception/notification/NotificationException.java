@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.exception;
+package com.hortifruti.sl.hortifruti.exception.notification;
 
 public class NotificationException extends RuntimeException {
   public NotificationException(String message) {

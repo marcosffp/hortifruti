@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.service.notification.chatbot;
+package com.hortifruti.sl.hortifruti.service.chatbot;
 
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;

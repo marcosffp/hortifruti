@@ -1,15 +1,16 @@
-package com.hortifruti.sl.hortifruti.service.finance;
+package com.hortifruti.sl.hortifruti.service.finance.bb;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hortifruti.sl.hortifruti.config.bb.BBExtratoClient;
 import com.hortifruti.sl.hortifruti.dto.bb.BBImportSummary;
-import com.hortifruti.sl.hortifruti.exception.TransactionException;
-import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
-import com.hortifruti.sl.hortifruti.model.enumeration.StatementOrigin;
-import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
+import com.hortifruti.sl.hortifruti.exception.finance.TransactionException;
+import com.hortifruti.sl.hortifruti.model.finance.Bank;
 import com.hortifruti.sl.hortifruti.model.finance.Statement;
+import com.hortifruti.sl.hortifruti.model.finance.StatementOrigin;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
+import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
 import com.hortifruti.sl.hortifruti.repository.finance.StatementRepository;
+import com.hortifruti.sl.hortifruti.service.finance.transaction.TransactionImportPersistenceService;
 import com.hortifruti.sl.hortifruti.service.storage.R2StorageService;
 import com.hortifruti.sl.hortifruti.service.storage.StorageKeyGenerator;
 import com.hortifruti.sl.hortifruti.util.SicoobExtratoFormatUtil;
@@ -24,7 +25,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-/** Orquestra a integração com a API Extratos v2 do Banco do Brasil: busca, geração de PDF/Excel e import. */
+/**
+ * Orquestra a integração com a API Extratos v2 do Banco do Brasil: busca, geração de PDF/Excel e
+ * import.
+ */
 @Service
 @RequiredArgsConstructor
 public class BBStatementService {

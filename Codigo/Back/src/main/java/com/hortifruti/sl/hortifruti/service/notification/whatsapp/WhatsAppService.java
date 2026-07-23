@@ -1,6 +1,6 @@
-package com.hortifruti.sl.hortifruti.service.notification;
+package com.hortifruti.sl.hortifruti.service.notification.whatsapp;
 
-import com.hortifruti.sl.hortifruti.exception.NotificationException;
+import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;

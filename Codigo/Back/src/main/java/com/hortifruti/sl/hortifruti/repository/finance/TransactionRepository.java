@@ -1,10 +1,10 @@
 package com.hortifruti.sl.hortifruti.repository.finance;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
-import com.hortifruti.sl.hortifruti.model.enumeration.Category;
-import com.hortifruti.sl.hortifruti.model.enumeration.StatementOrigin;
-import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
+import com.hortifruti.sl.hortifruti.model.finance.Bank;
+import com.hortifruti.sl.hortifruti.model.finance.Category;
+import com.hortifruti.sl.hortifruti.model.finance.StatementOrigin;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
+import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;

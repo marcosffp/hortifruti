@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.exception;
+package com.hortifruti.sl.hortifruti.exception.sicoob;
 
 public class SicoobExtratoException extends RuntimeException {
   public SicoobExtratoException(String message) {

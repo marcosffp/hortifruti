@@ -1,14 +1,15 @@
-package com.hortifruti.sl.hortifruti.service.finance;
+package com.hortifruti.sl.hortifruti.service.finance.sicoob;
 
 import com.hortifruti.sl.hortifruti.config.sicoob.SicoobExtratoClient;
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobExtratoResponse;
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobImportSummary;
-import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
-import com.hortifruti.sl.hortifruti.model.enumeration.StatementOrigin;
-import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
+import com.hortifruti.sl.hortifruti.model.finance.Bank;
 import com.hortifruti.sl.hortifruti.model.finance.Statement;
+import com.hortifruti.sl.hortifruti.model.finance.StatementOrigin;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
+import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
 import com.hortifruti.sl.hortifruti.repository.finance.StatementRepository;
+import com.hortifruti.sl.hortifruti.service.finance.transaction.TransactionImportPersistenceService;
 import com.hortifruti.sl.hortifruti.service.storage.R2StorageService;
 import com.hortifruti.sl.hortifruti.service.storage.StorageKeyGenerator;
 import java.io.IOException;

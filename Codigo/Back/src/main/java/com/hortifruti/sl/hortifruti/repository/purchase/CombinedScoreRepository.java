@@ -13,12 +13,12 @@ import org.springframework.data.repository.query.Param;
 public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Long> {
 
   @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = com.hortifruti.sl.hortifruti.model.enumeration.Status.PENDENTE AND cs.hasBillet = true")
+      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE AND cs.hasBillet = true")
   List<CombinedScore> findAllPendingWithBilletByClient(@Param("clientId") Long clientId);
 
   /** Busca todos os CombinedScores pendentes (com ou sem documentos) para um cliente */
   @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = com.hortifruti.sl.hortifruti.model.enumeration.Status.PENDENTE ORDER BY cs.dueDate ASC")
+      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE ORDER BY cs.dueDate ASC")
   List<CombinedScore> findAllPendingByClient(@Param("clientId") Long clientId);
 
   Page<CombinedScore> findByClientIdOrderByIdDesc(Long clientId, Pageable pageable);
@@ -27,16 +27,17 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
 
   /** Busca CombinedScores vencidos que ainda não foram pagos (confirmedAt is null) */
   @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.dueDate < :currentDate AND cs.status = com.hortifruti.sl.hortifruti.model.enumeration.Status.PENDENTE")
+      "SELECT cs FROM CombinedScore cs WHERE cs.dueDate < :currentDate AND cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE")
   List<CombinedScore> findOverdueUnpaidScores(@Param("currentDate") LocalDate currentDate);
 
   @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.dueDate < :currentDate AND cs.status = com.hortifruti.sl.hortifruti.model.enumeration.Status.PENDENTE")
+      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.dueDate < :currentDate AND cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE")
   List<CombinedScore> findOverdueUnpaidScoresByClient(
       @Param("clientId") Long clientId, @Param("currentDate") LocalDate currentDate);
 
   /** Busca todos os agrupamentos com boleto em aberto (não pago), de qualquer cliente */
-  @Query("SELECT cs FROM CombinedScore cs WHERE cs.status = com.hortifruti.sl.hortifruti.model.enumeration.Status.PENDENTE AND cs.hasBillet = true")
+  @Query(
+      "SELECT cs FROM CombinedScore cs WHERE cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE AND cs.hasBillet = true")
   List<CombinedScore> findAllOpenBillets();
 
   /** Busca o agrupamento mais recente (maior ID) de cada cliente */
@@ -58,7 +59,8 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
       "SELECT cs.invoiceRef FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.hasInvoice = true AND cs.invoiceRef IS NOT NULL")
   List<String> findAllInvoiceRefsByClientId(@Param("clientId") Long clientId);
 
-  @Query("SELECT cs FROM CombinedScore cs WHERE cs.status = com.hortifruti.sl.hortifruti.model.enumeration.Status.PENDENTE AND cs.dueDate <= :date")
+  @Query(
+      "SELECT cs FROM CombinedScore cs WHERE cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE AND cs.dueDate <= :date")
   List<CombinedScore> findOverduePendingScores(@Param("date") LocalDate date);
 
   @Query(
@@ -71,7 +73,7 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
    * manual de pagamento.
    */
   @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.status = com.hortifruti.sl.hortifruti.model.enumeration.Status.PENDENTE AND cs.hasInvoice = true AND"
+      "SELECT cs FROM CombinedScore cs WHERE cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE AND cs.hasInvoice = true AND"
           + " cs.hasBillet = false")
   List<CombinedScore> findAllOpenInvoiceOnly();
 }

@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.model.enumeration;
+package com.hortifruti.sl.hortifruti.model.climate;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

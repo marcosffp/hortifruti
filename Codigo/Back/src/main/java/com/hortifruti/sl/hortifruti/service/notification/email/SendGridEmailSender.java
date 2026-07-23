@@ -1,6 +1,6 @@
-package com.hortifruti.sl.hortifruti.service.notification;
+package com.hortifruti.sl.hortifruti.service.notification.email;
 
-import com.hortifruti.sl.hortifruti.exception.NotificationException;
+import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
 import com.sendgrid.*;
 import com.sendgrid.helpers.mail.Mail;
 import com.sendgrid.helpers.mail.objects.Attachments;

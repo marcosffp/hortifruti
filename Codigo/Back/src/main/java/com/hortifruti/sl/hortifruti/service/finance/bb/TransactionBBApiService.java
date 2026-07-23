@@ -1,13 +1,12 @@
-package com.hortifruti.sl.hortifruti.service.finance;
+package com.hortifruti.sl.hortifruti.service.finance.bb;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.hortifruti.sl.hortifruti.exception.BBApiException;
+import com.hortifruti.sl.hortifruti.exception.bb.BBApiException;
 import com.hortifruti.sl.hortifruti.mapper.TransactionMapper;
-import com.hortifruti.sl.hortifruti.model.enumeration.Category;
-import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
+import com.hortifruti.sl.hortifruti.model.finance.Category;
 import com.hortifruti.sl.hortifruti.model.finance.Statement;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
-import com.hortifruti.sl.hortifruti.util.BBExtratoParsingUtil;
+import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
 import com.hortifruti.sl.hortifruti.util.TransactionUtil;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;

@@ -2,7 +2,7 @@ package com.hortifruti.sl.hortifruti.mapper;
 
 import com.hortifruti.sl.hortifruti.dto.climate.ProductRequest;
 import com.hortifruti.sl.hortifruti.dto.climate.ProductResponse;
-import com.hortifruti.sl.hortifruti.model.ClimateProduct;
+import com.hortifruti.sl.hortifruti.model.climate.ClimateProduct;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

@@ -2,7 +2,7 @@ package com.hortifruti.sl.hortifruti.service.freight;
 
 import com.hortifruti.sl.hortifruti.dto.freight.FreightCalculationRequest;
 import com.hortifruti.sl.hortifruti.dto.freight.FreightConfigDTO;
-import com.hortifruti.sl.hortifruti.exception.FreightException;
+import com.hortifruti.sl.hortifruti.exception.freight.FreightException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 

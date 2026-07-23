@@ -1,7 +1,7 @@
-package com.hortifruti.sl.hortifruti.dto.transaction;
+package com.hortifruti.sl.hortifruti.dto.finance;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Category;
-import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
+import com.hortifruti.sl.hortifruti.model.finance.Category;
+import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;

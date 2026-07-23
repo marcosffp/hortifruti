@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.service.notification;
+package com.hortifruti.sl.hortifruti.service.notification.whatsapp;
 
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import org.springframework.stereotype.Service;

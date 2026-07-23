@@ -4,7 +4,7 @@ import com.hortifruti.sl.hortifruti.dto.user.UserRequest;
 import com.hortifruti.sl.hortifruti.dto.user.UserResponse;
 import com.hortifruti.sl.hortifruti.dto.user.UserUpdateRequest;
 import com.hortifruti.sl.hortifruti.dto.user.UsersCountResponse;
-import com.hortifruti.sl.hortifruti.service.UserService;
+import com.hortifruti.sl.hortifruti.service.user.UserService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.AllArgsConstructor;

@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.model.billet;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.FileStatus;
+import com.hortifruti.sl.hortifruti.model.FileStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

@@ -1,6 +1,6 @@
-package com.hortifruti.sl.hortifruti.controller;
+package com.hortifruti.sl.hortifruti.controller.backup;
 
-import com.hortifruti.sl.hortifruti.dto.BackupResponse;
+import com.hortifruti.sl.hortifruti.dto.backup.BackupResponse;
 import com.hortifruti.sl.hortifruti.service.backup.BackupService;
 import com.hortifruti.sl.hortifruti.service.backup.oauth.GoogleOAuthService;
 import jakarta.servlet.http.HttpServletResponse;

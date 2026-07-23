@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.exception;
+package com.hortifruti.sl.hortifruti.exception.bb;
 
 public class BBApiException extends RuntimeException {
   public BBApiException(String message) {

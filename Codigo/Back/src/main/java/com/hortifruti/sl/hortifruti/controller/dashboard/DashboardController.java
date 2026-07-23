@@ -1,6 +1,6 @@
-package com.hortifruti.sl.hortifruti.controller;
+package com.hortifruti.sl.hortifruti.controller.dashboard;
 
-import com.hortifruti.sl.hortifruti.service.DashboardService;
+import com.hortifruti.sl.hortifruti.service.dashboard.DashboardService;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.Map;

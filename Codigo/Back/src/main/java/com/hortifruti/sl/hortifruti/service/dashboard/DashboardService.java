@@ -1,8 +1,8 @@
-package com.hortifruti.sl.hortifruti.service;
+package com.hortifruti.sl.hortifruti.service.dashboard;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Category;
-import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
+import com.hortifruti.sl.hortifruti.model.finance.Category;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
+import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.model.purchase.GroupedProduct;
 import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
@@ -319,8 +319,8 @@ public class DashboardService {
 
   /**
    * Busca todos os {@link CombinedScore} cuja data de CONFIRMAÇÃO (confirmedAt) está dentro de
-   * {@code [startDate, endDate]}. Filtro compartilhado por todas as consultas de fluxo de vendas
-   * do dashboard baseadas em confirmação (em vez de vencimento/dueDate).
+   * {@code [startDate, endDate]}. Filtro compartilhado por todas as consultas de fluxo de vendas do
+   * dashboard baseadas em confirmação (em vez de vencimento/dueDate).
    */
   private List<CombinedScore> findCombinedScoresConfirmedBetween(
       LocalDate startDate, LocalDate endDate) {

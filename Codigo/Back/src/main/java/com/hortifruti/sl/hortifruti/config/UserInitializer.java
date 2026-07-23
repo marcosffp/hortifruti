@@ -1,14 +1,14 @@
 package com.hortifruti.sl.hortifruti.config;
 
-import com.hortifruti.sl.hortifruti.model.ClimateProduct;
 import com.hortifruti.sl.hortifruti.model.FreightConfig;
+import com.hortifruti.sl.hortifruti.model.Role;
 import com.hortifruti.sl.hortifruti.model.User;
-import com.hortifruti.sl.hortifruti.model.enumeration.Month;
-import com.hortifruti.sl.hortifruti.model.enumeration.Role;
-import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
+import com.hortifruti.sl.hortifruti.model.climate.ClimateProduct;
+import com.hortifruti.sl.hortifruti.model.climate.Month;
+import com.hortifruti.sl.hortifruti.model.climate.TemperatureCategory;
 import com.hortifruti.sl.hortifruti.repository.FreightConfigRepository;
-import com.hortifruti.sl.hortifruti.repository.ProductRepository;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
+import com.hortifruti.sl.hortifruti.repository.climate.ProductRepository;
 import java.security.SecureRandom;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

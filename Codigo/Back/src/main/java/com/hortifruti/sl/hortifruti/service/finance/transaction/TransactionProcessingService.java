@@ -1,12 +1,12 @@
-package com.hortifruti.sl.hortifruti.service.finance;
+package com.hortifruti.sl.hortifruti.service.finance.transaction;
 
-import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequest;
-import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequestDate;
-import com.hortifruti.sl.hortifruti.dto.transaction.TransactionResponse;
-import com.hortifruti.sl.hortifruti.exception.TransactionException;
+import com.hortifruti.sl.hortifruti.dto.finance.TransactionRequest;
+import com.hortifruti.sl.hortifruti.dto.finance.TransactionRequestDate;
+import com.hortifruti.sl.hortifruti.dto.finance.TransactionResponse;
+import com.hortifruti.sl.hortifruti.exception.finance.TransactionException;
 import com.hortifruti.sl.hortifruti.mapper.TransactionMapper;
-import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
+import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
 import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;

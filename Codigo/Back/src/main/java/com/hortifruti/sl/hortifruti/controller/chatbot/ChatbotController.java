@@ -1,6 +1,6 @@
-package com.hortifruti.sl.hortifruti.controller.notification;
+package com.hortifruti.sl.hortifruti.controller.chatbot;
 
-import com.hortifruti.sl.hortifruti.service.notification.ChatbotService;
+import com.hortifruti.sl.hortifruti.service.chatbot.ChatbotService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

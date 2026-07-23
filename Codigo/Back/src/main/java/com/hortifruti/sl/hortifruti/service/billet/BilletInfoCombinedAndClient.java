@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.billet;
 
-import com.hortifruti.sl.hortifruti.exception.BilletException;
-import com.hortifruti.sl.hortifruti.exception.CombinedScoreException;
+import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
+import com.hortifruti.sl.hortifruti.exception.purchase.CombinedScoreException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;

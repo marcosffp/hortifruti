@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.model.enumeration;
+package com.hortifruti.sl.hortifruti.model.climate;
 
 /** Enum representando as categorias de temperatura para recomendação de produtos */
 public enum TemperatureCategory {

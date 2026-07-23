@@ -1,5 +1,23 @@
 package com.hortifruti.sl.hortifruti.exception;
 
+import com.hortifruti.sl.hortifruti.exception.auth.AuthException;
+import com.hortifruti.sl.hortifruti.exception.auth.TokenException;
+import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
+import com.hortifruti.sl.hortifruti.exception.bb.BBApiException;
+import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
+import com.hortifruti.sl.hortifruti.exception.climate.ProductException;
+import com.hortifruti.sl.hortifruti.exception.climate.RecommendationException;
+import com.hortifruti.sl.hortifruti.exception.finance.TransactionException;
+import com.hortifruti.sl.hortifruti.exception.freight.DistanceException;
+import com.hortifruti.sl.hortifruti.exception.freight.FreightException;
+import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
+import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
+import com.hortifruti.sl.hortifruti.exception.purchase.ClientException;
+import com.hortifruti.sl.hortifruti.exception.purchase.CombinedScoreException;
+import com.hortifruti.sl.hortifruti.exception.purchase.PurchaseException;
+import com.hortifruti.sl.hortifruti.exception.sicoob.SicoobExtratoException;
+import com.hortifruti.sl.hortifruti.exception.storage.StorageException;
+import com.hortifruti.sl.hortifruti.exception.user.UserException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,8 +68,7 @@ public class GlobalExceptionHandler {
           "message", "Dados fornecidos são inválidos. Por favor, verifique e tente novamente.");
     }
 
-    log.warn(
-        "Erro de validação em {}: {}", request.getRequestURI(), response.get("message"));
+    log.warn("Erro de validação em {}: {}", request.getRequestURI(), response.get("message"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
@@ -61,8 +78,7 @@ public class GlobalExceptionHandler {
     Map<String, String> response = new HashMap<>();
     response.put("error", "Erro de validação");
 
-    log.warn(
-        "Erro de integridade de dados em {}: {}", request.getRequestURI(), ex.getMessage());
+    log.warn("Erro de integridade de dados em {}: {}", request.getRequestURI(), ex.getMessage());
 
     String errorMessage = ex.getMessage();
     if (errorMessage != null && errorMessage.contains("Duplicate entry")) {
@@ -198,9 +214,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<Map<String, String>> handleSicoobExtratoException(
       SicoobExtratoException ex, HttpServletRequest request) {
     log.error(
-        "Erro ao consultar extrato do Sicoob em {}: {}",
-        request.getRequestURI(),
-        ex.getMessage());
+        "Erro ao consultar extrato do Sicoob em {}: {}", request.getRequestURI(), ex.getMessage());
     Map<String, String> response = new HashMap<>();
     response.put("error", "Erro ao consultar extrato do Sicoob");
     response.put("message", ex.getMessage());
@@ -210,8 +224,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(PurchaseException.class)
   public ResponseEntity<Map<String, String>> handlePurchaseException(
       PurchaseException ex, HttpServletRequest request) {
-    log.warn(
-        "Erro no processamento da compra em {}: {}", request.getRequestURI(), ex.getMessage());
+    log.warn("Erro no processamento da compra em {}: {}", request.getRequestURI(), ex.getMessage());
     Map<String, String> response = new HashMap<>();
     response.put("error", "Erro no Processamento da Compra");
     response.put("message", ex.getMessage());
@@ -264,8 +277,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(NotificationException.class)
   public ResponseEntity<Map<String, String>> handleBulkNotificationException(
       NotificationException ex, HttpServletRequest request) {
-    log.warn(
-        "Erro de notificação em massa em {}: {}", request.getRequestURI(), ex.getMessage());
+    log.warn("Erro de notificação em massa em {}: {}", request.getRequestURI(), ex.getMessage());
     Map<String, String> response = new HashMap<>();
     response.put("error", "Erro de Notificação em Massa");
     response.put("message", ex.getMessage());

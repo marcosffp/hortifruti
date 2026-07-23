@@ -1,8 +1,8 @@
 package com.hortifruti.sl.hortifruti.service.billet;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.hortifruti.sl.hortifruti.exception.BilletException;
-import com.hortifruti.sl.hortifruti.exception.CombinedScoreException;
+import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
+import com.hortifruti.sl.hortifruti.exception.purchase.CombinedScoreException;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;

@@ -1,6 +1,6 @@
-package com.hortifruti.sl.hortifruti.service.notification;
+package com.hortifruti.sl.hortifruti.service.notification.email;
 
-import com.hortifruti.sl.hortifruti.exception.NotificationException;
+import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.util.List;

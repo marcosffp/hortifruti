@@ -2,7 +2,7 @@ package com.hortifruti.sl.hortifruti.controller.billet;
 
 import com.hortifruti.sl.hortifruti.dto.billet.BilletResponse;
 import com.hortifruti.sl.hortifruti.dto.billet.OpenBilletResponse;
-import com.hortifruti.sl.hortifruti.exception.BilletException;
+import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
 import com.hortifruti.sl.hortifruti.service.billet.BilletService;
 import java.io.IOException;
 import java.time.LocalDate;

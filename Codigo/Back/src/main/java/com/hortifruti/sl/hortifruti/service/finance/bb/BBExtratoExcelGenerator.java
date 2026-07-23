@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.service.finance;
+package com.hortifruti.sl.hortifruti.service.finance.bb;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hortifruti.sl.hortifruti.dto.bb.BBExtratoLinha;

@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.service.notification.chatbot;
+package com.hortifruti.sl.hortifruti.service.chatbot;
 
 import java.util.Map;
 import java.util.Optional;

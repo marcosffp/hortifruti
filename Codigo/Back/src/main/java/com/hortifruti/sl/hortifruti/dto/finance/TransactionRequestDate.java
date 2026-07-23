@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.dto.transaction;
+package com.hortifruti.sl.hortifruti.dto.finance;
 
 import java.time.LocalDate;
 

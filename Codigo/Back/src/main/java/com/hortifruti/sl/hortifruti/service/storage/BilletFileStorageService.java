@@ -1,8 +1,8 @@
 package com.hortifruti.sl.hortifruti.service.storage;
 
-import com.hortifruti.sl.hortifruti.exception.StorageException;
+import com.hortifruti.sl.hortifruti.exception.storage.StorageException;
+import com.hortifruti.sl.hortifruti.model.FileStatus;
 import com.hortifruti.sl.hortifruti.model.billet.BilletFile;
-import com.hortifruti.sl.hortifruti.model.enumeration.FileStatus;
 import com.hortifruti.sl.hortifruti.repository.billet.BilletFileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,8 +31,7 @@ public class BilletFileStorageService {
   @Transactional
   public BilletFile saveBilletFile(Long combinedScoreId, byte[] pdfBytes) {
     var existing =
-        billetFileRepository.findByCombinedScoreIdAndStatus(
-            combinedScoreId, FileStatus.ACTIVE);
+        billetFileRepository.findByCombinedScoreIdAndStatus(combinedScoreId, FileStatus.ACTIVE);
     if (existing.isPresent()) {
       log.info(
           "[BilletFileStorage] combinedScoreId={} já possui arquivo ativo (key={}),"
@@ -91,8 +90,7 @@ public class BilletFileStorageService {
   public void cancelBilletFile(Long combinedScoreId) {
     try {
       var activeFile =
-          billetFileRepository.findByCombinedScoreIdAndStatus(
-              combinedScoreId, FileStatus.ACTIVE);
+          billetFileRepository.findByCombinedScoreIdAndStatus(combinedScoreId, FileStatus.ACTIVE);
       if (activeFile.isEmpty()) {
         log.warn(
             "[BilletFileStorage] Cancelamento confirmado para combinedScoreId={}, mas nenhum"

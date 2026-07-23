@@ -1,9 +1,9 @@
-package com.hortifruti.sl.hortifruti.service.finance;
+package com.hortifruti.sl.hortifruti.service.finance.bb;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hortifruti.sl.hortifruti.config.bb.BBExtratoClient;
 import com.hortifruti.sl.hortifruti.dto.finance.BankBalanceResponse;
-import com.hortifruti.sl.hortifruti.exception.BBApiException;
+import com.hortifruti.sl.hortifruti.exception.bb.BBApiException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;

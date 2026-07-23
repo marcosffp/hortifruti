@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.exception;
+package com.hortifruti.sl.hortifruti.exception.storage;
 
 public class StorageException extends RuntimeException {
   public StorageException(String message) {

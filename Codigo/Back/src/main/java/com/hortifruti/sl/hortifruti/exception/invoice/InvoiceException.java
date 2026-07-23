@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.exception;
+package com.hortifruti.sl.hortifruti.exception.invoice;
 
 public class InvoiceException extends RuntimeException {
   public InvoiceException(String message) {

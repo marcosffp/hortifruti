@@ -2,7 +2,7 @@ package com.hortifruti.sl.hortifruti.config.billet;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hortifruti.sl.hortifruti.exception.BilletException;
+import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -73,15 +73,14 @@ public class BilletHttpClient {
   }
 
   public ResponseEntity<JsonNode> getWithResponse(String endpoint) throws IOException {
-    return executeWithRetry(
-        "GET", "GET", endpoint, () -> toJsonResponse(doGet(endpoint)));
+    return executeWithRetry("GET", "GET", endpoint, () -> toJsonResponse(doGet(endpoint)));
   }
 
   /**
    * Executa {@code call}, e caso a resposta seja 401, invalida o token e tenta uma única vez de
-   * novo antes de embrulhar a falha em {@link BilletException}. {@code label} identifica a
-   * operação nos logs/mensagens de retry (ex.: "POST-cancel"); {@code verb} é o termo usado nas
-   * mensagens de falha na primeira tentativa (ex.: "POST", mesmo para {@code postCancel}).
+   * novo antes de embrulhar a falha em {@link BilletException}. {@code label} identifica a operação
+   * nos logs/mensagens de retry (ex.: "POST-cancel"); {@code verb} é o termo usado nas mensagens de
+   * falha na primeira tentativa (ex.: "POST", mesmo para {@code postCancel}).
    */
   private <T> T executeWithRetry(String label, String verb, String endpoint, RequestCall<T> call)
       throws IOException {

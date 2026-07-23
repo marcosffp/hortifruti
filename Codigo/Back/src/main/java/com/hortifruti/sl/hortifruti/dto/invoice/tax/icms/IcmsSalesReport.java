@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.dto.invoice;
+package com.hortifruti.sl.hortifruti.dto.invoice.tax.icms;
 
 import java.math.BigDecimal;
 import java.util.Map;

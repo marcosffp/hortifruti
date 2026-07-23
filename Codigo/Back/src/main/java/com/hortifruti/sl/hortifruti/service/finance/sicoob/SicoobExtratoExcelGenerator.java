@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.service.finance;
+package com.hortifruti.sl.hortifruti.service.finance.sicoob;
 
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobExtratoLinha;
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobExtratoResponse;

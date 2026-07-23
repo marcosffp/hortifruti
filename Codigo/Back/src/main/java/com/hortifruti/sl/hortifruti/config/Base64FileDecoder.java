@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.config;
 
-import com.hortifruti.sl.hortifruti.exception.BackupException;
-import com.hortifruti.sl.hortifruti.exception.BilletException;
+import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
+import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;

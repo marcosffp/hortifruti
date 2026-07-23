@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.exception;
+package com.hortifruti.sl.hortifruti.exception.backup;
 
 public class BackupException extends RuntimeException {
   public BackupException(String message) {

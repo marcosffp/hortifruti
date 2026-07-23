@@ -3,7 +3,7 @@ package com.hortifruti.sl.hortifruti.service.billet;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hortifruti.sl.hortifruti.config.billet.BilletHttpClient;
 import com.hortifruti.sl.hortifruti.dto.billet.BilletResponse;
-import com.hortifruti.sl.hortifruti.exception.BilletException;
+import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import java.io.IOException;

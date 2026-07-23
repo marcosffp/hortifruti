@@ -2,10 +2,10 @@ package com.hortifruti.sl.hortifruti.service.climate;
 
 import com.hortifruti.sl.hortifruti.dto.climate.ProductRequest;
 import com.hortifruti.sl.hortifruti.dto.climate.ProductResponse;
-import com.hortifruti.sl.hortifruti.exception.ProductException;
+import com.hortifruti.sl.hortifruti.exception.climate.ProductException;
 import com.hortifruti.sl.hortifruti.mapper.ProductMapper;
-import com.hortifruti.sl.hortifruti.model.ClimateProduct;
-import com.hortifruti.sl.hortifruti.repository.ProductRepository;
+import com.hortifruti.sl.hortifruti.model.climate.ClimateProduct;
+import com.hortifruti.sl.hortifruti.repository.climate.ProductRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;

@@ -1,10 +1,12 @@
 package com.hortifruti.sl.hortifruti.service.finance;
 
 import com.hortifruti.sl.hortifruti.dto.bb.BBImportSummary;
+import com.hortifruti.sl.hortifruti.dto.finance.StatementResponse;
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobImportSummary;
-import com.hortifruti.sl.hortifruti.dto.transaction.StatementResponse;
 import com.hortifruti.sl.hortifruti.model.finance.Statement;
 import com.hortifruti.sl.hortifruti.repository.finance.StatementRepository;
+import com.hortifruti.sl.hortifruti.service.finance.bb.BBStatementService;
+import com.hortifruti.sl.hortifruti.service.finance.sicoob.SicoobStatementService;
 import com.hortifruti.sl.hortifruti.service.storage.R2StorageService;
 import java.io.IOException;
 import java.time.LocalDate;

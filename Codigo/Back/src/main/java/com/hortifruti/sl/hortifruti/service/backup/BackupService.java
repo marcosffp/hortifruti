@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.backup;
 
-import com.hortifruti.sl.hortifruti.dto.BackupResponse;
-import com.hortifruti.sl.hortifruti.exception.BackupException;
+import com.hortifruti.sl.hortifruti.dto.backup.BackupResponse;
+import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
 import com.hortifruti.sl.hortifruti.service.backup.folders.GoogleFolderService;
 import com.hortifruti.sl.hortifruti.service.scheduler.DatabaseStorageService;
 import java.io.IOException;

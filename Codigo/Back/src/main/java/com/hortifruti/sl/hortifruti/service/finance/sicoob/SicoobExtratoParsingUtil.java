@@ -1,6 +1,6 @@
-package com.hortifruti.sl.hortifruti.util;
+package com.hortifruti.sl.hortifruti.service.finance.sicoob;
 
-import com.hortifruti.sl.hortifruti.exception.SicoobExtratoException;
+import com.hortifruti.sl.hortifruti.exception.sicoob.SicoobExtratoException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;

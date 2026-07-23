@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.config.FocusNfeApiClient;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseSimplif;
-import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceTaxDetails;
-import com.hortifruti.sl.hortifruti.dto.invoice.ItemTaxDetails;
-import com.hortifruti.sl.hortifruti.exception.InvoiceException;
+import com.hortifruti.sl.hortifruti.dto.invoice.tax.InvoiceTaxDetails;
+import com.hortifruti.sl.hortifruti.dto.invoice.tax.ItemTaxDetails;
+import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
@@ -92,8 +92,7 @@ public class InvoiceQuery {
         dataEmissao = OffsetDateTime.parse(dataEmissaoStr).toLocalDateTime();
       }
     } catch (Exception e) {
-      log.warn(
-          "Erro ao converter data: {} - usando data atual como fallback", dataEmissaoStr, e);
+      log.warn("Erro ao converter data: {} - usando data atual como fallback", dataEmissaoStr, e);
       dataEmissao = LocalDateTime.now();
     }
 
@@ -211,8 +210,7 @@ public class InvoiceQuery {
 
     try {
       if (dataEmissaoStr == null || dataEmissaoStr.trim().isEmpty()) {
-        log.warn(
-            "Data de emissão está vazia para ref: {}, usando data atual como fallback", ref);
+        log.warn("Data de emissão está vazia para ref: {}, usando data atual como fallback", ref);
         dataEmissao = LocalDateTime.now();
       } else {
         dataEmissao = OffsetDateTime.parse(dataEmissaoStr).toLocalDateTime();

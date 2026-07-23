@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.service.notification;
+package com.hortifruti.sl.hortifruti.service.notification.email;
 
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;

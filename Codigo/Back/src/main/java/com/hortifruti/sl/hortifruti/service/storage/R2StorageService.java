@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.storage;
 
-import com.hortifruti.sl.hortifruti.exception.StorageException;
+import com.hortifruti.sl.hortifruti.exception.storage.StorageException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

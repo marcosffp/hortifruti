@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.controller;
+package com.hortifruti.sl.hortifruti.controller.scheduler;
 
 import com.hortifruti.sl.hortifruti.service.scheduler.CombinedScoreOverdueService;
 import com.hortifruti.sl.hortifruti.service.scheduler.DatabaseStorageSchedulerService;

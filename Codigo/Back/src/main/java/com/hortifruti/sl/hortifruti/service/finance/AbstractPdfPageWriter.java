@@ -11,11 +11,11 @@ import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 
 /**
  * Base comum para os "PageWriter" que desenham extratos/relatórios em PDF via PDFBox campo a campo
- * — usada por {@link SicoobExtratoPdfGenerator}, {@link BBExtratoPdfGenerator} e {@link
+ * — usada por {@code SicoobExtratoPdfGenerator}, {@code BBExtratoPdfGenerator} e {@code
  * TransactionReportPdfGenerator}, que só diferem no layout de colunas e no conteúdo desenhado em
  * cada página.
  */
-abstract class AbstractPdfPageWriter {
+public abstract class AbstractPdfPageWriter {
 
   protected static final float MARGIN = 40;
   protected static final PDFont FONT = new PDType1Font(Standard14Fonts.FontName.HELVETICA);

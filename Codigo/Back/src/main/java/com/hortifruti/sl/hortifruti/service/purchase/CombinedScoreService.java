@@ -6,15 +6,15 @@ import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.WildcardBilletRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientLastGroupingResponse;
-import com.hortifruti.sl.hortifruti.exception.ClientException;
-import com.hortifruti.sl.hortifruti.exception.CombinedScoreException;
-import com.hortifruti.sl.hortifruti.exception.PurchaseException;
+import com.hortifruti.sl.hortifruti.exception.purchase.ClientException;
+import com.hortifruti.sl.hortifruti.exception.purchase.CombinedScoreException;
+import com.hortifruti.sl.hortifruti.exception.purchase.PurchaseException;
 import com.hortifruti.sl.hortifruti.mapper.CombinedScoreMapper;
-import com.hortifruti.sl.hortifruti.model.enumeration.Status;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.model.purchase.GroupedProduct;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
+import com.hortifruti.sl.hortifruti.model.purchase.Status;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.GroupedProductRepository;
@@ -269,8 +269,8 @@ public class CombinedScoreService {
 
   /**
    * yourNumber (seuNumero) não é único entre agrupamentos (ver {@link
-   * CombinedScoreRepository#findAllByYourNumber}) — retorna o ID do agrupamento mais recente
-   * (maior ID) para esse número, ou {@code null} se nenhum for encontrado.
+   * CombinedScoreRepository#findAllByYourNumber}) — retorna o ID do agrupamento mais recente (maior
+   * ID) para esse número, ou {@code null} se nenhum for encontrado.
    */
   public Long findLatestIdByYourNumber(String yourNumber) {
     return combinedScoreRepository.findAllByYourNumber(yourNumber).stream()
@@ -373,7 +373,8 @@ public class CombinedScoreService {
   /** Agrupamentos com nota fiscal emitida, usado para localizar a ref pelo número da NF. */
   public List<CombinedScore> findAllWithInvoiceRef() {
     return combinedScoreRepository.findAll().stream()
-        .filter(cs -> cs.isHasInvoice() && cs.getInvoiceRef() != null && !cs.getInvoiceRef().isEmpty())
+        .filter(
+            cs -> cs.isHasInvoice() && cs.getInvoiceRef() != null && !cs.getInvoiceRef().isEmpty())
         .toList();
   }
 
@@ -385,8 +386,8 @@ public class CombinedScoreService {
   }
 
   /**
-   * Atualiza o status de um agrupamento. Ponto único de escrita de status usado por outros
-   * domínios (ex: billet) para não precisarem acessar {@link CombinedScoreRepository} diretamente.
+   * Atualiza o status de um agrupamento. Ponto único de escrita de status usado por outros domínios
+   * (ex: billet) para não precisarem acessar {@link CombinedScoreRepository} diretamente.
    */
   @Transactional
   public CombinedScore updateStatus(Long id, Status status) {
@@ -394,7 +395,8 @@ public class CombinedScoreService {
         combinedScoreRepository
             .findById(id)
             .orElseThrow(
-                () -> new CombinedScoreException("Agrupamento com o ID " + id + " não encontrado."));
+                () ->
+                    new CombinedScoreException("Agrupamento com o ID " + id + " não encontrado."));
     combinedScore.setStatus(status);
     return combinedScoreRepository.save(combinedScore);
   }

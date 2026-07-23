@@ -1,6 +1,5 @@
-package com.hortifruti.sl.hortifruti.util;
+package com.hortifruti.sl.hortifruti.model.climate;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Month;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import java.util.Arrays;

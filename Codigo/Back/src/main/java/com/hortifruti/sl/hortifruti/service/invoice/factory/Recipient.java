@@ -2,7 +2,7 @@ package com.hortifruti.sl.hortifruti.service.invoice.factory;
 
 import com.hortifruti.sl.hortifruti.dto.invoice.AddressRequest;
 import com.hortifruti.sl.hortifruti.dto.invoice.RecipientRequest;
-import com.hortifruti.sl.hortifruti.exception.InvoiceException;
+import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import java.util.regex.Matcher;

@@ -1,8 +1,8 @@
 package com.hortifruti.sl.hortifruti.controller.notification;
 
 import com.hortifruti.sl.hortifruti.dto.notification.*;
-import com.hortifruti.sl.hortifruti.exception.NotificationException;
-import com.hortifruti.sl.hortifruti.model.enumeration.NotificationChannel;
+import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
+import com.hortifruti.sl.hortifruti.model.notification.NotificationChannel;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.service.notification.BulkNotificationService;
 import com.hortifruti.sl.hortifruti.service.notification.NotificationService;

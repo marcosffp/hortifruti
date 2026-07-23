@@ -3,7 +3,7 @@ package com.hortifruti.sl.hortifruti.service.invoice;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.config.FocusNfeApiClient;
-import com.hortifruti.sl.hortifruti.exception.InvoiceException;
+import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;

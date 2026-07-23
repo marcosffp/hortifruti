@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.service.notification;
+package com.hortifruti.sl.hortifruti.service.notification.email;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -7,7 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 /** Saudação e período (data local de Brasília) usados no corpo dos emails para clientes. */
-final class EmailGreetingUtil {
+public final class EmailGreetingUtil {
 
   private static final ZoneId BRAZIL_ZONE = ZoneId.of("America/Sao_Paulo");
   private static final Locale PT_BR = Locale.forLanguageTag("pt-BR");
@@ -17,11 +17,11 @@ final class EmailGreetingUtil {
 
   private EmailGreetingUtil() {}
 
-  static LocalDate today() {
+  public static LocalDate today() {
     return ZonedDateTime.now(BRAZIL_ZONE).toLocalDate();
   }
 
-  static String timeOfDayGreeting() {
+  public static String timeOfDayGreeting() {
     int hour = ZonedDateTime.now(BRAZIL_ZONE).getHour();
     if (hour < 12) {
       return "Bom dia";
@@ -33,7 +33,7 @@ final class EmailGreetingUtil {
   }
 
   /** Período de 7 dias terminando em {@code end} (inclusive). Ex: "06 à 12 de julho". */
-  static String weekPeriodLabel(LocalDate end) {
+  public static String weekPeriodLabel(LocalDate end) {
     LocalDate start = end.minusDays(6);
     if (start.getMonth() == end.getMonth() && start.getYear() == end.getYear()) {
       return start.format(DAY_ONLY) + " à " + end.format(DAY_MONTH);

@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.exception;
+package com.hortifruti.sl.hortifruti.exception.auth;
 
 public class TokenException extends RuntimeException {
   public TokenException(String message) {

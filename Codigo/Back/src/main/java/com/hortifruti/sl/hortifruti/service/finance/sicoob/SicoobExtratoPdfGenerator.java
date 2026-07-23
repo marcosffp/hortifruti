@@ -1,9 +1,9 @@
-package com.hortifruti.sl.hortifruti.service.finance;
+package com.hortifruti.sl.hortifruti.service.finance.sicoob;
 
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobExtratoLinha;
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobExtratoResponse;
+import com.hortifruti.sl.hortifruti.service.finance.AbstractPdfPageWriter;
 import com.hortifruti.sl.hortifruti.util.SicoobExtratoFormatUtil;
-import com.hortifruti.sl.hortifruti.util.SicoobExtratoParsingUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;

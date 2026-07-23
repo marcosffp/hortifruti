@@ -2,7 +2,7 @@ package com.hortifruti.sl.hortifruti.config.bb;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hortifruti.sl.hortifruti.exception.BBApiException;
+import com.hortifruti.sl.hortifruti.exception.bb.BBApiException;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

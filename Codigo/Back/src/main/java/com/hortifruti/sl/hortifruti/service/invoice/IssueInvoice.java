@@ -6,7 +6,7 @@ import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.IssueInvoiceRequest;
 import com.hortifruti.sl.hortifruti.dto.invoice.ItemRequest;
 import com.hortifruti.sl.hortifruti.dto.invoice.RecipientRequest;
-import com.hortifruti.sl.hortifruti.exception.InvoiceException;
+import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.service.invoice.factory.InvoiceItem;

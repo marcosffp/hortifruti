@@ -1,13 +1,13 @@
-package com.hortifruti.sl.hortifruti.service;
+package com.hortifruti.sl.hortifruti.service.user;
 
 import com.hortifruti.sl.hortifruti.dto.user.UserRequest;
 import com.hortifruti.sl.hortifruti.dto.user.UserResponse;
 import com.hortifruti.sl.hortifruti.dto.user.UserUpdateRequest;
 import com.hortifruti.sl.hortifruti.dto.user.UsersCountResponse;
-import com.hortifruti.sl.hortifruti.exception.UserException;
+import com.hortifruti.sl.hortifruti.exception.user.UserException;
 import com.hortifruti.sl.hortifruti.mapper.UserMapper;
+import com.hortifruti.sl.hortifruti.model.Role;
 import com.hortifruti.sl.hortifruti.model.User;
-import com.hortifruti.sl.hortifruti.model.enumeration.Role;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
 import java.util.List;
 import lombok.AllArgsConstructor;
