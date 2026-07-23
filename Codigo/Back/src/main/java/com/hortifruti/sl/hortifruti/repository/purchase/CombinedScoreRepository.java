@@ -1,16 +1,28 @@
 package com.hortifruti.sl.hortifruti.repository.purchase;
 
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
+import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Long> {
+
+  /**
+   * Busca o agrupamento travando a linha (SELECT ... FOR UPDATE) até o fim da transação. Usado
+   * antes de emitir boleto/NF para serializar requisições concorrentes (ex: duplo clique) no mesmo
+   * agrupamento — a segunda requisição só lê a linha depois que a primeira já commitou o
+   * hasBillet/hasInvoice, e por isso enxerga o documento já emitido em vez de gerar um duplicado.
+   */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT cs FROM CombinedScore cs WHERE cs.id = :id")
+  Optional<CombinedScore> findByIdForUpdate(@Param("id") Long id);
 
   @Query(
       "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE AND cs.hasBillet = true")
@@ -52,6 +64,14 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
    * assumir resultado único.
    */
   List<CombinedScore> findAllByYourNumber(String yourNumber);
+
+  /**
+   * Busca por "nosso número" (identificador do boleto atribuído pelo Sicoob) — usado pelo
+   * cancelamento manual/avulso, quando o operador só tem o número do boleto e não sabe (ou não
+   * existe) um CombinedScore local vinculado.
+   */
+  @Query("SELECT cs FROM CombinedScore cs WHERE cs.ourNumber_sicoob = :ourNumber")
+  List<CombinedScore> findAllByOurNumberSicoob(@Param("ourNumber") String ourNumber);
 
   Optional<CombinedScore> findByInvoiceRef(String invoiceRef);
 

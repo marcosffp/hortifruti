@@ -19,14 +19,17 @@ const DEFAULT_MESSAGES = [
 /**
  * Progresso "falso" no estilo tela de carregamento de jogo: acelera no início,
  * desacelera perto do teto (já que o backend não expõe progresso real) e só
- * corre para 100% quando a operação de fato termina.
+ * corre para 100% quando a operação de fato termina. O ritmo é lento de
+ * propósito, para acompanhar operações longas (ex.: exportação de relatórios)
+ * sem chegar perto do teto rápido demais e ficar parado esperando.
  */
 function nextFakeProgress(prev: number): number {
   if (prev >= 90) return prev;
   let amount: number;
-  if (prev < 25) amount = Math.random() * 6 + 4;
-  else if (prev < 65) amount = Math.random() * 4 + 1;
-  else amount = Math.random() * 1.5 + 0.3;
+  if (prev < 20) amount = Math.random() * 1.5 + 0.5;
+  else if (prev < 50) amount = Math.random() * 1 + 0.3;
+  else if (prev < 75) amount = Math.random() * 0.6 + 0.15;
+  else amount = Math.random() * 0.25 + 0.05;
   return Math.min(90, prev + amount);
 }
 

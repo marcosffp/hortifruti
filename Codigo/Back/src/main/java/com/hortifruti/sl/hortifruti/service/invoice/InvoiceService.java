@@ -49,6 +49,15 @@ public class InvoiceService {
     return invoiceCancelService.cancelInvoice(ref, justificativa);
   }
 
+  /**
+   * Cancela a NF-e por referência, sem exigir um CombinedScore local vinculado — usado tanto pelo
+   * fluxo normal quanto pelo cancelamento manual/avulso (com suporte a cancelamento extemporâneo).
+   */
+  @Transactional
+  public String cancelInvoice(String ref, String justificativa, boolean extemporaneo) {
+    return invoiceCancelService.cancelInvoice(ref, justificativa, extemporaneo);
+  }
+
   @Transactional
   public List<FiscalNoteXmlStorageResponse> findFiscalNoteXmlsByPeriod(
       LocalDate startDate, LocalDate endDate) {

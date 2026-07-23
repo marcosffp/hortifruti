@@ -6,13 +6,17 @@ import com.hortifruti.sl.hortifruti.service.invoice.tax.payment.PaymentReport;
 import com.hortifruti.sl.hortifruti.service.invoice.tax.registerReport.RegisterReport;
 import com.hortifruti.sl.hortifruti.service.invoice.tax.sales.SalesReport;
 import com.hortifruti.sl.hortifruti.util.FileZipUtils;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -54,6 +58,71 @@ public class ReportTaxService {
         }
       }
     }
+  }
+
+  /**
+   * Igual ao gerado por {@link #generateMonthly}, mas retorna os arquivos soltos (PDFs + XMLs de
+   * NF-e) em vez de um ZIP único, para que possam ser salvos como uma pasta comum dentro do
+   * relatório macro, no mesmo formato usado pelos relatórios bancários.
+   */
+  public Map<String, byte[]> generateMonthlyFiles(LocalDate startDate, LocalDate endDate) {
+    Map<String, byte[]> files = new HashMap<>();
+
+    try {
+      byte[] paymentData = generatePaymentReport(startDate, endDate);
+      if (paymentData != null && paymentData.length > 0) {
+        files.put("Resumo_de_Vendas_por_Forma_de_Pagamento.pdf", paymentData);
+      }
+    } catch (Exception e) {
+      log.error("Erro ao gerar relatório de pagamento - continuando sem ele", e);
+    }
+
+    try {
+      byte[] registerData = generateRegisterReport(startDate, endDate);
+      if (registerData != null && registerData.length > 0) {
+        files.put("Registro_de_saida_nf.pdf", registerData);
+      }
+    } catch (Exception e) {
+      log.error("Erro ao gerar relatório de registro de saída - continuando sem ele", e);
+    }
+
+    try {
+      byte[] salesData = generateSalesReport(startDate, endDate);
+      if (salesData != null && salesData.length > 0) {
+        files.put("Relacao_de_Vendas.pdf", salesData);
+      }
+    } catch (Exception e) {
+      log.error("Erro ao gerar relatório de vendas - continuando sem ele", e);
+    }
+
+    try {
+      byte[] icmsData = generateIcmsReport(startDate, endDate);
+      if (icmsData != null && icmsData.length > 0) {
+        files.put("Registro_Apuracao_ICMS.pdf", icmsData);
+      }
+    } catch (Exception e) {
+      log.error("Erro ao gerar relatório de apuração de ICMS - continuando sem ele", e);
+    }
+
+    try {
+      String monthName = startDate.format(DateTimeFormatter.ofPattern("MMMM", Locale.of("pt", "BR")));
+      String nfSalesFolder = FileZipUtils.capitalizeFirstLetter(monthName) + "_NFE_SAIDAS";
+      List<File> xmlFiles = nfSalesReport.listXmlFiles(startDate, endDate);
+
+      for (File xmlFile : xmlFiles) {
+        try {
+          if (xmlFile.exists() && xmlFile.length() > 0) {
+            files.put(nfSalesFolder + "/" + xmlFile.getName(), Files.readAllBytes(xmlFile.toPath()));
+          }
+        } finally {
+          Files.deleteIfExists(xmlFile.toPath());
+        }
+      }
+    } catch (Exception e) {
+      log.error("Erro ao gerar XMLs de notas fiscais - continuando sem eles", e);
+    }
+
+    return files;
   }
 
   private byte[] generatePaymentReport(LocalDate startDate, LocalDate endDate) throws IOException {

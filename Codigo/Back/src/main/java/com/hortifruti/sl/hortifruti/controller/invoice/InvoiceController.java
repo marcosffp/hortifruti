@@ -79,15 +79,26 @@ public class InvoiceController {
     return invoiceService.downloadXml(ref);
   }
 
+  /**
+   * Cancela a NF-e pela referência. Funciona mesmo sem um CombinedScore local vinculado a essa
+   * ref (ex: cancelamento manual/avulso) — se existir um agrupamento local, seu status também é
+   * atualizado, mas isso não é obrigatório para a operação ter sucesso.
+   *
+   * @param extemporaneo Indica que o cancelamento está sendo feito fora do prazo normal de ~24h
+   *     da SEFAZ (autorização excepcional já obtida pelo operador junto à SEFAZ do estado).
+   */
   @DeleteMapping("/{ref}/cancel")
   public ResponseEntity<String> cancelInvoice(
-      @PathVariable String ref, @RequestParam String justificativa) {
+      @PathVariable String ref,
+      @RequestParam String justificativa,
+      @RequestParam(required = false, defaultValue = "false") boolean extemporaneo) {
     try {
-      String response = invoiceService.cancelInvoice(ref, justificativa);
+      String response = invoiceService.cancelInvoice(ref, justificativa, extemporaneo);
       return ResponseEntity.ok(response);
     } catch (Exception e) {
       log.error("Erro ao cancelar a NF-e para ref {}", ref, e);
-      return ResponseEntity.internalServerError().body("Erro ao cancelar a NF-e.");
+      return ResponseEntity.internalServerError()
+          .body(e.getMessage() != null ? e.getMessage() : "Erro ao cancelar a NF-e.");
     }
   }
 

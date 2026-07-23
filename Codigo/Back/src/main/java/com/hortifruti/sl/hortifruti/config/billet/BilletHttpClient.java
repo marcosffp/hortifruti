@@ -94,14 +94,17 @@ public class BilletHttpClient {
         return call.get();
       } catch (HttpClientErrorException | HttpServerErrorException retryEx) {
         logHttpFailure(label + " " + endpoint + " (retry)", retryEx, retryStartedAt);
-        throw new BilletException("Erro " + label + " após renovação de token.", retryEx);
+        throw new BilletException(
+            "Erro " + label + " após renovação de token. " + extractSicoobMessage(retryEx),
+            retryEx);
       } catch (Exception retryEx) {
         throw new BilletException(
             "Erro inesperado " + label + " após renovação de token.", retryEx);
       }
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
       logHttpFailure(label + " " + endpoint, ex, startedAt);
-      throw new BilletException("Erro ao realizar requisição " + verb + " ao Sicoob.", ex);
+      throw new BilletException(
+          "Erro ao realizar requisição " + verb + " ao Sicoob. " + extractSicoobMessage(ex), ex);
     } catch (Exception ex) {
       throw new BilletException("Erro inesperado ao realizar requisição " + verb + ".", ex);
     }
@@ -151,6 +154,36 @@ public class BilletHttpClient {
       logNetworkFailure("DELETE " + endpoint, ex, startedAt);
       throw ex;
     }
+  }
+
+  /**
+   * Extrai o motivo real do erro do corpo da resposta do Sicoob. Sem isso, quem chama {@link
+   * #postCancel} / {@link #post} etc só via a mensagem genérica "Erro ao realizar requisição ...
+   * ao Sicoob" — escondendo, por exemplo, que o boleto já estava baixado ou que o "nosso número"
+   * informado é inválido.
+   */
+  private String extractSicoobMessage(HttpStatusCodeException ex) {
+    String body = ex.getResponseBodyAsString();
+    if (body == null || body.isBlank()) {
+      return "Detalhe: " + ex.getMessage();
+    }
+    try {
+      JsonNode node = objectMapper.readTree(body);
+      JsonNode mensagens = node.get("mensagens");
+      if (mensagens != null && mensagens.isArray() && !mensagens.isEmpty()) {
+        JsonNode mensagem = mensagens.get(0).get("mensagem");
+        if (mensagem != null) {
+          return "Detalhe: " + mensagem.asText();
+        }
+      }
+      JsonNode mensagem = node.get("mensagem");
+      if (mensagem != null) {
+        return "Detalhe: " + mensagem.asText();
+      }
+    } catch (Exception parseError) {
+      // corpo não é JSON válido, cai no fallback abaixo
+    }
+    return "Detalhe: " + body;
   }
 
   private void logHttpFailure(String operation, HttpStatusCodeException ex, long startedAt) {

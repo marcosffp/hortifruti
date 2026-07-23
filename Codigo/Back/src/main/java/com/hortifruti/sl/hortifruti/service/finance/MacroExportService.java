@@ -132,14 +132,25 @@ public class MacroExportService {
       throws IOException {
     try {
       log.info("Iniciando geração de relatórios fiscais...");
-      byte[] taxReportsZip = reportTaxService.generateMonthly(startDate, endDate);
+      Map<String, byte[]> taxFiles = reportTaxService.generateMonthlyFiles(startDate, endDate);
 
-      if (taxReportsZip != null && taxReportsZip.length > 0) {
+      if (taxFiles != null && !taxFiles.isEmpty()) {
         String monthName =
             startDate.format(DateTimeFormatter.ofPattern("MMMM", Locale.of("pt", "BR")));
-        String taxZipName =
-            "Relatorios_Fiscais_" + FileZipUtils.capitalizeFirstLetter(monthName) + ".zip";
-        FileZipUtils.saveFile(folderPath.resolve(taxZipName), taxReportsZip);
+        Path taxFolder =
+            folderPath.resolve(
+                "Relatorios_Fiscais_" + FileZipUtils.capitalizeFirstLetter(monthName));
+
+        for (Map.Entry<String, byte[]> entry : taxFiles.entrySet()) {
+          String fileName = entry.getKey();
+          byte[] fileContent = entry.getValue();
+
+          if (fileContent != null && fileContent.length > 0) {
+            FileZipUtils.saveFile(taxFolder.resolve(fileName), fileContent);
+          } else {
+            log.warn("Arquivo fiscal está vazio: {}", fileName);
+          }
+        }
         log.info("Relatórios fiscais gerados com sucesso");
       } else {
         log.warn("Relatórios fiscais estão vazios - continuando sem eles");

@@ -1,5 +1,8 @@
 package com.hortifruti.sl.hortifruti.config;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceAlreadyCancelledException;
 import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -13,11 +16,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 @Component
 @RequiredArgsConstructor
 public class FocusNfeApiClient {
+
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Value("${focus.nfe.token}")
   private String focusNfeToken;
@@ -83,9 +89,58 @@ public class FocusNfeApiClient {
           restTemplate.exchange(url, HttpMethod.DELETE, entity, String.class);
 
       return response.getBody();
+    } catch (IllegalArgumentException e) {
+      throw e;
+    } catch (HttpStatusCodeException e) {
+      String mensagem = extractFocusNfeMessage(e);
+      if ("already_processed".equals(extractFocusNfeCode(e))) {
+        throw new InvoiceAlreadyCancelledException(
+            "NF-e com referência " + ref + " já estava cancelada: " + mensagem, e);
+      }
+      throw new InvoiceException(
+          "Erro ao cancelar a NF-e com referência " + ref + ": " + mensagem, e);
     } catch (Exception e) {
       throw new InvoiceException("Erro ao cancelar a NF-e com referência: " + ref, e);
     }
+  }
+
+  /**
+   * A Focus NFe retorna o motivo do erro no corpo JSON (ex: {@code {"codigo": "already_processed",
+   * "mensagem": "A nota fiscal foi cancelada"}}) — sem extrair esse campo, o operador só via uma
+   * mensagem genérica de falha e não conseguia saber, por exemplo, que a NF já havia sido
+   * cancelada anteriormente.
+   */
+  private String extractFocusNfeMessage(HttpStatusCodeException e) {
+    String body = e.getResponseBodyAsString();
+    if (body == null || body.isBlank()) {
+      return e.getMessage();
+    }
+    try {
+      JsonNode node = objectMapper.readTree(body);
+      if (node.has("mensagem")) {
+        return node.get("mensagem").asText();
+      }
+    } catch (Exception parseError) {
+      // corpo não é JSON válido, cai no fallback abaixo
+    }
+    return body;
+  }
+
+  /** Extrai o campo {@code codigo} do corpo de erro da Focus NFe (ex: {@code already_processed}). */
+  private String extractFocusNfeCode(HttpStatusCodeException e) {
+    String body = e.getResponseBodyAsString();
+    if (body == null || body.isBlank()) {
+      return null;
+    }
+    try {
+      JsonNode node = objectMapper.readTree(body);
+      if (node.has("codigo")) {
+        return node.get("codigo").asText();
+      }
+    } catch (Exception parseError) {
+      // corpo não é JSON válido
+    }
+    return null;
   }
 
   private HttpHeaders createHeaders() {

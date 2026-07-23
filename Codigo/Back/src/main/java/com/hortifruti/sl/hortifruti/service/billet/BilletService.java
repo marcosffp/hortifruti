@@ -112,6 +112,14 @@ public class BilletService {
     return billetCancel.cancelBillet(idCombinedScore);
   }
 
+  /**
+   * Cancelamento manual/avulso de boleto, direto pelo "nosso número" informado pelo operador —
+   * sem exigir um agrupamento (CombinedScore) local conhecido.
+   */
+  public ResponseEntity<String> cancelBilletByNumber(String nossoNumero) throws BilletException {
+    return billetCancel.cancelBilletByNumber(nossoNumero);
+  }
+
   public BilletResponse getBilletByCombinedScore(long combinedScoreId) throws IOException {
     return billetQuery.getBilletByCombinedScore(combinedScoreId);
   }
@@ -162,8 +170,15 @@ public class BilletService {
   @Transactional
   public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number, String dueDate)
       throws IOException {
-    CombinedScore combinedScore =
-        billetInfoCombinedAndClient.findCombinedScoreById(combinedScoreId);
+    // Trava a linha do agrupamento (SELECT ... FOR UPDATE) para serializar requisições
+    // concorrentes: se duas chegarem juntas (ex: duplo clique), a segunda só prossegue depois que
+    // a primeira já commitou hasBillet=true, e cai no bloqueio de duplicidade abaixo.
+    CombinedScore combinedScore = combinedScoreService.findByIdForUpdate(combinedScoreId);
+
+    if (combinedScore.isHasBillet()) {
+      throw new CombinedScoreException(
+          "Boleto já foi gerado para este agrupamento (id " + combinedScoreId + ").");
+    }
 
     try {
       Client client = billetInfoCombinedAndClient.findClientById(combinedScore.getClientId());

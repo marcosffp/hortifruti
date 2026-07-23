@@ -126,11 +126,19 @@ export function useInvoice() {
     }
   };
 
-  const cancelInvoice = async (ref: string, justificativa: string) => {
+  const cancelInvoice = async (
+    ref: string,
+    justificativa: string,
+    extemporaneo?: boolean,
+  ) => {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await invoiceService.cancelInvoice(ref, justificativa);
+      const result = await invoiceService.cancelInvoice(
+        ref,
+        justificativa,
+        extemporaneo,
+      );
       return result;
     } catch (err) {
       setError(

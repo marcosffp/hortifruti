@@ -40,6 +40,10 @@ public class BilletController {
       return billetService.generateBillet(combinedScoreId, number, dueDate);
     } catch (Exception e) {
       log.error("Erro ao emitir boleto para CombinedScore {}", combinedScoreId, e);
+      String errorMessage = e.getMessage() != null ? e.getMessage() : "";
+      if (errorMessage.contains("já foi gerado")) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorMessage.getBytes());
+      }
       return ResponseEntity.badRequest().body("Erro ao emitir boleto.".getBytes());
     }
   }
@@ -138,9 +142,43 @@ public class BilletController {
       }
 
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body("Erro ao processar cancelamento do boleto");
+          .body(!errorMessage.isEmpty() ? errorMessage : "Erro ao processar cancelamento do boleto");
     } catch (Exception e) {
       log.error("Erro inesperado ao cancelar boleto para CombinedScore {}", idCombinedScore, e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body("Erro inesperado ao processar o cancelamento do boleto");
+    }
+  }
+
+  /**
+   * Realiza a baixa (cancelamento) manual de um boleto direto pelo "nosso número" informado, sem
+   * exigir um agrupamento (CombinedScore) local conhecido. Útil para boletos avulsos/legados cuja
+   * referência local não existe ou foi perdida.
+   *
+   * @param nossoNumero Nosso número do boleto no Sicoob.
+   * @return Resposta indicando o sucesso ou falha da operação.
+   */
+  @PostMapping("/cancel-by-number")
+  public ResponseEntity<String> cancelBilletByNumber(@RequestParam String nossoNumero) {
+    try {
+      ResponseEntity<String> response = billetService.cancelBilletByNumber(nossoNumero);
+      return ResponseEntity.status(response.getStatusCode()).body("Boleto cancelado com sucesso");
+    } catch (BilletException e) {
+      log.error("Erro ao cancelar boleto avulso {}", nossoNumero, e);
+
+      String errorMessage = e.getMessage() != null ? e.getMessage() : "";
+      if (errorMessage.contains("Título em processo de baixa/liquidação")) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body("O boleto já está em processo de cancelamento ou já foi liquidado");
+      }
+      if (errorMessage.contains("Informe o nosso número")) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+      }
+
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(!errorMessage.isEmpty() ? errorMessage : "Erro ao processar cancelamento do boleto");
+    } catch (Exception e) {
+      log.error("Erro inesperado ao cancelar boleto avulso {}", nossoNumero, e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
           .body("Erro inesperado ao processar o cancelamento do boleto");
     }

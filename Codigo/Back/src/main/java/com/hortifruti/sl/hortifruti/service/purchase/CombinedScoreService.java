@@ -386,6 +386,29 @@ public class CombinedScoreService {
   }
 
   /**
+   * Busca o agrupamento travando a linha (SELECT ... FOR UPDATE) até o fim da transação do
+   * chamador. Deve ser usado logo no início de fluxos de emissão de boleto/NF para evitar que duas
+   * requisições concorrentes (ex: duplo clique) leiam {@code hasBillet}/{@code hasInvoice} como
+   * falso ao mesmo tempo e gerem o documento em duplicidade.
+   */
+  @Transactional
+  public CombinedScore findByIdForUpdate(Long id) {
+    return combinedScoreRepository
+        .findByIdForUpdate(id)
+        .orElseThrow(
+            () -> new CombinedScoreException("Agrupamento com o ID " + id + " não encontrado."));
+  }
+
+  /**
+   * Busca agrupamentos pelo "nosso número" do Sicoob. Usado pelo cancelamento manual/avulso de
+   * boleto, quando o operador só possui o número do boleto (sem saber, ou sem existir, um
+   * CombinedScore local vinculado).
+   */
+  public List<CombinedScore> findAllByOurNumberSicoob(String ourNumber) {
+    return combinedScoreRepository.findAllByOurNumberSicoob(ourNumber);
+  }
+
+  /**
    * Atualiza o status de um agrupamento. Ponto único de escrita de status usado por outros domínios
    * (ex: billet) para não precisarem acessar {@link CombinedScoreRepository} diretamente.
    */

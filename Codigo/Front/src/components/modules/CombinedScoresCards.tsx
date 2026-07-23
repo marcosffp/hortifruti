@@ -8,7 +8,7 @@ import {
   Info,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AdditionalDataModal from "@/components/modals/AdditionalDataModal";
 import GroupedProductsModal from "@/components/modals/GroupedProductsModal";
 import ShowBilletDataModal from "@/components/modals/ShowBilletDataModal";
@@ -77,6 +77,27 @@ export default function CombinedScoresCards({
   const [showInvoiceBilletModal, setShowInvoiceBilletModal] = useState(false);
   const [invoiceBilletResult, setInvoiceBilletResult] =
     useState<InvoiceWithBilletResult | null>(null);
+
+  // Guarda de duplo clique: bloqueia uma segunda geração de boleto/NF para o mesmo
+  // agrupamento enquanto a primeira ainda está em andamento. Usa ref (além do state, só para
+  // refletir na UI) porque duas chamadas síncronas de clique podem ocorrer antes do state
+  // atualizar via re-render.
+  const processingScoreIdsRef = useRef<Set<number>>(new Set());
+  const [processingScoreIds, setProcessingScoreIds] = useState<Set<number>>(
+    new Set(),
+  );
+
+  const beginProcessing = useCallback((id: number): boolean => {
+    if (processingScoreIdsRef.current.has(id)) return false;
+    processingScoreIdsRef.current.add(id);
+    setProcessingScoreIds(new Set(processingScoreIdsRef.current));
+    return true;
+  }, []);
+
+  const endProcessing = useCallback((id: number) => {
+    processingScoreIdsRef.current.delete(id);
+    setProcessingScoreIds(new Set(processingScoreIdsRef.current));
+  }, []);
 
   const { generateBillet, getBilletInfo } = useBillet();
   const {
@@ -239,6 +260,7 @@ export default function CombinedScoresCards({
     clientNumber: string,
     dueDate?: string,
   ) => {
+    if (!beginProcessing(scoreId)) return;
     try {
       const score = scores.find((s) => s.id === scoreId);
       if (!score) {
@@ -258,10 +280,16 @@ export default function CombinedScoresCards({
 
       fetchScores();
     } catch (error) {
-      showError("Erro ao gerar boleto");
+      showError(
+        error instanceof Error ? error.message : "Erro ao gerar boleto",
+      );
       console.error(error);
+    } finally {
+      endProcessing(scoreId);
     }
   };
+
+  const creatingWildcardBilletRef = useRef(false);
 
   const handleGenerateWildcardBillet = async (
     number: string,
@@ -269,6 +297,8 @@ export default function CombinedScoresCards({
     dueDate?: string,
   ) => {
     if (!clientId) return;
+    if (creatingWildcardBilletRef.current) return;
+    creatingWildcardBilletRef.current = true;
 
     try {
       const newScoreId = await combinedScoreService.createWildcardBillet(
@@ -297,6 +327,8 @@ export default function CombinedScoresCards({
     } catch (error) {
       showError("Erro ao gerar boleto");
       console.error(error);
+    } finally {
+      creatingWildcardBilletRef.current = false;
     }
   };
 
@@ -328,6 +360,7 @@ export default function CombinedScoresCards({
     scoreId: number,
     dadosAdicionais?: string,
   ) => {
+    if (!beginProcessing(scoreId)) return;
     try {
       const score = scores.find((s) => s.id === scoreId);
       if (!score) {
@@ -367,6 +400,8 @@ export default function CombinedScoresCards({
         error instanceof Error ? error.message : "Erro ao gerar nota fiscal",
       );
       console.error(error);
+    } finally {
+      endProcessing(scoreId);
     }
   };
 
@@ -396,9 +431,11 @@ export default function CombinedScoresCards({
     scoreId: number,
     dadosAdicionais?: string,
   ) => {
+    if (!beginProcessing(scoreId)) return;
     const score = scores.find((s) => s.id === scoreId);
     if (!score) {
       showError("Agrupamento não encontrado");
+      endProcessing(scoreId);
       return;
     }
 
@@ -422,6 +459,8 @@ export default function CombinedScoresCards({
       );
       console.error(error);
       fetchScores();
+    } finally {
+      endProcessing(scoreId);
     }
   };
 
@@ -638,10 +677,13 @@ export default function CombinedScoresCards({
                         <button
                           type="button"
                           onClick={() => handleCombinedButtonClick(score)}
-                          className="w-full flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
+                          disabled={processingScoreIds.has(score.id)}
+                          className="w-full flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <FileText className="w-3 h-3" />
-                          Gerar NF + Boleto
+                          {processingScoreIds.has(score.id)
+                            ? "Gerando..."
+                            : "Gerar NF + Boleto"}
                         </button>
                       )}
 
@@ -666,10 +708,13 @@ export default function CombinedScoresCards({
                               groupId: score.id,
                             })
                           }
-                          className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
+                          disabled={processingScoreIds.has(score.id)}
+                          className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <FileText className="w-3 h-3" />
-                          Gerar Boleto
+                          {processingScoreIds.has(score.id)
+                            ? "Gerando..."
+                            : "Gerar Boleto"}
                         </button>
                       )}
 
@@ -687,10 +732,13 @@ export default function CombinedScoresCards({
                           <button
                             type="button"
                             onClick={() => handleInvoiceButtonClick(score)}
-                            className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
+                            disabled={processingScoreIds.has(score.id)}
+                            className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <FileText className="w-3 h-3" />
-                            Gerar NF
+                            {processingScoreIds.has(score.id)
+                              ? "Gerando..."
+                              : "Gerar NF"}
                           </button>
                         ))}
                     </div>

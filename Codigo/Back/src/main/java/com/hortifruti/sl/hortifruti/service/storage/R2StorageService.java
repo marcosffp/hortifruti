@@ -39,6 +39,20 @@ public class R2StorageService {
     }
   }
 
+  /**
+   * Remove um objeto do R2. Usado para desfazer um upload já feito quando o registro
+   * correspondente no banco não pôde ser persistido (ex: colisão de ref concorrente) — evita
+   * deixar arquivos órfãos duplicados no bucket.
+   */
+  public void delete(String key) {
+    try {
+      r2Client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(key).build());
+    } catch (S3Exception | software.amazon.awssdk.core.exception.SdkClientException e) {
+      log.error("[R2Storage] delete key={} outcome=FAILURE message={}", key, e.getMessage());
+      throw new StorageException("Falha ao remover arquivo do R2: " + e.getMessage(), e);
+    }
+  }
+
   public byte[] download(String key) {
     try {
       return r2Client

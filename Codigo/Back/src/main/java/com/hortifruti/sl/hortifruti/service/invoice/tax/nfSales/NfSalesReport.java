@@ -18,4 +18,8 @@ public class NfSalesReport {
 
     return nfSalesZipGenerator.generateZipFromXmlFiles(xmlFiles, startDate, endDate);
   }
+
+  public List<File> listXmlFiles(LocalDate startDate, LocalDate endDate) throws IOException {
+    return nfSalesCalculator.generateXmlFileList(startDate, endDate);
+  }
 }

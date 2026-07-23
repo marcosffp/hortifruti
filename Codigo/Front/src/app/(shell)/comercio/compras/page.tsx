@@ -1,8 +1,9 @@
 "use client";
 
-import { ExternalLink, FileText, Package } from "lucide-react";
+import { AlertTriangle, ExternalLink, FileText, Package } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import ManualCancelModal from "@/components/modals/ManualCancelModal";
 import ClientSelector from "@/components/modules/ClientSelector";
 import ClientSummaryCards from "@/components/modules/ClientSummaryCards";
 import CombinedScoresCards from "@/components/modules/CombinedScoresCards";
@@ -17,6 +18,7 @@ export default function PurchasesPage() {
     useState<ClientSelectionInfo | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [tab, setTab] = useState<"purchaseFiles" | "grouped">("purchaseFiles");
+  const [showManualCancelModal, setShowManualCancelModal] = useState(false);
 
   const handleUploadSuccess = () => {
     setRefreshKey((prev) => prev + 1);
@@ -51,8 +53,8 @@ export default function PurchasesPage() {
 
   return (
     <main className="flex-1 p-6 bg-gray-50 overflow-auto flex flex-col min-h-full">
-      <div className="mb-8 relative">
-        <div className="pr-[34rem]">
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-6">
+        <div>
           <h1 className="text-3xl font-bold text-gray-800">
             Gerenciamento de Compras
           </h1>
@@ -61,47 +63,57 @@ export default function PurchasesPage() {
             personalizado para facilitar a análise temporal
           </p>
         </div>
-        <div className="absolute top-0 right-0 flex gap-3">
-          <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-200 w-64">
-            <div className="text-center mb-2">
-              <h3 className="font-semibold text-sm text-gray-800 mb-1">
-                Planilha de Preenchimento
-              </h3>
+        <div className="flex flex-col items-end gap-2">
+          <button
+            type="button"
+            onClick={() => setShowManualCancelModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-xs font-medium cursor-pointer"
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Cancelamento Manual (NF)
+          </button>
+          <div className="flex gap-3">
+            <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-200 w-64">
+              <div className="text-center mb-2">
+                <h3 className="font-semibold text-sm text-gray-800 mb-1">
+                  Planilha de Preenchimento
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  window.open(
+                    process.env.NEXT_PUBLIC_LINK_PLANILHA_NOTINHAS ||
+                      "https://docs.google.com/spreadsheets/d/1urqNj0ccGktQn_EvYnow-CIqCuWudSSYEtsfEcFOTKQ/edit?gid=516854495#gid=516854495",
+                    "_blank",
+                  )
+                }
+                className="flex items-center gap-2 px-3 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium text-sm w-full justify-center"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Acessar Planilha
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() =>
-                window.open(
-                  process.env.NEXT_PUBLIC_LINK_PLANILHA_NOTINHAS ||
-                    "https://docs.google.com/spreadsheets/d/1urqNj0ccGktQn_EvYnow-CIqCuWudSSYEtsfEcFOTKQ/edit?gid=516854495#gid=516854495",
-                  "_blank",
-                )
-              }
-              className="flex items-center gap-2 px-3 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium text-sm w-full justify-center"
-            >
-              <ExternalLink className="w-3 h-3" />
-              Acessar Planilha
-            </button>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-200 w-64">
-            <div className="text-center mb-2">
-              <h3 className="font-semibold text-sm text-gray-800 mb-1">
-                Planilha de Listas Maiores
-              </h3>
+            <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-200 w-64">
+              <div className="text-center mb-2">
+                <h3 className="font-semibold text-sm text-gray-800 mb-1">
+                  Planilha de Listas Maiores
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  window.open(
+                    process.env.NEXT_PUBLIC_LINK_PLANILHA_LISTAS_MAIORES || "#",
+                    "_blank",
+                  )
+                }
+                className="flex items-center gap-2 px-3 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium text-sm w-full justify-center"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Acessar Planilha
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() =>
-                window.open(
-                  process.env.NEXT_PUBLIC_LINK_PLANILHA_LISTAS_MAIORES || "#",
-                  "_blank",
-                )
-              }
-              className="flex items-center gap-2 px-3 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium text-sm w-full justify-center"
-            >
-              <ExternalLink className="w-3 h-3" />
-              Acessar Planilha
-            </button>
           </div>
         </div>
       </div>
@@ -167,6 +179,11 @@ export default function PurchasesPage() {
           )}
         </div>
       </div>
+
+      <ManualCancelModal
+        open={showManualCancelModal}
+        onClose={() => setShowManualCancelModal(false)}
+      />
     </main>
   );
 }

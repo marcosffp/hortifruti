@@ -44,7 +44,15 @@ public class IssueInvoice {
   @Transactional
   public InvoiceResponse issueInvoice(Long combinedScoreId, String dadosAdicionais) {
     try {
-      CombinedScore combinedScore = fetchCombinedScore(combinedScoreId);
+      // Trava a linha do agrupamento (SELECT ... FOR UPDATE) para serializar requisições
+      // concorrentes: se duas chegarem juntas (ex: duplo clique), a segunda só prossegue depois
+      // que a primeira já commitou hasInvoice=true, e cai no bloqueio de duplicidade abaixo.
+      CombinedScore combinedScore = combinedScoreService.findByIdForUpdate(combinedScoreId);
+
+      if (combinedScore.isHasInvoice()) {
+        throw new InvoiceException(
+            "Nota fiscal já foi emitida para este agrupamento (id " + combinedScoreId + ").");
+      }
 
       Client client = fetchClient(combinedScore.getClientId());
 
@@ -97,10 +105,6 @@ public class IssueInvoice {
 
     return new IssueInvoiceRequest(
         combinedScore.getId(), NATUREZA_OPERACAO, dataHora, recipient, items, infoText);
-  }
-
-  private CombinedScore fetchCombinedScore(Long combinedScoreId) {
-    return combinedScoreService.findById(combinedScoreId);
   }
 
   private Client fetchClient(Long clientId) {
