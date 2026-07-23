@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -157,8 +159,23 @@ public class InvoiceQuery {
   private static final int MAX_TAX_DETAILS_ATTEMPTS = 3;
   private static final long INITIAL_TAX_DETAILS_RETRY_DELAY_MS = 3000;
 
+  /**
+   * Os relatórios fiscais mensais (Pagamento, Registro, Vendas, ICMS) são gerados sequencialmente
+   * e cada um consulta, de forma independente, os dados fiscais das mesmas notas do período na API
+   * da Focus NFe — sem esse cache, o /transactions/export-complete faz até 4 chamadas externas
+   * redundantes por nota (uma por relatório), o que somado à latência da API e às tentativas de
+   * retry abaixo fazia o endpoint levar minutos e a conexão do cliente cair antes da resposta.
+   * Dados fiscais de uma nota já emitida não mudam, então cachear por ref indefinidamente é seguro.
+   */
+  private final Map<String, InvoiceTaxDetails> taxDetailsCache = new ConcurrentHashMap<>();
+
   @Transactional
   public InvoiceTaxDetails extractInvoiceTaxDetails(String ref) {
+    InvoiceTaxDetails cached = taxDetailsCache.get(ref);
+    if (cached != null) {
+      return cached;
+    }
+
     long retryDelay = INITIAL_TAX_DETAILS_RETRY_DELAY_MS;
     Exception lastError = null;
 
@@ -168,7 +185,9 @@ public class InvoiceQuery {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode rootNode = mapper.readTree(response);
 
-        return extractInvoiceData(rootNode, ref);
+        InvoiceTaxDetails details = extractInvoiceData(rootNode, ref);
+        taxDetailsCache.put(ref, details);
+        return details;
       } catch (Exception e) {
         lastError = e;
         log.warn(

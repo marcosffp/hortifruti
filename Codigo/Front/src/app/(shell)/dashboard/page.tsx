@@ -15,6 +15,7 @@ import BankBalanceCard from "@/components/modules/BankBalanceCard";
 import CashFlow from "@/components/modules/CashFlow";
 import Alerts from "@/components/ui/Alerts";
 import Card from "@/components/ui/Card";
+import GameLoadingOverlay from "@/components/ui/GameLoadingOverlay";
 import { useReport } from "@/hooks/useReport";
 
 export default function Dashboard() {
@@ -105,13 +106,6 @@ export default function Dashboard() {
                     <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                     <span className="text-sm">{error}</span>
                   </div>
-                )}
-
-                {isGenerating && (
-                  <p className="text-xs text-gray-500">
-                    Seu relatório está sendo preparado. Isso pode levar alguns
-                    segundos.
-                  </p>
                 )}
               </div>
             </Card>
@@ -227,13 +221,6 @@ export default function Dashboard() {
                     </div>
                   </button>
                 </div>
-
-                {isGenerating && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-md p-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Preparando seu relatório...
-                  </div>
-                )}
               </div>
 
               <div className="px-5 py-4 border-t border-gray-100 flex justify-end">
@@ -249,6 +236,17 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
+        <GameLoadingOverlay
+          isOpen={isGenerating}
+          title="Gerando relatório fiscal"
+          messages={[
+            "Calculando impostos e ICMS...",
+            "Consolidando lançamentos do período...",
+            "Montando o pacote .zip...",
+            "Quase lá...",
+          ]}
+        />
       </main>
     </RoleGuard>
   );

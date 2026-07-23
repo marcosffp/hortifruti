@@ -250,10 +250,18 @@ export const transactionService = {
     }
   },
 
-  async exportTransactionsComplete(): Promise<Blob> {
+  async exportTransactionsComplete(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<Blob> {
     try {
+      const params = new URLSearchParams();
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
+      const queryString = params.toString();
+
       const response = await fetch(
-        `${API_BASE_URL}/transactions/export-complete`,
+        `${API_BASE_URL}/transactions/export-complete${queryString ? `?${queryString}` : ""}`,
         {
           method: "POST",
           headers: getAuthHeaders(),

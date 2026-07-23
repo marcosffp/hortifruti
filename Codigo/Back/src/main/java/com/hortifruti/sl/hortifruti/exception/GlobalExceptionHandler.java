@@ -24,7 +24,9 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -34,98 +36,110 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+  /**
+   * Alguns endpoints de download (ex.: /transactions/export-complete) declaram {@code produces =
+   * "application/zip"} no mapeamento. Sem fixar o Content-Type aqui, o Spring tenta reusar esse
+   * media type "producible" ao serializar o corpo de erro (um {@link Map}), e como não existe
+   * conversor de Map para application/zip, a resposta de erro falha por sua vez (HttpMessageNotWritableException:
+   * "No converter for [class java.util.HashMap] with preset Content-Type"), escondendo a mensagem
+   * real do erro e devolvendo um 500 vazio ao cliente.
+   */
+  private ResponseEntity<Map<String, String>> errorResponse(
+      HttpStatus status, String error, String message) {
+    Map<String, String> body = new HashMap<>();
+    body.put("error", error);
+    body.put("message", message);
+    return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(body);
+  }
+
   @ExceptionHandler(AuthException.class)
   public ResponseEntity<Map<String, String>> handleAuthException(
       AuthException ex, HttpServletRequest request) {
     log.warn("Erro de autenticação em {}: {}", request.getRequestURI(), ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de Autenticação");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    return errorResponse(HttpStatus.UNAUTHORIZED, "Erro de Autenticação", ex.getMessage());
   }
 
   @ExceptionHandler(TokenException.class)
   public ResponseEntity<Map<String, String>> handleTokenException(
       TokenException ex, HttpServletRequest request) {
     log.warn("Erro de token em {}: {}", request.getRequestURI(), ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de Token");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    return errorResponse(HttpStatus.FORBIDDEN, "Erro de Token", ex.getMessage());
+  }
+
+  /**
+   * {@code @PreAuthorize} nega acesso dentro da invocação do método do controller (via AOP), não
+   * na cadeia de filtros do Spring Security — então essa exceção nunca chega até o
+   * ExceptionTranslationFilter (que normalmente a converteria em 403). Sem este handler específico,
+   * ela caía no catch-all genérico e virava um 500 confuso para qualquer usuário sem o papel exigido.
+   */
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<Map<String, String>> handleAccessDeniedException(
+      AccessDeniedException ex, HttpServletRequest request) {
+    log.warn("Acesso negado em {}: {}", request.getRequestURI(), ex.getMessage());
+    return errorResponse(
+        HttpStatus.FORBIDDEN,
+        "Acesso Negado",
+        "Você não tem permissão para acessar este recurso.");
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<Map<String, String>> handleValidationException(
       MethodArgumentNotValidException ex, HttpServletRequest request) {
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de validação");
-
+    String message;
     if (!ex.getBindingResult().getFieldErrors().isEmpty()) {
-      String firstErrorMessage = ex.getBindingResult().getFieldErrors().get(0).getDefaultMessage();
-      response.put("message", firstErrorMessage);
+      message = ex.getBindingResult().getFieldErrors().get(0).getDefaultMessage();
     } else {
-      response.put(
-          "message", "Dados fornecidos são inválidos. Por favor, verifique e tente novamente.");
+      message = "Dados fornecidos são inválidos. Por favor, verifique e tente novamente.";
     }
 
-    log.warn("Erro de validação em {}: {}", request.getRequestURI(), response.get("message"));
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    log.warn("Erro de validação em {}: {}", request.getRequestURI(), message);
+    return errorResponse(HttpStatus.BAD_REQUEST, "Erro de validação", message);
   }
 
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<Map<String, String>> handleDataIntegrityViolationException(
       DataIntegrityViolationException ex, HttpServletRequest request) {
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de validação");
-
     log.warn("Erro de integridade de dados em {}: {}", request.getRequestURI(), ex.getMessage());
 
     String errorMessage = ex.getMessage();
     if (errorMessage != null && errorMessage.contains("Duplicate entry")) {
       if (errorMessage.contains("users")) {
-        response.put(
-            "message", "Nome de usuário já está em uso. Por favor, escolha outro nome de usuário.");
-      } else {
-        response.put(
-            "message", "Registro duplicado detectado. Por favor, verifique os dados fornecidos.");
+        return errorResponse(
+            HttpStatus.CONFLICT,
+            "Erro de validação",
+            "Nome de usuário já está em uso. Por favor, escolha outro nome de usuário.");
       }
-      return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+      return errorResponse(
+          HttpStatus.CONFLICT,
+          "Erro de validação",
+          "Registro duplicado detectado. Por favor, verifique os dados fornecidos.");
     }
 
-    response.put(
-        "message",
+    return errorResponse(
+        HttpStatus.BAD_REQUEST,
+        "Erro de validação",
         "Erro de integridade dos dados. Por favor, verifique as informações fornecidas.");
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
   @ExceptionHandler(TransactionException.class)
   public ResponseEntity<Map<String, String>> handleTransactionException(
       TransactionException ex, HttpServletRequest request) {
     log.warn("Erro de transação em {}: {}", request.getRequestURI(), ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de Transação");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    return errorResponse(HttpStatus.BAD_REQUEST, "Erro de Transação", ex.getMessage());
   }
 
   @ExceptionHandler(ClientException.class)
   public ResponseEntity<Map<String, String>> handleClientException(
       ClientException ex, HttpServletRequest request) {
     log.warn("Erro de cliente em {}: {}", request.getRequestURI(), ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de Cliente");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    return errorResponse(HttpStatus.BAD_REQUEST, "Erro de Cliente", ex.getMessage());
   }
 
   @ExceptionHandler(UserException.class)
   public ResponseEntity<Map<String, String>> handleUserException(
       UserException ex, HttpServletRequest request) {
     log.warn("Erro de usuário em {}: {}", request.getRequestURI(), ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de Usuário");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    return errorResponse(HttpStatus.BAD_REQUEST, "Erro de Usuário", ex.getMessage());
   }
 
   @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
@@ -133,68 +147,53 @@ public class GlobalExceptionHandler {
       HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
     log.warn(
         "Tipo de conteúdo não suportado em {}: {}", request.getRequestURI(), ex.getContentType());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Tipo de conteúdo não suportado");
-    response.put(
-        "message",
+    return errorResponse(
+        HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+        "Tipo de conteúdo não suportado",
         "O tipo de conteúdo '"
             + ex.getContentType()
             + "' não é suportado para este endpoint. Use 'multipart/form-data' para upload de arquivos.");
-    return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(response);
   }
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Map<String, String>> handleGenericException(
       Exception ex, HttpServletRequest request) {
     log.error("Erro interno não tratado em {}", request.getRequestURI(), ex);
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro interno do servidor");
-    response.put(
-        "message",
+    return errorResponse(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        "Erro interno do servidor",
         "Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.");
-    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
   }
 
   @ExceptionHandler(org.springframework.dao.DataAccessResourceFailureException.class)
   public ResponseEntity<Map<String, String>> handleDatabaseConnectionException(
       org.springframework.dao.DataAccessResourceFailureException ex, HttpServletRequest request) {
     log.error("Erro de conexão com o banco de dados em {}", request.getRequestURI(), ex);
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de Conexão com o Banco de Dados");
-    response.put(
-        "message",
+    return errorResponse(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        "Erro de Conexão com o Banco de Dados",
         "Não foi possível conectar ao banco de dados. Por favor, tente novamente mais tarde.");
-    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
   }
 
   @ExceptionHandler(FreightException.class)
   public ResponseEntity<Map<String, String>> handleFreightException(
       FreightException ex, HttpServletRequest request) {
     log.warn("Erro de frete em {}: {}", request.getRequestURI(), ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de Frete");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    return errorResponse(HttpStatus.BAD_REQUEST, "Erro de Frete", ex.getMessage());
   }
 
   @ExceptionHandler(DistanceException.class)
   public ResponseEntity<Map<String, String>> handleDistanceException(
       DistanceException ex, HttpServletRequest request) {
     log.warn("Erro de distância em {}: {}", request.getRequestURI(), ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de Distância");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    return errorResponse(HttpStatus.BAD_REQUEST, "Erro de Distância", ex.getMessage());
   }
 
   @ExceptionHandler(BilletException.class)
   public ResponseEntity<Map<String, String>> handleBilletException(
       BilletException ex, HttpServletRequest request) {
     log.error("Erro na integração com Sicoob em {}: {}", request.getRequestURI(), ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro na Integração com Sicoob");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    return errorResponse(HttpStatus.BAD_REQUEST, "Erro na Integração com Sicoob", ex.getMessage());
   }
 
   @ExceptionHandler(BBApiException.class)
@@ -204,10 +203,8 @@ public class GlobalExceptionHandler {
         "Erro na integração com o Banco do Brasil em {}: {}",
         request.getRequestURI(),
         ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro na Integração com o Banco do Brasil");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(response);
+    return errorResponse(
+        HttpStatus.BAD_GATEWAY, "Erro na Integração com o Banco do Brasil", ex.getMessage());
   }
 
   @ExceptionHandler(SicoobExtratoException.class)
@@ -215,30 +212,23 @@ public class GlobalExceptionHandler {
       SicoobExtratoException ex, HttpServletRequest request) {
     log.error(
         "Erro ao consultar extrato do Sicoob em {}: {}", request.getRequestURI(), ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro ao consultar extrato do Sicoob");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(response);
+    return errorResponse(
+        HttpStatus.BAD_GATEWAY, "Erro ao consultar extrato do Sicoob", ex.getMessage());
   }
 
   @ExceptionHandler(PurchaseException.class)
   public ResponseEntity<Map<String, String>> handlePurchaseException(
       PurchaseException ex, HttpServletRequest request) {
     log.warn("Erro no processamento da compra em {}: {}", request.getRequestURI(), ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro no Processamento da Compra");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    return errorResponse(
+        HttpStatus.BAD_REQUEST, "Erro no Processamento da Compra", ex.getMessage());
   }
 
   @ExceptionHandler(ProductException.class)
   public ResponseEntity<Map<String, String>> handleProductException(
       ProductException ex, HttpServletRequest request) {
     log.warn("Erro de produto em {}: {}", request.getRequestURI(), ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de Produto");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    return errorResponse(HttpStatus.BAD_REQUEST, "Erro de Produto", ex.getMessage());
   }
 
   @ExceptionHandler(CombinedScoreException.class)
@@ -248,59 +238,43 @@ public class GlobalExceptionHandler {
         "Erro no agrupamento de pontuação combinada em {}: {}",
         request.getRequestURI(),
         ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro no Agrupamento de Pontuação Combinada");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    return errorResponse(
+        HttpStatus.BAD_REQUEST, "Erro no Agrupamento de Pontuação Combinada", ex.getMessage());
   }
 
   @ExceptionHandler(RecommendationException.class)
   public ResponseEntity<Map<String, String>> handleRecommendationException(
       RecommendationException ex, HttpServletRequest request) {
     log.warn("Erro de recomendação em {}: {}", request.getRequestURI(), ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de Recomendação");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    return errorResponse(HttpStatus.BAD_REQUEST, "Erro de Recomendação", ex.getMessage());
   }
 
   @ExceptionHandler(BackupException.class)
   public ResponseEntity<Map<String, String>> handleBackupException(
       BackupException ex, HttpServletRequest request) {
     log.error("Erro de backup em {}", request.getRequestURI(), ex);
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de Backup");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    return errorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Erro de Backup", ex.getMessage());
   }
 
   @ExceptionHandler(NotificationException.class)
   public ResponseEntity<Map<String, String>> handleBulkNotificationException(
       NotificationException ex, HttpServletRequest request) {
     log.warn("Erro de notificação em massa em {}: {}", request.getRequestURI(), ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de Notificação em Massa");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    return errorResponse(
+        HttpStatus.BAD_REQUEST, "Erro de Notificação em Massa", ex.getMessage());
   }
 
   @ExceptionHandler(InvoiceException.class)
   public ResponseEntity<Map<String, String>> handleInvoiceException(
       InvoiceException ex, HttpServletRequest request) {
     log.warn("Erro de fatura em {}: {}", request.getRequestURI(), ex.getMessage());
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de Fatura");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    return errorResponse(HttpStatus.BAD_REQUEST, "Erro de Fatura", ex.getMessage());
   }
 
   @ExceptionHandler(StorageException.class)
   public ResponseEntity<Map<String, String>> handleStorageException(
       StorageException ex, HttpServletRequest request) {
     log.error("Erro de armazenamento em {}", request.getRequestURI(), ex);
-    Map<String, String> response = new HashMap<>();
-    response.put("error", "Erro de Armazenamento");
-    response.put("message", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    return errorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Erro de Armazenamento", ex.getMessage());
   }
 }

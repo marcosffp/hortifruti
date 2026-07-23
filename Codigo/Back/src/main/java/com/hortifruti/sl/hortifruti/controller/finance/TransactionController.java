@@ -125,8 +125,13 @@ public class TransactionController {
 
   @PreAuthorize("hasRole('MANAGER')")
   @PostMapping(value = "/export-complete", produces = "application/zip")
-  public ResponseEntity<byte[]> exportTransactionsComplete() throws IOException {
-    Map<String, byte[]> zipData = macroExportService.exportMacroReports();
+  public ResponseEntity<byte[]> exportTransactionsComplete(
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate startDate,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate endDate)
+      throws IOException {
+    Map<String, byte[]> zipData = macroExportService.exportMacroReports(startDate, endDate);
     String zipFileName = zipData.keySet().iterator().next();
     byte[] zipFile = zipData.get(zipFileName);
 

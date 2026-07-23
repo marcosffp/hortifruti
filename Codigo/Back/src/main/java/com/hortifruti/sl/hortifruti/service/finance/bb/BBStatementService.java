@@ -17,6 +17,7 @@ import com.hortifruti.sl.hortifruti.util.SicoobExtratoFormatUtil;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +36,7 @@ public class BBStatementService {
 
   private static final DateTimeFormatter BB_DATE_FORMATTER =
       DateTimeFormatter.ofPattern("ddMMyyyy");
+  private static final ZoneId ZONE = ZoneId.of("America/Sao_Paulo");
 
   private final StatementRepository statementRepository;
   private final R2StorageService r2StorageService;
@@ -66,6 +68,7 @@ public class BBStatementService {
       throw new TransactionException(
           "O período de busca do extrato do BB precisa estar dentro do mesmo mês.");
     }
+    validateNotFuture(dataFim);
 
     Optional<Statement> existingOpt =
         statementRepository.findTopByBankAndOriginOrderByCreatedAtDesc(
@@ -135,6 +138,7 @@ public class BBStatementService {
 
   /** Consulta a API do BB e gera o PDF do extrato do período, sem persistir nada (só download). */
   public byte[] exportBBExtratoPdf(LocalDate dataInicio, LocalDate dataFim) throws IOException {
+    validateNotFuture(dataFim);
     List<JsonNode> lancamentos =
         bbExtratoClient.getExtratoPeriodo(formatBBDate(dataInicio), formatBBDate(dataFim));
     return bbExtratoPdfGenerator.generate(dataInicio, dataFim, bbAgencia, bbConta, lancamentos);
@@ -144,9 +148,24 @@ public class BBStatementService {
    * Consulta a API do BB e gera o Excel do extrato do período, sem persistir nada (só download).
    */
   public byte[] exportBBExtratoExcel(LocalDate dataInicio, LocalDate dataFim) throws IOException {
+    validateNotFuture(dataFim);
     List<JsonNode> lancamentos =
         bbExtratoClient.getExtratoPeriodo(formatBBDate(dataInicio), formatBBDate(dataFim));
     return bbExtratoExcelGenerator.generate(lancamentos);
+  }
+
+  /**
+   * A API Extratos v2 do BB rejeita (400 "Data final nao permitida") qualquer consulta cuja data
+   * final seja posterior ao dia atual.
+   */
+  private void validateNotFuture(LocalDate dataFim) {
+    LocalDate hoje = LocalDate.now(ZONE);
+    if (dataFim.isAfter(hoje)) {
+      throw new TransactionException(
+          "A data final não pode ser posterior a hoje ("
+              + hoje.format(BB_DATE_FORMATTER)
+              + ") — a API do BB não retorna extratos de datas futuras.");
+    }
   }
 
   private String formatBBDate(LocalDate date) {

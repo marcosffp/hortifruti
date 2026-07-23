@@ -25,14 +25,15 @@ public class MacroExportService {
   private final TransactionExportService transactionExportService;
   private final ReportTaxService reportTaxService;
 
-  public Map<String, byte[]> exportMacroReports() throws IOException {
-    LocalDate now = LocalDate.now();
-    LocalDate firstDayLastMonth = now.minusMonths(1).withDayOfMonth(1);
-    LocalDate lastDayLastMonth = now.withDayOfMonth(1).minusDays(1);
+  public Map<String, byte[]> exportMacroReports(LocalDate startDate, LocalDate endDate)
+      throws IOException {
+    LocalDate[] periodo = resolvePeriodo(startDate, endDate);
+    LocalDate periodoInicio = periodo[0];
+    LocalDate periodoFim = periodo[1];
 
     Path zipPath = null;
     try {
-      String zipFilePath = generateMacroReports(firstDayLastMonth, lastDayLastMonth);
+      String zipFilePath = generateMacroReports(periodoInicio, periodoFim);
       zipPath = Path.of(zipFilePath);
 
       if (!Files.exists(zipPath) || Files.size(zipPath) == 0) {
@@ -41,9 +42,9 @@ public class MacroExportService {
 
       byte[] zipBytes = Files.readAllBytes(zipPath);
 
-      String currentMonth =
-          now.getMonth().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pt-BR"));
-      String zipFileName = "Relatorio-Macro-Hortifruti-Santa-Luzia-" + currentMonth + ".zip";
+      String periodoMes =
+          periodoInicio.getMonth().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pt-BR"));
+      String zipFileName = "Relatorio-Macro-Hortifruti-Santa-Luzia-" + periodoMes + ".zip";
 
       Map<String, byte[]> result = new HashMap<>();
       result.put(zipFileName, zipBytes);
@@ -64,6 +65,13 @@ public class MacroExportService {
         }
       }
     }
+  }
+
+  private LocalDate[] resolvePeriodo(LocalDate startDate, LocalDate endDate) {
+    LocalDate now = LocalDate.now();
+    LocalDate inicio = startDate != null ? startDate : now.minusMonths(1).withDayOfMonth(1);
+    LocalDate fim = endDate != null ? endDate : now.withDayOfMonth(1).minusDays(1);
+    return new LocalDate[] {inicio, fim};
   }
 
   private String generateMacroReports(LocalDate startDate, LocalDate endDate) throws IOException {
