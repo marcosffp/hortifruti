@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.exception;
 
+import com.hortifruti.sl.hortifruti.exception.auth.AccountLockedException;
 import com.hortifruti.sl.hortifruti.exception.auth.AuthException;
 import com.hortifruti.sl.hortifruti.exception.auth.TokenException;
 import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
@@ -57,6 +58,28 @@ public class GlobalExceptionHandler {
       AuthException ex, HttpServletRequest request) {
     log.warn("Erro de autenticação em {}: {}", request.getRequestURI(), ex.getMessage());
     return errorResponse(HttpStatus.UNAUTHORIZED, "Erro de Autenticação", ex.getMessage());
+  }
+
+  /**
+   * Retorna o mesmo status/mensagem genérica de {@link AuthException} (indistinguível de senha
+   * errada ou usuário inexistente, para evitar enumeration attack), acrescentando apenas
+   * {@code retryAfter} em segundos — usado pelo front para saber quando reabilitar o botão de
+   * login, sem expor "conta bloqueada" como texto visível.
+   */
+  @ExceptionHandler(AccountLockedException.class)
+  public ResponseEntity<Map<String, Object>> handleAccountLockedException(
+      AccountLockedException ex, HttpServletRequest request) {
+    log.warn(
+        "Tentativa de login bloqueada em {}: retryAfter={}s",
+        request.getRequestURI(),
+        ex.getRetryAfterSeconds());
+    Map<String, Object> body = new HashMap<>();
+    body.put("error", "Erro de Autenticação");
+    body.put("message", ex.getMessage());
+    body.put("retryAfter", ex.getRetryAfterSeconds());
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(body);
   }
 
   @ExceptionHandler(TokenException.class)

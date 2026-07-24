@@ -2,7 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { authService } from "@/services/authService";
+import { authService, LoginError } from "@/services/authService";
+
+export interface LoginResult {
+  success: boolean;
+  message?: string;
+  retryAfter?: number;
+}
 
 export function useAuth() {
   const router = useRouter();
@@ -30,15 +36,25 @@ export function useAuth() {
     checkAuth();
   }, [checkAuth]);
 
-  const login = async (username: string, password: string) => {
+  const login = async (
+    username: string,
+    password: string,
+  ): Promise<LoginResult> => {
     setIsLoading(true);
     try {
       await authService.login({ username, password });
       await checkAuth();
-      return true;
+      return { success: true };
     } catch (error) {
       console.error("Erro ao fazer login:", error);
-      return false;
+      if (error instanceof LoginError) {
+        return {
+          success: false,
+          message: error.message,
+          retryAfter: error.retryAfter,
+        };
+      }
+      return { success: false };
     } finally {
       setIsLoading(false);
     }

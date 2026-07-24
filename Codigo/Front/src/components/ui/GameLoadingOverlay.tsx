@@ -99,6 +99,7 @@ export default function GameLoadingOverlay({
               width={56}
               height={56}
               className="relative rounded-full border-2 border-[var(--primary)] bg-white"
+              style={{ width: "auto", height: "auto" }}
             />
           </div>
 

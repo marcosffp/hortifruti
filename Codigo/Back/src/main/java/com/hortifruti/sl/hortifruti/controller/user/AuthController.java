@@ -46,8 +46,9 @@ public class AuthController {
   private String cookieSameSite;
 
   @PostMapping()
-  public ResponseEntity<AuthUserResponse> login(@Valid @RequestBody AuthRequest authRequest) {
-    AuthResult result = auth.autenticar(authRequest);
+  public ResponseEntity<AuthUserResponse> login(
+      @Valid @RequestBody AuthRequest authRequest, HttpServletRequest request) {
+    AuthResult result = auth.autenticar(authRequest, request);
     String refreshToken = refreshTokenService.issueToken(result.user().getId());
 
     ResponseCookie accessCookie =
