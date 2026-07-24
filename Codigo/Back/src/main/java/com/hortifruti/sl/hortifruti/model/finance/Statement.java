@@ -1,7 +1,5 @@
 package com.hortifruti.sl.hortifruti.model.finance;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
-import com.hortifruti.sl.hortifruti.model.enumeration.StatementOrigin;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -34,7 +32,7 @@ import lombok.Setter;
 public class Statement {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private long id;
+  private Long id;
 
   /** Legado: extratos salvos antes da migração para R2. Novos registros usam {@link #objectKey}. */
   @Lob

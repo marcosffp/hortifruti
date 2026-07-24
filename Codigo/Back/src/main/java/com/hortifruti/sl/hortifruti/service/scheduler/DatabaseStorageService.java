@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.scheduler;
 
-import com.hortifruti.sl.hortifruti.service.notification.EmailTemplateService;
 import com.hortifruti.sl.hortifruti.service.notification.NotificationCoordinator;
+import com.hortifruti.sl.hortifruti.service.notification.email.EmailTemplateService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;

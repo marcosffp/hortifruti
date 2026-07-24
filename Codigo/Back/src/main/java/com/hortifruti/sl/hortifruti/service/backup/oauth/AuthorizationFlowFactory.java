@@ -9,7 +9,7 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.gmail.GmailScopes;
 import com.hortifruti.sl.hortifruti.config.Base64FileDecoder;
-import com.hortifruti.sl.hortifruti.exception.BackupException;
+import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;

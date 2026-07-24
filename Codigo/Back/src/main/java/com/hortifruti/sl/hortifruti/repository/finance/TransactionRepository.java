@@ -1,10 +1,10 @@
 package com.hortifruti.sl.hortifruti.repository.finance;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
-import com.hortifruti.sl.hortifruti.model.enumeration.Category;
-import com.hortifruti.sl.hortifruti.model.enumeration.StatementOrigin;
-import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
+import com.hortifruti.sl.hortifruti.model.finance.Bank;
+import com.hortifruti.sl.hortifruti.model.finance.Category;
+import com.hortifruti.sl.hortifruti.model.finance.StatementOrigin;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
+import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,13 +20,6 @@ public interface TransactionRepository
 
   @Query("SELECT t.hash FROM Transaction t WHERE t.hash IN :hashes")
   Set<String> findHashes(@Param("hashes") Set<String> hashes);
-
-  @Query(
-      "SELECT t FROM Transaction t WHERE t.transactionDate BETWEEN :startDate AND :endDate AND t.statement.bank = :bank")
-  List<Transaction> findByTransactionDateBetweenAndStatementBank(
-      @Param("startDate") LocalDate startDate,
-      @Param("endDate") LocalDate endDate,
-      @Param("bank") Bank bank);
 
   @Query(
       "SELECT t FROM Transaction t WHERE t.transactionDate BETWEEN :startDate AND :endDate AND t.statement.bank = :bank")

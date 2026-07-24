@@ -20,6 +20,7 @@ import {
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import RoleGuard from "@/components/auth/RoleGuard";
 import Button from "@/components/ui/Button";
+import GameLoadingOverlay from "@/components/ui/GameLoadingOverlay";
 import Loading from "@/components/ui/Loading";
 import { useTransaction } from "@/hooks/useTransaction";
 import {
@@ -51,6 +52,20 @@ interface BBGenerateResult {
   message: string;
   dataInicio: string;
   dataFim: string;
+}
+
+// A API de extratos do BB rejeita datas futuras, então o fim do "mês atual"
+// nunca deve passar de hoje.
+function getCurrentMonthRange() {
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const clampedEnd = lastDay < today ? lastDay : today;
+  return {
+    startDate: firstDay.toISOString().split("T")[0],
+    endDate: clampedEnd.toISOString().split("T")[0],
+  };
 }
 
 function triggerBlobDownload(blob: Blob, fileName: string) {
@@ -99,18 +114,15 @@ export default function FinancialLaunchesPage() {
     null,
   );
   const [bbResult, setBbResult] = useState<BBGenerateResult | null>(null);
+  const [exportKind, setExportKind] = useState<"excel" | "complete" | null>(
+    null,
+  );
 
-  const [startDate, setStartDate] = useState(() => {
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    return firstDay.toISOString().split("T")[0];
-  });
+  const [startDate, setStartDate] = useState(
+    () => getCurrentMonthRange().startDate,
+  );
 
-  const [endDate, setEndDate] = useState(() => {
-    const now = new Date();
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return lastDay.toISOString().split("T")[0];
-  });
+  const [endDate, setEndDate] = useState(() => getCurrentMonthRange().endDate);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: getTotalRevenue/getTotalExpenses/getTotalBalance are recreated on every render by useTransaction and are not part of the fetch identity
   const fetchSummaryData = useCallback(async () => {
@@ -202,20 +214,26 @@ export default function FinancialLaunchesPage() {
   };
 
   const handleExport = async () => {
+    setExportKind("excel");
     try {
       await exportTransactionsAsExcel(startDate, endDate);
       showSuccess("Exportação Excel realizada com sucesso!");
     } catch (err) {
       showError(`Erro ao exportar lançamentos: ${getErrorMessage(err)}`);
+    } finally {
+      setExportKind(null);
     }
   };
 
   const handleExportComplete = async () => {
+    setExportKind("complete");
     try {
-      await exportTransactionsComplete();
+      await exportTransactionsComplete(startDate, endDate);
       showSuccess("Exportação completa realizada com sucesso!");
     } catch (err) {
       showError(`Erro ao exportar relatório completo: ${getErrorMessage(err)}`);
+    } finally {
+      setExportKind(null);
     }
   };
 
@@ -448,15 +466,9 @@ export default function FinancialLaunchesPage() {
             <button
               type="button"
               onClick={() => {
-                const now = new Date();
-                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-                const lastDay = new Date(
-                  now.getFullYear(),
-                  now.getMonth() + 1,
-                  0,
-                );
-                setStartDate(firstDay.toISOString().split("T")[0]);
-                setEndDate(lastDay.toISOString().split("T")[0]);
+                const range = getCurrentMonthRange();
+                setStartDate(range.startDate);
+                setEndDate(range.endDate);
               }}
               className="px-4 py-2 bg-[var(--primary-light)] text-white rounded-lg hover:bg-[var(--primary-dark)] cursor-pointer transition-colors"
             >
@@ -724,20 +736,26 @@ export default function FinancialLaunchesPage() {
             <Button
               variant="outline"
               onClick={handleExport}
-              disabled={isLoading}
+              disabled={exportKind !== null}
               className="border border-gray-300 text-gray-700 px-4 py-2"
-              icon={isLoading ? undefined : <Download size={18} />}
+              icon={exportKind === "excel" ? undefined : <Download size={18} />}
             >
-              {isLoading ? "Exportando..." : "Exportar Excel"}
+              {exportKind === "excel" ? "Exportando..." : "Exportar Excel"}
             </Button>
             <Button
               variant="outline"
               onClick={handleExportComplete}
-              disabled={isLoading}
+              disabled={exportKind !== null}
               className="border border-green-300 text-green-700 px-4 py-2 hover:bg-green-50"
-              icon={isLoading ? undefined : <FileArchive size={18} />}
+              icon={
+                exportKind === "complete" ? undefined : (
+                  <FileArchive size={18} />
+                )
+              }
             >
-              {isLoading ? "Exportando..." : "Exportar Completo"}
+              {exportKind === "complete"
+                ? "Exportando..."
+                : "Exportar Completo"}
             </Button>
           </div>
         </div>
@@ -1272,6 +1290,40 @@ export default function FinancialLaunchesPage() {
           </div>
         </div>
       )}
+
+      <GameLoadingOverlay
+        isOpen={isGeneratingExtratos}
+        title="Gerando extratos"
+        messages={[
+          "Conectando ao Sicoob e Banco do Brasil...",
+          "Baixando movimentações do período...",
+          "Conferindo lançamentos duplicados...",
+          "Quase lá...",
+        ]}
+      />
+
+      <GameLoadingOverlay
+        isOpen={exportKind !== null}
+        title={
+          exportKind === "complete"
+            ? "Gerando relatório completo"
+            : "Exportando lançamentos"
+        }
+        messages={
+          exportKind === "complete"
+            ? [
+                "Reunindo extratos e lançamentos...",
+                "Montando planilhas e PDFs...",
+                "Compactando o pacote final...",
+                "Quase lá...",
+              ]
+            : [
+                "Filtrando lançamentos do período...",
+                "Montando a planilha Excel...",
+                "Quase lá...",
+              ]
+        }
+      />
     </main>
   );
 }

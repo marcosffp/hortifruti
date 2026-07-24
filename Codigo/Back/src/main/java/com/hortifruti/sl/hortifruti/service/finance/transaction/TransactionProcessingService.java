@@ -1,0 +1,143 @@
+package com.hortifruti.sl.hortifruti.service.finance.transaction;
+
+import com.hortifruti.sl.hortifruti.dto.finance.TransactionRequest;
+import com.hortifruti.sl.hortifruti.dto.finance.TransactionRequestDate;
+import com.hortifruti.sl.hortifruti.dto.finance.TransactionResponse;
+import com.hortifruti.sl.hortifruti.exception.finance.TransactionException;
+import com.hortifruti.sl.hortifruti.mapper.TransactionMapper;
+import com.hortifruti.sl.hortifruti.model.finance.Transaction;
+import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
+import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class TransactionProcessingService {
+
+  private final TransactionRepository transactionRepository;
+  private final TransactionMapper transactionMapper;
+
+  public List<TransactionResponse> getAllTransactions() {
+    return transactionRepository.findAll().stream()
+        .map(transactionMapper::toResponse)
+        .collect(Collectors.toList());
+  }
+
+  public TransactionResponse updateTransaction(Long id, TransactionRequest transactionRequest) {
+    Transaction existingTransaction =
+        transactionRepository
+            .findById(id)
+            .orElseThrow(
+                () -> new TransactionException("Transação não encontrada com o ID: " + id));
+
+    transactionMapper.updateTransactionFromRequest(existingTransaction, transactionRequest);
+
+    Transaction savedTransaction = transactionRepository.save(existingTransaction);
+
+    return transactionMapper.toResponse(savedTransaction);
+  }
+
+  public void deleteTransaction(Long id) {
+    if (!transactionRepository.existsById(id)) {
+      throw new TransactionException("Transação não encontrada com o ID: " + id);
+    }
+    transactionRepository.deleteById(id);
+  }
+
+  public Page<TransactionResponse> getAllTransactions(
+      String search, String type, String category, int page, int size) {
+
+    Pageable pageable = PageRequest.of(page, size, Sort.by("transactionDate").descending());
+
+    Specification<Transaction> spec = Specification.allOf();
+
+    if (search != null && !search.isEmpty()) {
+      String searchPattern = "%" + search.toLowerCase() + "%";
+      spec =
+          spec.and(
+              (root, query, criteriaBuilder) ->
+                  criteriaBuilder.or(
+                      criteriaBuilder.like(
+                          criteriaBuilder.lower(root.get("history")), searchPattern),
+                      criteriaBuilder.like(
+                          criteriaBuilder.lower(root.get("category")), searchPattern)));
+    }
+
+    if (type != null && !type.isEmpty()) {
+      try {
+        TransactionType transactionType = TransactionType.valueOf(type.toUpperCase());
+        spec =
+            spec.and(
+                (root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("transactionType"), transactionType));
+
+      } catch (IllegalArgumentException e) {
+        throw new TransactionException("Tipo de transação inválido: " + type, e);
+      }
+    }
+
+    if (category != null && !category.isEmpty()) {
+      spec =
+          spec.and(
+              (root, query, criteriaBuilder) ->
+                  criteriaBuilder.equal(
+                      criteriaBuilder.lower(root.get("category")), category.toLowerCase()));
+    }
+
+    Page<Transaction> transactionsPage = transactionRepository.findAll(spec, pageable);
+
+    return transactionsPage.map(transactionMapper::toResponse);
+  }
+
+  public List<String> getAllCategories() {
+    return transactionRepository.findAllCategories();
+  }
+
+  public BigDecimal getTotalRevenue(TransactionRequestDate request) {
+    LocalDate startDate = request.startDate();
+    LocalDate endDate = request.endDate();
+
+    if (startDate == null || endDate == null) {
+      startDate = LocalDate.now().withDayOfMonth(1);
+      endDate = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+    }
+    List<Transaction> transacoes =
+        transactionRepository.findTransactionsByDateRange(startDate, endDate);
+    return transacoes.stream()
+        .filter(transacao -> transacao.getTransactionType() == TransactionType.CREDITO)
+        .map(Transaction::getAmount)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  public BigDecimal getTotalExpenses(TransactionRequestDate request) {
+    LocalDate startDate = request.startDate();
+    LocalDate endDate = request.endDate();
+
+    if (startDate == null || endDate == null) {
+      startDate = LocalDate.now().withDayOfMonth(1);
+      endDate = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+    }
+    List<Transaction> transacoes =
+        transactionRepository.findTransactionsByDateRange(startDate, endDate);
+    return transacoes.stream()
+        .filter(transacao -> transacao.getTransactionType() == TransactionType.DEBITO)
+        .map(Transaction::getAmount)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  public BigDecimal getTotalBalance(TransactionRequestDate request) {
+    BigDecimal receita = getTotalRevenue(request);
+    BigDecimal despesas = getTotalExpenses(request);
+    return receita.subtract(despesas.abs());
+  }
+}

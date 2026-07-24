@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.controller.climate;
 
 import com.hortifruti.sl.hortifruti.dto.climate.WeatherForecastDTO;
-import com.hortifruti.sl.hortifruti.exception.WeatherApiException;
+import com.hortifruti.sl.hortifruti.exception.climate.WeatherApiException;
 import com.hortifruti.sl.hortifruti.service.climate.WeatherForecastService;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

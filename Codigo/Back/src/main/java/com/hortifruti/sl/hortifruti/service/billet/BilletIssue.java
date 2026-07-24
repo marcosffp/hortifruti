@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.config.billet.BilletHttpClient;
 import com.hortifruti.sl.hortifruti.dto.billet.BilletRequest;
 import com.hortifruti.sl.hortifruti.dto.billet.BilletRequestSimplified;
-import com.hortifruti.sl.hortifruti.exception.BilletException;
+import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import java.io.IOException;
 import java.util.HashMap;
@@ -35,7 +35,7 @@ public class BilletIssue {
    * @return Resposta HTTP contendo o PDF do boleto emitido
    * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
-  protected ResponseEntity<Map<String, Object>> issueBillet(BilletRequestSimplified boleto)
+  public ResponseEntity<Map<String, Object>> issueBillet(BilletRequestSimplified boleto)
       throws IOException {
     try {
       JsonNode boletoJson = createBilletJson(boleto);
@@ -61,7 +61,7 @@ public class BilletIssue {
    * @return Resposta da API contendo o PDF do boleto emitido
    * @throws IOException Se houver erro na comunicação ou no processamento da resposta
    */
-  protected ResponseEntity<byte[]> issueCopy(Long idCombinedScore) throws IOException {
+  public ResponseEntity<byte[]> issueCopy(Long idCombinedScore) throws IOException {
     CombinedScore combinedScore =
         billetInfoCombinedAndClient.findCombinedScoreById(idCombinedScore);
     billetValidation.validateHasBillet(combinedScore);

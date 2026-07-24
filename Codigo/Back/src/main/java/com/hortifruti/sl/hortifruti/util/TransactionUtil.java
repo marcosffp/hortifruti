@@ -1,9 +1,9 @@
 package com.hortifruti.sl.hortifruti.util;
 
-import com.hortifruti.sl.hortifruti.exception.TransactionException;
-import com.hortifruti.sl.hortifruti.model.enumeration.Category;
-import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
+import com.hortifruti.sl.hortifruti.exception.finance.TransactionException;
+import com.hortifruti.sl.hortifruti.model.finance.Category;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
+import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
 import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;

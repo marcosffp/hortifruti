@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.invoice.tax.icms;
 
-import com.hortifruti.sl.hortifruti.dto.invoice.IcmsSalesReport;
+import com.hortifruti.sl.hortifruti.dto.invoice.tax.icms.IcmsSalesReport;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 

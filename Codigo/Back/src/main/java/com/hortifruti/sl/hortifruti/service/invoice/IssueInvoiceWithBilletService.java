@@ -3,7 +3,7 @@ package com.hortifruti.sl.hortifruti.service.invoice;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceWithBilletResponse;
-import com.hortifruti.sl.hortifruti.exception.InvoiceException;
+import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import com.hortifruti.sl.hortifruti.service.billet.BilletService;
 import java.io.IOException;
 import java.util.Base64;

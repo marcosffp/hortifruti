@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.invoice.tax.payment;
 
+import com.hortifruti.sl.hortifruti.service.invoice.tax.PdfReportSupport;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -30,11 +31,11 @@ public class PaymentPdfGenerator {
     String periodStart = startDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     String periodEnd = endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
-    float leftMargin = 50;
-    float tableWidth = 500;
-    float cellHeight = 25;
-    float lineHeight = 20;
-    float bottomMargin = 100;
+    float leftMargin = PdfReportSupport.LEFT_MARGIN;
+    float tableWidth = PdfReportSupport.TABLE_WIDTH;
+    float cellHeight = PdfReportSupport.CELL_HEIGHT;
+    float lineHeight = PdfReportSupport.LINE_HEIGHT;
+    float bottomMargin = PdfReportSupport.BOTTOM_MARGIN;
 
     try (PDDocument document = new PDDocument()) {
 
@@ -43,32 +44,34 @@ public class PaymentPdfGenerator {
 
       PDPageContentStream contentStream = new PDPageContentStream(document, page);
 
-      float yPosition = 750;
+      float yPosition = PdfReportSupport.START_Y;
 
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
-      addText(contentStream, leftMargin, yPosition, "RESUMO DE VENDAS POR FORMA DE PAGAMENTO");
+      PdfReportSupport.addText(
+          contentStream, leftMargin, yPosition, "RESUMO DE VENDAS POR FORMA DE PAGAMENTO");
       yPosition -= lineHeight * 2;
 
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
 
-      addText(contentStream, leftMargin, yPosition, "Filial \"igual\": 1 " + companyName);
+      PdfReportSupport.addText(
+          contentStream, leftMargin, yPosition, "Filial \"igual\": 1 " + companyName);
       yPosition -= lineHeight;
 
-      addText(
+      PdfReportSupport.addText(
           contentStream,
           leftMargin,
           yPosition,
           "Data Envio \"entre\": " + periodStart + " a " + periodEnd);
       yPosition -= lineHeight;
 
-      addText(
+      PdfReportSupport.addText(
           contentStream,
           leftMargin,
           yPosition,
           "Modelo \"iniciado por\": 55 NOTA FISCAL ELETRÔNICA - NF-E");
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition, "Situação \"igual\": ATIVAS");
+      PdfReportSupport.addText(contentStream, leftMargin, yPosition, "Situação \"igual\": ATIVAS");
       yPosition -= lineHeight * 2;
 
       contentStream.setLineWidth(1);
@@ -77,7 +80,7 @@ public class PaymentPdfGenerator {
       contentStream.stroke();
       yPosition -= lineHeight;
 
-      drawTableHeader(
+      PdfReportSupport.drawTableHeader(
           contentStream,
           leftMargin,
           yPosition,
@@ -100,9 +103,9 @@ public class PaymentPdfGenerator {
 
           contentStream = new PDPageContentStream(document, page);
 
-          yPosition = 750;
+          yPosition = PdfReportSupport.START_Y;
 
-          drawTableHeader(
+          PdfReportSupport.drawTableHeader(
               contentStream,
               leftMargin,
               yPosition,
@@ -113,7 +116,7 @@ public class PaymentPdfGenerator {
           yPosition -= cellHeight;
         }
 
-        drawTableRow(
+        PdfReportSupport.drawTableRow(
             contentStream,
             leftMargin,
             yPosition,
@@ -127,7 +130,7 @@ public class PaymentPdfGenerator {
         yPosition -= cellHeight;
       }
 
-      drawTableRow(
+      PdfReportSupport.drawTableRow(
           contentStream,
           leftMargin,
           yPosition,
@@ -137,7 +140,7 @@ public class PaymentPdfGenerator {
 
       yPosition -= cellHeight * 2;
 
-      drawTableHeader(
+      PdfReportSupport.drawTableHeader(
           contentStream,
           leftMargin,
           yPosition,
@@ -147,7 +150,7 @@ public class PaymentPdfGenerator {
 
       yPosition -= cellHeight;
 
-      drawTableRow(
+      PdfReportSupport.drawTableRow(
           contentStream,
           leftMargin,
           yPosition,
@@ -157,7 +160,7 @@ public class PaymentPdfGenerator {
 
       yPosition -= cellHeight;
 
-      drawTableRow(
+      PdfReportSupport.drawTableRow(
           contentStream,
           leftMargin,
           yPosition,
@@ -174,69 +177,7 @@ public class PaymentPdfGenerator {
     }
   }
 
-  private void addText(PDPageContentStream contentStream, float x, float y, String text)
-      throws IOException {
-
-    contentStream.beginText();
-    contentStream.newLineAtOffset(x, y);
-    contentStream.showText(text);
-    contentStream.endText();
-  }
-
-  private void drawTableHeader(
-      PDPageContentStream contentStream,
-      float x,
-      float y,
-      float width,
-      float height,
-      String[] headers)
-      throws IOException {
-
-    float cellWidth = width / headers.length;
-
-    for (int i = 0; i < headers.length; i++) {
-
-      contentStream.addRect(x + (cellWidth * i), y, cellWidth, -height);
-      contentStream.stroke();
-
-      contentStream.beginText();
-      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
-      contentStream.newLineAtOffset(x + (cellWidth * i) + 15, y - height + 10);
-      contentStream.showText(headers[i]);
-      contentStream.endText();
-    }
-  }
-
-  private void drawTableRow(
-      PDPageContentStream contentStream,
-      float x,
-      float y,
-      float width,
-      float height,
-      String[] values)
-      throws IOException {
-
-    float cellWidth = width / values.length;
-
-    for (int i = 0; i < values.length; i++) {
-
-      contentStream.addRect(x + (cellWidth * i), y, cellWidth, -height);
-
-      contentStream.stroke();
-
-      contentStream.beginText();
-      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
-
-      contentStream.newLineAtOffset(x + (cellWidth * i) + 15, y - height + 10);
-
-      contentStream.showText(values[i]);
-      contentStream.endText();
-    }
-  }
-
   private String formatValue(BigDecimal value) {
-    return value == null
-        ? "0,00"
-        : value.setScale(2, java.math.RoundingMode.HALF_UP).toString().replace(".", ",");
+    return PdfReportSupport.formatValueComma(value);
   }
 }

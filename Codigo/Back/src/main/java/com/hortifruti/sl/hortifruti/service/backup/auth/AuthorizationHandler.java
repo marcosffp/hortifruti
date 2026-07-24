@@ -5,8 +5,10 @@ import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInsta
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import java.io.IOException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class AuthorizationHandler {
 
@@ -22,7 +24,7 @@ public class AuthorizationHandler {
       try {
         receiver.stop();
       } catch (IOException e) {
-        System.out.println("Erro ao parar o servidor local do receptor: " + e.getMessage());
+        log.warn("Erro ao parar o servidor local do receptor: {}", e.getMessage(), e);
       }
     }
   }

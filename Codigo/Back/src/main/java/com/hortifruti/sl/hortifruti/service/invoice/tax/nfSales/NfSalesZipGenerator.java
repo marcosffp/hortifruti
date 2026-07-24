@@ -11,8 +11,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class NfSalesZipGenerator {
 
@@ -28,7 +30,7 @@ public class NfSalesZipGenerator {
     for (File xmlFile : xmlFiles) {
       try {
         if (!xmlFile.exists() || xmlFile.length() == 0) {
-          System.err.println("Arquivo XML inválido ou vazio: " + xmlFile.getName());
+          log.warn("Arquivo XML inválido ou vazio: {}", xmlFile.getName());
           continue;
         }
         Path sourcePath = xmlFile.toPath();
@@ -36,8 +38,7 @@ public class NfSalesZipGenerator {
 
         Files.copy(sourcePath, destinationPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
       } catch (IOException e) {
-        System.err.println("Erro ao copiar arquivo XML: " + xmlFile.getName());
-        e.printStackTrace();
+        log.error("Erro ao copiar arquivo XML: {}", xmlFile.getName(), e);
         throw new IOException("Erro ao copiar arquivo XML: " + xmlFile.getName(), e);
       }
     }
@@ -58,14 +59,12 @@ public class NfSalesZipGenerator {
                   Files.copy(file, zos);
                   zos.closeEntry();
                 } catch (IOException e) {
-                  System.err.println("Erro ao adicionar arquivo ao ZIP: " + file);
-                  e.printStackTrace();
+                  log.error("Erro ao adicionar arquivo ao ZIP: {}", file, e);
                   throw new RuntimeException("Erro ao adicionar arquivo ao ZIP: " + file, e);
                 }
               });
     } catch (IOException e) {
-      System.err.println("Erro ao criar o arquivo ZIP: " + zipFileName);
-      e.printStackTrace();
+      log.error("Erro ao criar o arquivo ZIP: {}", zipFileName, e);
       throw new IOException("Erro ao criar o arquivo ZIP: " + zipFileName, e);
     }
 
@@ -77,13 +76,11 @@ public class NfSalesZipGenerator {
                 try {
                   Files.delete(path);
                 } catch (IOException e) {
-                  System.err.println("Erro ao excluir: " + path);
-                  e.printStackTrace();
+                  log.error("Erro ao excluir: {}", path, e);
                 }
               });
     } catch (IOException e) {
-      System.err.println("Erro ao excluir a pasta: " + folderPath);
-      e.printStackTrace();
+      log.error("Erro ao excluir a pasta: {}", folderPath, e);
     }
 
     return zipFilePath.toString();

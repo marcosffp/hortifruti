@@ -4,6 +4,7 @@ import type {
   InvoiceResponseGet,
   InvoiceWithBilletResponse,
   InvoiceWithBilletResult,
+  OpenInvoiceResponse,
 } from "@/types/invoiceType";
 import { getAuthHeaders } from "@/utils/httpUtils";
 
@@ -35,7 +36,14 @@ export const invoiceService = {
       });
 
       if (!response.ok) {
-        throw new Error(`Erro ao gerar nota fiscal: ${response.status}`);
+        let message = `Erro ao gerar nota fiscal: ${response.status}`;
+        try {
+          const errorBody = await response.json();
+          if (errorBody?.message) message = errorBody.message;
+        } catch {
+          // corpo do erro não é JSON, mantém a mensagem padrão
+        }
+        throw new Error(message);
       }
 
       const result: InvoiceResponse = await response.json();
@@ -159,10 +167,39 @@ export const invoiceService = {
     }
   },
 
-  async cancelInvoice(ref: string, justificativa: string): Promise<string> {
+  async getOpenInvoiceOnly(): Promise<OpenInvoiceResponse[]> {
     try {
+      const response = await fetch(`${API_BASE_URL}/invoices/open`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Erro ao buscar notas fiscais em aberto: ${response.status}`,
+        );
+      }
+
+      const result: OpenInvoiceResponse[] = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Falha ao buscar notas fiscais em aberto:", error);
+      throw error;
+    }
+  },
+
+  async cancelInvoice(
+    ref: string,
+    justificativa: string,
+    extemporaneo?: boolean,
+  ): Promise<string> {
+    try {
+      const params = new URLSearchParams({ justificativa });
+      if (extemporaneo) params.append("extemporaneo", "true");
+
       const response = await fetch(
-        `${API_BASE_URL}/invoices/${ref}/cancel?justificativa=${encodeURIComponent(justificativa)}`,
+        `${API_BASE_URL}/invoices/${ref}/cancel?${params.toString()}`,
         {
           method: "DELETE",
           headers: getAuthHeaders(),
@@ -170,11 +207,13 @@ export const invoiceService = {
         },
       );
 
+      const result = await response.text();
       if (!response.ok) {
-        throw new Error(`Erro ao cancelar nota fiscal: ${response.status}`);
+        throw new Error(
+          result || `Erro ao cancelar nota fiscal: ${response.status}`,
+        );
       }
 
-      const result = await response.text();
       return result;
     } catch (error) {
       console.error("Falha ao cancelar nota fiscal:", error);

@@ -3,7 +3,7 @@ package com.hortifruti.sl.hortifruti.service.invoice.factory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.dto.invoice.IssueInvoiceRequest;
 import com.hortifruti.sl.hortifruti.dto.invoice.ItemRequest;
-import com.hortifruti.sl.hortifruti.exception.InvoiceException;
+import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;

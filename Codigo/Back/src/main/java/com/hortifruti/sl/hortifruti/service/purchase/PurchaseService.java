@@ -2,8 +2,8 @@ package com.hortifruti.sl.hortifruti.service.purchase;
 
 import com.hortifruti.sl.hortifruti.dto.purchase.InvoiceProductResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.PurchaseResponse;
-import com.hortifruti.sl.hortifruti.exception.ClientException;
-import com.hortifruti.sl.hortifruti.exception.PurchaseException;
+import com.hortifruti.sl.hortifruti.exception.purchase.ClientException;
+import com.hortifruti.sl.hortifruti.exception.purchase.PurchaseException;
 import com.hortifruti.sl.hortifruti.mapper.InvoiceProductMapper;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;

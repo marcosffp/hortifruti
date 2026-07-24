@@ -171,6 +171,7 @@ export default function LandingPage() {
                     width={906}
                     height={600}
                     className="rounded-2xl shadow-2xl transition-transform duration-700 group-hover:scale-105"
+                    style={{ width: "auto", height: "auto" }}
                     priority
                   />
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>

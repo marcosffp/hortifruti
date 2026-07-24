@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,6 +18,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class SecurityFilter extends OncePerRequestFilter {
@@ -63,8 +65,15 @@ public class SecurityFilter extends OncePerRequestFilter {
     try {
       String token = recoverToken(request);
 
-      if (isSchedulerEndpoint(request.getRequestURI()) && schedulerStaticKey.equals(token)) {
-        filterChain.doFilter(request, response);
+      if (isSchedulerEndpoint(request.getRequestURI())) {
+        if (schedulerStaticKey.equals(token)) {
+          filterChain.doFilter(request, response);
+        } else {
+          response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+          response
+              .getWriter()
+              .write("{\"erro\": \"Token de autenticação inválido ou não fornecido\"}");
+        }
         return;
       }
 
@@ -81,7 +90,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         }
       }
     } catch (Exception e) {
-      System.out.println("Erro no filtro de segurança: " + e.getMessage());
+      log.warn("Erro no filtro de segurança para {}: {}", request.getRequestURI(), e.getMessage());
       response.setStatus(HttpServletResponse.SC_FORBIDDEN);
       response.getWriter().write("{\"erro\": \"Acesso negado: Token inválido ou expirado\"}");
       return;

@@ -2,7 +2,7 @@ package com.hortifruti.sl.hortifruti.config.billet;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hortifruti.sl.hortifruti.exception.BilletException;
+import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +38,8 @@ public class SicoobToken {
 
   @Qualifier("billetRestTemplate")
   private final RestTemplate restTemplate;
+
+  private final ObjectMapper objectMapper;
 
   public synchronized String getAccessToken() {
     long startedAt = System.currentTimeMillis();
@@ -92,8 +94,7 @@ public class SicoobToken {
       throw new BilletException("Resposta de token vazia do servidor.");
     }
 
-    ObjectMapper mapper = new ObjectMapper();
-    JsonNode jsonResponse = mapper.readTree(response.getBody());
+    JsonNode jsonResponse = objectMapper.readTree(response.getBody());
 
     if (!jsonResponse.has("access_token") || jsonResponse.get("access_token").isNull()) {
       throw new BilletException("Token de acesso não encontrado na resposta.");

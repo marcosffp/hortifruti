@@ -1,11 +1,11 @@
 package com.hortifruti.sl.hortifruti.controller.finance;
 
-import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequest;
-import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequestDate;
-import com.hortifruti.sl.hortifruti.dto.transaction.TransactionResponse;
+import com.hortifruti.sl.hortifruti.dto.finance.TransactionRequest;
+import com.hortifruti.sl.hortifruti.dto.finance.TransactionRequestDate;
+import com.hortifruti.sl.hortifruti.dto.finance.TransactionResponse;
 import com.hortifruti.sl.hortifruti.service.finance.MacroExportService;
-import com.hortifruti.sl.hortifruti.service.finance.TransactionProcessingService;
-import com.hortifruti.sl.hortifruti.service.finance.TransactionReportService;
+import com.hortifruti.sl.hortifruti.service.finance.transaction.TransactionProcessingService;
+import com.hortifruti.sl.hortifruti.service.finance.transaction.TransactionReportService;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -125,8 +125,13 @@ public class TransactionController {
 
   @PreAuthorize("hasRole('MANAGER')")
   @PostMapping(value = "/export-complete", produces = "application/zip")
-  public ResponseEntity<byte[]> exportTransactionsComplete() throws IOException {
-    Map<String, byte[]> zipData = macroExportService.exportMacroReports();
+  public ResponseEntity<byte[]> exportTransactionsComplete(
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate startDate,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate endDate)
+      throws IOException {
+    Map<String, byte[]> zipData = macroExportService.exportMacroReports(startDate, endDate);
     String zipFileName = zipData.keySet().iterator().next();
     byte[] zipFile = zipData.get(zipFileName);
 

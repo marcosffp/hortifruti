@@ -1,9 +1,11 @@
 package com.hortifruti.sl.hortifruti.service.notification;
 
 import com.hortifruti.sl.hortifruti.dto.notification.*;
-import com.hortifruti.sl.hortifruti.exception.NotificationException;
+import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
+import com.hortifruti.sl.hortifruti.service.notification.email.EmailGreetingUtil;
+import com.hortifruti.sl.hortifruti.service.notification.email.EmailTemplateService;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;

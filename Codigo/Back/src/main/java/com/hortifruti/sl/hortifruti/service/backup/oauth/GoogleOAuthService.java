@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.backup.oauth;
 
-import com.hortifruti.sl.hortifruti.exception.BackupException;
+import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;

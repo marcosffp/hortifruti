@@ -3,7 +3,7 @@ package com.hortifruti.sl.hortifruti.service.billet;
 import com.hortifruti.sl.hortifruti.dto.billet.BilletRequest;
 import com.hortifruti.sl.hortifruti.dto.billet.BilletRequestSimplified;
 import com.hortifruti.sl.hortifruti.dto.billet.Pagador;
-import com.hortifruti.sl.hortifruti.exception.BilletException;
+import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import org.springframework.beans.factory.annotation.Value;

@@ -3,7 +3,7 @@ package com.hortifruti.sl.hortifruti.service.backup.folders;
 import com.google.api.client.http.FileContent;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
-import com.hortifruti.sl.hortifruti.exception.BackupException;
+import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
 import com.hortifruti.sl.hortifruti.service.backup.auth.GoogleAuthService;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;

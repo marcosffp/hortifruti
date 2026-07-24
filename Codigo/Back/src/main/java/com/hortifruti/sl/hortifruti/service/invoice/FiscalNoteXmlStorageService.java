@@ -4,13 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.config.FocusNfeApiClient;
 import com.hortifruti.sl.hortifruti.dto.invoice.FiscalNoteXmlStorageResponse;
-import com.hortifruti.sl.hortifruti.exception.InvoiceException;
+import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
+import com.hortifruti.sl.hortifruti.model.FileStatus;
 import com.hortifruti.sl.hortifruti.model.invoice.FiscalNoteXmlStorage;
-import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.invoice.FiscalNoteXmlStorageRepository;
-import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
-import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
+import com.hortifruti.sl.hortifruti.service.purchase.ClientService;
+import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import com.hortifruti.sl.hortifruti.service.storage.R2StorageService;
 import com.hortifruti.sl.hortifruti.service.storage.StorageKeyGenerator;
 import jakarta.transaction.Transactional;
@@ -19,9 +19,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -37,8 +40,8 @@ public class FiscalNoteXmlStorageService {
   private final FiscalNoteXmlStorageRepository repository;
   private final FocusNfeApiClient focusNfeApiClient;
   private final WebClient webClient;
-  private final CombinedScoreRepository combinedScoreRepository;
-  private final ClientRepository clientRepository;
+  private final CombinedScoreService combinedScoreService;
+  private final ClientService clientService;
   private final ObjectMapper objectMapper;
   private final R2StorageService r2StorageService;
 
@@ -51,6 +54,42 @@ public class FiscalNoteXmlStorageService {
   private static final int MAX_POLL_ATTEMPTS = 36;
   private static final long POLL_INTERVAL_MS = 10_000;
   private static final int COMPLETE = 1;
+
+  /**
+   * Serializa, por ref, o trecho check-then-upload-then-save de {@link #persistIfAbsent} e {@link
+   * #saveDanfeIfAbsent}. Sem isso, o job assíncrono {@link #triggerSaveAfterIssuance} e a rede de
+   * segurança do download (disparada se o usuário abrir o XML/DANFE antes do job terminar) podem
+   * checar "existsByRef" ao mesmo tempo, os dois verem "não existe" e os dois fazerem upload para
+   * o R2 — gerando um arquivo duplicado órfão no bucket quando o segundo INSERT falha por
+   * violação da constraint UNIQUE(ref). A aplicação roda como instância única (ver
+   * docker-compose.yml), então este lock em memória fecha a corrida na prática; a captura de
+   * {@link DataIntegrityViolationException} abaixo é uma segunda camada de defesa.
+   */
+  private final ConcurrentHashMap<String, ReentrantLock> refLocks = new ConcurrentHashMap<>();
+
+  private void withRefLock(String ref, Runnable action) {
+    ReentrantLock lock = refLocks.computeIfAbsent(ref, k -> new ReentrantLock());
+    lock.lock();
+    try {
+      action.run();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  private void deleteUploadedQuietly(String key) {
+    if (key == null) return;
+    try {
+      r2StorageService.delete(key);
+    } catch (Exception e) {
+      log.error(
+          "[FiscalNoteXmlStorage] Falha ao remover upload órfão key={} após colisão de ref: {}"
+              + " — requer limpeza manual no bucket",
+          key,
+          e.getMessage(),
+          e);
+    }
+  }
 
   /** Triggered async right after invoice issuance. Polls until authorized, then saves XML. */
   @Async
@@ -108,11 +147,12 @@ public class FiscalNoteXmlStorageService {
   /**
    * Called from downloadXml as a safety net — saves if not yet persisted.
    *
-   * <p>Roda em transação própria (REQUIRES_NEW): pode colidir com o job assíncrono {@link
-   * #triggerSaveAfterIssuance} tentando persistir a mesma ref ao mesmo tempo (duplicate key), e uma
-   * falha aqui é só best-effort — não pode envenenar a transação de quem chamou (ex:
-   * downloadXml/downloadDanfe), senão o commit do chamador falha com UnexpectedRollbackException
-   * mesmo com a exceção sendo capturada abaixo.
+   * <p>Roda em transação própria (REQUIRES_NEW): pode ser chamado ao mesmo tempo que o job
+   * assíncrono {@link #triggerSaveAfterIssuance} para a mesma ref; {@link #persistIfAbsent}
+   * serializa esse trecho via {@link #refLocks} e desfaz o upload no R2 se ainda assim perder a
+   * corrida, então isso não gera arquivo duplicado. Uma falha aqui é só best-effort — não pode
+   * envenenar a transação de quem chamou (ex: downloadXml/downloadDanfe), senão o commit do
+   * chamador falha com UnexpectedRollbackException mesmo com a exceção sendo capturada abaixo.
    */
   @Transactional(Transactional.TxType.REQUIRES_NEW)
   public void saveIfAbsent(String ref, byte[] xmlBytes) {
@@ -142,12 +182,16 @@ public class FiscalNoteXmlStorageService {
   @Transactional(Transactional.TxType.REQUIRES_NEW)
   public void saveDanfeIfAbsent(String ref, byte[] danfeBytes) {
     if (danfeBytes == null || danfeBytes.length == 0) return;
+    withRefLock(ref, () -> saveDanfeIfAbsentLocked(ref, danfeBytes));
+  }
 
+  private void saveDanfeIfAbsentLocked(String ref, byte[] danfeBytes) {
     FiscalNoteXmlStorage storage = repository.findByRef(ref).orElse(null);
     if (storage != null && storage.getDanfeObjectKey() != null) return;
 
+    String key = null;
     try {
-      String key = StorageKeyGenerator.generate("notas-fiscais", environment, ref, "pdf");
+      key = StorageKeyGenerator.generate("notas-fiscais", environment, ref, "pdf");
       r2StorageService.upload(danfeBytes, key, "application/pdf");
 
       if (storage == null) {
@@ -166,12 +210,20 @@ public class FiscalNoteXmlStorageService {
       } else {
         storage.setDanfeObjectKey(key);
       }
-      repository.save(storage);
+      repository.saveAndFlush(storage);
+    } catch (DataIntegrityViolationException e) {
+      log.warn(
+          "[FiscalNoteXmlStorage] Colisão ao salvar DANFE para ref={}, removendo upload"
+              + " duplicado: {}",
+          ref,
+          e.getMessage());
+      deleteUploadedQuietly(key);
     } catch (Exception e) {
       log.warn(
           "[FiscalNoteXmlStorage] Não foi possível salvar DANFE como backup para ref={}: {}",
           ref,
           e.getMessage());
+      deleteUploadedQuietly(key);
     }
   }
 
@@ -242,7 +294,7 @@ public class FiscalNoteXmlStorageService {
       r2StorageService.moveToCancelled(storage.getObjectKey(), destinationKey);
 
       storage.setObjectKey(destinationKey);
-      storage.setStatus(FiscalNoteXmlStorage.Status.CANCELLED);
+      storage.setStatus(FileStatus.CANCELLED);
       storage.setCancelledAt(LocalDateTime.now());
       repository.save(storage);
     } catch (Exception e) {
@@ -262,31 +314,45 @@ public class FiscalNoteXmlStorageService {
 
   private void persistIfAbsent(
       String ref, String xmlContent, byte[] danfeBytes, NfMetadata metadata) {
+    withRefLock(ref, () -> persistIfAbsentLocked(ref, xmlContent, danfeBytes, metadata));
+  }
+
+  private void persistIfAbsentLocked(
+      String ref, String xmlContent, byte[] danfeBytes, NfMetadata metadata) {
     if (repository.existsByRef(ref)) {
       return;
     }
 
     String xmlKey = StorageKeyGenerator.generate("notas-fiscais", environment, ref, "xml");
-    r2StorageService.upload(xmlContent.getBytes(), xmlKey, "application/xml");
-
     String danfeKey = null;
-    if (danfeBytes != null && danfeBytes.length > 0) {
-      danfeKey = StorageKeyGenerator.generate("notas-fiscais", environment, ref, "pdf");
-      r2StorageService.upload(danfeBytes, danfeKey, "application/pdf");
+    try {
+      r2StorageService.upload(xmlContent.getBytes(), xmlKey, "application/xml");
+
+      if (danfeBytes != null && danfeBytes.length > 0) {
+        danfeKey = StorageKeyGenerator.generate("notas-fiscais", environment, ref, "pdf");
+        r2StorageService.upload(danfeBytes, danfeKey, "application/pdf");
+      }
+
+      FiscalNoteXmlStorage storage =
+          FiscalNoteXmlStorage.builder()
+              .ref(ref)
+              .nfNumber(metadata.nfNumber())
+              .clientName(metadata.clientName())
+              .totalValue(metadata.totalValue())
+              .issuedAt(metadata.issuedAt())
+              .objectKey(xmlKey)
+              .danfeObjectKey(danfeKey)
+              .build();
+
+      repository.saveAndFlush(storage);
+    } catch (DataIntegrityViolationException e) {
+      log.warn(
+          "[FiscalNoteXmlStorage] Colisão ao persistir ref={}, removendo upload duplicado: {}",
+          ref,
+          e.getMessage());
+      deleteUploadedQuietly(xmlKey);
+      deleteUploadedQuietly(danfeKey);
     }
-
-    FiscalNoteXmlStorage storage =
-        FiscalNoteXmlStorage.builder()
-            .ref(ref)
-            .nfNumber(metadata.nfNumber())
-            .clientName(metadata.clientName())
-            .totalValue(metadata.totalValue())
-            .issuedAt(metadata.issuedAt())
-            .objectKey(xmlKey)
-            .danfeObjectKey(danfeKey)
-            .build();
-
-    repository.save(storage);
   }
 
   /**
@@ -342,11 +408,10 @@ public class FiscalNoteXmlStorageService {
 
   private String resolveClientName(String ref) {
     try {
-      return combinedScoreRepository
+      return combinedScoreService
           .findByInvoiceRef(ref)
           .map(CombinedScore::getClientId)
-          .flatMap(clientRepository::findById)
-          .map(Client::getClientName)
+          .flatMap(clientService::findClientName)
           .orElse("Cliente não identificado");
     } catch (Exception e) {
       return "Cliente não identificado";

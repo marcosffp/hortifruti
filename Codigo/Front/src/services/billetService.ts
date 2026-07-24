@@ -26,7 +26,14 @@ export const billetService = {
       });
 
       if (!response.ok) {
-        throw new Error(`Erro ao gerar boleto: ${response.status}`);
+        let message = `Erro ao gerar boleto: ${response.status}`;
+        try {
+          const errorText = await response.text();
+          if (errorText?.trim()) message = errorText;
+        } catch {
+          // corpo do erro indisponível, mantém a mensagem padrão
+        }
+        throw new Error(message);
       }
 
       const result = await response.blob();
@@ -182,6 +189,31 @@ export const billetService = {
       return result;
     } catch (error) {
       console.error("Falha ao cancelar boleto:", error);
+      throw error;
+    }
+  },
+
+  async cancelBilletByNumber(nossoNumero: string): Promise<string> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/billet/cancel-by-number?nossoNumero=${encodeURIComponent(nossoNumero)}`,
+        {
+          method: "POST",
+          headers: getAuthHeaders(),
+          credentials: "include",
+        },
+      );
+
+      const result = await response.text();
+      if (!response.ok) {
+        throw new Error(
+          result || `Erro ao cancelar boleto: ${response.status}`,
+        );
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Falha ao cancelar boleto avulso:", error);
       throw error;
     }
   },

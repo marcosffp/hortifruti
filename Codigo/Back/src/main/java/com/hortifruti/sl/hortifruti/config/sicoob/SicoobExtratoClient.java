@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.config.billet.SicoobToken;
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobExtratoEnvelope;
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobExtratoResponse;
-import com.hortifruti.sl.hortifruti.exception.SicoobExtratoException;
+import com.hortifruti.sl.hortifruti.exception.sicoob.SicoobExtratoException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;

@@ -3,7 +3,7 @@ package com.hortifruti.sl.hortifruti.service.climate;
 import com.hortifruti.sl.hortifruti.config.climate.OpenWeatherClient;
 import com.hortifruti.sl.hortifruti.dto.climate.WeatherForecastDTO;
 import com.hortifruti.sl.hortifruti.dto.climate.WeatherForecastDTO.DailyForecastDTO;
-import com.hortifruti.sl.hortifruti.exception.WeatherApiException;
+import com.hortifruti.sl.hortifruti.exception.climate.WeatherApiException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;

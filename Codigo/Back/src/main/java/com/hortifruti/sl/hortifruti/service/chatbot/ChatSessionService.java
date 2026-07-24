@@ -26,7 +26,7 @@ public class ChatSessionService {
   @Transactional
   public ChatSession getOrCreateSession(String phoneNumber) {
     Optional<ChatSession> existingSession =
-        sessionRepository.findActiveSessionByPhoneNumber(phoneNumber);
+        sessionRepository.findFirstByPhoneNumberOrderByCreatedAtDesc(phoneNumber);
 
     return existingSession.orElseGet(() -> createNewSession(phoneNumber));
   }
@@ -86,7 +86,7 @@ public class ChatSessionService {
   @Transactional
   public void pauseBotForPhone(String phoneNumber, int hours) {
     Optional<ChatSession> sessionOpt =
-        sessionRepository.findActiveSessionByPhoneNumber(phoneNumber);
+        sessionRepository.findFirstByPhoneNumberOrderByCreatedAtDesc(phoneNumber);
 
     if (sessionOpt.isPresent()) {
       ChatSession session = sessionOpt.get();
@@ -116,7 +116,7 @@ public class ChatSessionService {
 
   public boolean isBotPausedForPhone(String phoneNumber) {
     Optional<ChatSession> sessionOpt =
-        sessionRepository.findActiveSessionByPhoneNumber(phoneNumber);
+        sessionRepository.findFirstByPhoneNumberOrderByCreatedAtDesc(phoneNumber);
 
     return sessionOpt.map(ChatSession::isPaused).orElse(false);
   }

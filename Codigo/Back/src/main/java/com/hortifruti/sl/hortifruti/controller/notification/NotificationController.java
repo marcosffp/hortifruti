@@ -1,12 +1,12 @@
 package com.hortifruti.sl.hortifruti.controller.notification;
 
 import com.hortifruti.sl.hortifruti.dto.notification.*;
-import com.hortifruti.sl.hortifruti.exception.NotificationException;
-import com.hortifruti.sl.hortifruti.model.enumeration.NotificationChannel;
+import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
+import com.hortifruti.sl.hortifruti.model.notification.NotificationChannel;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.service.notification.BulkNotificationService;
 import com.hortifruti.sl.hortifruti.service.notification.NotificationService;
-import com.hortifruti.sl.hortifruti.service.scheduler.CombinedScoreSchedulerService;
+import com.hortifruti.sl.hortifruti.service.scheduler.CombinedScoreOverdueService;
 import com.hortifruti.sl.hortifruti.service.scheduler.DatabaseStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -37,7 +37,7 @@ public class NotificationController {
   private final NotificationService notificationService;
   private final BulkNotificationService bulkNotificationService;
   private final DatabaseStorageService databaseStorageService;
-  private final CombinedScoreSchedulerService schedulerService;
+  private final CombinedScoreOverdueService combinedScoreOverdueService;
 
   @Operation(
       summary = "Enviar arquivos genéricos para contabilidade",
@@ -66,7 +66,7 @@ public class NotificationController {
           notificationService.sendGenericFilesToAccounting(files, request);
       return ResponseEntity.ok(response);
     } catch (NotificationException e) {
-      log.error("Erro ao enviar arquivos para contabilidade: {}", e.getMessage());
+      log.error("Erro ao enviar arquivos para contabilidade: {}", e.getMessage(), e);
       return ResponseEntity.badRequest().body(new NotificationResponse(false, e.getMessage()));
     } catch (Exception e) {
       log.error("Erro ao enviar arquivos para contabilidade", e);
@@ -97,7 +97,7 @@ public class NotificationController {
       NotificationResponse response = notificationService.sendDocumentsToClient(files, request);
       return ResponseEntity.ok(response);
     } catch (NotificationException e) {
-      log.error("Erro ao enviar documentos para cliente {}: {}", clientId, e.getMessage());
+      log.error("Erro ao enviar documentos para cliente {}: {}", clientId, e.getMessage(), e);
       return ResponseEntity.badRequest().body(new NotificationResponse(false, e.getMessage()));
     } catch (Exception e) {
       log.error("Erro ao enviar documentos para cliente {}", clientId, e);
@@ -162,7 +162,7 @@ public class NotificationController {
       })
   public ResponseEntity<Map<String, Object>> checkOverdueScores() {
     try {
-      List<CombinedScore> overdueScores = schedulerService.manualOverdueCheck();
+      List<CombinedScore> overdueScores = combinedScoreOverdueService.manualOverdueCheck();
 
       Map<String, Object> response = new HashMap<>();
       response.put("success", true);
@@ -216,10 +216,11 @@ public class NotificationController {
       return ResponseEntity.ok(response);
 
     } catch (IllegalArgumentException e) {
+      log.warn("Parâmetros inválidos ao processar notificações em massa: {}", e.getMessage());
       return ResponseEntity.badRequest()
           .body(BulkNotificationResponse.failure(e.getMessage(), List.of()));
     } catch (NotificationException e) {
-      log.error("Erro ao processar notificações em massa: {}", e.getMessage());
+      log.error("Erro ao processar notificações em massa: {}", e.getMessage(), e);
       return ResponseEntity.status(500)
           .body(BulkNotificationResponse.failure(e.getMessage(), List.of()));
     } catch (Exception e) {

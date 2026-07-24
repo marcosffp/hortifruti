@@ -1,8 +1,10 @@
 package com.hortifruti.sl.hortifruti.service.backup.auth;
 
 import com.google.api.client.auth.oauth2.Credential;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class TokenValidator {
 
@@ -32,7 +34,7 @@ public class TokenValidator {
         return true;
       }
     } catch (Exception e) {
-      System.out.println("Falha ao renovar o token: " + e.getMessage());
+      log.warn("Falha ao renovar o token: {}", e.getMessage(), e);
     }
     return false;
   }

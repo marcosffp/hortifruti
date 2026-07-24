@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.dto.climate;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Month;
-import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
+import com.hortifruti.sl.hortifruti.model.climate.Month;
+import com.hortifruti.sl.hortifruti.model.climate.TemperatureCategory;
 import java.util.List;
 
 public record ProductResponse(

@@ -1,8 +1,8 @@
 package com.hortifruti.sl.hortifruti.controller.finance;
 
 import com.hortifruti.sl.hortifruti.dto.bb.BBImportSummary;
+import com.hortifruti.sl.hortifruti.dto.finance.StatementResponse;
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobImportSummary;
-import com.hortifruti.sl.hortifruti.dto.transaction.StatementResponse;
 import com.hortifruti.sl.hortifruti.service.finance.StatementService;
 import java.io.IOException;
 import java.time.LocalDate;

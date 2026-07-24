@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.controller.finance;
 
 import com.hortifruti.sl.hortifruti.dto.finance.BankBalanceResponse;
-import com.hortifruti.sl.hortifruti.service.finance.BBSaldoService;
+import com.hortifruti.sl.hortifruti.service.finance.bb.BBSaldoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
