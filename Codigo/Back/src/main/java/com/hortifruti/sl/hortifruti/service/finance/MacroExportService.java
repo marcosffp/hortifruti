@@ -1,7 +1,8 @@
 package com.hortifruti.sl.hortifruti.service.finance;
 
+import com.hortifruti.sl.hortifruti.service.finance.transaction.TransactionExportService;
 import com.hortifruti.sl.hortifruti.service.invoice.tax.ReportTaxService;
-import java.io.FileOutputStream;
+import com.hortifruti.sl.hortifruti.util.FileZipUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,11 +13,11 @@ import java.time.format.TextStyle;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MacroExportService {
@@ -24,14 +25,15 @@ public class MacroExportService {
   private final TransactionExportService transactionExportService;
   private final ReportTaxService reportTaxService;
 
-  public Map<String, byte[]> exportMacroReports() throws IOException {
-    LocalDate now = LocalDate.now();
-    LocalDate firstDayLastMonth = now.minusMonths(1).withDayOfMonth(1);
-    LocalDate lastDayLastMonth = now.withDayOfMonth(1).minusDays(1);
+  public Map<String, byte[]> exportMacroReports(LocalDate startDate, LocalDate endDate)
+      throws IOException {
+    LocalDate[] periodo = resolvePeriodo(startDate, endDate);
+    LocalDate periodoInicio = periodo[0];
+    LocalDate periodoFim = periodo[1];
 
     Path zipPath = null;
     try {
-      String zipFilePath = generateMacroReports(firstDayLastMonth, lastDayLastMonth);
+      String zipFilePath = generateMacroReports(periodoInicio, periodoFim);
       zipPath = Path.of(zipFilePath);
 
       if (!Files.exists(zipPath) || Files.size(zipPath) == 0) {
@@ -40,43 +42,47 @@ public class MacroExportService {
 
       byte[] zipBytes = Files.readAllBytes(zipPath);
 
-      String currentMonth =
-          now.getMonth().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pt-BR"));
-      String zipFileName = "Relatorio-Macro-Hortifruti-Santa-Luzia-" + currentMonth + ".zip";
+      String periodoMes =
+          periodoInicio.getMonth().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pt-BR"));
+      String zipFileName = "Relatorio-Macro-Hortifruti-Santa-Luzia-" + periodoMes + ".zip";
 
       Map<String, byte[]> result = new HashMap<>();
       result.put(zipFileName, zipBytes);
       return result;
 
     } catch (IOException e) {
-      System.err.println("Erro de I/O durante geração de relatórios macro: " + e.getMessage());
-      e.printStackTrace();
+      log.error("Erro de I/O durante geração de relatórios macro", e);
       throw new RuntimeException("Erro ao processar arquivos macro", e);
     } catch (Exception e) {
-      System.err.println("Erro geral durante geração de relatórios macro: " + e.getMessage());
-      e.printStackTrace();
+      log.error("Erro geral durante geração de relatórios macro", e);
       throw new RuntimeException("Erro interno durante geração de relatórios macro", e);
     } finally {
       if (zipPath != null && Files.exists(zipPath)) {
         try {
           Files.delete(zipPath);
         } catch (IOException e) {
-          System.err.println("Erro ao excluir o arquivo: " + zipPath);
-          e.printStackTrace();
+          log.error("Erro ao excluir o arquivo: {}", zipPath, e);
         }
       }
     }
+  }
+
+  private LocalDate[] resolvePeriodo(LocalDate startDate, LocalDate endDate) {
+    LocalDate now = LocalDate.now();
+    LocalDate inicio = startDate != null ? startDate : now.minusMonths(1).withDayOfMonth(1);
+    LocalDate fim = endDate != null ? endDate : now.withDayOfMonth(1).minusDays(1);
+    return new LocalDate[] {inicio, fim};
   }
 
   private String generateMacroReports(LocalDate startDate, LocalDate endDate) throws IOException {
     String folderName = createMacroFolder(startDate);
     Path folderPath = Path.of(folderName);
 
-    generateTransactionReports(folderPath);
+    generateTransactionReports(folderPath, startDate);
 
     generateTaxReports(startDate, endDate, folderPath);
 
-    Path zipFilePath = compressFolder(folderPath, folderName);
+    Path zipFilePath = FileZipUtils.compressFolder(folderPath, folderName);
 
     deleteFolderRecursively(folderPath);
 
@@ -96,22 +102,28 @@ public class MacroExportService {
     return folderName;
   }
 
-  private void generateTransactionReports(Path folderPath) throws IOException {
+  private void generateTransactionReports(Path folderPath, LocalDate startDate) throws IOException {
     try {
       Map<String, byte[]> transactionData = transactionExportService.exportTransactionsAsZip();
+
+      String monthName =
+          startDate.format(DateTimeFormatter.ofPattern("MMMM", Locale.of("pt", "BR")));
+      Path bankFolder =
+          folderPath.resolve(
+              "Relatorios_Bancarios_" + FileZipUtils.capitalizeFirstLetter(monthName));
 
       for (Map.Entry<String, byte[]> entry : transactionData.entrySet()) {
         String fileName = entry.getKey();
         byte[] fileContent = entry.getValue();
 
         if (fileContent != null && fileContent.length > 0) {
-          saveFile(folderPath.resolve(fileName), fileContent);
+          FileZipUtils.saveFile(bankFolder.resolve(fileName), fileContent);
         } else {
-          System.err.println("Arquivo de transação está vazio: " + fileName);
+          log.warn("Arquivo de transação está vazio: {}", fileName);
         }
       }
     } catch (Exception e) {
-      System.err.println("Erro ao gerar relatórios de transação: " + e.getMessage());
+      log.error("Erro ao gerar relatórios de transação", e);
       throw e;
     }
   }
@@ -119,21 +131,32 @@ public class MacroExportService {
   private void generateTaxReports(LocalDate startDate, LocalDate endDate, Path folderPath)
       throws IOException {
     try {
-      System.out.println("Iniciando geração de relatórios fiscais...");
-      byte[] taxReportsZip = reportTaxService.generateMonthly(startDate, endDate);
+      log.info("Iniciando geração de relatórios fiscais...");
+      Map<String, byte[]> taxFiles = reportTaxService.generateMonthlyFiles(startDate, endDate);
 
-      if (taxReportsZip != null && taxReportsZip.length > 0) {
+      if (taxFiles != null && !taxFiles.isEmpty()) {
         String monthName =
             startDate.format(DateTimeFormatter.ofPattern("MMMM", Locale.of("pt", "BR")));
-        String taxZipName = "Relatorios_Fiscais_" + capitalizeFirstLetter(monthName) + ".zip";
-        saveFile(folderPath.resolve(taxZipName), taxReportsZip);
-        System.out.println("Relatórios fiscais gerados com sucesso");
+        Path taxFolder =
+            folderPath.resolve(
+                "Relatorios_Fiscais_" + FileZipUtils.capitalizeFirstLetter(monthName));
+
+        for (Map.Entry<String, byte[]> entry : taxFiles.entrySet()) {
+          String fileName = entry.getKey();
+          byte[] fileContent = entry.getValue();
+
+          if (fileContent != null && fileContent.length > 0) {
+            FileZipUtils.saveFile(taxFolder.resolve(fileName), fileContent);
+          } else {
+            log.warn("Arquivo fiscal está vazio: {}", fileName);
+          }
+        }
+        log.info("Relatórios fiscais gerados com sucesso");
       } else {
-        System.err.println("Relatórios fiscais estão vazios - continuando sem eles");
+        log.warn("Relatórios fiscais estão vazios - continuando sem eles");
       }
     } catch (Exception e) {
-      System.err.println("Erro ao gerar relatórios fiscais: " + e.getMessage());
-      System.err.println("Continuando exportação sem relatórios fiscais...");
+      log.error("Erro ao gerar relatórios fiscais - continuando exportação sem eles", e);
 
       String avisoContent =
           "AVISO: Os relatórios fiscais não puderam ser gerados devido a problemas com dados de notas fiscais.\n"
@@ -143,41 +166,11 @@ public class MacroExportService {
               + "Data: "
               + LocalDateTime.now();
       try {
-        saveFile(folderPath.resolve("AVISO_Relatorios_Fiscais.txt"), avisoContent.getBytes());
+        FileZipUtils.saveFile(
+            folderPath.resolve("AVISO_Relatorios_Fiscais.txt"), avisoContent.getBytes());
       } catch (IOException ioEx) {
-        System.err.println("Não foi possível criar arquivo de aviso: " + ioEx.getMessage());
+        log.error("Não foi possível criar arquivo de aviso", ioEx);
       }
-    }
-  }
-
-  private Path compressFolder(Path folderPath, String folderName) throws IOException {
-    String zipFileName = folderName + ".zip";
-    Path zipFilePath = Path.of(zipFileName);
-    zipFolder(folderPath, zipFilePath);
-    return zipFilePath;
-  }
-
-  private void saveFile(Path filePath, byte[] content) throws IOException {
-    try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
-      fos.write(content);
-    }
-  }
-
-  private void zipFolder(Path sourceFolderPath, Path zipPath) throws IOException {
-    try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipPath.toFile()))) {
-      Files.walk(sourceFolderPath)
-          .filter(path -> !Files.isDirectory(path))
-          .forEach(
-              path -> {
-                ZipEntry zipEntry = new ZipEntry(sourceFolderPath.relativize(path).toString());
-                try {
-                  zos.putNextEntry(zipEntry);
-                  Files.copy(path, zos);
-                  zos.closeEntry();
-                } catch (IOException e) {
-                  throw new RuntimeException("Erro ao compactar arquivo: " + path, e);
-                }
-              });
     }
   }
 
@@ -190,15 +183,11 @@ public class MacroExportService {
                 try {
                   Files.delete(path);
                 } catch (IOException e) {
-                  System.err.println("Erro ao deletar: " + path);
+                  log.error("Erro ao deletar: {}", path, e);
                 }
               });
     } catch (IOException e) {
-      System.err.println("Erro ao deletar pasta: " + folderPath);
+      log.error("Erro ao deletar pasta: {}", folderPath, e);
     }
-  }
-
-  private String capitalizeFirstLetter(String text) {
-    return text.substring(0, 1).toUpperCase() + text.substring(1);
   }
 }

@@ -1,9 +1,10 @@
 package com.hortifruti.sl.hortifruti.repository.finance;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
-import com.hortifruti.sl.hortifruti.model.enumeration.Category;
-import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
+import com.hortifruti.sl.hortifruti.model.finance.Bank;
+import com.hortifruti.sl.hortifruti.model.finance.Category;
+import com.hortifruti.sl.hortifruti.model.finance.StatementOrigin;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
+import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,15 +26,17 @@ public interface TransactionRepository
   List<Transaction> findByTransactionDateBetweenAndStatementBank(
       @Param("startDate") LocalDate startDate,
       @Param("endDate") LocalDate endDate,
-      @Param("bank") Bank bank);
+      @Param("bank") Bank bank,
+      Pageable pageable);
 
   @Query(
-      "SELECT t FROM Transaction t WHERE t.transactionDate BETWEEN :startDate AND :endDate AND t.statement.bank = :bank")
-  List<Transaction> findByTransactionDateBetweenAndStatementBank(
+      "SELECT t FROM Transaction t WHERE t.transactionDate BETWEEN :startDate AND :endDate "
+          + "AND t.statement.bank = :bank AND t.statement.origin = :origin")
+  List<Transaction> findByTransactionDateBetweenAndStatementBankAndStatementOrigin(
       @Param("startDate") LocalDate startDate,
       @Param("endDate") LocalDate endDate,
       @Param("bank") Bank bank,
-      Pageable pageable);
+      @Param("origin") StatementOrigin origin);
 
   @Query("SELECT DISTINCT t.category FROM Transaction t WHERE t.category IS NOT NULL")
   List<String> findAllCategories();
@@ -75,4 +78,14 @@ public interface TransactionRepository
       """)
   List<Transaction> findTransactionsByCreatedAtBetween(
       @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+  @Query(
+      """
+      SELECT t
+      FROM Transaction t
+      WHERE t.transactionDate BETWEEN :startDate AND :endDate
+      ORDER BY t.transactionDate ASC, t.id ASC
+      """)
+  List<Transaction> findByTransactionDateBetweenOrderByTransactionDateAscIdAsc(
+      @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }

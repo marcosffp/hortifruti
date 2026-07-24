@@ -155,6 +155,22 @@ export function useBillet() {
     }
   };
 
+  const cancelBilletByNumber = async (nossoNumero: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await billetService.cancelBilletByNumber(nossoNumero);
+      return result;
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao cancelar boleto avulso",
+      );
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const markBilletAsPaid = async (combinedScoreId: number) => {
     setIsLoading(true);
     setError(null);
@@ -182,6 +198,7 @@ export function useBillet() {
     issueCopy,
     downloadStoredBillet,
     cancelBillet,
+    cancelBilletByNumber,
     markBilletAsPaid,
     isLoading,
     error,

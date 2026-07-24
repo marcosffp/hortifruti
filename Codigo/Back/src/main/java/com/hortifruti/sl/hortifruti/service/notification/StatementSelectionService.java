@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.notification;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Bank;
+import com.hortifruti.sl.hortifruti.model.finance.Bank;
 import com.hortifruti.sl.hortifruti.model.finance.Statement;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import com.hortifruti.sl.hortifruti.repository.finance.StatementRepository;

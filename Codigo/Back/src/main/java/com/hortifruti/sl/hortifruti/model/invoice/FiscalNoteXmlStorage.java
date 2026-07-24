@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.model.invoice;
 
+import com.hortifruti.sl.hortifruti.model.FileStatus;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -48,7 +49,7 @@ public class FiscalNoteXmlStorage {
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 20)
   @Builder.Default
-  private Status status = Status.ACTIVE;
+  private FileStatus status = FileStatus.ACTIVE;
 
   @Column(name = "cancelled_at")
   private LocalDateTime cancelledAt;
@@ -56,16 +57,11 @@ public class FiscalNoteXmlStorage {
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  public enum Status {
-    ACTIVE,
-    CANCELLED
-  }
-
   @PrePersist
   protected void onCreate() {
     this.createdAt = LocalDateTime.now();
     if (this.status == null) {
-      this.status = Status.ACTIVE;
+      this.status = FileStatus.ACTIVE;
     }
   }
 }

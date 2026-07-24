@@ -193,19 +193,28 @@ export function useTransaction() {
     }
   };
 
-  const exportTransactionsComplete = async (): Promise<Blob | undefined> => {
+  const exportTransactionsComplete = async (
+    startDate?: string,
+    endDate?: string,
+  ): Promise<Blob | undefined> => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await transactionService.exportTransactionsComplete();
+      const data = await transactionService.exportTransactionsComplete(
+        startDate,
+        endDate,
+      );
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement("a");
       link.href = url;
-      const { month, year } = getPreviousMonth();
-      link.setAttribute(
-        "download",
-        `Relatorio-Hortifruti-Santa-Luzia-${month}-${year}.zip`,
-      );
+      const fileName =
+        startDate && endDate
+          ? `Relatorio-Hortifruti-Santa-Luzia-${startDate}_a_${endDate}.zip`
+          : (() => {
+              const { month, year } = getPreviousMonth();
+              return `Relatorio-Hortifruti-Santa-Luzia-${month}-${year}.zip`;
+            })();
+      link.setAttribute("download", fileName);
       document.body.appendChild(link);
       link.click();
       link.remove();

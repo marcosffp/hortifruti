@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.billet;
 
-import com.hortifruti.sl.hortifruti.exception.BilletException;
-import com.hortifruti.sl.hortifruti.exception.CombinedScoreException;
+import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
+import com.hortifruti.sl.hortifruti.exception.purchase.CombinedScoreException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
@@ -15,7 +15,7 @@ public class BilletInfoCombinedAndClient {
   private final CombinedScoreRepository combinedScoreRepository;
   private final ClientRepository clientRepository;
 
-  protected CombinedScore findCombinedScoreById(Long idCombinedScore) {
+  public CombinedScore findCombinedScoreById(Long idCombinedScore) {
     return combinedScoreRepository
         .findById(idCombinedScore)
         .orElseThrow(
@@ -24,7 +24,7 @@ public class BilletInfoCombinedAndClient {
                     "Agrupamento com o ID " + idCombinedScore + " não encontrado."));
   }
 
-  protected Client findClientById(Long clientId) {
+  public Client findClientById(Long clientId) {
     return clientRepository
         .findById(clientId)
         .orElseThrow(() -> new BilletException("Cliente com ID " + clientId + " não encontrado."));

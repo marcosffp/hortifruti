@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // O proxy de rewrites do Next mata a conexão em 30s por padrão (http-proxy
+  // interno, ver proxy-request.js). Relatórios como /transactions/export-complete
+  // consultam APIs fiscais externas lentas e passam bem disso, então a resposta
+  // do backend nunca chega ao navegador (broken pipe) mesmo quando é gerada com
+  // sucesso. 5 min cobre os relatórios mais lentos com folga.
+  experimental: {
+    proxyTimeout: 300_000,
+  },
   // Proxeia /api/* para o backend (server-to-server). Do ponto de vista do
   // navegador as chamadas em NEXT_PUBLIC_API_URL (ex.: /api/auth) são same-origin,
   // então o cookie httpOnly do login vira first-party — evita o bloqueio de

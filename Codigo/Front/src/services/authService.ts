@@ -14,6 +14,21 @@ export interface AuthUser {
   roles: string[];
 }
 
+/**
+ * retryAfter (segundos) vem preenchido quando o backend recusa o login por lockout
+ * (proteção contra brute-force) — usado para desabilitar o botão de login até o
+ * bloqueio expirar, sem expor "conta bloqueada" como texto para o usuário.
+ */
+export class LoginError extends Error {
+  retryAfter?: number;
+
+  constructor(message: string, retryAfter?: number) {
+    super(message);
+    this.name = "LoginError";
+    this.retryAfter = retryAfter;
+  }
+}
+
 let pendingMeRequest: Promise<AuthUser | null> | null = null;
 let pendingRefreshRequest: Promise<boolean> | null = null;
 
@@ -31,8 +46,13 @@ export const authService = {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.erro || `Erro ao fazer login: ${response.status}`,
+        throw new LoginError(
+          errorData.message ||
+            errorData.erro ||
+            `Erro ao fazer login: ${response.status}`,
+          typeof errorData.retryAfter === "number"
+            ? errorData.retryAfter
+            : undefined,
         );
       }
 

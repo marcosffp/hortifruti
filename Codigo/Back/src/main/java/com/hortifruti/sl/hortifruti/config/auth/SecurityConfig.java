@@ -34,6 +34,28 @@ public class SecurityConfig {
   @Value("${backend.url}")
   private String backendUrl;
 
+  /**
+   * Regra de decisão por domínio para esta lista central:
+   *
+   * <ul>
+   *   <li>{@code /auth/**} (login/refresh/logout/me), {@code /swagger-ui/**}/{@code
+   *       /v3/api-docs/**} (docs, desabilitadas em prod — ver application-prod.properties) e {@code
+   *       /backup/oauth2callback} (callback do Google) precisam ser públicas por natureza do fluxo,
+   *       sem alternativa.
+   *   <li>{@code /scheduler/**} e {@code /chatbot/webhook} são {@code permitAll} aqui porque a
+   *       autenticação delas NÃO é por papel de usuário: são chamadas por sistemas externos
+   *       (cron/scheduler, UltraMsg) usando um segredo estático próprio, validado em {@link
+   *       SecurityFilter}. Não remova essa validação achando que o {@code permitAll} deixa a rota
+   *       aberta — a proteção real está no filtro, não nesta lista.
+   *   <li>Domínios de negócio (produtos, transações, recomendações, notificações) exigem {@code
+   *       MANAGER}; leitura de clientes/usuários aceita {@code EMPLOYEE} ou {@code MANAGER}. Regras
+   *       mais finas que a role (ex.: mutação x leitura dentro do mesmo domínio) devem usar
+   *       {@code @PreAuthorize} no controller, perto do código que protegem, em vez de entrar aqui.
+   *   <li>Qualquer rota nova sem matcher explícito cai em {@code anyRequest().authenticated()} — ou
+   *       seja, qualquer usuário autenticado (independente do papel) consegue acessá-la a menos que
+   *       o controller declare {@code @PreAuthorize} explicitamente.
+   * </ul>
+   */
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     return http.cors(cors -> cors.configurationSource(corsConfigurationSource()))

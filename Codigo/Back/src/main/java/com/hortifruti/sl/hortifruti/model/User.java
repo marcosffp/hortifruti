@@ -1,6 +1,5 @@
 package com.hortifruti.sl.hortifruti.model;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Role;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

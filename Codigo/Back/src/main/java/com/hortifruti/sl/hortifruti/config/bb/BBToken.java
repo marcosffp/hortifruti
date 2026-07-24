@@ -2,7 +2,7 @@ package com.hortifruti.sl.hortifruti.config.bb;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hortifruti.sl.hortifruti.exception.BBApiException;
+import com.hortifruti.sl.hortifruti.exception.bb.BBApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -38,6 +38,8 @@ public class BBToken {
 
   @Qualifier("bbRestTemplate")
   private final RestTemplate restTemplate;
+
+  private final ObjectMapper objectMapper;
 
   public synchronized String getAccessToken() {
     if (accessToken != null && System.currentTimeMillis() < tokenExpiresAt - 30_000) {
@@ -85,8 +87,7 @@ public class BBToken {
     }
 
     try {
-      ObjectMapper mapper = new ObjectMapper();
-      JsonNode json = mapper.readTree(response.getBody());
+      JsonNode json = objectMapper.readTree(response.getBody());
 
       if (!json.hasNonNull("access_token")) {
         throw new BBApiException("Resposta de token da API do BB sem access_token.");

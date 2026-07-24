@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.backup.oauth;
 
-import com.hortifruti.sl.hortifruti.exception.BackupException;
+import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

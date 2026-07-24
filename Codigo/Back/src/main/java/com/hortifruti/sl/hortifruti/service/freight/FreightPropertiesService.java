@@ -1,7 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.freight;
 
 import com.hortifruti.sl.hortifruti.dto.freight.FreightConfigDTO;
-import com.hortifruti.sl.hortifruti.exception.FreightException;
+import com.hortifruti.sl.hortifruti.exception.freight.FreightException;
 import com.hortifruti.sl.hortifruti.mapper.FreightConfigMapper;
 import com.hortifruti.sl.hortifruti.model.FreightConfig;
 import com.hortifruti.sl.hortifruti.repository.FreightConfigRepository;

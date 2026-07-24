@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.backup;
 
-import com.hortifruti.sl.hortifruti.exception.BackupException;
+import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
 import com.hortifruti.sl.hortifruti.model.finance.Statement;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
 import com.hortifruti.sl.hortifruti.repository.finance.StatementRepository;

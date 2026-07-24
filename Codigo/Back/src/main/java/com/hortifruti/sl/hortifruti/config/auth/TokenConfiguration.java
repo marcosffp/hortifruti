@@ -3,8 +3,8 @@ package com.hortifruti.sl.hortifruti.config.auth;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.hortifruti.sl.hortifruti.exception.TokenException;
-import com.hortifruti.sl.hortifruti.model.enumeration.Role;
+import com.hortifruti.sl.hortifruti.exception.auth.TokenException;
+import com.hortifruti.sl.hortifruti.model.Role;
 import jakarta.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -77,22 +77,5 @@ public class TokenConfiguration {
 
   public long getExpirationSeconds() {
     return minutosExpiracao * 60;
-  }
-
-  public Role getRoleFromToken(String token) {
-    try {
-      String roleString =
-          JWT.require(algoritmo)
-              .withIssuer("auth")
-              .build()
-              .verify(token)
-              .getClaim("role")
-              .asString();
-      return Role.fromString(roleString);
-    } catch (Exception e) {
-      throw new TokenException(
-          "Não foi possível extrair o papel do usuário do token. Por favor, forneça um token válido.",
-          e);
-    }
   }
 }

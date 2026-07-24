@@ -2,7 +2,7 @@ package com.hortifruti.sl.hortifruti.controller.climate;
 
 import com.hortifruti.sl.hortifruti.dto.climate.ProductRequest;
 import com.hortifruti.sl.hortifruti.dto.climate.ProductResponse;
-import com.hortifruti.sl.hortifruti.exception.ProductException;
+import com.hortifruti.sl.hortifruti.exception.climate.ProductException;
 import com.hortifruti.sl.hortifruti.service.climate.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

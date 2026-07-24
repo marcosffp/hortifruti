@@ -15,6 +15,7 @@ import BankBalanceCard from "@/components/modules/BankBalanceCard";
 import CashFlow from "@/components/modules/CashFlow";
 import Alerts from "@/components/ui/Alerts";
 import Card from "@/components/ui/Card";
+import GameLoadingOverlay from "@/components/ui/GameLoadingOverlay";
 import { useReport } from "@/hooks/useReport";
 
 export default function Dashboard() {
@@ -49,204 +50,204 @@ export default function Dashboard() {
   };
 
   return (
-    <main className="flex-1 p-6 bg-gray-50 overflow-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-gray-600">
-          Visão geral dos dados financeiros e operacionais
-        </p>
-      </div>
-
-      <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
-        <div className="mb-6">
-          <BankBalanceCard />
-        </div>
-      </RoleGuard>
-
-      <MobileQuickAccess />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <Card title="Bem-vindo ao Hortifruti SL">
+    <RoleGuard roles={["MANAGER"]} redirectTo="/comercio/compras">
+      <main className="flex-1 p-6 bg-gray-50 overflow-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
           <p className="text-gray-600">
-            Sistema de gestão para hortifruti com módulos integrados para
-            controle financeiro, gestão de estoque, vendas e muito mais.
+            Visão geral dos dados financeiros e operacionais
           </p>
-        </Card>
+        </div>
 
         <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
-          <Card title="Relatórios Financeiros">
-            <div className="space-y-3">
-              <p className="text-gray-600">
-                Baixe seu relatório fiscal em PDF por mês anterior ou por um
-                período específico. Para o período específico, defina e aplique
-                as datas na seção <strong>Filtros</strong>, logo abaixo.
-              </p>
-
-              <button
-                type="button"
-                className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-[var(--primary)] text-white rounded hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                onClick={() => setShowModalReport(true)}
-                disabled={isGenerating}
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Gerando relatório...
-                  </>
-                ) : (
-                  <>Baixar Relatório</>
-                )}
-              </button>
-
-              {error && (
-                <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-2 text-red-700">
-                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">{error}</span>
-                </div>
-              )}
-
-              {isGenerating && (
-                <p className="text-xs text-gray-500">
-                  Seu relatório está sendo preparado. Isso pode levar alguns
-                  segundos.
-                </p>
-              )}
-            </div>
-          </Card>
+          <div className="mb-6">
+            <BankBalanceCard />
+          </div>
         </RoleGuard>
-      </div>
 
-      <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
-        <CashFlow
-          startDate={startDate}
-          endDate={endDate}
-          setStartDate={setStartDate}
-          setEndDate={setEndDate}
-        />
-      </RoleGuard>
+        <MobileQuickAccess />
 
-      <RoleGuard
-        roles={["MANAGER"]}
-        ignoreRedirect={true}
-        fallback={
-          <>
-            <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-8 text-center mb-2">
-              <Lock size={48} className="mx-auto text-gray-400 mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                Acesso Restrito
-              </h3>
-              <p className="text-gray-500 mb-4">
-                Os relatórios financeiros são acessíveis apenas para usuários
-                com perfil de Gerente.
-              </p>
-              <p className="text-sm text-gray-400">
-                Entre em contato com um administrador para solicitar acesso.
-              </p>
-            </div>
-            <Alerts></Alerts>
-          </>
-        }
-      >
-        {null}
-      </RoleGuard>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <Card title="Bem-vindo ao Hortifruti SL">
+            <p className="text-gray-600">
+              Sistema de gestão para hortifruti com módulos integrados para
+              controle financeiro, gestão de estoque, vendas e muito mais.
+            </p>
+          </Card>
 
-      {showModalReport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <button
-            type="button"
-            aria-label="Fechar modal"
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm cursor-default"
-            onClick={() => !isGenerating && setShowModalReport(false)}
+          <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
+            <Card title="Relatórios Financeiros">
+              <div className="space-y-3">
+                <p className="text-gray-600">
+                  Baixe seu relatório fiscal em PDF por mês anterior ou por um
+                  período específico. Para o período específico, defina e
+                  aplique as datas na seção <strong>Filtros</strong>, logo
+                  abaixo.
+                </p>
+
+                <button
+                  type="button"
+                  className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-[var(--primary)] text-white rounded hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                  onClick={() => setShowModalReport(true)}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Gerando relatório...
+                    </>
+                  ) : (
+                    <>Baixar Relatório</>
+                  )}
+                </button>
+
+                {error && (
+                  <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-2 text-red-700">
+                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm">{error}</span>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </RoleGuard>
+        </div>
+
+        <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
+          <CashFlow
+            startDate={startDate}
+            endDate={endDate}
+            setStartDate={setStartDate}
+            setEndDate={setEndDate}
           />
-          <div className="relative z-10 w-full max-w-lg mx-4 bg-white rounded-2xl shadow-2xl border border-gray-100">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <div>
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
-                  Selecionar Tipo de Relatório
-                </h2>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  Escolha entre o relatório do mês anterior ou um intervalo
-                  personalizado.
+        </RoleGuard>
+
+        <RoleGuard
+          roles={["MANAGER"]}
+          ignoreRedirect={true}
+          fallback={
+            <>
+              <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-8 text-center mb-2">
+                <Lock size={48} className="mx-auto text-gray-400 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                  Acesso Restrito
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  Os relatórios financeiros são acessíveis apenas para usuários
+                  com perfil de Gerente.
+                </p>
+                <p className="text-sm text-gray-400">
+                  Entre em contato com um administrador para solicitar acesso.
                 </p>
               </div>
-              <button
-                type="button"
-                className="p-2 rounded-md hover:bg-gray-100 text-gray-500"
-                onClick={() => setShowModalReport(false)}
-                disabled={isGenerating}
-                aria-label="Fechar modal"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+              <Alerts></Alerts>
+            </>
+          }
+        >
+          {null}
+        </RoleGuard>
 
-            <div className="px-5 py-5 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {showModalReport && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <button
+              type="button"
+              aria-label="Fechar modal"
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm cursor-default"
+              onClick={() => !isGenerating && setShowModalReport(false)}
+            />
+            <div className="relative z-10 w-full max-w-lg mx-4 bg-white rounded-2xl shadow-2xl border border-gray-100">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
+                    Selecionar Tipo de Relatório
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    Escolha entre o relatório do mês anterior ou um intervalo
+                    personalizado.
+                  </p>
+                </div>
                 <button
                   type="button"
-                  className="group rounded-xl border border-gray-200 hover:border-green-300 bg-white hover:bg-green-50 p-4 text-left transition-all disabled:opacity-60"
-                  onClick={() => handleGenerateReport("MONTH")}
+                  className="p-2 rounded-md hover:bg-gray-100 text-gray-500"
+                  onClick={() => setShowModalReport(false)}
                   disabled={isGenerating}
+                  aria-label="Fechar modal"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-green-100 text-green-700">
-                      <CalendarDays className="w-5 h-5" />
-                    </span>
-                    <div>
-                      <p className="font-medium text-gray-800">
-                        Relatório Mensal
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Gera o .zip do mês anterior completo.
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  className="group rounded-xl border border-gray-200 hover:border-green-300 bg-white hover:bg-green-50 p-4 text-left transition-all disabled:opacity-60"
-                  onClick={() => handleGenerateReport("RANGE")}
-                  disabled={isGenerating}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-green-100 text-green-700">
-                      <CalendarRange className="w-5 h-5" />
-                    </span>
-                    <div>
-                      <p className="font-medium text-gray-800">
-                        Relatório por Período
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Usa o período aplicado na seção "Filtros" do dashboard
-                        (Data Inicial/Data Final).
-                      </p>
-                    </div>
-                  </div>
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {isGenerating && (
-                <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-md p-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Preparando seu relatório...
-                </div>
-              )}
-            </div>
+              <div className="px-5 py-5 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    className="group rounded-xl border border-gray-200 hover:border-green-300 bg-white hover:bg-green-50 p-4 text-left transition-all disabled:opacity-60"
+                    onClick={() => handleGenerateReport("MONTH")}
+                    disabled={isGenerating}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-green-100 text-green-700">
+                        <CalendarDays className="w-5 h-5" />
+                      </span>
+                      <div>
+                        <p className="font-medium text-gray-800">
+                          Relatório Mensal
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Gera o .zip do mês anterior completo.
+                        </p>
+                      </div>
+                    </div>
+                  </button>
 
-            <div className="px-5 py-4 border-t border-gray-100 flex justify-end">
-              <button
-                type="button"
-                className="px-4 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-60"
-                onClick={() => setShowModalReport(false)}
-                disabled={isGenerating}
-              >
-                Fechar
-              </button>
+                  <button
+                    type="button"
+                    className="group rounded-xl border border-gray-200 hover:border-green-300 bg-white hover:bg-green-50 p-4 text-left transition-all disabled:opacity-60"
+                    onClick={() => handleGenerateReport("RANGE")}
+                    disabled={isGenerating}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-green-100 text-green-700">
+                        <CalendarRange className="w-5 h-5" />
+                      </span>
+                      <div>
+                        <p className="font-medium text-gray-800">
+                          Relatório por Período
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Usa o período aplicado na seção "Filtros" do dashboard
+                          (Data Inicial/Data Final).
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <div className="px-5 py-4 border-t border-gray-100 flex justify-end">
+                <button
+                  type="button"
+                  className="px-4 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-60"
+                  onClick={() => setShowModalReport(false)}
+                  disabled={isGenerating}
+                >
+                  Fechar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </main>
+        )}
+
+        <GameLoadingOverlay
+          isOpen={isGenerating}
+          title="Gerando relatório fiscal"
+          messages={[
+            "Calculando impostos e ICMS...",
+            "Consolidando lançamentos do período...",
+            "Montando o pacote .zip...",
+            "Quase lá...",
+          ]}
+        />
+      </main>
+    </RoleGuard>
   );
 }

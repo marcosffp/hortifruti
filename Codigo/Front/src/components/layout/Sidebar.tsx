@@ -156,14 +156,16 @@ export default function Sidebar({
       </button>
 
       <nav className="flex flex-col gap-1 mt-8 md:mt-0">
-        <Link
-          href="/dashboard"
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg ${pathname === "/dashboard" ? "bg-primary text-white" : "text-gray-700"} hover:bg-primary mb-2`}
-          onClick={() => onClose?.()}
-        >
-          <Home size={18} />
-          <span>Dashboard</span>
-        </Link>
+        <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
+          <Link
+            href="/dashboard"
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg ${pathname === "/dashboard" ? "bg-primary text-white" : "text-gray-700"} hover:bg-primary mb-2`}
+            onClick={() => onClose?.()}
+          >
+            <Home size={18} />
+            <span>Dashboard</span>
+          </Link>
+        </RoleGuard>
 
         {menu.map((item, i) => {
           const isSubActive = item.submenu?.some(

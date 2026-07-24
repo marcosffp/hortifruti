@@ -29,7 +29,7 @@ export default function EnhancedUploadNotes({
       const validFiles = validateFiles([file]);
       if (validFiles.length === 0) return;
 
-      await processFiles(validFiles, "purchase");
+      await processFiles(validFiles);
 
       showSuccess(`O arquivo "${file.name}" foi processado com sucesso!`);
       if (onUploadSuccess) onUploadSuccess();

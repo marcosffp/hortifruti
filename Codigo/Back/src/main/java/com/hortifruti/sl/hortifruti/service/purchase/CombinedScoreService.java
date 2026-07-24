@@ -1,19 +1,20 @@
 package com.hortifruti.sl.hortifruti.service.purchase;
 
+import com.hortifruti.sl.hortifruti.dto.invoice.OpenInvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.WildcardBilletRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientLastGroupingResponse;
-import com.hortifruti.sl.hortifruti.exception.ClientException;
-import com.hortifruti.sl.hortifruti.exception.CombinedScoreException;
-import com.hortifruti.sl.hortifruti.exception.PurchaseException;
+import com.hortifruti.sl.hortifruti.exception.purchase.ClientException;
+import com.hortifruti.sl.hortifruti.exception.purchase.CombinedScoreException;
+import com.hortifruti.sl.hortifruti.exception.purchase.PurchaseException;
 import com.hortifruti.sl.hortifruti.mapper.CombinedScoreMapper;
-import com.hortifruti.sl.hortifruti.model.enumeration.Status;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.model.purchase.GroupedProduct;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
+import com.hortifruti.sl.hortifruti.model.purchase.Status;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.GroupedProductRepository;
@@ -24,6 +25,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +41,7 @@ public class CombinedScoreService {
   private static final String WILDCARD_PRODUCT_CODE = "113";
   private static final String WILDCARD_PRODUCT_NAME = "PRODUTO CORINGA";
   private static final BigDecimal WILDCARD_PRODUCT_PRICE = new BigDecimal("1.00");
+  private static final int INVOICE_ONLY_DUE_DAYS = 20;
 
   private final CombinedScoreRepository combinedScoreRepository;
   private final CombinedScoreMapper combinedScoreMapper;
@@ -262,6 +267,18 @@ public class CombinedScoreService {
         .toList();
   }
 
+  /**
+   * yourNumber (seuNumero) não é único entre agrupamentos (ver {@link
+   * CombinedScoreRepository#findAllByYourNumber}) — retorna o ID do agrupamento mais recente (maior
+   * ID) para esse número, ou {@code null} se nenhum for encontrado.
+   */
+  public Long findLatestIdByYourNumber(String yourNumber) {
+    return combinedScoreRepository.findAllByYourNumber(yourNumber).stream()
+        .max(Comparator.comparing(CombinedScore::getId))
+        .map(CombinedScore::getId)
+        .orElse(null);
+  }
+
   @Transactional
   public void updateStatusAfterBilletCancellation(String nossoNumero) {
     List<CombinedScore> combinedScores = combinedScoreRepository.findAllByYourNumber(nossoNumero);
@@ -325,5 +342,121 @@ public class CombinedScoreService {
   @Transactional(readOnly = true)
   public List<CombinedScore> getCombinedScoresWithInvoice(LocalDate startDate, LocalDate endDate) {
     return combinedScoreRepository.findByHasInvoiceTrueAndConfirmedAtBetween(startDate, endDate);
+  }
+
+  /**
+   * Lista agrupamentos que só têm nota fiscal emitida (sem boleto), ainda pendentes de confirmação
+   * manual de pagamento. Como não há boleto para confirmar o status junto ao Sicoob, o vencimento
+   * exibido é sempre a data de emissão da NF acrescida de {@value #INVOICE_ONLY_DUE_DAYS} dias,
+   * independentemente do dueDate calculado na criação do agrupamento.
+   */
+  public List<CombinedScore> findAllPendingWithBilletByClient(Long clientId) {
+    return combinedScoreRepository.findAllPendingWithBilletByClient(clientId);
+  }
+
+  public List<CombinedScore> findAllPendingByClient(Long clientId) {
+    return combinedScoreRepository.findAllPendingByClient(clientId);
+  }
+
+  public List<CombinedScore> findAllOpenBillets() {
+    return combinedScoreRepository.findAllOpenBillets();
+  }
+
+  public List<CombinedScore> findOverdueUnpaidScores(LocalDate currentDate) {
+    return combinedScoreRepository.findOverdueUnpaidScores(currentDate);
+  }
+
+  public Optional<CombinedScore> findByInvoiceRef(String invoiceRef) {
+    return combinedScoreRepository.findByInvoiceRef(invoiceRef);
+  }
+
+  /** Agrupamentos com nota fiscal emitida, usado para localizar a ref pelo número da NF. */
+  public List<CombinedScore> findAllWithInvoiceRef() {
+    return combinedScoreRepository.findAll().stream()
+        .filter(
+            cs -> cs.isHasInvoice() && cs.getInvoiceRef() != null && !cs.getInvoiceRef().isEmpty())
+        .toList();
+  }
+
+  public CombinedScore findById(Long id) {
+    return combinedScoreRepository
+        .findById(id)
+        .orElseThrow(
+            () -> new CombinedScoreException("Agrupamento com o ID " + id + " não encontrado."));
+  }
+
+  /**
+   * Busca o agrupamento travando a linha (SELECT ... FOR UPDATE) até o fim da transação do
+   * chamador. Deve ser usado logo no início de fluxos de emissão de boleto/NF para evitar que duas
+   * requisições concorrentes (ex: duplo clique) leiam {@code hasBillet}/{@code hasInvoice} como
+   * falso ao mesmo tempo e gerem o documento em duplicidade.
+   */
+  @Transactional
+  public CombinedScore findByIdForUpdate(Long id) {
+    return combinedScoreRepository
+        .findByIdForUpdate(id)
+        .orElseThrow(
+            () -> new CombinedScoreException("Agrupamento com o ID " + id + " não encontrado."));
+  }
+
+  /**
+   * Busca agrupamentos pelo "nosso número" do Sicoob. Usado pelo cancelamento manual/avulso de
+   * boleto, quando o operador só possui o número do boleto (sem saber, ou sem existir, um
+   * CombinedScore local vinculado).
+   */
+  public List<CombinedScore> findAllByOurNumberSicoob(String ourNumber) {
+    return combinedScoreRepository.findAllByOurNumberSicoob(ourNumber);
+  }
+
+  /**
+   * Atualiza o status de um agrupamento. Ponto único de escrita de status usado por outros domínios
+   * (ex: billet) para não precisarem acessar {@link CombinedScoreRepository} diretamente.
+   */
+  @Transactional
+  public CombinedScore updateStatus(Long id, Status status) {
+    CombinedScore combinedScore =
+        combinedScoreRepository
+            .findById(id)
+            .orElseThrow(
+                () ->
+                    new CombinedScoreException("Agrupamento com o ID " + id + " não encontrado."));
+    combinedScore.setStatus(status);
+    return combinedScoreRepository.save(combinedScore);
+  }
+
+  @Transactional
+  public CombinedScore save(CombinedScore combinedScore) {
+    return combinedScoreRepository.save(combinedScore);
+  }
+
+  @Transactional(readOnly = true)
+  public List<OpenInvoiceResponse> listOpenInvoiceOnlyScores() {
+    List<CombinedScore> scores = combinedScoreRepository.findAllOpenInvoiceOnly();
+    if (scores.isEmpty()) {
+      return List.of();
+    }
+
+    List<Long> clientIds = scores.stream().map(CombinedScore::getClientId).distinct().toList();
+    Map<Long, String> clientNamesById =
+        clientRepository.findAllById(clientIds).stream()
+            .collect(Collectors.toMap(Client::getId, Client::getClientName));
+
+    return scores.stream()
+        .map(
+            cs ->
+                new OpenInvoiceResponse(
+                    cs.getId(),
+                    cs.getClientId(),
+                    clientNamesById.getOrDefault(cs.getClientId(), "Cliente não encontrado"),
+                    cs.getTotalValue(),
+                    cs.getConfirmedAt(),
+                    cs.getConfirmedAt() == null
+                        ? null
+                        : cs.getConfirmedAt().plusDays(INVOICE_ONLY_DUE_DAYS),
+                    cs.getInvoiceRef()))
+        .sorted(
+            Comparator.comparing(
+                OpenInvoiceResponse::dueDate, Comparator.nullsLast(Comparator.naturalOrder())))
+        .toList();
   }
 }

@@ -12,7 +12,8 @@ export default function App() {
     (async () => {
       const user = await authService.me();
       if (user) {
-        router.push("/dashboard");
+        const isManager = user.roles?.includes("MANAGER");
+        router.push(isManager ? "/dashboard" : "/comercio/compras");
       } else {
         router.push("/landing");
       }

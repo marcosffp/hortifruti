@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerta de Segurança - Hortifruti SL</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 0; background-color: #ffffff; font-family: Arial, "Helvetica Neue", Helvetica, sans-serif; }
+        .email-container { width: 100%; max-width: 680px; margin: 0 auto; background-color: #ffffff; }
+        .message-logo-container .message-cell { width: 75%; padding: 40px 20px 20px; vertical-align: top; }
+        .message-logo-container .logo-cell { width: 25%; padding: 20px; text-align: right; vertical-align: top; }
+        .logo-cell img { max-width: 99px; height: auto; }
+        .message-title { color: #dc2626; font-size: 29px; font-weight: 700; margin: 0 0 20px; text-align: left; }
+        .message-content { color: #101112; font-size: 16px; line-height: 1.5; text-align: left; }
+        .message-content p { margin: 10px 0; }
+        .divider { height: 1px; background-color: #dddddd; margin: 0 20px 20px; }
+        .info-section { padding: 0 20px 20px; }
+        .info-table { width: 100%; border-collapse: collapse; }
+        .info-table td { padding: 8px 0; font-size: 14px; border-bottom: 1px solid #eeeeee; }
+        .info-table td.label { color: #555555; width: 40%; }
+        .info-table td.value { color: #101112; font-weight: bold; }
+        .info-card { background-color: #fef2f2; border: 1px solid #dc2626; border-radius: 8px; padding: 20px; }
+        .footer-section { padding: 30px 20px; background-color: #f8f9fa; }
+        .footer-columns .footer-left { width: 40%; text-align: left; vertical-align: middle; }
+        .footer-columns .footer-right { width: 60%; text-align: right; vertical-align: middle; }
+        .footer-logo { max-width: 150px; height: auto; }
+        .footer-phone, .footer-copyright { color: #444a5b; font-size: 14px; margin: 5px 0; }
+        @media (max-width: 615px) {
+            .message-logo-container .message-cell,
+            .message-logo-container .logo-cell { display: block; width: 100%; text-align: center; padding: 10px; }
+            .message-logo-container .message-cell { padding-top: 20px; }
+            .message-title, .message-content { text-align: center; }
+            .message-title { font-size: 28px; }
+            .footer-columns .footer-left, .footer-columns .footer-right { display: block; width: 100%; text-align: center; padding: 10px 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <table class="message-logo-container" role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+            <tr>
+                <td class="message-cell">
+                    <h2 class="message-title">Alerta de Segurança: Bloqueio de Login</h2>
+                    <div class="message-content">
+                        <p>Detectamos tentativas de login malsucedidas acima do limite permitido e um bloqueio temporário foi ativado.</p>
+                    </div>
+                </td>
+                <td class="logo-cell">
+                    <img src="cid:logo" alt="Hortifruti SL" title="Hortifruti SL" />
+                </td>
+            </tr>
+        </table>
+        <div class="divider"></div>
+        <div class="info-section">
+            <div class="info-card">
+                <table class="info-table" role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                    <tr><td class="label">Tipo bloqueado</td><td class="value">{{IDENTIFIER_TYPE}}</td></tr>
+                    <tr><td class="label">Identificador</td><td class="value">{{IDENTIFIER}}</td></tr>
+                    <tr><td class="label">Usuário informado</td><td class="value">{{USERNAME}}</td></tr>
+                    <tr><td class="label">Endereço IP</td><td class="value">{{IP}}</td></tr>
+                    <tr><td class="label">User-Agent</td><td class="value">{{USER_AGENT}}</td></tr>
+                    <tr><td class="label">Data/hora</td><td class="value">{{TIMESTAMP}}</td></tr>
+                    <tr><td class="label">Tentativas até o bloqueio</td><td class="value">{{ATTEMPT_COUNT}}</td></tr>
+                    <tr><td class="label">Nível do bloqueio</td><td class="value">{{LOCKOUT_LEVEL}}</td></tr>
+                    <tr><td class="label">Duração do bloqueio</td><td class="value">{{LOCKOUT_DURATION}}</td></tr>
+                </table>
+            </div>
+        </div>
+        <div class="divider"></div>
+        <div class="info-section">
+            <p style="text-align: center; color: #666; font-size: 14px; line-height: 1.5; margin: 10px 0;">
+                <strong>Por favor, não responda este e-mail.</strong><br>
+                Se este acesso foi legítimo, nenhuma ação é necessária — o bloqueio expira automaticamente.
+            </p>
+        </div>
+        <div class="footer-section">
+            <table class="footer-columns" role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                    <td class="footer-left">
+                        <img src="cid:logo" alt="Hortifruti SL" title="Hortifruti SL" class="footer-logo" />
+                    </td>
+                    <td class="footer-right">
+                        <div class="footer-phone">(31) 3649-7064</div>
+                        <div class="footer-copyright">© 2025 Hortifruti SL. Todos os direitos reservados.</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

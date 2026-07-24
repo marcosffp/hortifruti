@@ -1,24 +1,36 @@
 package com.hortifruti.sl.hortifruti.repository.purchase;
 
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
+import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Long> {
 
+  /**
+   * Busca o agrupamento travando a linha (SELECT ... FOR UPDATE) até o fim da transação. Usado
+   * antes de emitir boleto/NF para serializar requisições concorrentes (ex: duplo clique) no mesmo
+   * agrupamento — a segunda requisição só lê a linha depois que a primeira já commitou o
+   * hasBillet/hasInvoice, e por isso enxerga o documento já emitido em vez de gerar um duplicado.
+   */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT cs FROM CombinedScore cs WHERE cs.id = :id")
+  Optional<CombinedScore> findByIdForUpdate(@Param("id") Long id);
+
   @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = 'PENDENTE' AND cs.hasBillet = true")
+      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE AND cs.hasBillet = true")
   List<CombinedScore> findAllPendingWithBilletByClient(@Param("clientId") Long clientId);
 
   /** Busca todos os CombinedScores pendentes (com ou sem documentos) para um cliente */
   @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = 'PENDENTE' ORDER BY cs.dueDate ASC")
+      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE ORDER BY cs.dueDate ASC")
   List<CombinedScore> findAllPendingByClient(@Param("clientId") Long clientId);
 
   Page<CombinedScore> findByClientIdOrderByIdDesc(Long clientId, Pageable pageable);
@@ -27,16 +39,17 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
 
   /** Busca CombinedScores vencidos que ainda não foram pagos (confirmedAt is null) */
   @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.dueDate < :currentDate AND cs.status = 'PENDENTE'")
+      "SELECT cs FROM CombinedScore cs WHERE cs.dueDate < :currentDate AND cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE")
   List<CombinedScore> findOverdueUnpaidScores(@Param("currentDate") LocalDate currentDate);
 
   @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.dueDate < :currentDate AND cs.status = 'PENDENTE'")
+      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.dueDate < :currentDate AND cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE")
   List<CombinedScore> findOverdueUnpaidScoresByClient(
       @Param("clientId") Long clientId, @Param("currentDate") LocalDate currentDate);
 
   /** Busca todos os agrupamentos com boleto em aberto (não pago), de qualquer cliente */
-  @Query("SELECT cs FROM CombinedScore cs WHERE cs.status = 'PENDENTE' AND cs.hasBillet = true")
+  @Query(
+      "SELECT cs FROM CombinedScore cs WHERE cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE AND cs.hasBillet = true")
   List<CombinedScore> findAllOpenBillets();
 
   /** Busca o agrupamento mais recente (maior ID) de cada cliente */
@@ -52,17 +65,35 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
    */
   List<CombinedScore> findAllByYourNumber(String yourNumber);
 
+  /**
+   * Busca por "nosso número" (identificador do boleto atribuído pelo Sicoob) — usado pelo
+   * cancelamento manual/avulso, quando o operador só tem o número do boleto e não sabe (ou não
+   * existe) um CombinedScore local vinculado.
+   */
+  @Query("SELECT cs FROM CombinedScore cs WHERE cs.ourNumber_sicoob = :ourNumber")
+  List<CombinedScore> findAllByOurNumberSicoob(@Param("ourNumber") String ourNumber);
+
   Optional<CombinedScore> findByInvoiceRef(String invoiceRef);
 
   @Query(
       "SELECT cs.invoiceRef FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.hasInvoice = true AND cs.invoiceRef IS NOT NULL")
   List<String> findAllInvoiceRefsByClientId(@Param("clientId") Long clientId);
 
-  @Query("SELECT cs FROM CombinedScore cs WHERE cs.status = 'PENDENTE' AND cs.dueDate <= :date")
+  @Query(
+      "SELECT cs FROM CombinedScore cs WHERE cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE AND cs.dueDate <= :date")
   List<CombinedScore> findOverduePendingScores(@Param("date") LocalDate date);
 
   @Query(
       "SELECT cs FROM CombinedScore cs WHERE cs.hasInvoice = true AND cs.confirmedAt BETWEEN :startDate AND :endDate")
   List<CombinedScore> findByHasInvoiceTrueAndConfirmedAtBetween(
       @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+  /**
+   * Busca agrupamentos que só têm nota fiscal emitida (sem boleto), ainda pendentes de confirmação
+   * manual de pagamento.
+   */
+  @Query(
+      "SELECT cs FROM CombinedScore cs WHERE cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE AND cs.hasInvoice = true AND"
+          + " cs.hasBillet = false")
+  List<CombinedScore> findAllOpenInvoiceOnly();
 }
