@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.billet;
 
-import com.hortifruti.sl.hortifruti.exception.BilletException;
+import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
 import java.util.Base64;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;

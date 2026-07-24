@@ -6,14 +6,15 @@ import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.IssueInvoiceRequest;
 import com.hortifruti.sl.hortifruti.dto.invoice.ItemRequest;
 import com.hortifruti.sl.hortifruti.dto.invoice.RecipientRequest;
-import com.hortifruti.sl.hortifruti.exception.InvoiceException;
+import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
-import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
-import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import com.hortifruti.sl.hortifruti.service.invoice.factory.InvoiceItem;
 import com.hortifruti.sl.hortifruti.service.invoice.factory.InvoicePayload;
 import com.hortifruti.sl.hortifruti.service.invoice.factory.Recipient;
+import com.hortifruti.sl.hortifruti.service.purchase.ClientBusinessRules;
+import com.hortifruti.sl.hortifruti.service.purchase.ClientService;
+import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import jakarta.transaction.Transactional;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -21,7 +22,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -30,19 +30,10 @@ public class IssueInvoice {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  @Value("${focus.nfe.token}")
-  private String focusNfeToken;
-
-  @Value("${focus.nfe.api.url}")
-  private String focusNfeApiUrl;
-
-  @Value("${focus.nfe.cnpj.emitente}")
-  private String focusNfeCnpjEmitente;
-
   private final String NATUREZA_OPERACAO = "Venda de Produtos Hortifrutigranjeiros";
 
-  private final ClientRepository clientRepository;
-  private final CombinedScoreRepository combinedScoreRepository;
+  private final ClientService clientService;
+  private final CombinedScoreService combinedScoreService;
   private final Recipient recipientService;
   private final InvoiceItem invoiceItemService;
   private final InvoicePayload invoicePayloadService;
@@ -53,7 +44,15 @@ public class IssueInvoice {
   @Transactional
   public InvoiceResponse issueInvoice(Long combinedScoreId, String dadosAdicionais) {
     try {
-      CombinedScore combinedScore = fetchCombinedScore(combinedScoreId);
+      // Trava a linha do agrupamento (SELECT ... FOR UPDATE) para serializar requisições
+      // concorrentes: se duas chegarem juntas (ex: duplo clique), a segunda só prossegue depois
+      // que a primeira já commitou hasInvoice=true, e cai no bloqueio de duplicidade abaixo.
+      CombinedScore combinedScore = combinedScoreService.findByIdForUpdate(combinedScoreId);
+
+      if (combinedScore.isHasInvoice()) {
+        throw new InvoiceException(
+            "Nota fiscal já foi emitida para este agrupamento (id " + combinedScoreId + ").");
+      }
 
       Client client = fetchClient(combinedScore.getClientId());
 
@@ -90,19 +89,12 @@ public class IssueInvoice {
       CombinedScore combinedScore,
       String dadosAdicionais) {
 
-    System.out.println(
-        "[buildInvoiceRequest] Construindo request para clientId=" + combinedScore.getClientId());
-
     Client client = fetchClient(combinedScore.getClientId());
     String firstName = client.getClientName().split("\\s+")[0].toUpperCase().trim();
-    System.out.println(
-        "[buildInvoiceRequest] firstName=" + firstName + ", dadosAdicionais=" + dadosAdicionais);
 
-    String infoText = info;
-    if (firstName.contains("LLINEA")) {
-      infoText = "Numerações AF: " + dadosAdicionais;
-      System.out.println("[buildInvoiceRequest] Cliente LLINEA detectado, infoText=" + infoText);
-    }
+    String customNoteText =
+        ClientBusinessRules.getRuleForCnpjClient(firstName).buildInvoiceNoteText(dadosAdicionais);
+    String infoText = customNoteText != null ? customNoteText : info;
 
     String dataHora =
         combinedScore
@@ -110,28 +102,19 @@ public class IssueInvoice {
             .atTime(LocalTime.now(ZoneId.of("America/Sao_Paulo")))
             .atZone(ZoneId.of("America/Sao_Paulo"))
             .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-    System.out.println("[buildInvoiceRequest] dataHora da NF=" + dataHora);
 
     return new IssueInvoiceRequest(
         combinedScore.getId(), NATUREZA_OPERACAO, dataHora, recipient, items, infoText);
   }
 
-  private CombinedScore fetchCombinedScore(Long combinedScoreId) {
-    return combinedScoreRepository
-        .findById(combinedScoreId)
-        .orElseThrow(() -> new InvoiceException("ID da compra não encontrado"));
-  }
-
   private Client fetchClient(Long clientId) {
-    return clientRepository
-        .findById(clientId)
-        .orElseThrow(() -> new InvoiceException("ID do cliente não encontrado"));
+    return clientService.findById(clientId);
   }
 
   private void updateCombinedScoreStatus(
       CombinedScore combinedScore, InvoiceResponse invoiceResponse) {
     combinedScore.setHasInvoice(true);
     combinedScore.setInvoiceRef(invoiceResponse.ref());
-    combinedScoreRepository.save(combinedScore);
+    combinedScoreService.save(combinedScore);
   }
 }

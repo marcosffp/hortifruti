@@ -3,7 +3,7 @@
 import { Leaf, Lock, LogIn, User } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { showError, showSuccess } from "@/services/notificationService";
 
@@ -13,17 +13,37 @@ export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [blockedSecondsLeft, setBlockedSecondsLeft] = useState(0);
+
+  const formatBlockedTime = (totalSeconds: number) => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
+
+  useEffect(() => {
+    if (blockedSecondsLeft <= 0) return;
+    const timer = setInterval(() => {
+      setBlockedSecondsLeft((seconds) => Math.max(seconds - 1, 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [blockedSecondsLeft]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      const success = await login(username, password);
-      if (success) {
+      const result = await login(username, password);
+      if (result.success) {
         showSuccess("Login realizado com sucesso!");
         router.push("/");
       } else {
-        showError("Falha no login. Verifique suas credenciais.");
+        showError(
+          result.message || "Falha no login. Verifique suas credenciais.",
+        );
+        if (result.retryAfter && result.retryAfter > 0) {
+          setBlockedSecondsLeft(Math.ceil(result.retryAfter));
+        }
       }
     } catch (error) {
       showError("Falha no login. Verifique suas credenciais.");
@@ -50,6 +70,7 @@ export default function Login() {
                   width={48}
                   height={48}
                   className="cursor-pointer"
+                  style={{ width: "auto", height: "auto" }}
                   onClick={() => router.push("/")}
                 />
               </div>
@@ -164,10 +185,12 @@ export default function Login() {
               <div>
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || blockedSecondsLeft > 0}
                   className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-gradient-to-r from-[var(--primary)] to-green-600 text-white font-semibold shadow-lg hover:shadow-xl hover:from-green-600 hover:to-[var(--primary)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  {isLoading ? (
+                  {blockedSecondsLeft > 0 ? (
+                    `Tente novamente em ${formatBlockedTime(blockedSecondsLeft)}`
+                  ) : isLoading ? (
                     <>
                       <svg
                         className="animate-spin h-5 w-5"

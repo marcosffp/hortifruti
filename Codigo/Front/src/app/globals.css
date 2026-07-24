@@ -294,3 +294,17 @@ h6 {
 .animate-slideUp {
   animation: slideUp 0.6s ease-out;
 }
+
+/* Game-style loading bar stripes (extratos/relatórios) */
+@keyframes loadingStripes {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 1rem 0;
+  }
+}
+
+.animate-loading-stripes {
+  animation: loadingStripes 0.7s linear infinite;
+}

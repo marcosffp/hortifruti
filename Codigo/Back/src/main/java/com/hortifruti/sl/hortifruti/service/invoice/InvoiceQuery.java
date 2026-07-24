@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.config.FocusNfeApiClient;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseSimplif;
-import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceTaxDetails;
-import com.hortifruti.sl.hortifruti.dto.invoice.ItemTaxDetails;
-import com.hortifruti.sl.hortifruti.exception.InvoiceException;
+import com.hortifruti.sl.hortifruti.dto.invoice.tax.InvoiceTaxDetails;
+import com.hortifruti.sl.hortifruti.dto.invoice.tax.ItemTaxDetails;
+import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -33,7 +35,7 @@ public class InvoiceQuery {
   private final int COMPLETE = 1;
 
   @Transactional
-  protected InvoiceResponseGet consultInvoice(String ref) {
+  public InvoiceResponseGet consultInvoice(String ref) {
     try {
       String response = fetchInvoiceData(ref);
       JsonNode rootNode = parseJson(response);
@@ -86,14 +88,13 @@ public class InvoiceQuery {
 
     try {
       if (dataEmissaoStr == null || dataEmissaoStr.trim().isEmpty()) {
-        System.err.println("Data de emissão está vazia, usando data atual como fallback");
+        log.warn("Data de emissão está vazia, usando data atual como fallback");
         dataEmissao = LocalDateTime.now();
       } else {
         dataEmissao = OffsetDateTime.parse(dataEmissaoStr).toLocalDateTime();
       }
     } catch (Exception e) {
-      System.err.println(
-          "Erro ao converter data: " + dataEmissaoStr + " - usando data atual como fallback");
+      log.warn("Erro ao converter data: {} - usando data atual como fallback", dataEmissaoStr, e);
       dataEmissao = LocalDateTime.now();
     }
 
@@ -158,8 +159,23 @@ public class InvoiceQuery {
   private static final int MAX_TAX_DETAILS_ATTEMPTS = 3;
   private static final long INITIAL_TAX_DETAILS_RETRY_DELAY_MS = 3000;
 
+  /**
+   * Os relatórios fiscais mensais (Pagamento, Registro, Vendas, ICMS) são gerados sequencialmente
+   * e cada um consulta, de forma independente, os dados fiscais das mesmas notas do período na API
+   * da Focus NFe — sem esse cache, o /transactions/export-complete faz até 4 chamadas externas
+   * redundantes por nota (uma por relatório), o que somado à latência da API e às tentativas de
+   * retry abaixo fazia o endpoint levar minutos e a conexão do cliente cair antes da resposta.
+   * Dados fiscais de uma nota já emitida não mudam, então cachear por ref indefinidamente é seguro.
+   */
+  private final Map<String, InvoiceTaxDetails> taxDetailsCache = new ConcurrentHashMap<>();
+
   @Transactional
   public InvoiceTaxDetails extractInvoiceTaxDetails(String ref) {
+    InvoiceTaxDetails cached = taxDetailsCache.get(ref);
+    if (cached != null) {
+      return cached;
+    }
+
     long retryDelay = INITIAL_TAX_DETAILS_RETRY_DELAY_MS;
     Exception lastError = null;
 
@@ -169,7 +185,9 @@ public class InvoiceQuery {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode rootNode = mapper.readTree(response);
 
-        return extractInvoiceData(rootNode, ref);
+        InvoiceTaxDetails details = extractInvoiceData(rootNode, ref);
+        taxDetailsCache.put(ref, details);
+        return details;
       } catch (Exception e) {
         lastError = e;
         log.warn(
@@ -211,19 +229,17 @@ public class InvoiceQuery {
 
     try {
       if (dataEmissaoStr == null || dataEmissaoStr.trim().isEmpty()) {
-        System.err.println(
-            "Data de emissão está vazia para ref: " + ref + ", usando data atual como fallback");
+        log.warn("Data de emissão está vazia para ref: {}, usando data atual como fallback", ref);
         dataEmissao = LocalDateTime.now();
       } else {
         dataEmissao = OffsetDateTime.parse(dataEmissaoStr).toLocalDateTime();
       }
     } catch (Exception e) {
-      System.err.println(
-          "Erro ao converter data para ref: "
-              + ref
-              + " - data: "
-              + dataEmissaoStr
-              + " - usando data atual como fallback");
+      log.warn(
+          "Erro ao converter data para ref: {} - data: {} - usando data atual como fallback",
+          ref,
+          dataEmissaoStr,
+          e);
       dataEmissao = LocalDateTime.now();
     }
 

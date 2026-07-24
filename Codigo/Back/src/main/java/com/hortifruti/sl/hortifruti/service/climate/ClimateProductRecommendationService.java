@@ -2,12 +2,12 @@ package com.hortifruti.sl.hortifruti.service.climate;
 
 import com.hortifruti.sl.hortifruti.dto.climate.ClimateProductRecommendationDTO;
 import com.hortifruti.sl.hortifruti.dto.climate.WeatherForecastDTO;
-import com.hortifruti.sl.hortifruti.exception.RecommendationException;
-import com.hortifruti.sl.hortifruti.model.ClimateProduct;
-import com.hortifruti.sl.hortifruti.model.enumeration.Month;
-import com.hortifruti.sl.hortifruti.model.enumeration.RecommendationTag;
-import com.hortifruti.sl.hortifruti.model.enumeration.TemperatureCategory;
-import com.hortifruti.sl.hortifruti.repository.ProductRepository;
+import com.hortifruti.sl.hortifruti.exception.climate.RecommendationException;
+import com.hortifruti.sl.hortifruti.model.climate.ClimateProduct;
+import com.hortifruti.sl.hortifruti.model.climate.Month;
+import com.hortifruti.sl.hortifruti.model.climate.RecommendationTag;
+import com.hortifruti.sl.hortifruti.model.climate.TemperatureCategory;
+import com.hortifruti.sl.hortifruti.repository.climate.ProductRepository;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;

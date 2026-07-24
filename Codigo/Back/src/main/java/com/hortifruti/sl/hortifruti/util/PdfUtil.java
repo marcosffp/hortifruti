@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.util;
 
-import com.hortifruti.sl.hortifruti.exception.PurchaseException;
+import com.hortifruti.sl.hortifruti.exception.purchase.PurchaseException;
 import java.io.IOException;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -12,14 +12,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class PdfUtil {
   private PdfUtil() {}
 
-  // Novo método que recebe bytes diretamente
-  public static String extractPdfText(byte[] pdfBytes) throws IOException {
-    try (PDDocument document = Loader.loadPDF(pdfBytes)) {
-      return new PDFTextStripper().getText(document);
-    }
-  }
-
-  // Método original mantido para compatibilidade
   public static String extractPdfText(MultipartFile file) throws IOException {
     try (PDDocument document = Loader.loadPDF(file.getBytes())) {
       return new PDFTextStripper().getText(document);

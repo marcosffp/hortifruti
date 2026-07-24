@@ -29,3 +29,13 @@ export interface InvoiceWithBilletResult {
   xmlBlob: Blob;
   billetBlob: Blob;
 }
+
+export interface OpenInvoiceResponse {
+  combinedScoreId: number;
+  clientId: number;
+  clientName: string;
+  totalValue: number;
+  confirmedAt: string | null;
+  dueDate: string | null;
+  invoiceRef: string | null;
+}

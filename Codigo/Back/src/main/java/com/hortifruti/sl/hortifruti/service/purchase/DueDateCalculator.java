@@ -1,14 +1,14 @@
 package com.hortifruti.sl.hortifruti.service.purchase;
 
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
+import com.hortifruti.sl.hortifruti.service.purchase.ClientBusinessRules.ClientRule;
+import com.hortifruti.sl.hortifruti.service.purchase.ClientBusinessRules.WeekendAdjustment;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Classe responsável por calcular a data de vencimento baseada em regras de negócio por cliente.
- * Facilita a adição de novas regras e mantém o código organizado e extensível.
+ * As regras específicas por cliente ficam centralizadas em {@link ClientBusinessRules}.
  */
 public class DueDateCalculator {
 
@@ -18,55 +18,12 @@ public class DueDateCalculator {
     UNKNOWN
   }
 
-  private enum WeekendAdjustment {
-    NONE,
-    PREVIOUS_FRIDAY,
-    PREVIOUS_THURSDAY,
-    NEXT_FRIDAY
-  }
-
-  private static class DueDateRule {
-    private final int daysToAdd;
-    private final WeekendAdjustment weekendAdjustment;
-    private final boolean businessDays; // true = dias úteis, false = dias corridos
-
-    public DueDateRule(int daysToAdd, WeekendAdjustment weekendAdjustment) {
-      this(daysToAdd, weekendAdjustment, false);
-    }
-
-    public DueDateRule(int daysToAdd, WeekendAdjustment weekendAdjustment, boolean businessDays) {
-      this.daysToAdd = daysToAdd;
-      this.weekendAdjustment = weekendAdjustment;
-      this.businessDays = businessDays;
-    }
-  }
-
-  // Mapa de regras por primeiro nome do cliente (CNPJ) - EXATAMENTE como está no banco
-  private static final Map<String, DueDateRule> CNPJ_RULES_BY_NAME = new HashMap<>();
-
-  private static final DueDateRule CPF_DEFAULT_RULE =
-      new DueDateRule(15, WeekendAdjustment.PREVIOUS_FRIDAY);
-
-  // Regra padrão para CNPJ (quando não encontrar regra específica)
-  private static final DueDateRule CNPJ_DEFAULT_RULE = new DueDateRule(15, WeekendAdjustment.NONE);
+  private static final ClientRule CPF_DEFAULT_RULE =
+      new ClientRule(15, WeekendAdjustment.PREVIOUS_FRIDAY, false, null);
 
   // Regra default geral (quando não for CPF nem CNPJ)
-  private static final DueDateRule DEFAULT_RULE = new DueDateRule(20, WeekendAdjustment.NONE);
-
-  static {
-    // IMPORTANTE: Os nomes devem estar EXATAMENTE como aparecem no banco de dados
-    CNPJ_RULES_BY_NAME.put("LLINEA", new DueDateRule(20, WeekendAdjustment.PREVIOUS_THURSDAY));
-    CNPJ_RULES_BY_NAME.put("APTA", new DueDateRule(15, WeekendAdjustment.PREVIOUS_FRIDAY));
-    CNPJ_RULES_BY_NAME.put("INDUSTRIA", new DueDateRule(20, WeekendAdjustment.NEXT_FRIDAY));
-    CNPJ_RULES_BY_NAME.put(
-        "ROCA", new DueDateRule(15, WeekendAdjustment.NONE, true)); // 15 dias úteis
-
-    // === ADICIONE NOVAS REGRAS AQUI ===
-    // Exemplo dias corridos:  CNPJ_RULES_BY_NAME.put("EMPRESA", new DueDateRule(30,
-    // WeekendAdjustment.PREVIOUS_FRIDAY));
-    // Exemplo dias úteis:     CNPJ_RULES_BY_NAME.put("EMPRESA", new DueDateRule(30,
-    // WeekendAdjustment.NONE, true));
-  }
+  private static final ClientRule DEFAULT_RULE =
+      new ClientRule(20, WeekendAdjustment.NONE, false, null);
 
   public static LocalDate calculate(Client client, LocalDate confirmedAt) {
     if (client == null || confirmedAt == null) {
@@ -75,15 +32,15 @@ public class DueDateCalculator {
 
     DocumentType documentType = getDocumentType(client.getDocument());
 
-    DueDateRule rule = getApplicableRule(client, documentType);
+    ClientRule rule = getApplicableRule(client, documentType);
 
     LocalDate baseDueDate =
-        rule.businessDays
-            ? addBusinessDays(confirmedAt, rule.daysToAdd)
-            : confirmedAt.plusDays(rule.daysToAdd);
+        rule.isDueDateBusinessDays()
+            ? addBusinessDays(confirmedAt, rule.getDueDateDaysToAdd())
+            : confirmedAt.plusDays(rule.getDueDateDaysToAdd());
 
     // Aplica o ajuste de final de semana (apenas para dias corridos)
-    return applyWeekendAdjustment(baseDueDate, rule.weekendAdjustment);
+    return applyWeekendAdjustment(baseDueDate, rule.getDueDateWeekendAdjustment());
   }
 
   private static DocumentType getDocumentType(String document) {
@@ -109,14 +66,14 @@ public class DueDateCalculator {
     return document.replaceAll("[.\\-/\\s]", "");
   }
 
-  private static DueDateRule getApplicableRule(Client client, DocumentType documentType) {
+  private static ClientRule getApplicableRule(Client client, DocumentType documentType) {
     switch (documentType) {
       case CPF:
         return CPF_DEFAULT_RULE;
 
       case CNPJ:
         String firstName = extractFirstName(client.getClientName());
-        return CNPJ_RULES_BY_NAME.getOrDefault(firstName, CNPJ_DEFAULT_RULE);
+        return ClientBusinessRules.getRuleForCnpjClient(firstName);
 
       default:
         return DEFAULT_RULE;

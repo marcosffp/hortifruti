@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.invoice.tax.sales;
 
-import com.hortifruti.sl.hortifruti.dto.invoice.SalesSummaryDetails;
+import com.hortifruti.sl.hortifruti.dto.invoice.tax.sales.SalesSummaryDetails;
+import com.hortifruti.sl.hortifruti.service.invoice.tax.PdfReportSupport;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -32,10 +33,10 @@ public class SalesPdfGenerator {
     String periodEnd = endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
     float leftMargin = 10;
-    float tableWidth = 500;
-    float cellHeight = 25;
-    float lineHeight = 20;
-    float bottomMargin = 100;
+    float tableWidth = PdfReportSupport.TABLE_WIDTH;
+    float cellHeight = PdfReportSupport.CELL_HEIGHT;
+    float lineHeight = PdfReportSupport.LINE_HEIGHT;
+    float bottomMargin = PdfReportSupport.BOTTOM_MARGIN;
 
     String[] headers = {
       "Número", "Mod", "Data", "Envio", "Cliente", "Subtotal", "Desconto", "Acréscimo", "Total - R$"
@@ -48,20 +49,21 @@ public class SalesPdfGenerator {
 
       PDPageContentStream contentStream = new PDPageContentStream(document, page);
 
-      float yPosition = 750;
+      float yPosition = PdfReportSupport.START_Y;
 
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
-      addText(contentStream, leftMargin, yPosition, "RELAÇÃO DE VENDAS");
+      PdfReportSupport.addText(contentStream, leftMargin, yPosition, "RELAÇÃO DE VENDAS");
       yPosition -= lineHeight * 2;
 
       contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
-      addText(contentStream, leftMargin, yPosition, "Filial: " + companyName);
+      PdfReportSupport.addText(contentStream, leftMargin, yPosition, "Filial: " + companyName);
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
+      PdfReportSupport.addText(contentStream, leftMargin, yPosition, "CNPJ: " + companyCnpj);
       yPosition -= lineHeight;
 
-      addText(contentStream, leftMargin, yPosition, "Período: " + periodStart + " a " + periodEnd);
+      PdfReportSupport.addText(
+          contentStream, leftMargin, yPosition, "Período: " + periodStart + " a " + periodEnd);
       yPosition -= lineHeight * 2;
 
       drawTableHeader(contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
@@ -78,7 +80,7 @@ public class SalesPdfGenerator {
 
           contentStream = new PDPageContentStream(document, page);
 
-          yPosition = 750;
+          yPosition = PdfReportSupport.START_Y;
 
           drawTableHeader(contentStream, leftMargin, yPosition, tableWidth, cellHeight, headers);
           yPosition -= cellHeight;
@@ -112,14 +114,6 @@ public class SalesPdfGenerator {
         return outputStream.toByteArray();
       }
     }
-  }
-
-  private void addText(PDPageContentStream contentStream, float x, float y, String text)
-      throws IOException {
-    contentStream.beginText();
-    contentStream.newLineAtOffset(x, y);
-    contentStream.showText(text);
-    contentStream.endText();
   }
 
   private void drawTableHeader(
@@ -179,8 +173,6 @@ public class SalesPdfGenerator {
   }
 
   private String formatValue(BigDecimal value) {
-    return value == null
-        ? "0,00"
-        : value.setScale(2, java.math.RoundingMode.HALF_UP).toString().replace(".", ",");
+    return PdfReportSupport.formatValueComma(value);
   }
 }

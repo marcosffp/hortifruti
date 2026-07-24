@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.purchase;
 
-import com.hortifruti.sl.hortifruti.exception.PurchaseException;
+import com.hortifruti.sl.hortifruti.exception.purchase.PurchaseException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.InvoiceProduct;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
@@ -26,7 +26,7 @@ public class PurchaseProcessingService {
   private final InvoiceProductRepository invoiceProductRepository;
 
   @Transactional
-  protected Purchase processPurchaseFile(MultipartFile file) throws IOException {
+  public Purchase processPurchaseFile(MultipartFile file) throws IOException {
     try {
       if (file == null || file.isEmpty()) {
         throw new PurchaseException("O arquivo enviado está vazio.");

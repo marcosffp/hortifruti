@@ -1,7 +1,5 @@
 package com.hortifruti.sl.hortifruti.model.finance;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Category;
-import com.hortifruti.sl.hortifruti.model.enumeration.TransactionType;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;

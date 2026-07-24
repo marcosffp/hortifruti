@@ -7,7 +7,7 @@ import com.hortifruti.sl.hortifruti.config.auth.RefreshTokenService.RotationResu
 import com.hortifruti.sl.hortifruti.config.auth.TokenConfiguration;
 import com.hortifruti.sl.hortifruti.dto.user.AuthRequest;
 import com.hortifruti.sl.hortifruti.dto.user.AuthUserResponse;
-import com.hortifruti.sl.hortifruti.exception.TokenException;
+import com.hortifruti.sl.hortifruti.exception.auth.TokenException;
 import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
@@ -46,8 +46,9 @@ public class AuthController {
   private String cookieSameSite;
 
   @PostMapping()
-  public ResponseEntity<AuthUserResponse> login(@Valid @RequestBody AuthRequest authRequest) {
-    AuthResult result = auth.autenticar(authRequest);
+  public ResponseEntity<AuthUserResponse> login(
+      @Valid @RequestBody AuthRequest authRequest, HttpServletRequest request) {
+    AuthResult result = auth.autenticar(authRequest, request);
     String refreshToken = refreshTokenService.issueToken(result.user().getId());
 
     ResponseCookie accessCookie =

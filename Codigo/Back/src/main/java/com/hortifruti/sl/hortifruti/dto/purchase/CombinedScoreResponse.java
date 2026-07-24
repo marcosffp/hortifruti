@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.dto.purchase;
 
-import com.hortifruti.sl.hortifruti.model.enumeration.Status;
+import com.hortifruti.sl.hortifruti.model.purchase.Status;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 

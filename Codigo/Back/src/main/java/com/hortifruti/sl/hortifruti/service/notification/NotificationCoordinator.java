@@ -1,9 +1,12 @@
 package com.hortifruti.sl.hortifruti.service.notification;
 
 import com.hortifruti.sl.hortifruti.dto.notification.NotificationResponse;
-import com.hortifruti.sl.hortifruti.exception.NotificationException;
-import com.hortifruti.sl.hortifruti.model.enumeration.NotificationChannel;
+import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
+import com.hortifruti.sl.hortifruti.model.notification.NotificationChannel;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
+import com.hortifruti.sl.hortifruti.service.notification.email.EmailService;
+import com.hortifruti.sl.hortifruti.service.notification.whatsapp.WhatsAppMessageBuilder;
+import com.hortifruti.sl.hortifruti.service.notification.whatsapp.WhatsAppService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

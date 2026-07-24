@@ -8,6 +8,7 @@ import {
   Clock,
   Download,
   ExternalLink,
+  FileText,
   Filter,
   ListChecks,
   Receipt,
@@ -22,9 +23,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import ClientSelector from "@/components/modules/ClientSelector";
 import { useBillet } from "@/hooks/useBillet";
+import { useInvoice } from "@/hooks/useInvoice";
+import { combinedScoreService } from "@/services/combinedScoreService";
 import { showError, showSuccess } from "@/services/notificationService";
 import type { BilletResponse, OpenBilletResponse } from "@/types/billetType";
 import type { ClientSelectionInfo } from "@/types/clientType";
+import type { OpenInvoiceResponse } from "@/types/invoiceType";
 
 type RowActionType = "pay" | "download" | "cancel";
 type BulkActionType = "pay" | "download" | "cancel";
@@ -44,7 +48,22 @@ function triggerPdfDownload(
   window.URL.revokeObjectURL(url);
 }
 
-type Tab = "abertos" | "porCliente";
+function triggerDanfeDownload(
+  blob: Blob,
+  invoiceRef: string | null,
+  combinedScoreId: number,
+) {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", `NF-${invoiceRef || combinedScoreId}.pdf`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}
+
+type Tab = "abertos" | "porCliente" | "nfSemBoleto";
 
 const SITUACAO_OPTIONS = [
   { value: "", label: "Todas as situações" },
@@ -215,6 +234,84 @@ function BilletRowActions({
   );
 }
 
+function InvoiceRowActions({
+  invoice,
+  rowAction,
+  bulkAction,
+  onConfirmPayment,
+  onDownload,
+  onCancel,
+  onViewGrouping,
+}: {
+  invoice: OpenInvoiceResponse;
+  rowAction: { id: number; type: RowActionType } | null;
+  bulkAction: BulkActionType | null;
+  onConfirmPayment: (invoice: OpenInvoiceResponse) => void;
+  onDownload: (invoice: OpenInvoiceResponse) => void;
+  onCancel: (invoice: OpenInvoiceResponse) => void;
+  onViewGrouping: (clientId: number) => void;
+}) {
+  const disabled = rowAction !== null || bulkAction !== null;
+  const isActing = (type: RowActionType) =>
+    rowAction?.id === invoice.combinedScoreId && rowAction.type === type;
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => onConfirmPayment(invoice)}
+        disabled={disabled}
+        title="Confirmar pagamento"
+        aria-label="Confirmar pagamento"
+        className="p-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isActing("pay") ? (
+          <ActionSpinner />
+        ) : (
+          <CheckCircle2 className="w-4 h-4" />
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={() => onDownload(invoice)}
+        disabled={disabled}
+        title="Baixar NF (DANFE)"
+        aria-label="Baixar NF (DANFE)"
+        className="p-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isActing("download") ? (
+          <ActionSpinner />
+        ) : (
+          <Download className="w-4 h-4" />
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={() => onCancel(invoice)}
+        disabled={disabled}
+        title="Cancelar nota fiscal"
+        aria-label="Cancelar nota fiscal"
+        className="p-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isActing("cancel") ? (
+          <ActionSpinner />
+        ) : (
+          <Trash2 className="w-4 h-4" />
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={() => onViewGrouping(invoice.clientId)}
+        title="Ver Agrupamento"
+        aria-label="Ver Agrupamento"
+        className="p-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors cursor-pointer"
+      >
+        <ExternalLink className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
 export default function BoletosPage() {
   const {
     getOpenBillets,
@@ -224,6 +321,12 @@ export default function BoletosPage() {
     cancelBillet,
     isLoading,
   } = useBillet();
+
+  const {
+    getOpenInvoiceOnly,
+    getDanfe,
+    cancelInvoice: cancelInvoiceApi,
+  } = useInvoice();
 
   const [tab, setTab] = useState<Tab>("abertos");
 
@@ -249,6 +352,311 @@ export default function BoletosPage() {
     null,
   );
   const [loadingClientBillets, setLoadingClientBillets] = useState(false);
+
+  // Aba "NF sem Boleto"
+  const [openInvoices, setOpenInvoices] = useState<OpenInvoiceResponse[]>([]);
+  const [loadingInvoices, setLoadingInvoices] = useState(true);
+  const [invoiceSearchTerm, setInvoiceSearchTerm] = useState("");
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<Set<number>>(
+    new Set(),
+  );
+  const [invoiceRowAction, setInvoiceRowAction] = useState<{
+    id: number;
+    type: RowActionType;
+  } | null>(null);
+  const [invoiceBulkAction, setInvoiceBulkAction] =
+    useState<BulkActionType | null>(null);
+  const [cancelInvoiceTarget, setCancelInvoiceTarget] = useState<
+    number[] | null
+  >(null);
+  const [cancelInvoiceJustificativa, setCancelInvoiceJustificativa] =
+    useState("");
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: getOpenInvoiceOnly is recreated on every render by useInvoice and is not part of the fetch identity
+  const fetchOpenInvoices = useCallback(async () => {
+    setLoadingInvoices(true);
+    try {
+      const data = await getOpenInvoiceOnly();
+      setOpenInvoices(data);
+      setSelectedInvoiceIds(new Set());
+    } catch (error) {
+      showError("Não foi possível carregar as notas fiscais sem boleto");
+      console.error(error);
+    } finally {
+      setLoadingInvoices(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOpenInvoices();
+  }, [fetchOpenInvoices]);
+
+  const removeInvoices = (ids: number[]) => {
+    const idSet = new Set(ids);
+    setOpenInvoices((prev) =>
+      prev.filter((i) => !idSet.has(i.combinedScoreId)),
+    );
+    setSelectedInvoiceIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => {
+        next.delete(id);
+      });
+      return next;
+    });
+  };
+
+  const handleConfirmInvoicePayment = async (invoice: OpenInvoiceResponse) => {
+    if (
+      !window.confirm(
+        `Confirmar o pagamento da NF de ${invoice.clientName} (${formatCurrency(invoice.totalValue)})? Ele deixará de aparecer na lista de NF sem boleto.`,
+      )
+    ) {
+      return;
+    }
+    setInvoiceRowAction({ id: invoice.combinedScoreId, type: "pay" });
+    try {
+      await combinedScoreService.confirmPayment(invoice.combinedScoreId);
+      showSuccess("Pagamento confirmado com sucesso.");
+      removeInvoices([invoice.combinedScoreId]);
+    } catch (error) {
+      showError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível confirmar o pagamento da NF",
+      );
+      console.error(error);
+    } finally {
+      setInvoiceRowAction(null);
+    }
+  };
+
+  const handleDownloadInvoice = async (invoice: OpenInvoiceResponse) => {
+    if (!invoice.invoiceRef) {
+      showError("Esta nota fiscal não possui uma referência para download.");
+      return;
+    }
+    setInvoiceRowAction({ id: invoice.combinedScoreId, type: "download" });
+    try {
+      const blob = await getDanfe(invoice.invoiceRef);
+      triggerDanfeDownload(blob, invoice.invoiceRef, invoice.combinedScoreId);
+    } catch (error) {
+      showError(
+        error instanceof Error ? error.message : "Não foi possível baixar a NF",
+      );
+      console.error(error);
+    } finally {
+      setInvoiceRowAction(null);
+    }
+  };
+
+  const executeCancelInvoices = async (
+    ids: number[],
+    justificativa: string,
+  ) => {
+    const succeeded: number[] = [];
+    const failed: number[] = [];
+    for (const id of ids) {
+      const invoice = openInvoices.find((i) => i.combinedScoreId === id);
+      if (!invoice?.invoiceRef) {
+        failed.push(id);
+        continue;
+      }
+      try {
+        await cancelInvoiceApi(invoice.invoiceRef, justificativa);
+        succeeded.push(id);
+      } catch (error) {
+        failed.push(id);
+        console.error(error);
+      }
+    }
+    if (succeeded.length > 0) {
+      removeInvoices(succeeded);
+    }
+    if (failed.length === 0) {
+      showSuccess(
+        succeeded.length > 1
+          ? `${succeeded.length} notas fiscais canceladas com sucesso.`
+          : "Nota fiscal cancelada com sucesso.",
+      );
+    } else if (succeeded.length === 0) {
+      showError(
+        failed.length > 1
+          ? `Não foi possível cancelar ${failed.length} notas fiscais.`
+          : "Não foi possível cancelar a nota fiscal.",
+      );
+    } else {
+      showError(
+        `${succeeded.length} nota(s) fiscal(is) cancelada(s), ${failed.length} falharam.`,
+      );
+    }
+  };
+
+  const handleCancelInvoice = (invoice: OpenInvoiceResponse) => {
+    setCancelInvoiceJustificativa("");
+    setCancelInvoiceTarget([invoice.combinedScoreId]);
+  };
+
+  const confirmCancelInvoice = async () => {
+    if (!cancelInvoiceTarget) return;
+    const ids = cancelInvoiceTarget;
+    const justificativa = cancelInvoiceJustificativa.trim();
+    const isSingle = ids.length === 1;
+    setCancelInvoiceTarget(null);
+    if (isSingle) {
+      setInvoiceRowAction({ id: ids[0], type: "cancel" });
+    } else {
+      setInvoiceBulkAction("cancel");
+    }
+    try {
+      await executeCancelInvoices(ids, justificativa);
+    } finally {
+      setInvoiceRowAction(null);
+      setInvoiceBulkAction(null);
+    }
+  };
+
+  const filteredOpenInvoices = useMemo(() => {
+    if (!invoiceSearchTerm.trim()) return openInvoices;
+    const term = invoiceSearchTerm.toLowerCase();
+    return openInvoices.filter((i) =>
+      i.clientName.toLowerCase().includes(term),
+    );
+  }, [openInvoices, invoiceSearchTerm]);
+
+  const isInvoiceRowSelected = (id: number) => selectedInvoiceIds.has(id);
+
+  const toggleInvoiceRowSelected = (id: number) => {
+    setSelectedInvoiceIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const isAllFilteredInvoicesSelected =
+    filteredOpenInvoices.length > 0 &&
+    filteredOpenInvoices.every((i) =>
+      selectedInvoiceIds.has(i.combinedScoreId),
+    );
+
+  const toggleSelectAllFilteredInvoices = () => {
+    setSelectedInvoiceIds((prev) => {
+      if (isAllFilteredInvoicesSelected) {
+        const next = new Set(prev);
+        filteredOpenInvoices.forEach((i) => {
+          next.delete(i.combinedScoreId);
+        });
+        return next;
+      }
+      const next = new Set(prev);
+      filteredOpenInvoices.forEach((i) => {
+        next.add(i.combinedScoreId);
+      });
+      return next;
+    });
+  };
+
+  const clearInvoiceSelection = () => setSelectedInvoiceIds(new Set());
+
+  const selectedInvoices = useMemo(
+    () => openInvoices.filter((i) => selectedInvoiceIds.has(i.combinedScoreId)),
+    [openInvoices, selectedInvoiceIds],
+  );
+
+  const handleBulkConfirmInvoicePayment = async () => {
+    if (selectedInvoices.length === 0) return;
+    if (
+      !window.confirm(
+        `Confirmar o pagamento das ${selectedInvoices.length} NF selecionadas? Elas deixarão de aparecer na lista de NF sem boleto.`,
+      )
+    ) {
+      return;
+    }
+    setInvoiceBulkAction("pay");
+    const ids = selectedInvoices.map((i) => i.combinedScoreId);
+    const succeeded: number[] = [];
+    const failed: number[] = [];
+    for (const id of ids) {
+      try {
+        await combinedScoreService.confirmPayment(id);
+        succeeded.push(id);
+      } catch (error) {
+        failed.push(id);
+        console.error(error);
+      }
+    }
+    if (succeeded.length > 0) {
+      removeInvoices(succeeded);
+    }
+    if (failed.length === 0) {
+      showSuccess(
+        `${succeeded.length} pagamento(s) confirmado(s) com sucesso.`,
+      );
+    } else if (succeeded.length === 0) {
+      showError(
+        `Não foi possível confirmar o pagamento de ${failed.length} NF(s).`,
+      );
+    } else {
+      showError(
+        `${succeeded.length} pagamento(s) confirmado(s), ${failed.length} falharam.`,
+      );
+    }
+    setInvoiceBulkAction(null);
+  };
+
+  const handleBulkDownloadInvoices = async () => {
+    if (selectedInvoices.length === 0) return;
+    setInvoiceBulkAction("download");
+    let succeeded = 0;
+    let failed = 0;
+    for (const invoice of selectedInvoices) {
+      if (!invoice.invoiceRef) {
+        failed++;
+        continue;
+      }
+      try {
+        const blob = await getDanfe(invoice.invoiceRef);
+        triggerDanfeDownload(blob, invoice.invoiceRef, invoice.combinedScoreId);
+        succeeded++;
+      } catch (error) {
+        failed++;
+        console.error(error);
+      }
+    }
+    if (failed === 0) {
+      showSuccess(`${succeeded} NF(s) baixada(s) com sucesso.`);
+    } else if (succeeded === 0) {
+      showError(
+        `Não foi possível baixar nenhuma das ${failed} NF(s) selecionadas.`,
+      );
+    } else {
+      showError(`${succeeded} NF(s) baixada(s), ${failed} falharam.`);
+    }
+    setInvoiceBulkAction(null);
+  };
+
+  const handleBulkCancelInvoices = () => {
+    if (selectedInvoices.length === 0) return;
+    setCancelInvoiceJustificativa("");
+    setCancelInvoiceTarget(selectedInvoices.map((i) => i.combinedScoreId));
+  };
+
+  const cancelInvoiceConfirmTitle = (() => {
+    if (!cancelInvoiceTarget) return "";
+    if (cancelInvoiceTarget.length === 1) {
+      const invoice = openInvoices.find(
+        (i) => i.combinedScoreId === cancelInvoiceTarget[0],
+      );
+      return `Tem certeza que deseja cancelar a NF de ${invoice?.clientName ?? "cliente"}${
+        invoice ? ` (${formatCurrency(invoice.totalValue)})` : ""
+      }? Esta ação cancela a nota fiscal na SEFAZ e não pode ser desfeita.`;
+    }
+    return `Tem certeza que deseja cancelar as ${cancelInvoiceTarget.length} notas fiscais selecionadas? Esta ação cancela as notas na SEFAZ e não pode ser desfeita.`;
+  })();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: getOpenBillets is recreated on every render by useBillet and is not part of the fetch identity
   const fetchOpenBillets = useCallback(async () => {
@@ -603,6 +1011,18 @@ export default function BoletosPage() {
         >
           <UserSearch className="w-5 h-5 mr-2" />
           Consultar por Cliente
+        </button>
+        <button
+          type="button"
+          className={`flex items-center px-4 py-2 rounded-t-lg font-medium transition-colors cursor-pointer ${
+            tab === "nfSemBoleto"
+              ? "bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-2px_4px_-2px_rgba(0,0,0,0.06)]"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
+          onClick={() => setTab("nfSemBoleto")}
+        >
+          <FileText className="w-5 h-5 mr-2" />
+          NF sem Boleto
         </button>
       </div>
 
@@ -1089,6 +1509,290 @@ export default function BoletosPage() {
             </div>
           </div>
         )}
+
+        {tab === "nfSemBoleto" && (
+          <div>
+            <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Notas fiscais sem boleto vinculado
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Clientes que só recebem nota fiscal — consideradas vencidas 20
+                  dias após a emissão. Confirme o pagamento manualmente quando o
+                  cliente quitar.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={fetchOpenInvoices}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <RefreshCcw className="w-4 h-4" />
+                Atualizar
+              </button>
+            </div>
+
+            <div className="relative w-full max-w-md mb-5">
+              <input
+                type="text"
+                placeholder="Buscar por nome do cliente..."
+                className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                value={invoiceSearchTerm}
+                onChange={(e) => setInvoiceSearchTerm(e.target.value)}
+              />
+              <Search
+                className="absolute left-3 top-3 text-gray-400"
+                size={18}
+              />
+            </div>
+
+            {selectedInvoiceIds.size > 0 && (
+              <div className="flex flex-wrap items-center gap-3 mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <span className="text-sm font-medium text-green-900">
+                  {selectedInvoiceIds.size}{" "}
+                  {selectedInvoiceIds.size === 1
+                    ? "NF selecionada"
+                    : "NF selecionadas"}
+                </span>
+                <div className="flex flex-wrap items-center gap-2 ml-auto">
+                  <button
+                    type="button"
+                    onClick={handleBulkConfirmInvoicePayment}
+                    disabled={invoiceBulkAction !== null}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <CheckCircle2 className="w-3 h-3" />
+                    {invoiceBulkAction === "pay"
+                      ? "Confirmando..."
+                      : "Confirmar pagamento"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkDownloadInvoices}
+                    disabled={invoiceBulkAction !== null}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Download className="w-3 h-3" />
+                    {invoiceBulkAction === "download"
+                      ? "Baixando..."
+                      : "Baixar NF"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkCancelInvoices}
+                    disabled={invoiceBulkAction !== null}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    {invoiceBulkAction === "cancel"
+                      ? "Processando..."
+                      : "Cancelar NF"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearInvoiceSelection}
+                    disabled={invoiceBulkAction !== null}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-xs cursor-pointer disabled:opacity-50"
+                  >
+                    <X className="w-3 h-3" />
+                    Limpar seleção
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {loadingInvoices ? (
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static-length skeleton placeholder list, no stable identity available
+                    key={i}
+                    className="h-14 bg-gray-100 animate-pulse rounded-lg"
+                  />
+                ))}
+              </div>
+            ) : filteredOpenInvoices.length === 0 ? (
+              <div className="text-center py-16 text-gray-500">
+                <CircleCheck className="w-12 h-12 mx-auto mb-3 text-green-400" />
+                <p className="text-lg font-medium text-gray-700">
+                  {invoiceSearchTerm
+                    ? "Nenhum cliente encontrado com esse nome"
+                    : "Nenhuma NF sem boleto pendente no momento"}
+                </p>
+                {!invoiceSearchTerm && (
+                  <p className="text-sm mt-1">
+                    Todos os clientes de NF avulsa estão em dia
+                  </p>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-gray-500 border-b">
+                        <th className="py-3 px-3 font-semibold w-10">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 cursor-pointer accent-green-700"
+                            checked={isAllFilteredInvoicesSelected}
+                            onChange={toggleSelectAllFilteredInvoices}
+                            aria-label="Selecionar todas as NF filtradas"
+                          />
+                        </th>
+                        <th className="py-3 px-3 font-semibold">Cliente</th>
+                        <th className="py-3 px-3 font-semibold">Agrupamento</th>
+                        <th className="py-3 px-3 font-semibold">Nº da NF</th>
+                        <th className="py-3 px-3 font-semibold">Valor</th>
+                        <th className="py-3 px-3 font-semibold">Emissão</th>
+                        <th className="py-3 px-3 font-semibold">Vencimento</th>
+                        <th className="py-3 px-3 font-semibold">Situação</th>
+                        <th className="py-3 px-3 font-semibold text-right">
+                          Ação
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredOpenInvoices.map((invoice) => (
+                        <tr
+                          key={invoice.combinedScoreId}
+                          className={`border-b last:border-0 hover:bg-gray-50 transition-colors ${
+                            isInvoiceRowSelected(invoice.combinedScoreId)
+                              ? "bg-green-50/60"
+                              : ""
+                          }`}
+                        >
+                          <td className="py-3 px-3">
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4 cursor-pointer accent-green-700"
+                              checked={isInvoiceRowSelected(
+                                invoice.combinedScoreId,
+                              )}
+                              onChange={() =>
+                                toggleInvoiceRowSelected(
+                                  invoice.combinedScoreId,
+                                )
+                              }
+                              aria-label={`Selecionar NF de ${invoice.clientName}`}
+                            />
+                          </td>
+                          <td className="py-3 px-3 font-medium text-gray-800">
+                            {invoice.clientName}
+                          </td>
+                          <td className="py-3 px-3 text-gray-500">
+                            #{invoice.combinedScoreId}
+                          </td>
+                          <td className="py-3 px-3 text-gray-500">
+                            {invoice.invoiceRef || "—"}
+                          </td>
+                          <td className="py-3 px-3">
+                            {formatCurrency(invoice.totalValue)}
+                          </td>
+                          <td className="py-3 px-3">
+                            {formatDate(invoice.confirmedAt)}
+                          </td>
+                          <td className="py-3 px-3">
+                            {formatDate(invoice.dueDate)}
+                          </td>
+                          <td className="py-3 px-3">
+                            <DueBadge dueDate={invoice.dueDate} />
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <div className="flex items-center justify-end">
+                              <InvoiceRowActions
+                                invoice={invoice}
+                                rowAction={invoiceRowAction}
+                                bulkAction={invoiceBulkAction}
+                                onConfirmPayment={handleConfirmInvoicePayment}
+                                onDownload={handleDownloadInvoice}
+                                onCancel={handleCancelInvoice}
+                                onViewGrouping={goToGrouping}
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="md:hidden space-y-3">
+                  {filteredOpenInvoices.map((invoice) => (
+                    <div
+                      key={invoice.combinedScoreId}
+                      className={`border rounded-lg p-4 ${
+                        isInvoiceRowSelected(invoice.combinedScoreId)
+                          ? "border-green-300 bg-green-50/60"
+                          : "border-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 mt-1 cursor-pointer accent-green-700 shrink-0"
+                          checked={isInvoiceRowSelected(
+                            invoice.combinedScoreId,
+                          )}
+                          onChange={() =>
+                            toggleInvoiceRowSelected(invoice.combinedScoreId)
+                          }
+                          aria-label={`Selecionar NF de ${invoice.clientName}`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-800 break-words">
+                            {invoice.clientName}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Agrupamento #{invoice.combinedScoreId}
+                            {invoice.invoiceRef
+                              ? ` · NF ${invoice.invoiceRef}`
+                              : ""}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
+                        <div>
+                          <span className="block text-xs text-gray-500">
+                            Valor
+                          </span>
+                          <span className="font-medium text-gray-800">
+                            {formatCurrency(invoice.totalValue)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block text-xs text-gray-500">
+                            Vencimento
+                          </span>
+                          <span className="font-medium text-gray-800">
+                            {formatDate(invoice.dueDate)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                        <DueBadge dueDate={invoice.dueDate} />
+                      </div>
+
+                      <div className="flex items-center justify-end mt-3 pt-3 border-t border-gray-100">
+                        <InvoiceRowActions
+                          invoice={invoice}
+                          rowAction={invoiceRowAction}
+                          bulkAction={invoiceBulkAction}
+                          onConfirmPayment={handleConfirmInvoicePayment}
+                          onDownload={handleDownloadInvoice}
+                          onCancel={handleCancelInvoice}
+                          onViewGrouping={goToGrouping}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <ConfirmDeleteModal
@@ -1097,6 +1801,29 @@ export default function BoletosPage() {
         onConfirm={confirmCancel}
         title={cancelConfirmTitle}
       />
+
+      <ConfirmDeleteModal
+        open={cancelInvoiceTarget !== null}
+        onClose={() => setCancelInvoiceTarget(null)}
+        onConfirm={confirmCancelInvoice}
+        title={cancelInvoiceConfirmTitle}
+        confirmDisabled={!cancelInvoiceJustificativa.trim()}
+      >
+        <label
+          htmlFor="cancel-invoice-justificativa"
+          className="block text-xs font-medium text-gray-600 mb-1"
+        >
+          Justificativa do cancelamento (obrigatória para a SEFAZ)
+        </label>
+        <textarea
+          id="cancel-invoice-justificativa"
+          className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          rows={3}
+          value={cancelInvoiceJustificativa}
+          onChange={(e) => setCancelInvoiceJustificativa(e.target.value)}
+          placeholder="Ex: Pagamento combinado por outro meio, NF emitida indevidamente..."
+        />
+      </ConfirmDeleteModal>
     </main>
   );
 }

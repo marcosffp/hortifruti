@@ -1,15 +1,16 @@
 package com.hortifruti.sl.hortifruti.controller.finance;
 
-import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequest;
-import com.hortifruti.sl.hortifruti.dto.transaction.TransactionRequestDate;
-import com.hortifruti.sl.hortifruti.dto.transaction.TransactionResponse;
+import com.hortifruti.sl.hortifruti.dto.finance.TransactionRequest;
+import com.hortifruti.sl.hortifruti.dto.finance.TransactionRequestDate;
+import com.hortifruti.sl.hortifruti.dto.finance.TransactionResponse;
 import com.hortifruti.sl.hortifruti.service.finance.MacroExportService;
-import com.hortifruti.sl.hortifruti.service.finance.TransactionExcelExportService;
-import com.hortifruti.sl.hortifruti.service.finance.TransactionProcessingService;
+import com.hortifruti.sl.hortifruti.service.finance.transaction.TransactionProcessingService;
+import com.hortifruti.sl.hortifruti.service.finance.transaction.TransactionReportService;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -35,8 +36,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class TransactionController {
 
   private final TransactionProcessingService transactionProcessingService;
-  private final TransactionExcelExportService transactionExcelExportService;
   private final MacroExportService macroExportService;
+  private final TransactionReportService transactionReportService;
 
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/revenue")
@@ -113,10 +114,8 @@ public class TransactionController {
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate endDate)
       throws IOException {
-    Map<String, byte[]> excelData =
-        transactionExcelExportService.exportTransactionsAsExcel(startDate, endDate);
-    String excelFileName = excelData.keySet().iterator().next();
-    byte[] excelFile = excelData.get(excelFileName);
+    byte[] excelFile = transactionReportService.generateExcel(startDate, endDate);
+    String excelFileName = transactionReportService.buildFileName(startDate, endDate, "xlsx");
 
     return ResponseEntity.ok()
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + excelFileName)
@@ -126,8 +125,13 @@ public class TransactionController {
 
   @PreAuthorize("hasRole('MANAGER')")
   @PostMapping(value = "/export-complete", produces = "application/zip")
-  public ResponseEntity<byte[]> exportTransactionsComplete() throws IOException {
-    Map<String, byte[]> zipData = macroExportService.exportMacroReports();
+  public ResponseEntity<byte[]> exportTransactionsComplete(
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate startDate,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate endDate)
+      throws IOException {
+    Map<String, byte[]> zipData = macroExportService.exportMacroReports(startDate, endDate);
     String zipFileName = zipData.keySet().iterator().next();
     byte[] zipFile = zipData.get(zipFileName);
 
@@ -135,5 +139,56 @@ public class TransactionController {
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + zipFileName)
         .contentType(MediaType.parseMediaType("application/zip"))
         .body(zipFile);
+  }
+
+  /**
+   * Relatório consolidado de transações (BB + Sicoob juntos, PDF_UPLOAD e API) em PDF, em ordem
+   * cronológica, com descrição e categoria de cada lançamento. Sem startDate/endDate, usa o mês
+   * anterior completo, mesmo padrão de {@link #exportTransactionsAsExcel}.
+   */
+  @PreAuthorize("hasRole('MANAGER')")
+  @GetMapping(value = "/report/pdf")
+  public ResponseEntity<byte[]> exportTransactionsReportPdf(
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate startDate,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate endDate)
+      throws IOException {
+    byte[] pdf = transactionReportService.generatePdf(startDate, endDate);
+    return ResponseEntity.ok()
+        .header(
+            HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=" + reportFileName(startDate, endDate, "pdf"))
+        .contentType(MediaType.APPLICATION_PDF)
+        .body(pdf);
+  }
+
+  /** Mesmo relatório consolidado de {@link #exportTransactionsReportPdf}, em Excel. */
+  @PreAuthorize("hasRole('MANAGER')")
+  @GetMapping(value = "/report/excel")
+  public ResponseEntity<byte[]> exportTransactionsReportExcel(
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate startDate,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate endDate)
+      throws IOException {
+    byte[] excel = transactionReportService.generateExcel(startDate, endDate);
+    return ResponseEntity.ok()
+        .header(
+            HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=" + reportFileName(startDate, endDate, "xlsx"))
+        .contentType(
+            MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+        .body(excel);
+  }
+
+  private String reportFileName(LocalDate startDate, LocalDate endDate, String extensao) {
+    LocalDate now = LocalDate.now();
+    LocalDate inicio = startDate != null ? startDate : now.minusMonths(1).withDayOfMonth(1);
+    LocalDate fim = endDate != null ? endDate : now.withDayOfMonth(1).minusDays(1);
+    DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMdd");
+    return String.format(
+        "relatorio-transacoes_%s_a_%s.%s", inicio.format(fmt), fim.format(fmt), extensao);
   }
 }
