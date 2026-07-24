@@ -47,7 +47,9 @@ export const authService = {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new LoginError(
-          errorData.message || `Erro ao fazer login: ${response.status}`,
+          errorData.message ||
+            errorData.erro ||
+            `Erro ao fazer login: ${response.status}`,
           typeof errorData.retryAfter === "number"
             ? errorData.retryAfter
             : undefined,

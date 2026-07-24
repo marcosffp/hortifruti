@@ -15,6 +15,12 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [blockedSecondsLeft, setBlockedSecondsLeft] = useState(0);
 
+  const formatBlockedTime = (totalSeconds: number) => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
+
   useEffect(() => {
     if (blockedSecondsLeft <= 0) return;
     const timer = setInterval(() => {
@@ -183,7 +189,7 @@ export default function Login() {
                   className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-gradient-to-r from-[var(--primary)] to-green-600 text-white font-semibold shadow-lg hover:shadow-xl hover:from-green-600 hover:to-[var(--primary)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
                 >
                   {blockedSecondsLeft > 0 ? (
-                    `Tente novamente em ${blockedSecondsLeft}s`
+                    `Tente novamente em ${formatBlockedTime(blockedSecondsLeft)}`
                   ) : isLoading ? (
                     <>
                       <svg
