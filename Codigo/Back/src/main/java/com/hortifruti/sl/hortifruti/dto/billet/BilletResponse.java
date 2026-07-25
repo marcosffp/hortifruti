@@ -7,6 +7,7 @@ public record BilletResponse(
     String dataEmissao,
     String dataVencimento,
     String seuNumero,
+    String nossoNumero,
     String situacaoBoleto,
     BigDecimal valor,
     Long combinedScoreId) {}

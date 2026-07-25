@@ -1,0 +1,9 @@
+# com.hortifruti.sl.hortifruti.controller.finance
+
+Endpoints de conciliação bancária: saldo em conta corrente, importação/exportação de extratos (BB e Sicoob) e consulta/relatório de transações. A maioria das rotas exige papel MANAGER.
+
+| Arquivo | Tipo | Responsabilidade |
+| --- | --- | --- |
+| `BankBalanceController.java` | `@RestController` (`/finance/bank-balance`), `@PreAuthorize hasRole('MANAGER')` | `GET /finance/bank-balance` retorna o saldo disponível da conta corrente configurada no servidor (Banco do Brasil), via `BBSaldoService`; endpoint somente leitura sem parâmetros. |
+| `StatementController.java` | `@RestController` (`/statements`), `@PreAuthorize hasRole('MANAGER')` | `GET /statements` lista todos os extratos; `POST /statements/sicoob-api/import` importa extrato do Sicoob (mês/ano, dia inicial/final opcionais); `GET /statements/sicoob-api/export/pdf` e `/export/excel` baixam o extrato Sicoob no layout original; `POST /statements/bb-api/import` importa extrato do BB (`dataInicio`/`dataFim`, máx. 31 dias); `GET /statements/bb-api/export/pdf` e `/export/excel` baixam o extrato do BB. |
+| `TransactionController.java` | `@RestController` (`/transactions`), `@PreAuthorize hasRole('MANAGER')` (maioria) | `GET /transactions/revenue`, `/expenses`, `/balance` calculam totais por período; `GET /transactions/categories` lista categorias (sem restrição de papel); `GET /transactions` lista transações paginadas com filtros de busca/tipo/categoria; `PUT /transactions/{id}` atualiza; `DELETE /transactions/{id}` remove; `POST /transactions/export` exporta Excel; `POST /transactions/export-complete` exporta ZIP com relatórios macro; `GET /transactions/report/pdf` e `/report/excel` geram relatório consolidado (BB + Sicoob) por período, com padrão de mês anterior quando datas não informadas. |

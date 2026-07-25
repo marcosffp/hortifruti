@@ -1,9 +1,8 @@
 "use client";
 
-import { AlertTriangle, ExternalLink, FileText, Package } from "lucide-react";
+import { ExternalLink, FileText, Package } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import ManualCancelModal from "@/components/modals/ManualCancelModal";
 import ClientSelector from "@/components/modules/ClientSelector";
 import ClientSummaryCards from "@/components/modules/ClientSummaryCards";
 import CombinedScoresCards from "@/components/modules/CombinedScoresCards";
@@ -18,7 +17,6 @@ export default function PurchasesPage() {
     useState<ClientSelectionInfo | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [tab, setTab] = useState<"purchaseFiles" | "grouped">("purchaseFiles");
-  const [showManualCancelModal, setShowManualCancelModal] = useState(false);
 
   const handleUploadSuccess = () => {
     setRefreshKey((prev) => prev + 1);
@@ -91,14 +89,6 @@ export default function PurchasesPage() {
             <ExternalLink className="w-4 h-4 text-blue-800/80" />
             Planilha de Listas Maiores
           </button>
-          <button
-            type="button"
-            onClick={() => setShowManualCancelModal(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white text-red-700 border border-gray-200 rounded-lg hover:bg-red-50 hover:border-red-200 transition-colors text-sm font-medium cursor-pointer"
-          >
-            <AlertTriangle className="w-4 h-4" />
-            Cancelamento Manual (NF)
-          </button>
         </div>
       </div>
 
@@ -163,11 +153,6 @@ export default function PurchasesPage() {
           )}
         </div>
       </div>
-
-      <ManualCancelModal
-        open={showManualCancelModal}
-        onClose={() => setShowManualCancelModal(false)}
-      />
     </main>
   );
 }

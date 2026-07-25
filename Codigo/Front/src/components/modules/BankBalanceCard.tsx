@@ -28,7 +28,7 @@ export default function BankBalanceCard() {
         </div>
         <button
           type="button"
-          onClick={refetch}
+          onClick={() => refetch()}
           disabled={isLoading}
           className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500 disabled:opacity-60"
           aria-label="Atualizar saldo"

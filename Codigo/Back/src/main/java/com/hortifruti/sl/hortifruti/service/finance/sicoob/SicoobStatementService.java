@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.finance.sicoob;
 
+import com.hortifruti.sl.hortifruti.config.sicoob.SicoobEnvironmentGuard;
 import com.hortifruti.sl.hortifruti.config.sicoob.SicoobExtratoClient;
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobExtratoResponse;
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobImportSummary;
@@ -20,10 +21,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /** Orquestra a integração com a API de extrato do Sicoob: busca, geração de PDF/Excel e import. */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SicoobStatementService {
@@ -35,6 +38,7 @@ public class SicoobStatementService {
   private final SicoobExtratoExcelGenerator sicoobExtratoExcelGenerator;
   private final TransactionSicoobApiService transactionSicoobApiService;
   private final TransactionImportPersistenceService transactionImportPersistenceService;
+  private final SicoobEnvironmentGuard sicoobEnvironmentGuard;
 
   @Value("${r2.environment}")
   private String environment;
@@ -49,6 +53,11 @@ public class SicoobStatementService {
    */
   public SicoobImportSummary importFromSicoobApi(
       int mes, int ano, Integer diaInicial, Integer diaFinal) throws IOException {
+    if (sicoobEnvironmentGuard.isBlocked()) {
+      log.info("[Sicoob] importFromSicoobApi bloqueado (ambiente sem integração real).");
+      return blockedSicoobSummary();
+    }
+
     YearMonth yearMonth = YearMonth.of(ano, mes);
     LocalDate periodStart = LocalDate.of(ano, mes, diaInicial != null ? diaInicial : 1);
     LocalDate periodEnd =
@@ -134,6 +143,11 @@ public class SicoobStatementService {
    */
   public byte[] exportSicoobExtratoPdf(int mes, int ano, Integer diaInicial, Integer diaFinal)
       throws IOException {
+    if (sicoobEnvironmentGuard.isBlocked()) {
+      log.info("[Sicoob] exportSicoobExtratoPdf bloqueado (ambiente sem integração real).");
+      return new byte[0];
+    }
+
     SicoobExtratoResponse extrato =
         sicoobExtratoClient.getExtrato(mes, ano, numeroContaCorrente, diaInicial, diaFinal);
     YearMonth yearMonth = YearMonth.of(ano, mes);
@@ -150,6 +164,11 @@ public class SicoobStatementService {
    */
   public byte[] exportSicoobExtratoExcel(int mes, int ano, Integer diaInicial, Integer diaFinal)
       throws IOException {
+    if (sicoobEnvironmentGuard.isBlocked()) {
+      log.info("[Sicoob] exportSicoobExtratoExcel bloqueado (ambiente sem integração real).");
+      return new byte[0];
+    }
+
     SicoobExtratoResponse extrato =
         sicoobExtratoClient.getExtrato(mes, ano, numeroContaCorrente, diaInicial, diaFinal);
     return sicoobExtratoExcelGenerator.generate(extrato);
@@ -166,5 +185,9 @@ public class SicoobStatementService {
         0,
         BigDecimal.ZERO,
         BigDecimal.ZERO);
+  }
+
+  private SicoobImportSummary blockedSicoobSummary() {
+    return new SicoobImportSummary(null, false, null, null, 0, 0, 0, BigDecimal.ZERO, BigDecimal.ZERO);
   }
 }

@@ -82,7 +82,7 @@ export default function EnhancedUploadNotes({
   return (
     <div className="flex-1 flex items-center justify-center bg-white relative rounded-lg shadow-sm p-4">
       {/* Loading overlay */}
-      {loading && <Loading />}
+      {loading && <Loading overlay />}
 
       <section
         className={`w-full h-full max-h-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center p-2 transition-colors ${

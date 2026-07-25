@@ -78,7 +78,7 @@ export const menu: MenuItem[] = [
     roles: ["MANAGER", "EMPLOYEE"],
   },
   {
-    label: "Boletos",
+    label: "Cobranças",
     icon: Receipt,
     href: "/comercio/boletos",
     roles: ["MANAGER", "EMPLOYEE"],
@@ -159,6 +159,7 @@ export default function Sidebar({
         <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
           <Link
             href="/dashboard"
+            prefetch={false}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg ${pathname === "/dashboard" ? "bg-primary text-white" : "text-gray-700"} hover:bg-primary mb-2`}
             onClick={() => onClose?.()}
           >
@@ -212,6 +213,7 @@ export default function Sidebar({
                           >
                             <Link
                               href={subItem.href}
+                              prefetch={false}
                               className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-gray-700 hover:bg-primary cursor-pointer ${
                                 pathname === subItem.href
                                   ? "bg-primary text-white"
@@ -230,6 +232,7 @@ export default function Sidebar({
                 ) : (
                   <Link
                     href={item.href}
+                    prefetch={false}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary cursor-pointer ${
                       isActive ? "bg-primary text-white" : "text-gray-700"
                     }`}

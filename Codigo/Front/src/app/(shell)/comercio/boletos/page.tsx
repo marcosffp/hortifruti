@@ -2,12 +2,14 @@
 
 import {
   AlertCircle,
+  AlertTriangle,
   CalendarClock,
   CheckCircle2,
   CircleCheck,
   Clock,
   Download,
   ExternalLink,
+  FileSearch,
   FileText,
   Filter,
   ListChecks,
@@ -16,11 +18,11 @@ import {
   Search,
   ShieldQuestion,
   Trash2,
-  UserSearch,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
+import ManualCancelModal from "@/components/modals/ManualCancelModal";
 import ClientSelector from "@/components/modules/ClientSelector";
 import { useBillet } from "@/hooks/useBillet";
 import { useInvoice } from "@/hooks/useInvoice";
@@ -148,6 +150,20 @@ function situacaoBadgeColor(situacao: string): string {
     return "bg-red-100 text-red-800";
   }
   return "bg-blue-100 text-blue-800";
+}
+
+function isBilletCancelable(situacao: string): boolean {
+  const value = situacao.toLowerCase();
+  return (
+    !value.includes("liquidado") &&
+    !value.includes("pago") &&
+    !value.includes("baixado") &&
+    !value.includes("cancelado")
+  );
+}
+
+function getClientBilletKey(billet: BilletResponse): string {
+  return `${billet.seuNumero}-${billet.dataVencimento}-${billet.valor}`;
 }
 
 function ActionSpinner() {
@@ -319,6 +335,7 @@ export default function BoletosPage() {
     markBilletAsPaid,
     downloadStoredBillet,
     cancelBillet,
+    cancelBilletByNumber,
     isLoading,
   } = useBillet();
 
@@ -341,6 +358,7 @@ export default function BoletosPage() {
   } | null>(null);
   const [bulkAction, setBulkAction] = useState<BulkActionType | null>(null);
   const [cancelTarget, setCancelTarget] = useState<number[] | null>(null);
+  const [showManualCancelModal, setShowManualCancelModal] = useState(false);
 
   // Aba "Consultar por cliente"
   const [selectedClient, setSelectedClient] =
@@ -352,6 +370,11 @@ export default function BoletosPage() {
     null,
   );
   const [loadingClientBillets, setLoadingClientBillets] = useState(false);
+  const [clientBilletActionKey, setClientBilletActionKey] = useState<
+    string | null
+  >(null);
+  const [cancelClientBilletTarget, setCancelClientBilletTarget] =
+    useState<BilletResponse | null>(null);
 
   // Aba "NF sem Boleto"
   const [openInvoices, setOpenInvoices] = useState<OpenInvoiceResponse[]>([]);
@@ -953,6 +976,41 @@ export default function BoletosPage() {
     }
   };
 
+  const handleCancelClientBillet = (billet: BilletResponse) => {
+    setCancelClientBilletTarget(billet);
+  };
+
+  const confirmCancelClientBillet = async () => {
+    if (!cancelClientBilletTarget) return;
+    const billet = cancelClientBilletTarget;
+    setCancelClientBilletTarget(null);
+    setClientBilletActionKey(getClientBilletKey(billet));
+    try {
+      if (billet.combinedScoreId) {
+        await cancelBillet(billet.combinedScoreId);
+      } else {
+        await cancelBilletByNumber(billet.nossoNumero);
+      }
+      showSuccess("Boleto com baixa realizada com sucesso.");
+      await handleSearchClientBillets(selectedClient);
+    } catch (error) {
+      showError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível dar baixa no boleto",
+      );
+      console.error(error);
+    } finally {
+      setClientBilletActionKey(null);
+    }
+  };
+
+  const cancelClientBilletConfirmTitle = cancelClientBilletTarget
+    ? `Tem certeza que deseja dar baixa neste boleto (${formatCurrency(
+        cancelClientBilletTarget.valor,
+      )})? Esta ação não pode ser desfeita.`
+    : "";
+
   const goToGrouping = (clientId: number) => {
     window.open(
       `/comercio/compras?clientId=${clientId}&tab=grouped`,
@@ -976,16 +1034,31 @@ export default function BoletosPage() {
 
   return (
     <main className="flex-1 p-6 bg-gray-50 overflow-auto flex flex-col min-h-full">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-          <Receipt className="w-7 h-7 text-primary" />
-          Boletos
-        </h1>
-        <p className="text-gray-600">
-          Acompanhe os boletos em aberto dos clientes e consulte o histórico de
-          cobranças.
-        </p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+            <Receipt className="w-7 h-7 text-primary" />
+            Cobranças
+          </h1>
+          <p className="text-gray-600">
+            Acompanhe boletos, notas fiscais pendentes e cancelamentos de
+            cobrança dos clientes.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowManualCancelModal(true)}
+          className="flex items-center gap-1.5 px-3 py-2 bg-white text-red-700 border border-gray-200 rounded-lg hover:bg-red-50 hover:border-red-200 transition-colors text-sm font-medium cursor-pointer"
+        >
+          <AlertTriangle className="w-4 h-4" />
+          Cancelamento Manual (NF)
+        </button>
       </div>
+
+      <ManualCancelModal
+        open={showManualCancelModal}
+        onClose={() => setShowManualCancelModal(false)}
+      />
 
       <div className="flex gap-2 flex-nowrap overflow-x-auto w-full">
         <button
@@ -1009,8 +1082,8 @@ export default function BoletosPage() {
           }`}
           onClick={() => setTab("porCliente")}
         >
-          <UserSearch className="w-5 h-5 mr-2" />
-          Consultar por Cliente
+          <FileSearch className="w-5 h-5 mr-2" />
+          Consultar Boleto
         </button>
         <button
           type="button"
@@ -1114,14 +1187,18 @@ export default function BoletosPage() {
             )}
 
             {loadingOpen ? (
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    // biome-ignore lint/suspicious/noArrayIndexKey: static-length skeleton placeholder list, no stable identity available
-                    key={i}
-                    className="h-14 bg-gray-100 animate-pulse rounded-lg"
-                  />
-                ))}
+              <div className="py-16 text-center">
+                <div className="flex justify-center mb-4">
+                  <div className="h-20 w-20 rounded-full bg-green-50 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-14 w-14 border-4 border-gray-100 border-t-green-600 border-r-green-600"></div>
+                  </div>
+                </div>
+                <p className="text-lg font-medium text-gray-700">
+                  Carregando boletos em aberto...
+                </p>
+                <p className="text-sm mt-1 text-gray-500">
+                  Aguarde enquanto buscamos os dados dos boletos
+                </p>
               </div>
             ) : filteredOpenBillets.length === 0 ? (
               <div className="text-center py-16 text-gray-500">
@@ -1398,20 +1475,27 @@ export default function BoletosPage() {
 
                 {!selectedClient && (
                   <div className="text-center py-16 text-gray-500">
-                    <UserSearch className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                    <p>Selecione um cliente para consultar os boletos</p>
+                    <FileSearch className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                    <p>
+                      Selecione um cliente para consultar os boletos dele no
+                      Sicoob
+                    </p>
                   </div>
                 )}
 
                 {selectedClient && (loadingClientBillets || isLoading) && (
-                  <div className="space-y-3">
-                    {[...Array(4)].map((_, i) => (
-                      <div
-                        // biome-ignore lint/suspicious/noArrayIndexKey: static-length skeleton placeholder list, no stable identity available
-                        key={i}
-                        className="h-14 bg-gray-100 animate-pulse rounded-lg"
-                      />
-                    ))}
+                  <div className="py-16 text-center">
+                    <div className="flex justify-center mb-4">
+                      <div className="h-20 w-20 rounded-full bg-green-50 flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-14 w-14 border-4 border-gray-100 border-t-green-600 border-r-green-600"></div>
+                      </div>
+                    </div>
+                    <p className="text-lg font-medium text-gray-700">
+                      Buscando boletos no Sicoob...
+                    </p>
+                    <p className="text-sm mt-1 text-gray-500">
+                      Aguarde enquanto consultamos os boletos do cliente
+                    </p>
                   </div>
                 )}
 
@@ -1481,23 +1565,48 @@ export default function BoletosPage() {
                                 </span>
                               </td>
                               <td className="py-3 px-3 text-right">
-                                {billet.combinedScoreId ? (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      selectedClient &&
-                                      goToGrouping(selectedClient.clientId)
-                                    }
-                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
-                                  >
-                                    <ExternalLink className="w-3 h-3" />
-                                    Ver Agrupamento
-                                  </button>
-                                ) : (
-                                  <span className="text-xs text-gray-400">
-                                    Agrupamento não localizado
-                                  </span>
-                                )}
+                                <div className="flex items-center justify-end gap-2">
+                                  {billet.combinedScoreId ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        selectedClient &&
+                                        goToGrouping(selectedClient.clientId)
+                                      }
+                                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                      Ver Agrupamento
+                                    </button>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">
+                                      Agrupamento não localizado
+                                    </span>
+                                  )}
+                                  {isBilletCancelable(
+                                    billet.situacaoBoleto,
+                                  ) && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleCancelClientBillet(billet)
+                                      }
+                                      disabled={
+                                        clientBilletActionKey ===
+                                        getClientBilletKey(billet)
+                                      }
+                                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      {clientBilletActionKey ===
+                                      getClientBilletKey(billet) ? (
+                                        <ActionSpinner />
+                                      ) : (
+                                        <Trash2 className="w-3 h-3" />
+                                      )}
+                                      Dar baixa
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -1603,14 +1712,18 @@ export default function BoletosPage() {
             )}
 
             {loadingInvoices ? (
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    // biome-ignore lint/suspicious/noArrayIndexKey: static-length skeleton placeholder list, no stable identity available
-                    key={i}
-                    className="h-14 bg-gray-100 animate-pulse rounded-lg"
-                  />
-                ))}
+              <div className="py-16 text-center">
+                <div className="flex justify-center mb-4">
+                  <div className="h-20 w-20 rounded-full bg-green-50 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-14 w-14 border-4 border-gray-100 border-t-green-600 border-r-green-600"></div>
+                  </div>
+                </div>
+                <p className="text-lg font-medium text-gray-700">
+                  Carregando notas fiscais...
+                </p>
+                <p className="text-sm mt-1 text-gray-500">
+                  Aguarde enquanto buscamos as notas fiscais pendentes
+                </p>
               </div>
             ) : filteredOpenInvoices.length === 0 ? (
               <div className="text-center py-16 text-gray-500">
@@ -1800,6 +1913,13 @@ export default function BoletosPage() {
         onClose={() => setCancelTarget(null)}
         onConfirm={confirmCancel}
         title={cancelConfirmTitle}
+      />
+
+      <ConfirmDeleteModal
+        open={cancelClientBilletTarget !== null}
+        onClose={() => setCancelClientBilletTarget(null)}
+        onConfirm={confirmCancelClientBillet}
+        title={cancelClientBilletConfirmTitle}
       />
 
       <ConfirmDeleteModal
