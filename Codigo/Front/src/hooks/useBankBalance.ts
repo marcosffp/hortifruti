@@ -11,23 +11,33 @@ export function useBankBalance() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchBalance = useCallback(async () => {
+  const fetchBalance = useCallback(async (signal?: AbortSignal) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await bankBalanceService.getSaldoDisponivel();
+      const data = await bankBalanceService.getSaldoDisponivel(signal);
       setBalance(data);
     } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return;
+      }
       setError(
         err instanceof Error ? err.message : "Erro ao buscar saldo bancário.",
       );
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    fetchBalance();
+    // Cancela a requisição se o usuário navegar para outra tela antes dela
+    // terminar, liberando a conexão em vez de deixá-la disputando espaço com
+    // a navegação (ver comentário em bankBalanceService sobre "priority: low").
+    const controller = new AbortController();
+    fetchBalance(controller.signal);
+    return () => controller.abort();
   }, [fetchBalance]);
 
   return { balance, isLoading, error, refetch: fetchBalance };

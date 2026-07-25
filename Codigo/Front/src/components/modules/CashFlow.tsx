@@ -111,20 +111,29 @@ export default function CashFlow({
     draftEndDate !== endDate;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: getDashboardData is recreated on every render by useDashboard and is not part of the fetch identity
-  const fetchDashboardData = useCallback(async () => {
-    const data = await getDashboardData(
-      startDate,
-      endDate,
-      selectedMonth,
-      selectedYear,
-    );
-    if (data) {
-      setDashboardData(data);
-    }
-  }, [startDate, endDate, selectedMonth, selectedYear]);
+  const fetchDashboardData = useCallback(
+    async (signal?: AbortSignal) => {
+      const data = await getDashboardData(
+        startDate,
+        endDate,
+        selectedMonth,
+        selectedYear,
+        signal,
+      );
+      if (data) {
+        setDashboardData(data);
+      }
+    },
+    [startDate, endDate, selectedMonth, selectedYear],
+  );
 
   useEffect(() => {
-    fetchDashboardData();
+    // Cancela a requisição se o usuário navegar para outra tela (ou trocar o
+    // filtro) antes dela terminar, liberando a conexão em vez de deixá-la
+    // disputando espaço com a navegação.
+    const controller = new AbortController();
+    fetchDashboardData(controller.signal);
+    return () => controller.abort();
   }, [fetchDashboardData]);
 
   const applyFilters = () => {

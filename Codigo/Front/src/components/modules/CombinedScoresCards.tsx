@@ -17,6 +17,7 @@ import ShowInvoiceAndBilletModal from "@/components/modals/ShowInvoiceAndBilletM
 import ShowInvoiceDataModal from "@/components/modals/ShowInvoiceDataModal";
 import ShowInvoiceModal from "@/components/modals/ShowInvoiceModal";
 import WildcardBilletModal from "@/components/modals/WildcardBilletModal";
+import GameLoadingOverlay from "@/components/ui/GameLoadingOverlay";
 import { useBillet } from "@/hooks/useBillet";
 import { useClient } from "@/hooks/useClient";
 import { useInvoice } from "@/hooks/useInvoice";
@@ -97,6 +98,25 @@ export default function CombinedScoresCards({
   const endProcessing = useCallback((id: number) => {
     processingScoreIdsRef.current.delete(id);
     setProcessingScoreIds(new Set(processingScoreIdsRef.current));
+  }, []);
+
+  // Mesmo guard de duplo clique, mas para as ações rápidas (confirmar pagamento/deletar)
+  // — separado de processingScoreIds pra não acionar o modal de carregamento de NF/boleto.
+  const actionProcessingIdsRef = useRef<Set<number>>(new Set());
+  const [actionProcessingIds, setActionProcessingIds] = useState<Set<number>>(
+    new Set(),
+  );
+
+  const beginAction = useCallback((id: number): boolean => {
+    if (actionProcessingIdsRef.current.has(id)) return false;
+    actionProcessingIdsRef.current.add(id);
+    setActionProcessingIds(new Set(actionProcessingIdsRef.current));
+    return true;
+  }, []);
+
+  const endAction = useCallback((id: number) => {
+    actionProcessingIdsRef.current.delete(id);
+    setActionProcessingIds(new Set(actionProcessingIdsRef.current));
   }, []);
 
   const { generateBillet, getBilletInfo } = useBillet();
@@ -223,6 +243,7 @@ export default function CombinedScoresCards({
       !confirm(`Tem certeza que deseja deletar o agrupamento ${number || id}?`)
     )
       return;
+    if (!beginAction(id)) return;
 
     try {
       await combinedScoreService.cancelGrouping(id);
@@ -231,10 +252,13 @@ export default function CombinedScoresCards({
     } catch (error) {
       showError("Erro ao deletar agrupamento");
       console.error(error);
+    } finally {
+      endAction(id);
     }
   };
 
   const handleTogglePayment = async (score: ScoreWithBilletInfo) => {
+    if (!beginAction(score.id)) return;
     try {
       if (score.status === "PAID") {
         await combinedScoreService.cancelPayment(score.id);
@@ -247,6 +271,8 @@ export default function CombinedScoresCards({
     } catch (error) {
       showError("Erro ao atualizar pagamento");
       console.error(error);
+    } finally {
+      endAction(score.id);
     }
   };
 
@@ -750,7 +776,10 @@ export default function CombinedScoresCards({
                       <button
                         type="button"
                         onClick={() => handleTogglePayment(score)}
-                        disabled={score.hasInvoice && score.status === "PAGO"}
+                        disabled={
+                          (score.hasInvoice && score.status === "PAGO") ||
+                          actionProcessingIds.has(score.id)
+                        }
                         className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg transition-colors text-xs cursor-pointer text-white bg-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--primary-dark)] ${score.hasInvoice ? "col-span-2 w-full" : ""}`}
                       >
                         <CheckCircle className="w-3 h-3" />
@@ -762,7 +791,8 @@ export default function CombinedScoresCards({
                       <button
                         type="button"
                         onClick={() => handleDelete(score.id, score.number)}
-                        className={`flex items-center justify-center gap-1 px-2 py-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors text-xs cursor-pointer`}
+                        disabled={actionProcessingIds.has(score.id)}
+                        className="flex items-center justify-center gap-1 px-2 py-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Trash2 className="w-3 h-3" />
                         Deletar
@@ -922,6 +952,17 @@ export default function CombinedScoresCards({
           scoreNumber={pendingInvoiceScore.number || pendingInvoiceScore.id}
         />
       )}
+
+      <GameLoadingOverlay
+        isOpen={processingScoreIds.size > 0}
+        title="Gerando documento"
+        messages={[
+          "Conectando aos servidores fiscais...",
+          "Processando nota fiscal e/ou boleto...",
+          "Isso pode levar alguns instantes...",
+          "Quase lá...",
+        ]}
+      />
 
       {/* Modal de NF + Boleto gerados juntos */}
       {showInvoiceBilletModal && invoiceBilletResult && selectedScore && (

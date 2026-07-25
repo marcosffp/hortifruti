@@ -52,6 +52,7 @@ export const dashboardService = {
     endDate: string,
     month: number,
     year: number,
+    signal?: AbortSignal,
   ): Promise<DashboardData> {
     try {
       const response = await fetch(
@@ -60,6 +61,10 @@ export const dashboardService = {
           method: "GET",
           headers: getAuthHeaders(),
           credentials: "include",
+          // Prioridade baixa: essa chamada é lenta (consulta APIs fiscais externas) e não pode
+          // disputar conexão com a navegação do usuário para outras telas.
+          priority: "low",
+          signal,
         },
       );
 
@@ -72,7 +77,9 @@ export const dashboardService = {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error("Erro ao buscar dados do dashboard:", error);
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        console.error("Erro ao buscar dados do dashboard:", error);
+      }
       throw error;
     }
   },
