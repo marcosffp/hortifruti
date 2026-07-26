@@ -19,7 +19,15 @@ export function useAuth() {
   const [environment, setEnvironment] = useState<string>("");
 
   const checkAuth = useCallback(async () => {
-    const user = await authService.me();
+    let user = await authService.me();
+
+    if (!user) {
+      const refreshed = await authService.refresh();
+      if (refreshed) {
+        user = await authService.me();
+      }
+    }
+
     setIsAuthenticated(!!user);
 
     if (user) {
