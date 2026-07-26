@@ -24,10 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Proteção contra brute-force no login: contadores independentes por conta e por IP, lockout
- * progressivo (15min / 1h / 24h), reset automático após período limpo, e-mail de alerta
- * throttled, e log de auditoria de toda tentativa (bloqueada, falha ou sucesso). Tudo persistido
- * no MySQL via {@link LoginLockout}/{@link LoginAuditLog} — sem dependência de Redis, para
- * sobreviver a deploys/restarts em instância única.
+ * progressivo (15min / 1h / 24h), reset automático após período limpo, e-mail de alerta throttled,
+ * e log de auditoria de toda tentativa (bloqueada, falha ou sucesso). Tudo persistido no MySQL via
+ * {@link LoginLockout}/{@link LoginAuditLog} — sem dependência de Redis, para sobreviver a
+ * deploys/restarts em instância única.
  */
 @Component
 @Slf4j
@@ -68,8 +68,7 @@ public class LoginProtectionService {
     LocalDateTime now = LocalDateTime.now();
 
     Optional<LoginLockout> accountLockout =
-        loginLockoutRepository.findByIdentifierTypeAndIdentifier(
-            IdentifierType.ACCOUNT, username);
+        loginLockoutRepository.findByIdentifierTypeAndIdentifier(IdentifierType.ACCOUNT, username);
     if (isLocked(accountLockout, now)) {
       saveAudit(username, ip, userAgent, false, FailureReason.ACCOUNT_LOCKED);
       throw lockedException(accountLockout.get(), now);
@@ -84,8 +83,7 @@ public class LoginProtectionService {
   }
 
   @Transactional
-  public void registerFailure(
-      String username, String ip, String userAgent, boolean accountExists) {
+  public void registerFailure(String username, String ip, String userAgent, boolean accountExists) {
     LocalDateTime now = LocalDateTime.now();
     FailureReason reason =
         accountExists ? FailureReason.BAD_PASSWORD : FailureReason.USER_NOT_FOUND;

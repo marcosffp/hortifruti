@@ -59,11 +59,11 @@ public class FiscalNoteXmlStorageService {
    * Serializa, por ref, o trecho check-then-upload-then-save de {@link #persistIfAbsent} e {@link
    * #saveDanfeIfAbsent}. Sem isso, o job assíncrono {@link #triggerSaveAfterIssuance} e a rede de
    * segurança do download (disparada se o usuário abrir o XML/DANFE antes do job terminar) podem
-   * checar "existsByRef" ao mesmo tempo, os dois verem "não existe" e os dois fazerem upload para
-   * o R2 — gerando um arquivo duplicado órfão no bucket quando o segundo INSERT falha por
-   * violação da constraint UNIQUE(ref). A aplicação roda como instância única (ver
-   * docker-compose.yml), então este lock em memória fecha a corrida na prática; a captura de
-   * {@link DataIntegrityViolationException} abaixo é uma segunda camada de defesa.
+   * checar "existsByRef" ao mesmo tempo, os dois verem "não existe" e os dois fazerem upload para o
+   * R2 — gerando um arquivo duplicado órfão no bucket quando o segundo INSERT falha por violação da
+   * constraint UNIQUE(ref). A aplicação roda como instância única (ver docker-compose.yml), então
+   * este lock em memória fecha a corrida na prática; a captura de {@link
+   * DataIntegrityViolationException} abaixo é uma segunda camada de defesa.
    */
   private final ConcurrentHashMap<String, ReentrantLock> refLocks = new ConcurrentHashMap<>();
 
