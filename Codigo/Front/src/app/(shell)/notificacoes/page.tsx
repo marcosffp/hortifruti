@@ -7,6 +7,7 @@ import {
   Mail,
   MessageCircle,
   Send,
+  ShieldAlert,
   Upload,
   Users,
   X,
@@ -14,6 +15,7 @@ import {
 import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { useAuth } from "@/hooks/useAuth";
 import {
   type BulkNotificationRequest,
   bulkNotificationService,
@@ -36,6 +38,7 @@ interface Cliente {
 type TipoDestinatario = "clientes" | "contabilidade";
 
 export default function NotificacoesPage() {
+  const { environment } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +47,7 @@ export default function NotificacoesPage() {
   const [canaisEnvio, setCanaisEnvio] = useState<{
     email: boolean;
     whatsapp: boolean;
-  }>({ email: false, whatsapp: false });
+  }>({ email: true, whatsapp: false });
   const [tipoDestinatario, setTipoDestinatario] =
     useState<TipoDestinatario>("clientes");
   const [_dataVencimento, setDataVencimento] = useState("");
@@ -53,16 +56,6 @@ export default function NotificacoesPage() {
 
   const [cardValue, setCardValue] = useState("");
   const [cashValue, setCashValue] = useState("");
-
-  useEffect(() => {
-    if (tipoDestinatario === "contabilidade") {
-      // Para contabilidade, apenas email
-      setCanaisEnvio({ email: true, whatsapp: false });
-    } else {
-      // Para clientes, permitir escolha
-      setCanaisEnvio({ email: false, whatsapp: false });
-    }
-  }, [tipoDestinatario]);
 
   useEffect(() => {
     const fetchClientes = async () => {
@@ -243,7 +236,7 @@ export default function NotificacoesPage() {
         setDataVencimento("");
         setValorBoleto("");
         setClientes(clientes.map((c) => ({ ...c, selecionado: false })));
-        setCanaisEnvio({ email: false, whatsapp: false });
+        setCanaisEnvio({ email: true, whatsapp: false });
 
         setCardValue("");
         setCashValue("");
@@ -270,6 +263,24 @@ export default function NotificacoesPage() {
   const clientesSelecionados = clientes.filter((c) => c.selecionado).length;
   const todosAtivos =
     filteredClientes.length > 0 && filteredClientes.every((c) => c.selecionado);
+
+  if (environment === "hml") {
+    return (
+      <div className="p-4 md:p-6 min-h-full flex items-center justify-center bg-[var(--neutral-50)]">
+        <div className="max-w-md text-center bg-white rounded-lg shadow-sm border border-[var(--neutral-200)] p-8">
+          <ShieldAlert className="mx-auto mb-4 text-amber-500" size={40} />
+          <h1 className="text-xl font-bold text-[var(--neutral-900)] mb-2">
+            Indisponível em homologação
+          </h1>
+          <p className="text-[var(--neutral-600)]">
+            O envio de notificações usa e-mail/WhatsApp reais e está
+            desabilitado neste ambiente para evitar contato acidental com
+            clientes de verdade.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-6 bg-[var(--neutral-50)] min-h-full">
@@ -320,51 +331,12 @@ export default function NotificacoesPage() {
 
               <div>
                 <div className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
-                  Canal de Envio (selecione um ou ambos)
+                  Canal de Envio
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCanaisEnvio((prev) => ({
-                        ...prev,
-                        email: !prev.email,
-                      }))
-                    }
-                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                      canaisEnvio.email
-                        ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
-                        : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
-                    }`}
-                  >
-                    <Mail className="w-5 h-5" />
-                    <span className="font-medium">E-mail</span>
-                    {canaisEnvio.email && (
-                      <CheckCircle2 className="w-4 h-4 ml-auto" />
-                    )}
-                  </button>
-                  {tipoDestinatario !== "contabilidade" && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setCanaisEnvio((prev) => ({
-                          ...prev,
-                          whatsapp: !prev.whatsapp,
-                        }))
-                      }
-                      className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                        canaisEnvio.whatsapp
-                          ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
-                          : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
-                      }`}
-                    >
-                      <MessageCircle className="w-5 h-5" />
-                      <span className="font-medium">WhatsApp</span>
-                      {canaisEnvio.whatsapp && (
-                        <CheckCircle2 className="w-4 h-4 ml-auto" />
-                      )}
-                    </button>
-                  )}
+                <div className="flex items-center gap-2 p-3 rounded-lg border-2 border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)] w-fit">
+                  <Mail className="w-5 h-5" />
+                  <span className="font-medium">E-mail</span>
+                  <CheckCircle2 className="w-4 h-4" />
                 </div>
               </div>
 

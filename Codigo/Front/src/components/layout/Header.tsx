@@ -40,7 +40,11 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           </button>
           <span className="text-gray-100 text-sm">(31) 3649-7064</span>
           <div className="flex items-center gap-2" title="Perfil">
-            <Link href="/perfil" className="flex items-center gap-2">
+            <Link
+              href="/perfil"
+              prefetch={false}
+              className="flex items-center gap-2"
+            >
               <div className="w-8 h-8 bg-green-800 rounded-full flex items-center justify-center">
                 <User className="text-white" size={16} />
               </div>

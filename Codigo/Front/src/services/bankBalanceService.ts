@@ -8,11 +8,14 @@ export interface BankBalance {
 }
 
 export const bankBalanceService = {
-  async getSaldoDisponivel(): Promise<BankBalance> {
+  async getSaldoDisponivel(signal?: AbortSignal): Promise<BankBalance> {
     const response = await fetch(`${API_BASE_URL}/finance/bank-balance`, {
       method: "GET",
       headers: getAuthHeaders(),
       credentials: "include",
+      // Prioridade baixa: não pode disputar conexão com a navegação do usuário para outras telas.
+      priority: "low",
+      signal,
     });
 
     if (!response.ok) {

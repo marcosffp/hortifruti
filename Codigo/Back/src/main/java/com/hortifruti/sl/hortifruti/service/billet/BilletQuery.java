@@ -167,6 +167,7 @@ public class BilletQuery {
         boletoNode.path("dataEmissao").asText(),
         boletoNode.path("dataVencimento").asText(),
         seuNumero,
+        boletoNode.path("nossoNumero").asText(),
         boletoNode.path("situacaoBoleto").asText(),
         boletoNode.path("valor").decimalValue(),
         combinedScoreId);

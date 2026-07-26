@@ -159,7 +159,14 @@ export const billetService = {
       );
 
       if (!response.ok) {
-        throw new Error(`Erro ao baixar boleto armazenado: ${response.status}`);
+        let message = `Erro ao baixar boleto armazenado: ${response.status}`;
+        try {
+          const errorBody = await response.json();
+          if (errorBody?.message) message = errorBody.message;
+        } catch {
+          // corpo do erro indisponível, mantém a mensagem padrão
+        }
+        throw new Error(message);
       }
 
       const result = await response.blob();

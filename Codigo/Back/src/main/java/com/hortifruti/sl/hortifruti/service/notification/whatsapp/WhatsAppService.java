@@ -14,6 +14,10 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+/**
+ * Canal de envio (outbound) de mensagens e documentos via WhatsApp usando a API da UltraMsg. Não
+ * há processamento de mensagens recebidas do cliente — apenas envio.
+ */
 @Service
 @RequiredArgsConstructor
 public class WhatsAppService {
@@ -174,17 +178,5 @@ public class WhatsAppService {
     }
 
     return allSent;
-  }
-
-  public boolean sendMessage(String phoneNumber, String message) {
-    return sendTextMessage(phoneNumber, message);
-  }
-
-  public boolean sendMessage(
-      String phoneNumber, String message, List<byte[]> attachments, List<String> fileNames) {
-    if (attachments == null || attachments.isEmpty()) {
-      return sendTextMessage(phoneNumber, message);
-    }
-    return sendMultipleDocuments(phoneNumber, message, attachments, fileNames);
   }
 }

@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.billet;
 
+import com.hortifruti.sl.hortifruti.config.sicoob.SicoobEnvironmentGuard;
 import com.hortifruti.sl.hortifruti.dto.billet.BilletRequestSimplified;
 import com.hortifruti.sl.hortifruti.dto.billet.BilletResponse;
 import com.hortifruti.sl.hortifruti.dto.billet.OpenBilletResponse;
@@ -14,12 +15,11 @@ import com.hortifruti.sl.hortifruti.service.purchase.ClientService;
 import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import com.hortifruti.sl.hortifruti.service.storage.BilletFileStorageService;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -42,6 +42,7 @@ public class BilletService {
   private final BilletInfoCombinedAndClient billetInfoCombinedAndClient;
   private final BilletFileStorageService billetFileStorageService;
   private final SicoobOpenBilletReconciler sicoobOpenBilletReconciler;
+  private final SicoobEnvironmentGuard sicoobEnvironmentGuard;
 
   public List<CombinedScore> findAllPendingWithBilletByClient(Long clientId) {
     return combinedScoreService.findAllPendingWithBilletByClient(clientId);
@@ -52,12 +53,20 @@ public class BilletService {
   }
 
   public List<BilletResponse> listBilletByPayer(long clientId) throws IOException {
+    if (sicoobEnvironmentGuard.isBlocked()) {
+      log.info("[Sicoob] listBilletByPayer bloqueado (ambiente sem integração real).");
+      return List.of();
+    }
     return billetQuery.listBilletByPayer(clientId);
   }
 
   public List<BilletResponse> listBilletByPayer(
       long clientId, Integer codigoSituacao, LocalDate dataInicio, LocalDate dataFim)
       throws IOException {
+    if (sicoobEnvironmentGuard.isBlocked()) {
+      log.info("[Sicoob] listBilletByPayer bloqueado (ambiente sem integração real).");
+      return List.of();
+    }
     return billetQuery.listBilletByPayer(clientId, codigoSituacao, dataInicio, dataFim);
   }
 
@@ -72,6 +81,11 @@ public class BilletService {
    */
   @Transactional
   public List<OpenBilletResponse> listAllOpenBillets() {
+    if (sicoobEnvironmentGuard.isBlocked()) {
+      log.info("[Sicoob] listAllOpenBillets bloqueado (ambiente sem integração real).");
+      return List.of();
+    }
+
     List<CombinedScore> openScores = combinedScoreService.findAllOpenBillets();
     if (openScores.isEmpty()) {
       return List.of();
@@ -104,11 +118,19 @@ public class BilletService {
   }
 
   public ResponseEntity<byte[]> issueCopy(Long idCombinedScore) throws IOException {
+    if (sicoobEnvironmentGuard.isBlocked()) {
+      log.info("[Sicoob] issueCopy bloqueado (ambiente sem integração real).");
+      return emptyPdfResponse();
+    }
     return billetIssue.issueCopy(idCombinedScore);
   }
 
   public ResponseEntity<String> cancelBillet(Long idCombinedScore)
       throws IOException, BilletException {
+    if (sicoobEnvironmentGuard.isBlocked()) {
+      log.info("[Sicoob] cancelBillet bloqueado (ambiente sem integração real).");
+      return ResponseEntity.ok("");
+    }
     return billetCancel.cancelBillet(idCombinedScore);
   }
 
@@ -117,10 +139,18 @@ public class BilletService {
    * sem exigir um agrupamento (CombinedScore) local conhecido.
    */
   public ResponseEntity<String> cancelBilletByNumber(String nossoNumero) throws BilletException {
+    if (sicoobEnvironmentGuard.isBlocked()) {
+      log.info("[Sicoob] cancelBilletByNumber bloqueado (ambiente sem integração real).");
+      return ResponseEntity.ok("");
+    }
     return billetCancel.cancelBilletByNumber(nossoNumero);
   }
 
   public BilletResponse getBilletByCombinedScore(long combinedScoreId) throws IOException {
+    if (sicoobEnvironmentGuard.isBlocked()) {
+      log.info("[Sicoob] getBilletByCombinedScore bloqueado (ambiente sem integração real).");
+      return new BilletResponse("", "", "", "", "", "", BigDecimal.ZERO, combinedScoreId);
+    }
     return billetQuery.getBilletByCombinedScore(combinedScoreId);
   }
 
@@ -170,6 +200,11 @@ public class BilletService {
   @Transactional
   public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number, String dueDate)
       throws IOException {
+    if (sicoobEnvironmentGuard.isBlocked()) {
+      log.info("[Sicoob] generateBillet bloqueado (ambiente sem integração real).");
+      return emptyPdfResponse();
+    }
+
     // Trava a linha do agrupamento (SELECT ... FOR UPDATE) para serializar requisições
     // concorrentes: se duas chegarem juntas (ex: duplo clique), a segunda só prossegue depois que
     // a primeira já commitou hasBillet=true, e cai no bloqueio de duplicidade abaixo.
@@ -204,41 +239,6 @@ public class BilletService {
     }
   }
 
-  @Transactional
-  public List<CombinedScore> syncAndFindOverdueUnpaidScores(LocalDate currentDate) {
-    List<CombinedScore> overdueScores = combinedScoreService.findOverdueUnpaidScores(currentDate);
-
-    List<CombinedScore> remainingPendingScores = new ArrayList<>();
-
-    for (CombinedScore combinedScore : overdueScores) {
-      boolean shouldRemainPending = true;
-
-      if (combinedScore.isHasBillet() && combinedScore.getStatus() == Status.PENDENTE) {
-        try {
-          List<BilletResponse> updatedBillets = listBilletByPayer(combinedScore.getClientId());
-
-          Optional<BilletResponse> currentBillet =
-              updatedBillets.stream()
-                  .filter(billet -> billet.seuNumero().equals(combinedScore.getYourNumber()))
-                  .findFirst();
-
-          if (currentBillet.isEmpty()) {
-            combinedScoreService.updateStatus(combinedScore.getId(), Status.PAGO);
-            shouldRemainPending = false;
-          }
-        } catch (Exception e) {
-          shouldRemainPending = true;
-        }
-      }
-
-      if (shouldRemainPending) {
-        remainingPendingScores.add(combinedScore);
-      }
-    }
-
-    return remainingPendingScores;
-  }
-
   private Map<String, Object> issueBilletAndExtractResponse(BilletRequestSimplified billetRequest)
       throws IOException {
     ResponseEntity<Map<String, Object>> billetResponse = billetIssue.issueBillet(billetRequest);
@@ -257,6 +257,12 @@ public class BilletService {
     headers.setContentDispositionFormData("attachment", "BOL-" + yourNumber + ".pdf");
 
     return ResponseEntity.ok().headers(headers).body(pdfBytes);
+  }
+
+  private ResponseEntity<byte[]> emptyPdfResponse() {
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_PDF);
+    return ResponseEntity.ok().headers(headers).body(new byte[0]);
   }
 
   private void updateCombinedScoreWithBilletData(

@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -20,6 +21,7 @@ public class BackupController {
   private final BackupService backupService;
   private final GoogleOAuthService googleOAuthService;
 
+  @PreAuthorize("hasRole('MANAGER')")
   @PostMapping
   public ResponseEntity<BackupResponse> performBackup(
       @RequestParam(required = false) String startDate,
@@ -34,6 +36,7 @@ public class BackupController {
     }
   }
 
+  @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/storage")
   public ResponseEntity<BackupResponse> getDatabaseStorage() {
     BigDecimal databaseSize = backupService.getDatabaseSizeInMB();

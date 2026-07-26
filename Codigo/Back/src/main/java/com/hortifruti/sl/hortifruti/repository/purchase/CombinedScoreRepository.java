@@ -37,11 +37,6 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
 
   Page<CombinedScore> findAllByOrderByIdDesc(Pageable pageable);
 
-  /** Busca CombinedScores vencidos que ainda não foram pagos (confirmedAt is null) */
-  @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.dueDate < :currentDate AND cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE")
-  List<CombinedScore> findOverdueUnpaidScores(@Param("currentDate") LocalDate currentDate);
-
   @Query(
       "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.dueDate < :currentDate AND cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE")
   List<CombinedScore> findOverdueUnpaidScoresByClient(

@@ -27,10 +27,10 @@ public class GmailSmtpEmailSender implements EmailSender {
   @Value("${gmail.smtp.port:587}")
   private int port;
 
-  @Value("${GMAIL:}")
+  @Value("${username.gmail}")
   private String username;
 
-  @Value("${GMAIL_PASSWORD:}")
+  @Value("${password.gmail}")
   private String appPassword;
 
   @Value("${gmail.smtp.connection-timeout-ms:10000}")

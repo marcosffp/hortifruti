@@ -97,6 +97,12 @@ public class NotificationCoordinator {
         return whatsAppMessageBuilder.buildClientDocumentsMessage(
             context.getClient(), context.getCustomMessage());
 
+      case BILLET:
+        return whatsAppMessageBuilder.buildBilletMessage(context.getPeriod());
+
+      case NFE_XML:
+        return whatsAppMessageBuilder.buildNfeXmlMessage(context.getNfNumber());
+
       case GENERIC:
       default:
         return whatsAppMessageBuilder.buildGenericMessage(
@@ -159,6 +165,8 @@ public class NotificationCoordinator {
     MONTHLY_STATEMENTS,
     GENERIC_FILES,
     CLIENT_DOCUMENTS,
+    BILLET,
+    NFE_XML,
     GENERIC
   }
 
@@ -169,6 +177,7 @@ public class NotificationCoordinator {
     private String customMessage;
     private String subject;
     private Client client;
+    private String nfNumber;
 
     public static WhatsAppMessageContext builder() {
       return new WhatsAppMessageContext();
@@ -204,6 +213,11 @@ public class NotificationCoordinator {
       return this;
     }
 
+    public WhatsAppMessageContext nfNumber(String nfNumber) {
+      this.nfNumber = nfNumber;
+      return this;
+    }
+
     public String getPeriod() {
       return period;
     }
@@ -226,6 +240,10 @@ public class NotificationCoordinator {
 
     public Client getClient() {
       return client;
+    }
+
+    public String getNfNumber() {
+      return nfNumber;
     }
   }
 }
