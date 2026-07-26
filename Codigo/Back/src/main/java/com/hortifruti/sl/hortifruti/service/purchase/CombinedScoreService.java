@@ -362,10 +362,6 @@ public class CombinedScoreService {
     return combinedScoreRepository.findAllOpenBillets();
   }
 
-  public List<CombinedScore> findOverdueUnpaidScores(LocalDate currentDate) {
-    return combinedScoreRepository.findOverdueUnpaidScores(currentDate);
-  }
-
   public Optional<CombinedScore> findByInvoiceRef(String invoiceRef) {
     return combinedScoreRepository.findByInvoiceRef(invoiceRef);
   }

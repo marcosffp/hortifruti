@@ -42,11 +42,10 @@ public class SecurityConfig {
    *       /v3/api-docs/**} (docs, desabilitadas em prod — ver application-prod.properties) e {@code
    *       /backup/oauth2callback} (callback do Google) precisam ser públicas por natureza do fluxo,
    *       sem alternativa.
-   *   <li>{@code /scheduler/**} e {@code /chatbot/webhook} são {@code permitAll} aqui porque a
-   *       autenticação delas NÃO é por papel de usuário: são chamadas por sistemas externos
-   *       (cron/scheduler, UltraMsg) usando um segredo estático próprio, validado em {@link
-   *       SecurityFilter}. Não remova essa validação achando que o {@code permitAll} deixa a rota
-   *       aberta — a proteção real está no filtro, não nesta lista.
+   *   <li>{@code /chatbot/webhook} é {@code permitAll} aqui porque a autenticação dela NÃO é por
+   *       papel de usuário: é chamada pela UltraMsg usando um segredo próprio (query param {@code
+   *       token}), validado no próprio {@link
+   *       com.hortifruti.sl.hortifruti.controller.chatbot.ChatbotController}.
    *   <li>Domínios de negócio (produtos, transações, recomendações, notificações) exigem {@code
    *       MANAGER}; leitura de clientes/usuários aceita {@code EMPLOYEE} ou {@code MANAGER}. Regras
    *       mais finas que a role (ex.: mutação x leitura dentro do mesmo domínio) devem usar
@@ -71,7 +70,6 @@ public class SecurityConfig {
                         "/auth/me",
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
-                        "/scheduler/**",
                         "/backup/oauth2callback",
                         "/chatbot/webhook")
                     .permitAll()
@@ -83,8 +81,7 @@ public class SecurityConfig {
                     .hasRole("MANAGER")
                     .requestMatchers("/api/recommendations/**")
                     .hasRole("MANAGER")
-                    .requestMatchers(
-                        "/api/notifications/test/**", "/api/notifications/overdue/**")
+                    .requestMatchers("/api/notifications/test/**")
                     .hasRole("MANAGER")
                     .requestMatchers("/api/notifications/**")
                     .hasAnyRole("EMPLOYEE", "MANAGER")

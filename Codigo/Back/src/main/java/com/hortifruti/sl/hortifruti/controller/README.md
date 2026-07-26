@@ -18,5 +18,4 @@ Pacote raiz dos controllers REST da aplicação. Não contém classes próprias:
 - `invoice/` — emissão/cancelamento de notas fiscais (Focus NFe) e relatórios de ICMS (ver invoice/README.md).
 - `notification/` — envio de notificações e documentos por email/WhatsApp (ver notification/README.md).
 - `purchase/` — clientes, compras, agrupamentos (CombinedScore) e produtos de nota (ver purchase/README.md).
-- `scheduler/` — endpoints de disparo/monitoramento de jobs agendados (ver scheduler/README.md).
 - `user/` — autenticação e gestão de usuários (ver user/README.md).

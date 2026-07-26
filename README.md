@@ -229,7 +229,6 @@ As instruções completas de configuração — incluindo todas as variáveis de
 - Cabeçalhos de segurança (CSP com nonce, HSTS, `X-Frame-Options`) aplicados via *middleware* do Next.js
 - Rate limiting por IP real do cliente (resolvido via `X-Forwarded-For`, considerando os proxies do Railway e do Next.js)
 - Certificados digitais (`.pfx`) para integração bancária (Sicoob e Banco do Brasil)
-- Tokens de serviço dedicados para endpoints de *scheduler*
 - Segredos e credenciais sempre via variáveis de ambiente — nunca versionados
 
 ---
