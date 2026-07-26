@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -106,6 +107,7 @@ public class NotificationController {
     }
   }
 
+  @PreAuthorize("hasRole('MANAGER')")
   @PostMapping("/test/database-storage-alert")
   @Operation(
       summary = "Testar email de alerta de armazenamento, excluir depois",
@@ -149,6 +151,7 @@ public class NotificationController {
     }
   }
 
+  @PreAuthorize("hasRole('MANAGER')")
   @PostMapping("/overdue/check")
   @Operation(
       summary = "Executar verificação manual de boletos vencidos",
