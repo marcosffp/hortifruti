@@ -7,6 +7,7 @@ import {
   Mail,
   MessageCircle,
   Send,
+  ShieldAlert,
   Upload,
   Users,
   X,
@@ -14,6 +15,7 @@ import {
 import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { useAuth } from "@/hooks/useAuth";
 import {
   type BulkNotificationRequest,
   bulkNotificationService,
@@ -36,6 +38,7 @@ interface Cliente {
 type TipoDestinatario = "clientes" | "contabilidade";
 
 export default function NotificacoesPage() {
+  const { environment } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -270,6 +273,24 @@ export default function NotificacoesPage() {
   const clientesSelecionados = clientes.filter((c) => c.selecionado).length;
   const todosAtivos =
     filteredClientes.length > 0 && filteredClientes.every((c) => c.selecionado);
+
+  if (environment === "hml") {
+    return (
+      <div className="p-4 md:p-6 min-h-full flex items-center justify-center bg-[var(--neutral-50)]">
+        <div className="max-w-md text-center bg-white rounded-lg shadow-sm border border-[var(--neutral-200)] p-8">
+          <ShieldAlert className="mx-auto mb-4 text-amber-500" size={40} />
+          <h1 className="text-xl font-bold text-[var(--neutral-900)] mb-2">
+            Indisponível em homologação
+          </h1>
+          <p className="text-[var(--neutral-600)]">
+            O envio de notificações usa e-mail/WhatsApp reais e está
+            desabilitado neste ambiente para evitar contato acidental com
+            clientes de verdade.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-6 bg-[var(--neutral-50)] min-h-full">

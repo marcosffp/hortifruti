@@ -12,6 +12,7 @@ export interface AuthUser {
   username: string;
   name: string;
   roles: string[];
+  environment: string;
 }
 
 /**
