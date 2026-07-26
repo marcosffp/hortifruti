@@ -222,12 +222,18 @@ public class BilletHttpClient {
     return objectMapper.readTree(response.getBody());
   }
 
+  /**
+   * Corpo nulo em uma resposta 2xx acontece, por exemplo, quando o pagador não tem nenhum boleto
+   * na situação consultada — não é uma falha, então vira um nó vazio em vez de {@link
+   * BilletException}, deixando quem chama (ex.: {@code BilletQuery}) tratar como "sem resultados"
+   * com a própria lógica de ausência que já possui.
+   */
   private ResponseEntity<JsonNode> toJsonResponse(ResponseEntity<String> stringResponse)
       throws IOException {
-    if (stringResponse.getBody() == null) {
-      throw new BilletException("A resposta da API está nula.");
-    }
-    JsonNode jsonNode = objectMapper.readTree(stringResponse.getBody());
+    JsonNode jsonNode =
+        stringResponse.getBody() == null
+            ? objectMapper.createObjectNode()
+            : objectMapper.readTree(stringResponse.getBody());
     return ResponseEntity.status(stringResponse.getStatusCode())
         .headers(stringResponse.getHeaders())
         .body(jsonNode);

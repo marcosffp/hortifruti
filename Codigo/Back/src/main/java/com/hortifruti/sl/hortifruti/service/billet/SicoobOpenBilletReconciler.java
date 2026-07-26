@@ -61,8 +61,7 @@ public class SicoobOpenBilletReconciler {
       log.warn(
           "Não foi possível confirmar no Sicoob os boletos em aberto do cliente {}: {}",
           clientId,
-          e.getMessage(),
-          e);
+          e.getMessage());
       return clientScores.stream().map(cs -> new ReconciledScore(cs, false)).toList();
     }
 
@@ -124,8 +123,7 @@ public class SicoobOpenBilletReconciler {
           "Boleto do agrupamento {} não está mais 'Em aberto' no Sicoob, mas não foi possível"
               + " confirmar sua situação final para corrigir o status local: {}",
           cs.getId(),
-          e.getMessage(),
-          e);
+          e.getMessage());
     }
   }
 
