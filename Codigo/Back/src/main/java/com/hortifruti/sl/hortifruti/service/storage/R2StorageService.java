@@ -40,9 +40,9 @@ public class R2StorageService {
   }
 
   /**
-   * Remove um objeto do R2. Usado para desfazer um upload já feito quando o registro
-   * correspondente no banco não pôde ser persistido (ex: colisão de ref concorrente) — evita
-   * deixar arquivos órfãos duplicados no bucket.
+   * Remove um objeto do R2. Usado para desfazer um upload já feito quando o registro correspondente
+   * no banco não pôde ser persistido (ex: colisão de ref concorrente) — evita deixar arquivos
+   * órfãos duplicados no bucket.
    */
   public void delete(String key) {
     try {

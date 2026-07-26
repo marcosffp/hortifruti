@@ -7,8 +7,8 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 
 /**
- * Classe responsável por calcular a data de vencimento baseada em regras de negócio por cliente.
- * As regras específicas por cliente ficam centralizadas em {@link ClientBusinessRules}.
+ * Classe responsável por calcular a data de vencimento baseada em regras de negócio por cliente. As
+ * regras específicas por cliente ficam centralizadas em {@link ClientBusinessRules}.
  */
 public class DueDateCalculator {
 

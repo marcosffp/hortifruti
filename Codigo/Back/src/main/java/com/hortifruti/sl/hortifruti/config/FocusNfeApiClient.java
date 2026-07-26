@@ -107,8 +107,8 @@ public class FocusNfeApiClient {
   /**
    * A Focus NFe retorna o motivo do erro no corpo JSON (ex: {@code {"codigo": "already_processed",
    * "mensagem": "A nota fiscal foi cancelada"}}) — sem extrair esse campo, o operador só via uma
-   * mensagem genérica de falha e não conseguia saber, por exemplo, que a NF já havia sido
-   * cancelada anteriormente.
+   * mensagem genérica de falha e não conseguia saber, por exemplo, que a NF já havia sido cancelada
+   * anteriormente.
    */
   private String extractFocusNfeMessage(HttpStatusCodeException e) {
     String body = e.getResponseBodyAsString();
@@ -126,7 +126,9 @@ public class FocusNfeApiClient {
     return body;
   }
 
-  /** Extrai o campo {@code codigo} do corpo de erro da Focus NFe (ex: {@code already_processed}). */
+  /**
+   * Extrai o campo {@code codigo} do corpo de erro da Focus NFe (ex: {@code already_processed}).
+   */
   private String extractFocusNfeCode(HttpStatusCodeException e) {
     String body = e.getResponseBodyAsString();
     if (body == null || body.isBlank()) {

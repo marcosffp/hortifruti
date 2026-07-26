@@ -160,9 +160,9 @@ public class InvoiceQuery {
   private static final long INITIAL_TAX_DETAILS_RETRY_DELAY_MS = 3000;
 
   /**
-   * Os relatórios fiscais mensais (Pagamento, Registro, Vendas, ICMS) são gerados sequencialmente
-   * e cada um consulta, de forma independente, os dados fiscais das mesmas notas do período na API
-   * da Focus NFe — sem esse cache, o /transactions/export-complete faz até 4 chamadas externas
+   * Os relatórios fiscais mensais (Pagamento, Registro, Vendas, ICMS) são gerados sequencialmente e
+   * cada um consulta, de forma independente, os dados fiscais das mesmas notas do período na API da
+   * Focus NFe — sem esse cache, o /transactions/export-complete faz até 4 chamadas externas
    * redundantes por nota (uma por relatório), o que somado à latência da API e às tentativas de
    * retry abaixo fazia o endpoint levar minutos e a conexão do cliente cair antes da resposta.
    * Dados fiscais de uma nota já emitida não mudam, então cachear por ref indefinidamente é seguro.

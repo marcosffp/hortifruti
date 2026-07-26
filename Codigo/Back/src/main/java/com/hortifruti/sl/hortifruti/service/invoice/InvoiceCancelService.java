@@ -27,13 +27,13 @@ public class InvoiceCancelService {
   /**
    * Cancela a NF-e na Focus NFe. Quando {@code extemporaneo} é verdadeiro, a justificativa é
    * marcada como cancelamento extemporâneo (fora do prazo normal de ~24h da SEFAZ, permitido em
-   * caráter excepcional mediante processo administrativo próprio — a chamada à Focus NFe é a
-   * mesma, a diferença é apenas de prazo/autorização já obtida pelo operador).
+   * caráter excepcional mediante processo administrativo próprio — a chamada à Focus NFe é a mesma,
+   * a diferença é apenas de prazo/autorização já obtida pelo operador).
    *
-   * <p>A atualização do registro local (CombinedScore/XML armazenado) é best-effort: usado
-   * também pelo cancelamento manual/avulso, quando pode não existir nenhum registro local
-   * vinculado à ref informada — nesse caso a NF já foi cancelada de fato na Focus NFe e isso não
-   * deve ser reportado como falha.
+   * <p>A atualização do registro local (CombinedScore/XML armazenado) é best-effort: usado também
+   * pelo cancelamento manual/avulso, quando pode não existir nenhum registro local vinculado à ref
+   * informada — nesse caso a NF já foi cancelada de fato na Focus NFe e isso não deve ser reportado
+   * como falha.
    */
   @Transactional
   public String cancelInvoice(String ref, String justificativa, boolean extemporaneo) {

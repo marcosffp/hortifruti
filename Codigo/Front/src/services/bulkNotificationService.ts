@@ -22,7 +22,9 @@ export interface BulkNotificationResponse {
   authorizationUrl?: string;
 }
 
-function parseAuthorizationUrl(message: string | undefined | null): string | null {
+function parseAuthorizationUrl(
+  message: string | undefined | null,
+): string | null {
   if (!message) return null;
   const match = message.match(/(https?:\/\/\S+)/);
   return match ? match[1] : null;

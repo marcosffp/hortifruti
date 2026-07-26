@@ -25,9 +25,9 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * estão referenciados por nenhuma linha em fiscal_note_xml_storage — órfãos deixados pela corrida
  * corrigida em FiscalNoteXmlStorageService — e reporta ou move para quarentena.
  *
- * <p>Inerte por padrão: só age se a env var CLEANUP_ORPHAN_FISCAL_FILES estiver setada.
- * "report" (ou qualquer valor não reconhecido) = só lista, não move nada. "quarantine" = move os
- * órfãos para notas-fiscais/{env}/_orfaos-removidos/, preservando o restante do caminho.
+ * <p>Inerte por padrão: só age se a env var CLEANUP_ORPHAN_FISCAL_FILES estiver setada. "report"
+ * (ou qualquer valor não reconhecido) = só lista, não move nada. "quarantine" = move os órfãos para
+ * notas-fiscais/{env}/_orfaos-removidos/, preservando o restante do caminho.
  *
  * <p>Remover esta classe após o uso único — não é destinada a ficar no serviço em produção.
  */
@@ -128,7 +128,8 @@ public class OrphanFiscalFileCleanupRunner implements ApplicationRunner {
       }
       ListObjectsV2Response resp = r2Client.listObjectsV2(reqBuilder.build());
       result.addAll(resp.contents());
-      continuationToken = Boolean.TRUE.equals(resp.isTruncated()) ? resp.nextContinuationToken() : null;
+      continuationToken =
+          Boolean.TRUE.equals(resp.isTruncated()) ? resp.nextContinuationToken() : null;
     } while (continuationToken != null);
     return result;
   }

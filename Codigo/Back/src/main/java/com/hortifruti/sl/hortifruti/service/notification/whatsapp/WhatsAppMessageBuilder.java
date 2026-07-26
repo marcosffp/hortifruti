@@ -77,9 +77,7 @@ public class WhatsAppMessageBuilder {
     return buildClientDocumentsMessage(clientName, customMessage);
   }
 
-  /**
-   * Legenda para envio de boleto em PDF. Necessária porque o WhatsApp não exibe preview de PDF.
-   */
+  /** Legenda para envio de boleto em PDF. Necessária porque o WhatsApp não exibe preview de PDF. */
   public String buildBilletMessage(String period) {
     StringBuilder message = new StringBuilder();
     message.append("Segue o boleto referente a ").append(period != null ? period : "sua cobrança");
@@ -89,9 +87,7 @@ public class WhatsAppMessageBuilder {
     return message.toString();
   }
 
-  /**
-   * Legenda para envio de XML de NF-e. Necessária porque o WhatsApp não exibe preview de XML.
-   */
+  /** Legenda para envio de XML de NF-e. Necessária porque o WhatsApp não exibe preview de XML. */
   public String buildNfeXmlMessage(String nfNumber) {
     StringBuilder message = new StringBuilder();
     message.append("Segue XML da NFe nº ").append(nfNumber != null ? nfNumber : "");

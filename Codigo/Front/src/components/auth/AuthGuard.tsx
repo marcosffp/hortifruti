@@ -20,7 +20,15 @@ export default function AuthGuard({
 
     (async () => {
       const isPublicPage = publicPages.includes(pathname);
-      const user = await authService.me();
+      let user = await authService.me();
+
+      if (!user && !isPublicPage) {
+        const refreshed = await authService.refresh();
+        if (refreshed) {
+          user = await authService.me();
+        }
+      }
+
       const authenticated = !!user;
 
       if (cancelled) return;

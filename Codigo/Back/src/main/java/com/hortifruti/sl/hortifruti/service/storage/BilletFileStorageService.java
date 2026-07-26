@@ -52,10 +52,9 @@ public class BilletFileStorageService {
   }
 
   /**
-   * Baixa do R2 o PDF do boleto ativo associado ao combinedScoreId. Lança
-   * StorageNotFoundException (404) se não houver arquivo ativo (ex: boleto cancelado, ou gerado
-   * antes desta funcionalidade existir) — condição esperada do domínio, não uma falha de
-   * infraestrutura.
+   * Baixa do R2 o PDF do boleto ativo associado ao combinedScoreId. Lança StorageNotFoundException
+   * (404) se não houver arquivo ativo (ex: boleto cancelado, ou gerado antes desta funcionalidade
+   * existir) — condição esperada do domínio, não uma falha de infraestrutura.
    */
   public byte[] getBilletFileContent(Long combinedScoreId) {
     BilletFile billetFile =

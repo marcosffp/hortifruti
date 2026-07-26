@@ -188,6 +188,7 @@ public class SicoobStatementService {
   }
 
   private SicoobImportSummary blockedSicoobSummary() {
-    return new SicoobImportSummary(null, false, null, null, 0, 0, 0, BigDecimal.ZERO, BigDecimal.ZERO);
+    return new SicoobImportSummary(
+        null, false, null, null, 0, 0, 0, BigDecimal.ZERO, BigDecimal.ZERO);
   }
 }

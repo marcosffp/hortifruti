@@ -105,14 +105,16 @@ public class ReportTaxService {
     }
 
     try {
-      String monthName = startDate.format(DateTimeFormatter.ofPattern("MMMM", Locale.of("pt", "BR")));
+      String monthName =
+          startDate.format(DateTimeFormatter.ofPattern("MMMM", Locale.of("pt", "BR")));
       String nfSalesFolder = FileZipUtils.capitalizeFirstLetter(monthName) + "_NFE_SAIDAS";
       List<File> xmlFiles = nfSalesReport.listXmlFiles(startDate, endDate);
 
       for (File xmlFile : xmlFiles) {
         try {
           if (xmlFile.exists() && xmlFile.length() > 0) {
-            files.put(nfSalesFolder + "/" + xmlFile.getName(), Files.readAllBytes(xmlFile.toPath()));
+            files.put(
+                nfSalesFolder + "/" + xmlFile.getName(), Files.readAllBytes(xmlFile.toPath()));
           }
         } finally {
           Files.deleteIfExists(xmlFile.toPath());
