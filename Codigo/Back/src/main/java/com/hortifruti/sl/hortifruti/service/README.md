@@ -13,6 +13,5 @@ Pacote raiz de toda a lógica de negócio do backend. Não contém classes próp
 - `invoice/` — emissão e consulta de notas fiscais via Focus NFe (documentado por outra tarefa).
 - `notification/` — envio de e-mails (SendGrid) e mensagens WhatsApp (Ultramsg) (documentado por outra tarefa).
 - `purchase/` — cadastro de clientes, processamento de compras (PDF), agrupamento de produtos e cálculo de vencimento/CombinedScore (ver `purchase/README.md`).
-- `scheduler/` — monitoramento de armazenamento do banco (ver `scheduler/README.md`).
 - `storage/` — upload/download/movimentação de arquivos (PDFs de boletos) no Cloudflare R2 (ver `storage/README.md`).
 - `user/` — cadastro, atualização e consulta de usuários e papéis (autenticação/JWT tratados em outro pacote) (ver `user/README.md`).
