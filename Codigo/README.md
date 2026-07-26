@@ -27,7 +27,7 @@ API REST desenvolvida em **Java 25** com **Spring Boot 4.1**, responsável por t
 - Emissão de notas fiscais eletrônicas (Focus NFe)
 - Cálculo de frete (Google Maps), recomendações de compra por clima (OpenWeather)
 - Notificações por e-mail (SendGrid) e WhatsApp (Ultramsg)
-- Armazenamento de boletos/XMLs/extratos no Cloudflare R2, backup automatizado no Google Drive e chatbot de atendimento
+- Armazenamento de boletos/XMLs/extratos no Cloudflare R2 e backup automatizado no Google Drive
 
 ## 🎨 `/Front` — Frontend ([README completo](Front/README.md))
 

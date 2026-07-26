@@ -20,7 +20,6 @@ Pacote raiz das entidades JPA e enums de domínio. Contém entidades transversai
 ## Subpacotes
 
 - `billet/` — arquivo de boleto (`BilletFile`) armazenado no Cloudflare R2.
-- `chatbot/` — sessão de conversa do chatbot via WhatsApp (`ChatSession`) e seus enums de status/contexto.
 - `climate/` — produto climático, categorias de temperatura e recomendação sazonal.
 - `finance/` — extrato bancário, transação e enums de conciliação financeira.
 - `invoice/` — armazenamento de XML/DANFE de nota fiscal.

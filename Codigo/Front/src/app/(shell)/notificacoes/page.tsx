@@ -47,7 +47,7 @@ export default function NotificacoesPage() {
   const [canaisEnvio, setCanaisEnvio] = useState<{
     email: boolean;
     whatsapp: boolean;
-  }>({ email: false, whatsapp: false });
+  }>({ email: true, whatsapp: false });
   const [tipoDestinatario, setTipoDestinatario] =
     useState<TipoDestinatario>("clientes");
   const [_dataVencimento, setDataVencimento] = useState("");
@@ -56,16 +56,6 @@ export default function NotificacoesPage() {
 
   const [cardValue, setCardValue] = useState("");
   const [cashValue, setCashValue] = useState("");
-
-  useEffect(() => {
-    if (tipoDestinatario === "contabilidade") {
-      // Para contabilidade, apenas email
-      setCanaisEnvio({ email: true, whatsapp: false });
-    } else {
-      // Para clientes, permitir escolha
-      setCanaisEnvio({ email: false, whatsapp: false });
-    }
-  }, [tipoDestinatario]);
 
   useEffect(() => {
     const fetchClientes = async () => {
@@ -246,7 +236,7 @@ export default function NotificacoesPage() {
         setDataVencimento("");
         setValorBoleto("");
         setClientes(clientes.map((c) => ({ ...c, selecionado: false })));
-        setCanaisEnvio({ email: false, whatsapp: false });
+        setCanaisEnvio({ email: true, whatsapp: false });
 
         setCardValue("");
         setCashValue("");
@@ -341,51 +331,12 @@ export default function NotificacoesPage() {
 
               <div>
                 <div className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
-                  Canal de Envio (selecione um ou ambos)
+                  Canal de Envio
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCanaisEnvio((prev) => ({
-                        ...prev,
-                        email: !prev.email,
-                      }))
-                    }
-                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                      canaisEnvio.email
-                        ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
-                        : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
-                    }`}
-                  >
-                    <Mail className="w-5 h-5" />
-                    <span className="font-medium">E-mail</span>
-                    {canaisEnvio.email && (
-                      <CheckCircle2 className="w-4 h-4 ml-auto" />
-                    )}
-                  </button>
-                  {tipoDestinatario !== "contabilidade" && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setCanaisEnvio((prev) => ({
-                          ...prev,
-                          whatsapp: !prev.whatsapp,
-                        }))
-                      }
-                      className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                        canaisEnvio.whatsapp
-                          ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
-                          : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
-                      }`}
-                    >
-                      <MessageCircle className="w-5 h-5" />
-                      <span className="font-medium">WhatsApp</span>
-                      {canaisEnvio.whatsapp && (
-                        <CheckCircle2 className="w-4 h-4 ml-auto" />
-                      )}
-                    </button>
-                  )}
+                <div className="flex items-center gap-2 p-3 rounded-lg border-2 border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)] w-fit">
+                  <Mail className="w-5 h-5" />
+                  <span className="font-medium">E-mail</span>
+                  <CheckCircle2 className="w-4 h-4" />
                 </div>
               </div>
 

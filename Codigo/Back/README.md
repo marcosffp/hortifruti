@@ -100,7 +100,6 @@ A aplicação segue uma **arquitetura em camadas** (*layered architecture*), com
 | `climate` | Previsão do tempo e recomendações de compra de produtos sazonais | OpenWeather |
 | `notification` | Envio de e-mails (provedor plugável), mensagens de WhatsApp e notificações em massa para clientes e contabilidade | SendGrid · Gmail (SMTP/API) · Ultramsg |
 | `backup` | Autenticação OAuth2, geração de CSV e upload periódico (ou por período) de backups do banco | Google Drive |
-| `chatbot` | Sessões e respostas automatizadas de atendimento via webhook | Ultramsg |
 | `scheduler` | Monitoramento de armazenamento do banco (`DatabaseStorageService`), acionado sob demanda via `/api/notifications/test/database-storage-alert` | — |
 
 ---
@@ -116,10 +115,10 @@ Back/
 │       ├── java/com/hortifruti/sl/hortifruti/
 │       │   ├── HortifrutiSlApplication.java
 │       │   ├── controller/          # Controllers REST — cada subpasta = 1 domínio (README.md em cada uma)
-│       │   │   ├── backup/ · billet/ · chatbot/ · climate/ · dashboard/ · finance/
+│       │   │   ├── backup/ · billet/ · climate/ · dashboard/ · finance/
 │       │   │   ├── freight/ · invoice/ · notification/ · purchase/ · user/
 │       │   ├── service/             # Services de domínio e integração
-│       │   │   ├── backup/ (auth/ · folders/ · oauth/) · billet/ · chatbot/ · climate/ · dashboard/
+│       │   │   ├── backup/ (auth/ · folders/ · oauth/) · billet/ · climate/ · dashboard/
 │       │   │   ├── finance/ (bb/ · sicoob/ · transaction/) · freight/
 │       │   │   ├── invoice/ (factory/ · tax/…) · notification/ (email/ · whatsapp/)
 │       │   │   ├── purchase/ · scheduler/ · storage/ · user/
@@ -244,7 +243,7 @@ Documentação interativa disponível em `http://localhost:8080/swagger-ui.html`
 | `GET` | `/api/weather/forecast/5days` | Previsão do tempo de 5 dias (Santa Luzia/MG) |
 | `GET` | `/api/recommendations/by-temperature/{category}` · `/by-date` | Recomendações de compra por clima |
 
-### Notificações, frete, backup e chatbot
+### Notificações, frete e backup
 
 | Método | Rota | Descrição |
 |---|---|---|
@@ -256,7 +255,6 @@ Documentação interativa disponível em `http://localhost:8080/swagger-ui.html`
 | `POST` | `/backup` | Disparar backup para o Google Drive (`startDate`/`endDate` opcionais) *(Gestor)* |
 | `GET` | `/backup/storage` | Consultar tamanho atual do banco e limite máximo *(Gestor)* |
 | `GET` | `/backup/oauth2callback` | Callback OAuth2 do Google Drive |
-| `POST` / `GET` | `/chatbot/webhook` | Webhook de mensagens do chatbot |
 
 ---
 
@@ -353,7 +351,6 @@ COMPANY_CNPJ=cnpj_da_empresa
 # ── Notificações ───────────────────────────────
 ULTRAMSG_TOKEN=token_ultramsg_whatsapp
 ULTRAMSG_INSTANCE_ID=instance_id_ultramsg
-CHATBOT_WEBHOOK_SECRET=segredo_estatico_do_webhook_do_chatbot
 
 # Provedor de e-mail ativo — trocar aqui não exige mudança de código, os três
 # provedores já estão implementados (EmailSender):

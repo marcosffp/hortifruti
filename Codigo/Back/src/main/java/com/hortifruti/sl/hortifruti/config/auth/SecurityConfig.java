@@ -42,10 +42,6 @@ public class SecurityConfig {
    *       /v3/api-docs/**} (docs, desabilitadas em prod — ver application-prod.properties) e {@code
    *       /backup/oauth2callback} (callback do Google) precisam ser públicas por natureza do fluxo,
    *       sem alternativa.
-   *   <li>{@code /chatbot/webhook} é {@code permitAll} aqui porque a autenticação dela NÃO é por
-   *       papel de usuário: é chamada pela UltraMsg usando um segredo próprio (query param {@code
-   *       token}), validado no próprio {@link
-   *       com.hortifruti.sl.hortifruti.controller.chatbot.ChatbotController}.
    *   <li>Domínios de negócio (produtos, transações, recomendações, notificações) exigem {@code
    *       MANAGER}; leitura de clientes/usuários aceita {@code EMPLOYEE} ou {@code MANAGER}. Regras
    *       mais finas que a role (ex.: mutação x leitura dentro do mesmo domínio) devem usar
@@ -70,8 +66,7 @@ public class SecurityConfig {
                         "/auth/me",
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
-                        "/backup/oauth2callback",
-                        "/chatbot/webhook")
+                        "/backup/oauth2callback")
                     .permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.GET, "/clients/**")
                     .hasAnyRole("EMPLOYEE", "MANAGER")

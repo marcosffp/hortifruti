@@ -10,7 +10,6 @@ Pacote raiz dos controllers REST da aplicação. Não contém classes próprias:
 
 - `backup/` — endpoints de backup do banco para o Google Drive e callback OAuth2 (ver backup/README.md).
 - `billet/` — emissão, consulta, cancelamento e baixa de boletos Sicoob (ver billet/README.md).
-- `chatbot/` — webhook e testes do chatbot de WhatsApp via UltraMsg (ver chatbot/README.md).
 - `climate/` — clima, catálogo de produtos e recomendações por temperatura (ver climate/README.md).
 - `dashboard/` — dados agregados do dashboard gerencial (ver dashboard/README.md).
 - `finance/` — saldo bancário, extratos e transações (ver finance/README.md).

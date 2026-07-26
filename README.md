@@ -133,6 +133,8 @@ Esta sprint concentrou-se no sistema de boletos e comunicação com clientes. Fo
 
 O módulo de agrupamento de vendas foi finalizado com confirmação e cancelamento de agrupamentos (RF023, RF025). A geração de boletos (RF026) com download em PDF (RF027), baixa de boleto (RF028) e consulta de boletos pendentes via WhatsApp (RF029-RF030) completaram o ciclo financeiro. Requisitos não funcionais como verificação automatizada de vencimentos, backup automatizado e monitoramento de capacidade também foram implementados.
 
+> **Nota (descontinuação):** RF029-RF030 (chat interativo/menu de opções via WhatsApp para o cliente consultar boletos) foram removidos em refatoração posterior. O WhatsApp passou a ser usado exclusivamente como canal de envio (outbound) de notificações e documentos — ver `service/notification/whatsapp/`.
+
 ### Sprint 5 — Documentação e Entrega Final
 
 A Sprint 5 foi dedicada à finalização do projeto e preparação para entrega. A documentação completa foi atualizada no Overleaf, incluindo metodologia, resultados obtidos, conclusão e referências bibliográficas. A ata da reunião final com o cliente foi preparada para formalizar a entrega do sistema.
