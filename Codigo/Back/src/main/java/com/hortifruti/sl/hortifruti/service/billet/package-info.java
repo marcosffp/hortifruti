@@ -7,8 +7,8 @@
  *
  * <ul>
  *   <li>{@link com.hortifruti.sl.hortifruti.service.billet.BilletService} — fachada pública do
- *       domínio (é o único ponto usado por {@code BilletController}); orquestra as classes abaixo
- *       e concentra a regra de negócio que não é específica de uma chamada HTTP (ex.: {@code
+ *       domínio (é o único ponto usado por {@code BilletController}); orquestra as classes abaixo e
+ *       concentra a regra de negócio que não é específica de uma chamada HTTP (ex.: {@code
  *       markBilletAsPaid}, {@code generateBillet}).
  *   <li>{@link com.hortifruti.sl.hortifruti.service.billet.BilletIssue} — só emissão/segunda via de
  *       boleto via API do Sicoob.
@@ -35,7 +35,7 @@
  *       decodificação/empacotamento do PDF (Base64 → bytes → {@code ResponseEntity}).
  * </ul>
  *
- * Não crie uma nova classe solta pra boleto sem encaixar num destes papéis (ou atualizar esta
- * lista com a justificativa).
+ * Não crie uma nova classe solta pra boleto sem encaixar num destes papéis (ou atualizar esta lista
+ * com a justificativa).
  */
 package com.hortifruti.sl.hortifruti.service.billet;

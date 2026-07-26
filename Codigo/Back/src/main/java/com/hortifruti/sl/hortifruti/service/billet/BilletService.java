@@ -135,8 +135,8 @@ public class BilletService {
   }
 
   /**
-   * Cancelamento manual/avulso de boleto, direto pelo "nosso número" informado pelo operador —
-   * sem exigir um agrupamento (CombinedScore) local conhecido.
+   * Cancelamento manual/avulso de boleto, direto pelo "nosso número" informado pelo operador — sem
+   * exigir um agrupamento (CombinedScore) local conhecido.
    */
   public ResponseEntity<String> cancelBilletByNumber(String nossoNumero) throws BilletException {
     if (sicoobEnvironmentGuard.isBlocked()) {

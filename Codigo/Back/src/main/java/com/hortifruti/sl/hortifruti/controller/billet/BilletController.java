@@ -142,7 +142,8 @@ public class BilletController {
       }
 
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body(!errorMessage.isEmpty() ? errorMessage : "Erro ao processar cancelamento do boleto");
+          .body(
+              !errorMessage.isEmpty() ? errorMessage : "Erro ao processar cancelamento do boleto");
     } catch (Exception e) {
       log.error("Erro inesperado ao cancelar boleto para CombinedScore {}", idCombinedScore, e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -176,7 +177,8 @@ public class BilletController {
       }
 
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body(!errorMessage.isEmpty() ? errorMessage : "Erro ao processar cancelamento do boleto");
+          .body(
+              !errorMessage.isEmpty() ? errorMessage : "Erro ao processar cancelamento do boleto");
     } catch (Exception e) {
       log.error("Erro inesperado ao cancelar boleto avulso {}", nossoNumero, e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

@@ -81,12 +81,12 @@ public class InvoiceController {
   }
 
   /**
-   * Cancela a NF-e pela referência. Funciona mesmo sem um CombinedScore local vinculado a essa
-   * ref (ex: cancelamento manual/avulso) — se existir um agrupamento local, seu status também é
+   * Cancela a NF-e pela referência. Funciona mesmo sem um CombinedScore local vinculado a essa ref
+   * (ex: cancelamento manual/avulso) — se existir um agrupamento local, seu status também é
    * atualizado, mas isso não é obrigatório para a operação ter sucesso.
    *
-   * @param extemporaneo Indica que o cancelamento está sendo feito fora do prazo normal de ~24h
-   *     da SEFAZ (autorização excepcional já obtida pelo operador junto à SEFAZ do estado).
+   * @param extemporaneo Indica que o cancelamento está sendo feito fora do prazo normal de ~24h da
+   *     SEFAZ (autorização excepcional já obtida pelo operador junto à SEFAZ do estado).
    */
   @DeleteMapping("/{ref}/cancel")
   public ResponseEntity<String> cancelInvoice(

@@ -158,8 +158,8 @@ public class BilletHttpClient {
 
   /**
    * Extrai o motivo real do erro do corpo da resposta do Sicoob. Sem isso, quem chama {@link
-   * #postCancel} / {@link #post} etc só via a mensagem genérica "Erro ao realizar requisição ...
-   * ao Sicoob" — escondendo, por exemplo, que o boleto já estava baixado ou que o "nosso número"
+   * #postCancel} / {@link #post} etc só via a mensagem genérica "Erro ao realizar requisição ... ao
+   * Sicoob" — escondendo, por exemplo, que o boleto já estava baixado ou que o "nosso número"
    * informado é inválido.
    */
   private String extractSicoobMessage(HttpStatusCodeException ex) {
@@ -223,8 +223,8 @@ public class BilletHttpClient {
   }
 
   /**
-   * Corpo nulo em uma resposta 2xx acontece, por exemplo, quando o pagador não tem nenhum boleto
-   * na situação consultada — não é uma falha, então vira um nó vazio em vez de {@link
+   * Corpo nulo em uma resposta 2xx acontece, por exemplo, quando o pagador não tem nenhum boleto na
+   * situação consultada — não é uma falha, então vira um nó vazio em vez de {@link
    * BilletException}, deixando quem chama (ex.: {@code BilletQuery}) tratar como "sem resultados"
    * com a própria lógica de ausência que já possui.
    */

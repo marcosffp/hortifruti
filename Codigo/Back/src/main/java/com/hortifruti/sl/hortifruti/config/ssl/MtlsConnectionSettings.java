@@ -18,8 +18,7 @@ public class MtlsConnectionSettings {
   private final int maxConnPerRoute;
   private final Timeout connectionKeepAlive;
 
-  @Builder.Default
-  private final List<Header> defaultHeaders = List.of();
+  @Builder.Default private final List<Header> defaultHeaders = List.of();
 
   private final Supplier<RuntimeException> missingCertificateException;
   private final BiFunction<String, Throwable, RuntimeException> exceptionWrapper;

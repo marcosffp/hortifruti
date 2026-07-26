@@ -95,8 +95,7 @@ public class BilletCancel {
     }
   }
 
-  private ResponseEntity<String> handleManualCancelResponse(
-      JsonNode response, String nossoNumero) {
+  private ResponseEntity<String> handleManualCancelResponse(JsonNode response, String nossoNumero) {
     if (response == null) {
       updateLocalRecordsBestEffort(nossoNumero);
       return ResponseEntity.noContent().build();
