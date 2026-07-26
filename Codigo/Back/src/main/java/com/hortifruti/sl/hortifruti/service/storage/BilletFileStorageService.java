@@ -1,6 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.storage;
 
-import com.hortifruti.sl.hortifruti.exception.storage.StorageException;
+import com.hortifruti.sl.hortifruti.exception.storage.StorageNotFoundException;
 import com.hortifruti.sl.hortifruti.model.FileStatus;
 import com.hortifruti.sl.hortifruti.model.billet.BilletFile;
 import com.hortifruti.sl.hortifruti.repository.billet.BilletFileRepository;
@@ -52,8 +52,10 @@ public class BilletFileStorageService {
   }
 
   /**
-   * Baixa do R2 o PDF do boleto ativo associado ao combinedScoreId. Lança StorageException se não
-   * houver arquivo ativo (ex: boleto cancelado, ou gerado antes desta funcionalidade existir).
+   * Baixa do R2 o PDF do boleto ativo associado ao combinedScoreId. Lança
+   * StorageNotFoundException (404) se não houver arquivo ativo (ex: boleto cancelado, ou gerado
+   * antes desta funcionalidade existir) — condição esperada do domínio, não uma falha de
+   * infraestrutura.
    */
   public byte[] getBilletFileContent(Long combinedScoreId) {
     BilletFile billetFile =
@@ -61,9 +63,9 @@ public class BilletFileStorageService {
             .findByCombinedScoreIdAndStatus(combinedScoreId, FileStatus.ACTIVE)
             .orElseThrow(
                 () ->
-                    new StorageException(
-                        "Nenhum boleto armazenado encontrado para o agrupamento "
-                            + combinedScoreId));
+                    new StorageNotFoundException(
+                        "Nenhum boleto armazenado foi encontrado para este registro. Tente"
+                            + " emitir uma 2ª via."));
     return r2StorageService.download(billetFile.getObjectKey());
   }
 

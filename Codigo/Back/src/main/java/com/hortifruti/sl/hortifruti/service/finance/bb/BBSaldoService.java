@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.finance.bb;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.hortifruti.sl.hortifruti.config.bb.BBEnvironmentGuard;
 import com.hortifruti.sl.hortifruti.config.bb.BBExtratoClient;
 import com.hortifruti.sl.hortifruti.dto.finance.BankBalanceResponse;
 import com.hortifruti.sl.hortifruti.exception.bb.BBApiException;
@@ -38,6 +39,7 @@ public class BBSaldoService {
   private static final int MAX_PAGINAS = 20;
 
   private final BBExtratoClient bbExtratoClient;
+  private final BBEnvironmentGuard bbEnvironmentGuard;
 
   @Value("${bb.saldo.cache.ttl.seconds:120}")
   private long cacheTtlSeconds;
@@ -46,6 +48,11 @@ public class BBSaldoService {
   private volatile long cachedAt;
 
   public synchronized BankBalanceResponse getSaldoDisponivel() {
+    if (bbEnvironmentGuard.isBlocked()) {
+      log.info("[BB] getSaldoDisponivel bloqueado (ambiente sem integração real).");
+      return new BankBalanceResponse(BigDecimal.ZERO, false, LocalDateTime.now(ZONE));
+    }
+
     long now = System.currentTimeMillis();
     if (cached != null && now - cachedAt < cacheTtlSeconds * 1000) {
       return cached;

@@ -18,6 +18,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import RoleGuard from "@/components/auth/RoleGuard";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface MenuItem {
   label: string;
@@ -30,6 +31,7 @@ export interface MenuItem {
     roles?: string[];
   }[];
   roles?: string[];
+  hiddenInHml?: boolean;
 }
 
 export const menu: MenuItem[] = [
@@ -88,6 +90,7 @@ export const menu: MenuItem[] = [
     icon: Bell,
     href: "/notificacoes",
     roles: ["MANAGER", "EMPLOYEE"],
+    hiddenInHml: true,
   },
   {
     label: "Módulo Backup",
@@ -107,6 +110,10 @@ export default function Sidebar({
 }) {
   const [openSubMenu, setOpenSubMenu] = useState<number | null>(null);
   const pathname = usePathname();
+  const { environment } = useAuth();
+  const visibleMenu = menu.filter(
+    (item) => !(item.hiddenInHml && environment === "hml"),
+  );
 
   const toggleSubMenu = (index: number) => {
     if (openSubMenu === index) {
@@ -168,7 +175,7 @@ export default function Sidebar({
           </Link>
         </RoleGuard>
 
-        {menu.map((item, i) => {
+        {visibleMenu.map((item, i) => {
           const isSubActive = item.submenu?.some(
             (sub) => sub.href === pathname,
           );

@@ -17,6 +17,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -102,6 +103,7 @@ public class InvoiceController {
     }
   }
 
+  @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/xml-storage")
   public ResponseEntity<List<FiscalNoteXmlStorageResponse>> getFiscalNoteXmlsByPeriod(
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -111,6 +113,7 @@ public class InvoiceController {
     return ResponseEntity.ok(result);
   }
 
+  @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/xml-storage/{ref}/download")
   public ResponseEntity<Resource> downloadStoredXml(@PathVariable String ref) {
     byte[] xmlBytes = invoiceService.getStoredXmlContent(ref);

@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.notification;
 
+import com.hortifruti.sl.hortifruti.config.notification.NotificationEnvironmentGuard;
 import com.hortifruti.sl.hortifruti.dto.notification.*;
 import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
@@ -23,6 +24,7 @@ public class NotificationService {
   private final NotificationCoordinator notificationCoordinator;
   private final ClientRepository clientRepository;
   private final EmailTemplateService emailTemplateService;
+  private final NotificationEnvironmentGuard notificationEnvironmentGuard;
 
   @Value("${accounting.email}")
   private String accountingEmail;
@@ -32,6 +34,11 @@ public class NotificationService {
 
   public NotificationResponse sendGenericFilesToAccounting(
       List<MultipartFile> files, GenericFilesAccountingRequest request) {
+
+    if (notificationEnvironmentGuard.isBlocked()) {
+      throw new NotificationException(
+          "Envio de notificações está desabilitado em homologação.");
+    }
 
     try {
       List<byte[]> fileContents = new ArrayList<>();
@@ -72,6 +79,11 @@ public class NotificationService {
 
   public NotificationResponse sendDocumentsToClient(
       List<MultipartFile> files, ClientDocumentsRequest request) {
+
+    if (notificationEnvironmentGuard.isBlocked()) {
+      throw new NotificationException(
+          "Envio de notificações está desabilitado em homologação.");
+    }
 
     try {
       Client client =

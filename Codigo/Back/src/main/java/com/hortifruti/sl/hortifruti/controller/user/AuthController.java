@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -38,6 +39,7 @@ public class AuthController {
   private final TokenConfiguration tokenConfiguration;
   private final RefreshTokenService refreshTokenService;
   private final UserRepository userRepository;
+  private final Environment environment;
 
   @Value("${auth.cookie.secure:false}")
   private boolean cookieSecure;
@@ -178,6 +180,19 @@ public class AuthController {
 
   private AuthUserResponse toResponse(User user) {
     return new AuthUserResponse(
-        user.getId(), user.getUsername(), user.getUsername(), List.of(user.getRole().name()));
+        user.getId(),
+        user.getUsername(),
+        user.getUsername(),
+        List.of(user.getRole().name()),
+        activeEnvironment());
+  }
+
+  /**
+   * Exposto ao front para esconder/bloquear funcionalidades sensíveis (ex.: envio de notificação
+   * por e-mail real) quando rodando contra o ambiente de homologação.
+   */
+  private String activeEnvironment() {
+    String[] profiles = environment.getActiveProfiles();
+    return profiles.length > 0 ? profiles[0] : "default";
   }
 }

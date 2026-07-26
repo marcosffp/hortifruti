@@ -13,7 +13,6 @@ Repositórios Spring Data JPA de entidades transversais (frete, autenticação/u
 ## Subpacotes
 
 - `billet/` — repositório de arquivos de boleto armazenados (ver billet/README.md).
-- `chatbot/` — repositório de sessões de conversa do chatbot (ver chatbot/README.md).
 - `climate/` — repositório de produtos por categoria de temperatura (ver climate/README.md).
 - `finance/` — repositórios de extratos e transações bancárias (ver finance/README.md).
 - `invoice/` — repositório de XML de notas fiscais armazenadas (ver invoice/README.md).

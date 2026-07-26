@@ -78,8 +78,7 @@ A aplicação segue uma **arquitetura em camadas** (*layered architecture*), com
 | Proteção de login contra brute-force | `LoginProtectionService` aplica lockout progressivo (15min → 1h → 24h) por conta **e** por IP, com e-mail de alerta (`SECURITY_ALERT_EMAILS`) e auditoria de toda tentativa (`LoginAuditLog`/`LoginLockout`), sem depender de Redis |
 | Controle de acesso por papel (`@PreAuthorize`) | Endpoints sensíveis restritos a `MANAGER` |
 | Rate limiting | Bucket4J (`RateLimitingFilter`) protege endpoints por IP + rota; o IP real do cliente é resolvido via `X-Forwarded-For`, já que a app roda atrás dos proxies do Railway e do *rewrite* same-origin do Next.js |
-| Token de serviço dedicado | Endpoints do `scheduler` exigem `API_SCHEDULER_TOKEN`, isolados do fluxo de usuário |
-| Agendamento (`@Scheduled`) | Verificação automática de boletos vencidos, monitoramento de armazenamento do banco e limpeza diária de refresh tokens expirados |
+| Agendamento (`@Scheduled`) | Limpeza diária de refresh tokens expirados |
 | Processamento assíncrono (`@Async`) | Notificações em massa e operações de backup não bloqueiam a requisição |
 | mTLS (certificados `.pfx` + `.pem`) | Autenticação mútua compartilhada entre Sicoob (boletos e extrato) e Banco do Brasil (saldo e extrato) |
 | Provedor de e-mail plugável (`EmailSender`) | `EMAIL_PROVIDER` escolhe em runtime entre SendGrid, Gmail SMTP e Gmail API (reaproveitando a autorização OAuth do backup no Drive), sem trocar código |
@@ -101,8 +100,7 @@ A aplicação segue uma **arquitetura em camadas** (*layered architecture*), com
 | `climate` | Previsão do tempo e recomendações de compra de produtos sazonais | OpenWeather |
 | `notification` | Envio de e-mails (provedor plugável), mensagens de WhatsApp e notificações em massa para clientes e contabilidade | SendGrid · Gmail (SMTP/API) · Ultramsg |
 | `backup` | Autenticação OAuth2, geração de CSV e upload periódico (ou por período) de backups do banco | Google Drive |
-| `chatbot` | Sessões e respostas automatizadas de atendimento via webhook | Ultramsg |
-| `scheduler` | Tarefas agendadas: verificação de vencimentos, monitoramento de armazenamento e limpeza de refresh tokens, protegidas por token de serviço | — |
+| `scheduler` | Monitoramento de armazenamento do banco (`DatabaseStorageService`), acionado sob demanda via `/api/notifications/test/database-storage-alert` | — |
 
 ---
 
@@ -117,10 +115,10 @@ Back/
 │       ├── java/com/hortifruti/sl/hortifruti/
 │       │   ├── HortifrutiSlApplication.java
 │       │   ├── controller/          # Controllers REST — cada subpasta = 1 domínio (README.md em cada uma)
-│       │   │   ├── backup/ · billet/ · chatbot/ · climate/ · dashboard/ · finance/
-│       │   │   ├── freight/ · invoice/ · notification/ · purchase/ · scheduler/ · user/
+│       │   │   ├── backup/ · billet/ · climate/ · dashboard/ · finance/
+│       │   │   ├── freight/ · invoice/ · notification/ · purchase/ · user/
 │       │   ├── service/             # Services de domínio e integração
-│       │   │   ├── backup/ (auth/ · folders/ · oauth/) · billet/ · chatbot/ · climate/ · dashboard/
+│       │   │   ├── backup/ (auth/ · folders/ · oauth/) · billet/ · climate/ · dashboard/
 │       │   │   ├── finance/ (bb/ · sicoob/ · transaction/) · freight/
 │       │   │   ├── invoice/ (factory/ · tax/…) · notification/ (email/ · whatsapp/)
 │       │   │   ├── purchase/ · scheduler/ · storage/ · user/
@@ -215,7 +213,7 @@ Documentação interativa disponível em `http://localhost:8080/swagger-ui.html`
 | `GET` | `/invoices/consulta/{ref}` | Consultar status da nota |
 | `GET` | `/invoices/{ref}/danfe` · `/invoices/{ref}/xml/download` | Baixar DANFE e XML |
 | `DELETE` | `/invoices/{ref}/cancel` | Cancelar nota (`justificativa` obrigatória; `extemporaneo` opcional para cancelamento fora do prazo) |
-| `GET` | `/invoices/xml-storage` · `/invoices/xml-storage/{ref}/download` | Consultar e baixar XMLs armazenados por período |
+| `GET` | `/invoices/xml-storage` · `/invoices/xml-storage/{ref}/download` | Consultar e baixar XMLs armazenados por período *(Gestor)* |
 | `GET` | `/api/tax-reports/...` | Relatórios fiscais (ICMS, vendas, pagamentos, cadastro) |
 
 ### Financeiro (`/statements`, `/transactions`, `/finance/bank-balance`) *(Gestor)*
@@ -240,12 +238,12 @@ Documentação interativa disponível em `http://localhost:8080/swagger-ui.html`
 | Método | Rota | Descrição |
 |---|---|---|
 | `GET` | `/dashboard` | Visão consolidada do negócio (período, mês, ano) *(Gestor)* |
-| `GET` | `/dashboard/icms-report/monthly/{start}/{end}` | Relatório mensal de ICMS |
+| `GET` | `/dashboard/icms-report/monthly/{start}/{end}` | Relatório mensal de ICMS *(Gestor)* |
 | `GET` / `POST` / `PUT` / `DELETE` | `/products`, `/products/{id}`, `/products/search`, `/products/paginated`, `/products/count` | CRUD, busca e paginação de produtos *(Gestor)* |
 | `GET` | `/api/weather/forecast/5days` | Previsão do tempo de 5 dias (Santa Luzia/MG) |
 | `GET` | `/api/recommendations/by-temperature/{category}` · `/by-date` | Recomendações de compra por clima |
 
-### Notificações, frete, backup e chatbot
+### Notificações, frete e backup
 
 | Método | Rota | Descrição |
 |---|---|---|
@@ -254,11 +252,9 @@ Documentação interativa disponível em `http://localhost:8080/swagger-ui.html`
 | `POST` | `/api/notifications/overdue/check` · `/send-bulk` | Verificar vencimentos e enviar notificações em massa |
 | `POST` | `/api/notifications/test/database-storage-alert` | Disparar e-mail de teste com o tamanho atual do banco |
 | `POST` | `/distance` · `GET /distance/freight-config` · `PATCH /distance/freight-config` | Calcular frete e consultar/atualizar configuração *(Gestor)* |
-| `POST` | `/backup` | Disparar backup para o Google Drive (`startDate`/`endDate` opcionais) |
-| `GET` | `/backup/storage` | Consultar tamanho atual do banco e limite máximo |
+| `POST` | `/backup` | Disparar backup para o Google Drive (`startDate`/`endDate` opcionais) *(Gestor)* |
+| `GET` | `/backup/storage` | Consultar tamanho atual do banco e limite máximo *(Gestor)* |
 | `GET` | `/backup/oauth2callback` | Callback OAuth2 do Google Drive |
-| `POST` / `GET` | `/chatbot/webhook` | Webhook de mensagens do chatbot |
-| `GET` | `/scheduler/health` · `POST /scheduler/check-overdue` · `/check-database-storage` | Operações do scheduler — exigem `API_SCHEDULER_TOKEN` |
 
 ---
 
@@ -301,7 +297,6 @@ PROD_MYSQLPASSWORD=
 
 # ── Autenticação ───────────────────────────────
 JWT_SECRET=sua_chave_secreta_jwt_com_pelo_menos_32_caracteres
-API_SCHEDULER_TOKEN=token_seguro_para_endpoints_scheduler
 
 # Proteção contra brute-force no login: e-mails avisados quando um lockout é
 # ativado (não a cada tentativa falha, há throttle de 30min).
@@ -356,7 +351,6 @@ COMPANY_CNPJ=cnpj_da_empresa
 # ── Notificações ───────────────────────────────
 ULTRAMSG_TOKEN=token_ultramsg_whatsapp
 ULTRAMSG_INSTANCE_ID=instance_id_ultramsg
-CHATBOT_WEBHOOK_SECRET=segredo_estatico_do_webhook_do_chatbot
 
 # Provedor de e-mail ativo — trocar aqui não exige mudança de código, os três
 # provedores já estão implementados (EmailSender):
@@ -486,7 +480,6 @@ O projeto usa **Google Java Format** via **Spotless**, com atalhos prontos:
 | Access e refresh token trafegam em cookies `httpOnly` | Reduz exposição a XSS em relação a manter o token em `localStorage` |
 | Reuso de refresh token já revogado derruba todas as sessões do usuário | Detecção de possível vazamento/roubo de token (`RefreshTokenService`) |
 | Lockout progressivo por conta e por IP no login, com mensagem de erro genérica | Mitiga brute-force e enumeration attack; toda tentativa é auditada em `LoginAuditLog` |
-| Endpoints do `scheduler` exigem `API_SCHEDULER_TOKEN` | Isola tarefas automatizadas do fluxo de autenticação de usuários |
 | Integração com Sicoob e Banco do Brasil via certificados `.pfx`/`.pem` compartilhados (mTLS) | Exigência das próprias instituições financeiras para boletos, saldo e extratos |
 | Operações de notificação e backup executam via `@Async` | Evita bloquear a thread da requisição HTTP em chamadas a serviços externos |
 | Variáveis sensíveis somente via `.env` / variáveis de ambiente | Nunca *hardcoded* — chaves, tokens e certificados nunca expostos no código |

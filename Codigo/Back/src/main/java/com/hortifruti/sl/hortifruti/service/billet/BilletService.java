@@ -17,11 +17,9 @@ import com.hortifruti.sl.hortifruti.service.storage.BilletFileStorageService;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -239,41 +237,6 @@ public class BilletService {
     } catch (Exception e) {
       throw new CombinedScoreException("Erro ao gerar o boleto: " + e.getMessage(), e);
     }
-  }
-
-  @Transactional
-  public List<CombinedScore> syncAndFindOverdueUnpaidScores(LocalDate currentDate) {
-    List<CombinedScore> overdueScores = combinedScoreService.findOverdueUnpaidScores(currentDate);
-
-    List<CombinedScore> remainingPendingScores = new ArrayList<>();
-
-    for (CombinedScore combinedScore : overdueScores) {
-      boolean shouldRemainPending = true;
-
-      if (combinedScore.isHasBillet() && combinedScore.getStatus() == Status.PENDENTE) {
-        try {
-          List<BilletResponse> updatedBillets = listBilletByPayer(combinedScore.getClientId());
-
-          Optional<BilletResponse> currentBillet =
-              updatedBillets.stream()
-                  .filter(billet -> billet.seuNumero().equals(combinedScore.getYourNumber()))
-                  .findFirst();
-
-          if (currentBillet.isEmpty()) {
-            combinedScoreService.updateStatus(combinedScore.getId(), Status.PAGO);
-            shouldRemainPending = false;
-          }
-        } catch (Exception e) {
-          shouldRemainPending = true;
-        }
-      }
-
-      if (shouldRemainPending) {
-        remainingPendingScores.add(combinedScore);
-      }
-    }
-
-    return remainingPendingScores;
   }
 
   private Map<String, Object> issueBilletAndExtractResponse(BilletRequestSimplified billetRequest)

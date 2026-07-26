@@ -16,6 +16,7 @@ export function useAuth() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [userName, setUserName] = useState<string>("");
   const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [environment, setEnvironment] = useState<string>("");
 
   const checkAuth = useCallback(async () => {
     const user = await authService.me();
@@ -24,9 +25,11 @@ export function useAuth() {
     if (user) {
       setUserName(user.name || "");
       setUserRoles(user.roles || []);
+      setEnvironment(user.environment || "");
     } else {
       setUserName("");
       setUserRoles([]);
+      setEnvironment("");
     }
 
     setIsLoading(false);
@@ -65,6 +68,7 @@ export function useAuth() {
     setIsAuthenticated(false);
     setUserName("");
     setUserRoles([]);
+    setEnvironment("");
     router.push("/login");
   };
 
@@ -77,6 +81,7 @@ export function useAuth() {
     isLoading,
     userName,
     userRoles,
+    environment,
     login,
     logout,
     hasRole,

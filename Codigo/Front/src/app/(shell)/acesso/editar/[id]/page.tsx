@@ -4,6 +4,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
+import RoleGuard from "@/components/auth/RoleGuard";
 import Button from "@/components/ui/Button";
 import { backupService } from "@/services/acessoService";
 import { showError, showSuccess } from "@/services/notificationService";
@@ -83,135 +84,139 @@ const EditarUsuarioPage = ({ params }: EditarUsuarioPageProps) => {
   };
 
   return (
-    <main className="flex-1 p-6 bg-gray-50 overflow-auto">
-      <div className="max-w-3xl mx-auto">
-        <div className="mb-6 flex items-center">
-          <Link href="/acesso" className="mr-4">
-            <Button
-              variant="outline"
-              icon={<ArrowLeft size={18} />}
-              className="px-2 py-1 cursor-pointer"
-            />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Editar Usuário</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Edite os dados do usuário #{id}.
-            </p>
+    <RoleGuard roles="MANAGER">
+      <main className="flex-1 p-6 bg-gray-50 overflow-auto">
+        <div className="max-w-3xl mx-auto">
+          <div className="mb-6 flex items-center">
+            <Link href="/acesso" className="mr-4">
+              <Button
+                variant="outline"
+                icon={<ArrowLeft size={18} />}
+                className="px-2 py-1 cursor-pointer"
+              />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Editar Usuário
+              </h1>
+              <p className="mt-1 text-sm text-gray-500">
+                Edite os dados do usuário #{id}.
+              </p>
+            </div>
           </div>
-        </div>
 
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64 bg-white rounded-lg shadow-sm border">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-          </div>
-        ) : error ? (
-          <div className="bg-red-50 border border-red-200 p-4 rounded-md">
-            <p className="text-red-700">{error}</p>
-          </div>
-        ) : (
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white rounded-lg shadow-sm border"
-          >
-            <div className="p-6 border-b">
-              <h2 className="text-lg font-semibold mb-4">
-                Informações do Usuário
-              </h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="name"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Nome *
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="cargo"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Cargo
-                  </label>
-                  <input
-                    type="text"
-                    id="cargo"
-                    name="cargo"
-                    value={formData.cargo}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="perfil"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Perfil
-                  </label>
-                  <select
-                    id="perfil"
-                    name="perfil"
-                    value={formData.perfil}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-                  >
-                    <option value="Funcionário">Funcionário</option>
-                    <option value="Gestor">Gestor</option>
-                  </select>
-                </div>
-                <div>
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Nova Senha (opcional)
-                  </label>
-                  <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    minLength={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Deixe vazio para manter a senha atual"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Se não informar, será mantida a senha atual
-                  </p>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64 bg-white rounded-lg shadow-sm border">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            </div>
+          ) : error ? (
+            <div className="bg-red-50 border border-red-200 p-4 rounded-md">
+              <p className="text-red-700">{error}</p>
+            </div>
+          ) : (
+            <form
+              onSubmit={handleSubmit}
+              className="bg-white rounded-lg shadow-sm border"
+            >
+              <div className="p-6 border-b">
+                <h2 className="text-lg font-semibold mb-4">
+                  Informações do Usuário
+                </h2>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="name"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Nome *
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="cargo"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Cargo
+                    </label>
+                    <input
+                      type="text"
+                      id="cargo"
+                      name="cargo"
+                      value={formData.cargo}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="perfil"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Perfil
+                    </label>
+                    <select
+                      id="perfil"
+                      name="perfil"
+                      value={formData.perfil}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                    >
+                      <option value="Funcionário">Funcionário</option>
+                      <option value="Gestor">Gestor</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Nova Senha (opcional)
+                    </label>
+                    <input
+                      type="password"
+                      id="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      minLength={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="Deixe vazio para manter a senha atual"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Se não informar, será mantida a senha atual
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex justify-end space-x-3 p-6">
-              <Link href="/acesso">
-                <Button variant="outline" disabled={isSubmitting}>
-                  Cancelar
+              <div className="flex justify-end space-x-3 p-6">
+                <Link href="/acesso">
+                  <Button variant="outline" disabled={isSubmitting}>
+                    Cancelar
+                  </Button>
+                </Link>
+                <Button
+                  variant="primary"
+                  type="submit"
+                  icon={<Save size={18} />}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Salvando..." : "Salvar Alterações"}
                 </Button>
-              </Link>
-              <Button
-                variant="primary"
-                type="submit"
-                icon={<Save size={18} />}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Salvando..." : "Salvar Alterações"}
-              </Button>
-            </div>
-          </form>
-        )}
-      </div>
-    </main>
+              </div>
+            </form>
+          )}
+        </div>
+      </main>
+    </RoleGuard>
   );
 };
 

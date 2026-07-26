@@ -4,6 +4,7 @@ import { ArrowLeft, Save, Shield, UserCog } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import RoleGuard from "@/components/auth/RoleGuard";
 import Button from "@/components/ui/Button";
 import { backupService, type UIUserRequest } from "@/services/acessoService";
 import { showError, showSuccess } from "@/services/notificationService";
@@ -57,170 +58,172 @@ export default function NovoUsuarioPage() {
   };
 
   return (
-    <main className="flex-1 p-8 bg-gray-50 overflow-auto">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8 flex items-center">
-          <Link href="/acesso" className="mr-4">
-            <Button
-              variant="outline"
-              icon={<ArrowLeft size={20} />}
-              className="px-3 py-2 cursor-pointer"
-            />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Novo Usuário</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Cadastre um novo usuário no sistema
-            </p>
-          </div>
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white rounded-lg shadow-md border border-gray-200"
-        >
-          <div className="p-6 border-b">
-            <h2 className="text-lg font-semibold text-gray-800">
-              Informações do Usuário
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Preencha os dados do novo usuário
-            </p>
-          </div>
-
-          <div className="p-6 space-y-6">
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Usuário *
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Digite o nome completo"
-                required
+    <RoleGuard roles="MANAGER">
+      <main className="flex-1 p-8 bg-gray-50 overflow-auto">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8 flex items-center">
+            <Link href="/acesso" className="mr-4">
+              <Button
+                variant="outline"
+                icon={<ArrowLeft size={20} />}
+                className="px-3 py-2 cursor-pointer"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                O nome será usado como login do usuário
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Novo Usuário</h1>
+              <p className="mt-1 text-sm text-gray-500">
+                Cadastre um novo usuário no sistema
+              </p>
+            </div>
+          </div>
+
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-lg shadow-md border border-gray-200"
+          >
+            <div className="p-6 border-b">
+              <h2 className="text-lg font-semibold text-gray-800">
+                Informações do Usuário
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Preencha os dados do novo usuário
               </p>
             </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Senha *
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Digite uma senha para o usuário"
-                required
-                minLength={4}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Mínimo de 4 caracteres
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+            <div className="p-6 space-y-6">
               <div>
                 <label
-                  htmlFor="cargo"
+                  htmlFor="name"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Cargo *
+                  Usuário *
                 </label>
                 <input
                   type="text"
-                  id="cargo"
-                  name="cargo"
-                  value={formData.cargo}
+                  id="name"
+                  name="name"
+                  value={formData.name}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  placeholder="Ex: Vendedor, Gerente..."
+                  placeholder="Digite o nome completo"
                   required
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  O nome será usado como login do usuário
+                </p>
               </div>
 
               <div>
                 <label
-                  htmlFor="perfil"
+                  htmlFor="password"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Perfil de Acesso *
+                  Senha *
                 </label>
-                <select
-                  id="perfil"
-                  name="perfil"
-                  value={formData.perfil}
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={formData.password}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  placeholder="Digite uma senha para o usuário"
                   required
-                >
-                  <option value="Funcionário">Funcionário</option>
-                  <option value="Gestor">Gestor</option>
-                </select>
+                  minLength={4}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Mínimo de 4 caracteres
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="cargo"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Cargo *
+                  </label>
+                  <input
+                    type="text"
+                    id="cargo"
+                    name="cargo"
+                    value={formData.cargo}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    placeholder="Ex: Vendedor, Gerente..."
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="perfil"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Perfil de Acesso *
+                  </label>
+                  <select
+                    id="perfil"
+                    name="perfil"
+                    value={formData.perfil}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    required
+                  >
+                    <option value="Funcionário">Funcionário</option>
+                    <option value="Gestor">Gestor</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-800 mb-3">
+                  Sobre os Perfis de Acesso:
+                </h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-start gap-2">
+                    <UserCog className="text-green-600 mt-0.5" size={16} />
+                    <div>
+                      <strong className="text-green-600">Gestor:</strong>
+                      <p className="text-gray-600 text-xs mt-1">
+                        Acesso total ao sistema, incluindo relatórios e
+                        configurações
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Shield className="text-orange-600 mt-0.5" size={16} />
+                    <div>
+                      <strong className="text-orange-600">Funcionário:</strong>
+                      <p className="text-gray-600 text-xs mt-1">
+                        Acesso limitado às funcionalidades básicas do sistema
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-800 mb-3">
-                Sobre os Perfis de Acesso:
-              </h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex items-start gap-2">
-                  <UserCog className="text-green-600 mt-0.5" size={16} />
-                  <div>
-                    <strong className="text-green-600">Gestor:</strong>
-                    <p className="text-gray-600 text-xs mt-1">
-                      Acesso total ao sistema, incluindo relatórios e
-                      configurações
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Shield className="text-orange-600 mt-0.5" size={16} />
-                  <div>
-                    <strong className="text-orange-600">Funcionário:</strong>
-                    <p className="text-gray-600 text-xs mt-1">
-                      Acesso limitado às funcionalidades básicas do sistema
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
-            <Link href="/acesso">
-              <Button variant="outline" className="px-4 py-2">
-                Cancelar
+            <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+              <Link href="/acesso">
+                <Button variant="outline" className="px-4 py-2">
+                  Cancelar
+                </Button>
+              </Link>
+              <Button
+                type="submit"
+                variant="primary"
+                className="px-6 py-2 bg-green-600 hover:bg-green-700"
+                icon={<Save size={18} />}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Salvando..." : "Salvar Usuário"}
               </Button>
-            </Link>
-            <Button
-              type="submit"
-              variant="primary"
-              className="px-6 py-2 bg-green-600 hover:bg-green-700"
-              icon={<Save size={18} />}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Salvando..." : "Salvar Usuário"}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </main>
+            </div>
+          </form>
+        </div>
+      </main>
+    </RoleGuard>
   );
 }

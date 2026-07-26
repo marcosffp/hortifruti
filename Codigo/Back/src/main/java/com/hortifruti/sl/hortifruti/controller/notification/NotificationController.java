@@ -3,10 +3,8 @@ package com.hortifruti.sl.hortifruti.controller.notification;
 import com.hortifruti.sl.hortifruti.dto.notification.*;
 import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
 import com.hortifruti.sl.hortifruti.model.notification.NotificationChannel;
-import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.service.notification.BulkNotificationService;
 import com.hortifruti.sl.hortifruti.service.notification.NotificationService;
-import com.hortifruti.sl.hortifruti.service.scheduler.CombinedScoreOverdueService;
 import com.hortifruti.sl.hortifruti.service.scheduler.DatabaseStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -22,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -37,7 +36,6 @@ public class NotificationController {
   private final NotificationService notificationService;
   private final BulkNotificationService bulkNotificationService;
   private final DatabaseStorageService databaseStorageService;
-  private final CombinedScoreOverdueService combinedScoreOverdueService;
 
   @Operation(
       summary = "Enviar arquivos genéricos para contabilidade",
@@ -106,6 +104,7 @@ public class NotificationController {
     }
   }
 
+  @PreAuthorize("hasRole('MANAGER')")
   @PostMapping("/test/database-storage-alert")
   @Operation(
       summary = "Testar email de alerta de armazenamento, excluir depois",
@@ -144,56 +143,6 @@ public class NotificationController {
       errorResponse.put("success", false);
       errorResponse.put("message", "Erro ao enviar email de teste.");
       errorResponse.put("timestamp", LocalDateTime.now());
-
-      return ResponseEntity.internalServerError().body(errorResponse);
-    }
-  }
-
-  @PostMapping("/overdue/check")
-  @Operation(
-      summary = "Executar verificação manual de boletos vencidos",
-      description =
-          "Força a execução da verificação de CombinedScores vencidos e envio de notificações")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "Verificação executada com sucesso"),
-        @ApiResponse(responseCode = "500", description = "Erro interno do servidor"),
-        @ApiResponse(responseCode = "403", description = "Acesso negado - apenas administradores")
-      })
-  public ResponseEntity<Map<String, Object>> checkOverdueScores() {
-    try {
-      List<CombinedScore> overdueScores = combinedScoreOverdueService.manualOverdueCheck();
-
-      Map<String, Object> response = new HashMap<>();
-      response.put("success", true);
-      response.put("message", "Verificação de boletos vencidos executada com sucesso");
-      response.put("timestamp", LocalDateTime.now());
-      response.put("overdueCount", overdueScores.size());
-      response.put(
-          "overdueScores",
-          overdueScores.stream()
-              .map(
-                  score -> {
-                    Map<String, Object> scoreInfo = new HashMap<>();
-                    scoreInfo.put("id", score.getId());
-                    scoreInfo.put("clientId", score.getClientId());
-                    scoreInfo.put("dueDate", score.getDueDate());
-                    scoreInfo.put("totalValue", score.getTotalValue());
-                    scoreInfo.put("confirmedAt", score.getConfirmedAt());
-                    scoreInfo.put("isPaid", score.getConfirmedAt() != null);
-                    return scoreInfo;
-                  })
-              .toList());
-
-      return ResponseEntity.ok(response);
-
-    } catch (Exception e) {
-      log.error("Erro ao executar verificação de boletos vencidos", e);
-      Map<String, Object> errorResponse = new HashMap<>();
-      errorResponse.put("success", false);
-      errorResponse.put("message", "Erro ao executar verificação de boletos vencidos.");
-      errorResponse.put("timestamp", LocalDateTime.now());
-      errorResponse.put("overdueCount", 0);
 
       return ResponseEntity.internalServerError().body(errorResponse);
     }
