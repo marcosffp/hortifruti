@@ -36,8 +36,7 @@ public class NotificationService {
       List<MultipartFile> files, GenericFilesAccountingRequest request) {
 
     if (notificationEnvironmentGuard.isBlocked()) {
-      throw new NotificationException(
-          "Envio de notificações está desabilitado em homologação.");
+      throw new NotificationException("Envio de notificações está desabilitado em homologação.");
     }
 
     try {
@@ -81,8 +80,7 @@ public class NotificationService {
       List<MultipartFile> files, ClientDocumentsRequest request) {
 
     if (notificationEnvironmentGuard.isBlocked()) {
-      throw new NotificationException(
-          "Envio de notificações está desabilitado em homologação.");
+      throw new NotificationException("Envio de notificações está desabilitado em homologação.");
     }
 
     try {

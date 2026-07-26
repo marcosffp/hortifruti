@@ -4,9 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Cadastro único de regras de negócio por cliente (identificado pelo primeiro nome, EXATAMENTE
- * como está no banco). Centraliza aqui qualquer regra hoje espalhada por caso especial de cliente
- * (ex.: vencimento, texto de nota fiscal) para evitar que cada regra seja reimplementada de forma
+ * Cadastro único de regras de negócio por cliente (identificado pelo primeiro nome, EXATAMENTE como
+ * está no banco). Centraliza aqui qualquer regra hoje espalhada por caso especial de cliente (ex.:
+ * vencimento, texto de nota fiscal) para evitar que cada regra seja reimplementada de forma
  * independente em serviços diferentes.
  */
 public class ClientBusinessRules {
@@ -71,7 +71,8 @@ public class ClientBusinessRules {
             20, WeekendAdjustment.PREVIOUS_THURSDAY, false, "Numerações AF: {dadosAdicionais}"));
     RULES_BY_NAME.put("APTA", new ClientRule(15, WeekendAdjustment.PREVIOUS_FRIDAY, false, null));
     RULES_BY_NAME.put("INDUSTRIA", new ClientRule(20, WeekendAdjustment.NEXT_FRIDAY, false, null));
-    RULES_BY_NAME.put("ROCA", new ClientRule(15, WeekendAdjustment.NONE, true, null)); // 15 dias úteis
+    RULES_BY_NAME.put(
+        "ROCA", new ClientRule(15, WeekendAdjustment.NONE, true, null)); // 15 dias úteis
 
     // === ADICIONE NOVAS REGRAS AQUI (vencimento e/ou texto da nota) ===
     // Exemplo dias corridos:  RULES_BY_NAME.put("EMPRESA", new ClientRule(30,
@@ -83,10 +84,9 @@ public class ClientBusinessRules {
   private ClientBusinessRules() {}
 
   /**
-   * Busca a regra cadastrada para o cliente pelo primeiro nome (comparação case-insensitive, já
-   * que os dois usos anteriores desse caso especial comparavam de formas diferentes: um exato,
-   * outro via nome em maiúsculas). Retorna {@link #CNPJ_DEFAULT_RULE} se não houver regra
-   * específica.
+   * Busca a regra cadastrada para o cliente pelo primeiro nome (comparação case-insensitive, já que
+   * os dois usos anteriores desse caso especial comparavam de formas diferentes: um exato, outro
+   * via nome em maiúsculas). Retorna {@link #CNPJ_DEFAULT_RULE} se não houver regra específica.
    */
   public static ClientRule getRuleForCnpjClient(String firstName) {
     if (firstName == null) {

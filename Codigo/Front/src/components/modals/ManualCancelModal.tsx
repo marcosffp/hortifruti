@@ -10,8 +10,7 @@ interface ManualCancelModalProps {
   onClose: () => void;
 }
 
-const DEFAULT_JUSTIFICATIVA =
-  "Cancelamento extemporâneo";
+const DEFAULT_JUSTIFICATIVA = "Cancelamento extemporâneo";
 
 export default function ManualCancelModal({
   open,

@@ -42,9 +42,9 @@ public class GlobalExceptionHandler {
    * Alguns endpoints de download (ex.: /transactions/export-complete) declaram {@code produces =
    * "application/zip"} no mapeamento. Sem fixar o Content-Type aqui, o Spring tenta reusar esse
    * media type "producible" ao serializar o corpo de erro (um {@link Map}), e como não existe
-   * conversor de Map para application/zip, a resposta de erro falha por sua vez (HttpMessageNotWritableException:
-   * "No converter for [class java.util.HashMap] with preset Content-Type"), escondendo a mensagem
-   * real do erro e devolvendo um 500 vazio ao cliente.
+   * conversor de Map para application/zip, a resposta de erro falha por sua vez
+   * (HttpMessageNotWritableException: "No converter for [class java.util.HashMap] with preset
+   * Content-Type"), escondendo a mensagem real do erro e devolvendo um 500 vazio ao cliente.
    */
   private ResponseEntity<Map<String, String>> errorResponse(
       HttpStatus status, String error, String message) {
@@ -63,9 +63,9 @@ public class GlobalExceptionHandler {
 
   /**
    * Retorna o mesmo status/mensagem genérica de {@link AuthException} (indistinguível de senha
-   * errada ou usuário inexistente, para evitar enumeration attack), acrescentando apenas
-   * {@code retryAfter} em segundos — usado pelo front para saber quando reabilitar o botão de
-   * login, sem expor "conta bloqueada" como texto visível.
+   * errada ou usuário inexistente, para evitar enumeration attack), acrescentando apenas {@code
+   * retryAfter} em segundos — usado pelo front para saber quando reabilitar o botão de login, sem
+   * expor "conta bloqueada" como texto visível.
    */
   @ExceptionHandler(AccountLockedException.class)
   public ResponseEntity<Map<String, Object>> handleAccountLockedException(
@@ -91,19 +91,18 @@ public class GlobalExceptionHandler {
   }
 
   /**
-   * {@code @PreAuthorize} nega acesso dentro da invocação do método do controller (via AOP), não
-   * na cadeia de filtros do Spring Security — então essa exceção nunca chega até o
+   * {@code @PreAuthorize} nega acesso dentro da invocação do método do controller (via AOP), não na
+   * cadeia de filtros do Spring Security — então essa exceção nunca chega até o
    * ExceptionTranslationFilter (que normalmente a converteria em 403). Sem este handler específico,
-   * ela caía no catch-all genérico e virava um 500 confuso para qualquer usuário sem o papel exigido.
+   * ela caía no catch-all genérico e virava um 500 confuso para qualquer usuário sem o papel
+   * exigido.
    */
   @ExceptionHandler(AccessDeniedException.class)
   public ResponseEntity<Map<String, String>> handleAccessDeniedException(
       AccessDeniedException ex, HttpServletRequest request) {
     log.warn("Acesso negado em {}: {}", request.getRequestURI(), ex.getMessage());
     return errorResponse(
-        HttpStatus.FORBIDDEN,
-        "Acesso Negado",
-        "Você não tem permissão para acessar este recurso.");
+        HttpStatus.FORBIDDEN, "Acesso Negado", "Você não tem permissão para acessar este recurso.");
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -284,8 +283,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<Map<String, String>> handleBulkNotificationException(
       NotificationException ex, HttpServletRequest request) {
     log.warn("Erro de notificação em massa em {}: {}", request.getRequestURI(), ex.getMessage());
-    return errorResponse(
-        HttpStatus.BAD_REQUEST, "Erro de Notificação em Massa", ex.getMessage());
+    return errorResponse(HttpStatus.BAD_REQUEST, "Erro de Notificação em Massa", ex.getMessage());
   }
 
   @ExceptionHandler(InvoiceException.class)
@@ -296,10 +294,10 @@ public class GlobalExceptionHandler {
   }
 
   /**
-   * Subtipo de {@link StorageException} usado quando o arquivo simplesmente não existe (ex.:
-   * boleto nunca foi gerado, ou foi gerado antes desta funcionalidade existir) — condição
-   * esperada do domínio, não uma falha de infraestrutura. Precisa de handler próprio (checado
-   * antes do genérico abaixo, por especificidade) para responder 404 em vez de 500.
+   * Subtipo de {@link StorageException} usado quando o arquivo simplesmente não existe (ex.: boleto
+   * nunca foi gerado, ou foi gerado antes desta funcionalidade existir) — condição esperada do
+   * domínio, não uma falha de infraestrutura. Precisa de handler próprio (checado antes do genérico
+   * abaixo, por especificidade) para responder 404 em vez de 500.
    */
   @ExceptionHandler(StorageNotFoundException.class)
   public ResponseEntity<Map<String, String>> handleStorageNotFoundException(
@@ -312,6 +310,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<Map<String, String>> handleStorageException(
       StorageException ex, HttpServletRequest request) {
     log.error("Erro de armazenamento em {}", request.getRequestURI(), ex);
-    return errorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Erro de Armazenamento", ex.getMessage());
+    return errorResponse(
+        HttpStatus.INTERNAL_SERVER_ERROR, "Erro de Armazenamento", ex.getMessage());
   }
 }

@@ -15,8 +15,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * Canal de envio (outbound) de mensagens e documentos via WhatsApp usando a API da UltraMsg. Não
- * há processamento de mensagens recebidas do cliente — apenas envio.
+ * Canal de envio (outbound) de mensagens e documentos via WhatsApp usando a API da UltraMsg. Não há
+ * processamento de mensagens recebidas do cliente — apenas envio.
  */
 @Service
 @RequiredArgsConstructor
