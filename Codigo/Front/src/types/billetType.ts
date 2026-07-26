@@ -3,6 +3,7 @@ export interface BilletResponse {
   dataEmissao: string;
   dataVencimento: string;
   seuNumero: string;
+  nossoNumero: string;
   situacaoBoleto: string;
   valor: number;
   combinedScoreId: number | null;

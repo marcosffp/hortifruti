@@ -27,7 +27,11 @@ const allShortcuts = [
 ];
 
 // Primeira linha do grid: os atalhos mais usados no dia a dia
-const priorityHrefs = ["/comercio/boletos", "/comercio/compras", "/notificacoes"];
+const priorityHrefs = [
+  "/comercio/boletos",
+  "/comercio/compras",
+  "/notificacoes",
+];
 
 const shortcuts = [
   ...priorityHrefs
@@ -48,6 +52,7 @@ export default function MobileQuickAccess() {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={false}
               className="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white p-3 text-center shadow-sm active:bg-primary/10"
             >
               <span className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary">

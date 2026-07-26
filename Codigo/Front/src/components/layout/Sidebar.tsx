@@ -18,6 +18,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import RoleGuard from "@/components/auth/RoleGuard";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface MenuItem {
   label: string;
@@ -30,6 +31,7 @@ export interface MenuItem {
     roles?: string[];
   }[];
   roles?: string[];
+  hiddenInHml?: boolean;
 }
 
 export const menu: MenuItem[] = [
@@ -78,7 +80,7 @@ export const menu: MenuItem[] = [
     roles: ["MANAGER", "EMPLOYEE"],
   },
   {
-    label: "Boletos",
+    label: "Cobranças",
     icon: Receipt,
     href: "/comercio/boletos",
     roles: ["MANAGER", "EMPLOYEE"],
@@ -88,6 +90,7 @@ export const menu: MenuItem[] = [
     icon: Bell,
     href: "/notificacoes",
     roles: ["MANAGER", "EMPLOYEE"],
+    hiddenInHml: true,
   },
   {
     label: "Módulo Backup",
@@ -107,6 +110,10 @@ export default function Sidebar({
 }) {
   const [openSubMenu, setOpenSubMenu] = useState<number | null>(null);
   const pathname = usePathname();
+  const { environment } = useAuth();
+  const visibleMenu = menu.filter(
+    (item) => !(item.hiddenInHml && environment === "hml"),
+  );
 
   const toggleSubMenu = (index: number) => {
     if (openSubMenu === index) {
@@ -159,6 +166,7 @@ export default function Sidebar({
         <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
           <Link
             href="/dashboard"
+            prefetch={false}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg ${pathname === "/dashboard" ? "bg-primary text-white" : "text-gray-700"} hover:bg-primary mb-2`}
             onClick={() => onClose?.()}
           >
@@ -167,7 +175,7 @@ export default function Sidebar({
           </Link>
         </RoleGuard>
 
-        {menu.map((item, i) => {
+        {visibleMenu.map((item, i) => {
           const isSubActive = item.submenu?.some(
             (sub) => sub.href === pathname,
           );
@@ -212,6 +220,7 @@ export default function Sidebar({
                           >
                             <Link
                               href={subItem.href}
+                              prefetch={false}
                               className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-gray-700 hover:bg-primary cursor-pointer ${
                                 pathname === subItem.href
                                   ? "bg-primary text-white"
@@ -230,6 +239,7 @@ export default function Sidebar({
                 ) : (
                   <Link
                     href={item.href}
+                    prefetch={false}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary cursor-pointer ${
                       isActive ? "bg-primary text-white" : "text-gray-700"
                     }`}

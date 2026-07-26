@@ -1,0 +1,8 @@
+# com.hortifruti.sl.hortifruti.repository.finance
+
+Repositórios de extratos bancários (`Statement`) e transações (`Transaction`) usados na conciliação bancária, importação de extratos e relatórios.
+
+| Arquivo | Tipo | Responsabilidade |
+| --- | --- | --- |
+| `StatementRepository.java` | `JpaRepository<Statement, Long>` | Entidade `Statement`. `findByBankAndCreatedAtBetween` lista extratos de um banco em um período; `findTopByBankOrderByCreatedAtDesc` busca o extrato mais recente de um banco; `findTopByBankAndOriginOrderByCreatedAtDesc` busca o extrato "atual" por banco e origem (`StatementOrigin`), usado para decidir se um período já foi processado; `findStatementsWithTransactionsInPeriod` e `findBestCoverageStatementsForPeriod` (`@Query`) localizam extratos com transações num período (o segundo prioriza o de maior cobertura); `findByCreatedAtBetween` e `findByCreatedAtBetweenWithTransactions` (`@Query` com `LEFT JOIN FETCH`) listam extratos por data de criação, o último já trazendo as transações carregadas. |
+| `TransactionRepository.java` | `JpaRepository<Transaction, Long>`, `JpaSpecificationExecutor<Transaction>` | Entidade `Transaction`. `findHashes` (`@Query`) filtra hashes já existentes (dedup de importação); `findByTransactionDateBetweenAndStatementBank` e `...AndStatementOrigin` (`@Query`) filtram por período/banco/origem; `findAllCategories` (`@Query`) lista categorias distintas; `findTransactionsByDateRange`, `findByTransactionDateBetweenAndTransactionType`, `findByTransactionDateBetweenAndCategory`, `findTransactionsByCreatedAtBetween`, `findByTransactionDateBetweenOrderByTransactionDateAscIdAsc` cobrem os filtros usados em relatórios e exportações; `existsByHash(String)` evita duplicidade de lançamentos. |

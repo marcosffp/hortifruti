@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.finance.bb;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.hortifruti.sl.hortifruti.config.bb.BBEnvironmentGuard;
 import com.hortifruti.sl.hortifruti.config.bb.BBExtratoClient;
 import com.hortifruti.sl.hortifruti.dto.bb.BBImportSummary;
 import com.hortifruti.sl.hortifruti.exception.finance.TransactionException;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +32,7 @@ import org.springframework.stereotype.Service;
  * Orquestra a integração com a API Extratos v2 do Banco do Brasil: busca, geração de PDF/Excel e
  * import.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BBStatementService {
@@ -45,6 +48,7 @@ public class BBStatementService {
   private final BBExtratoExcelGenerator bbExtratoExcelGenerator;
   private final TransactionBBApiService transactionBBApiService;
   private final TransactionImportPersistenceService transactionImportPersistenceService;
+  private final BBEnvironmentGuard bbEnvironmentGuard;
 
   @Value("${r2.environment}")
   private String environment;
@@ -63,6 +67,11 @@ public class BBStatementService {
    */
   public BBImportSummary importFromBBApi(LocalDate dataInicio, LocalDate dataFim)
       throws IOException {
+    if (bbEnvironmentGuard.isBlocked()) {
+      log.info("[BB] importFromBBApi bloqueado (ambiente sem integração real).");
+      return blockedBBSummary();
+    }
+
     if (dataInicio.getMonthValue() != dataFim.getMonthValue()
         || dataInicio.getYear() != dataFim.getYear()) {
       throw new TransactionException(
@@ -138,6 +147,11 @@ public class BBStatementService {
 
   /** Consulta a API do BB e gera o PDF do extrato do período, sem persistir nada (só download). */
   public byte[] exportBBExtratoPdf(LocalDate dataInicio, LocalDate dataFim) throws IOException {
+    if (bbEnvironmentGuard.isBlocked()) {
+      log.info("[BB] exportBBExtratoPdf bloqueado (ambiente sem integração real).");
+      return new byte[0];
+    }
+
     validateNotFuture(dataFim);
     List<JsonNode> lancamentos =
         bbExtratoClient.getExtratoPeriodo(formatBBDate(dataInicio), formatBBDate(dataFim));
@@ -148,6 +162,11 @@ public class BBStatementService {
    * Consulta a API do BB e gera o Excel do extrato do período, sem persistir nada (só download).
    */
   public byte[] exportBBExtratoExcel(LocalDate dataInicio, LocalDate dataFim) throws IOException {
+    if (bbEnvironmentGuard.isBlocked()) {
+      log.info("[BB] exportBBExtratoExcel bloqueado (ambiente sem integração real).");
+      return new byte[0];
+    }
+
     validateNotFuture(dataFim);
     List<JsonNode> lancamentos =
         bbExtratoClient.getExtratoPeriodo(formatBBDate(dataInicio), formatBBDate(dataFim));
@@ -170,6 +189,10 @@ public class BBStatementService {
 
   private String formatBBDate(LocalDate date) {
     return date.format(BB_DATE_FORMATTER);
+  }
+
+  private BBImportSummary blockedBBSummary() {
+    return new BBImportSummary(null, false, null, null, 0, 0, 0, BigDecimal.ZERO, BigDecimal.ZERO);
   }
 
   private BBImportSummary alreadyProcessedBBSummary(Statement existing) {

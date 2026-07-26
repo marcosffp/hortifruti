@@ -18,6 +18,7 @@ import com.hortifruti.sl.hortifruti.exception.purchase.CombinedScoreException;
 import com.hortifruti.sl.hortifruti.exception.purchase.PurchaseException;
 import com.hortifruti.sl.hortifruti.exception.sicoob.SicoobExtratoException;
 import com.hortifruti.sl.hortifruti.exception.storage.StorageException;
+import com.hortifruti.sl.hortifruti.exception.storage.StorageNotFoundException;
 import com.hortifruti.sl.hortifruti.exception.user.UserException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
@@ -292,6 +293,19 @@ public class GlobalExceptionHandler {
       InvoiceException ex, HttpServletRequest request) {
     log.warn("Erro de fatura em {}: {}", request.getRequestURI(), ex.getMessage());
     return errorResponse(HttpStatus.BAD_REQUEST, "Erro de Fatura", ex.getMessage());
+  }
+
+  /**
+   * Subtipo de {@link StorageException} usado quando o arquivo simplesmente não existe (ex.:
+   * boleto nunca foi gerado, ou foi gerado antes desta funcionalidade existir) — condição
+   * esperada do domínio, não uma falha de infraestrutura. Precisa de handler próprio (checado
+   * antes do genérico abaixo, por especificidade) para responder 404 em vez de 500.
+   */
+  @ExceptionHandler(StorageNotFoundException.class)
+  public ResponseEntity<Map<String, String>> handleStorageNotFoundException(
+      StorageNotFoundException ex, HttpServletRequest request) {
+    log.warn("Arquivo não encontrado em {}: {}", request.getRequestURI(), ex.getMessage());
+    return errorResponse(HttpStatus.NOT_FOUND, "Arquivo Não Encontrado", ex.getMessage());
   }
 
   @ExceptionHandler(StorageException.class)

@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.GetMapping;
 
@@ -49,7 +48,6 @@ public class ClientController {
     return ResponseEntity.ok(clientService.updateClient(id, clientRequest));
   }
 
-  @PreAuthorize("hasRole('MANAGER')")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
     clientService.deleteClient(id);

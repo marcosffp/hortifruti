@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.notification;
 
+import com.hortifruti.sl.hortifruti.config.notification.NotificationEnvironmentGuard;
 import com.hortifruti.sl.hortifruti.dto.notification.BulkNotificationResponse;
 import com.hortifruti.sl.hortifruti.dto.notification.NotificationResponse;
 import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
@@ -30,6 +31,7 @@ public class BulkNotificationService {
   private final NotificationCoordinator notificationCoordinator;
   private final ClientRepository clientRepository;
   private final EmailTemplateService emailTemplateService;
+  private final NotificationEnvironmentGuard notificationEnvironmentGuard;
 
   @Value("${accounting.email}")
   private String accountingEmail;
@@ -43,6 +45,11 @@ public class BulkNotificationService {
       List<String> channels,
       String destinationType,
       String customMessage) {
+    if (notificationEnvironmentGuard.isBlocked()) {
+      return BulkNotificationResponse.failure(
+          "Envio de notificações está desabilitado em homologação.", List.of());
+    }
+
     try {
       if (files == null || files.isEmpty()) {
         throw new NotificationException("Pelo menos um arquivo deve ser fornecido");

@@ -36,9 +36,6 @@ public class SecurityFilter extends OncePerRequestFilter {
   private final TokenConfiguration tokenConfiguration;
   private final UserRepository userRepository;
 
-  @Value("${api.token.scheduler}")
-  private String schedulerStaticKey;
-
   @Value("${frontend.url}")
   private String frontendUrl;
 
@@ -64,18 +61,6 @@ public class SecurityFilter extends OncePerRequestFilter {
 
     try {
       String token = recoverToken(request);
-
-      if (isSchedulerEndpoint(request.getRequestURI())) {
-        if (schedulerStaticKey.equals(token)) {
-          filterChain.doFilter(request, response);
-        } else {
-          response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-          response
-              .getWriter()
-              .write("{\"erro\": \"Token de autenticação inválido ou não fornecido\"}");
-        }
-        return;
-      }
 
       if (token != null) {
         String email = tokenConfiguration.validateToken(token);
@@ -103,8 +88,8 @@ public class SecurityFilter extends OncePerRequestFilter {
    * A autenticação é feita por cookie HttpOnly com SameSite=None em produção (front e back estão em
    * domínios diferentes), então o navegador anexa o cookie mesmo em requisições disparadas por
    * outro site. Com CSRF do Spring desabilitado (API stateless), essa checagem de Origin é a defesa
-   * contra esse cenário. Requisições sem Origin (clientes não-browser, ex.: scheduler) passam
-   * direto, pois não são alvo de CSRF via navegador.
+   * contra esse cenário. Requisições sem Origin (clientes não-browser, ex.: webhook da UltraMsg)
+   * passam direto, pois não são alvo de CSRF via navegador.
    */
   private boolean isForgedCrossOriginRequest(HttpServletRequest request) {
     if (!UNSAFE_METHODS.contains(request.getMethod())) {
@@ -138,11 +123,5 @@ public class SecurityFilter extends OncePerRequestFilter {
 
   private UserDetails loadByUserName(String username) {
     return userRepository.findByUsername(username);
-  }
-
-  private boolean isSchedulerEndpoint(String uri) {
-    return uri.startsWith("/scheduler/health")
-        || uri.startsWith("/scheduler/check-overdue")
-        || uri.startsWith("/scheduler/check-database-storage");
   }
 }
