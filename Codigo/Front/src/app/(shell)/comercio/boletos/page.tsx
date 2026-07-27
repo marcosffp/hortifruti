@@ -392,8 +392,6 @@ export default function BoletosPage() {
   const [cancelInvoiceTarget, setCancelInvoiceTarget] = useState<
     number[] | null
   >(null);
-  const [cancelInvoiceJustificativa, setCancelInvoiceJustificativa] =
-    useState("");
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: getOpenInvoiceOnly is recreated on every render by useInvoice and is not part of the fetch identity
   const fetchOpenInvoices = useCallback(async () => {
@@ -472,10 +470,7 @@ export default function BoletosPage() {
     }
   };
 
-  const executeCancelInvoices = async (
-    ids: number[],
-    justificativa: string,
-  ) => {
+  const executeCancelInvoices = async (ids: number[]) => {
     const succeeded: number[] = [];
     const failed: number[] = [];
     for (const id of ids) {
@@ -485,7 +480,7 @@ export default function BoletosPage() {
         continue;
       }
       try {
-        await cancelInvoiceApi(invoice.invoiceRef, justificativa);
+        await cancelInvoiceApi(invoice.invoiceRef);
         succeeded.push(id);
       } catch (error) {
         failed.push(id);
@@ -515,14 +510,12 @@ export default function BoletosPage() {
   };
 
   const handleCancelInvoice = (invoice: OpenInvoiceResponse) => {
-    setCancelInvoiceJustificativa("");
     setCancelInvoiceTarget([invoice.combinedScoreId]);
   };
 
   const confirmCancelInvoice = async () => {
     if (!cancelInvoiceTarget) return;
     const ids = cancelInvoiceTarget;
-    const justificativa = cancelInvoiceJustificativa.trim();
     const isSingle = ids.length === 1;
     setCancelInvoiceTarget(null);
     if (isSingle) {
@@ -531,7 +524,7 @@ export default function BoletosPage() {
       setInvoiceBulkAction("cancel");
     }
     try {
-      await executeCancelInvoices(ids, justificativa);
+      await executeCancelInvoices(ids);
     } finally {
       setInvoiceRowAction(null);
       setInvoiceBulkAction(null);
@@ -664,7 +657,6 @@ export default function BoletosPage() {
 
   const handleBulkCancelInvoices = () => {
     if (selectedInvoices.length === 0) return;
-    setCancelInvoiceJustificativa("");
     setCancelInvoiceTarget(selectedInvoices.map((i) => i.combinedScoreId));
   };
 
@@ -1927,23 +1919,7 @@ export default function BoletosPage() {
         onClose={() => setCancelInvoiceTarget(null)}
         onConfirm={confirmCancelInvoice}
         title={cancelInvoiceConfirmTitle}
-        confirmDisabled={!cancelInvoiceJustificativa.trim()}
-      >
-        <label
-          htmlFor="cancel-invoice-justificativa"
-          className="block text-xs font-medium text-gray-600 mb-1"
-        >
-          Justificativa do cancelamento (obrigatória para a SEFAZ)
-        </label>
-        <textarea
-          id="cancel-invoice-justificativa"
-          className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-          rows={3}
-          value={cancelInvoiceJustificativa}
-          onChange={(e) => setCancelInvoiceJustificativa(e.target.value)}
-          placeholder="Ex: Pagamento combinado por outro meio, NF emitida indevidamente..."
-        />
-      </ConfirmDeleteModal>
+      />
     </main>
   );
 }

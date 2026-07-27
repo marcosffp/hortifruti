@@ -189,23 +189,15 @@ export const invoiceService = {
     }
   },
 
-  async cancelInvoice(
-    ref: string,
-    justificativa: string,
-    extemporaneo?: boolean,
-  ): Promise<string> {
+  async cancelInvoice(ref: string): Promise<string> {
     try {
-      const params = new URLSearchParams({ justificativa });
-      if (extemporaneo) params.append("extemporaneo", "true");
-
-      const response = await fetch(
-        `${API_BASE_URL}/invoices/${ref}/cancel?${params.toString()}`,
-        {
-          method: "DELETE",
-          headers: getAuthHeaders(),
-          credentials: "include",
-        },
-      );
+      // O motivo do cancelamento não é mais enviado pelo cliente — o backend
+      // sempre usa a justificativa fixa "Cancelamento extemporâneo".
+      const response = await fetch(`${API_BASE_URL}/invoices/${ref}/cancel`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
 
       const result = await response.text();
       if (!response.ok) {

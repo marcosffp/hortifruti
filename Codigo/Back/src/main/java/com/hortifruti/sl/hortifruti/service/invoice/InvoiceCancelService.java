@@ -14,6 +14,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class InvoiceCancelService {
 
+  /**
+   * Justificativa fixa usada em todo cancelamento de NF-e disparado pelo usuário via UI (botão "Dar
+   * Baixa"/"Cancelar Nota Fiscal" e cancelamento manual/avulso). O usuário não escolhe mais o texto
+   * — evita cancelamentos com justificativa mal preenchida ou curta demais para a Focus NFe.
+   */
+  public static final String MANUAL_CANCEL_JUSTIFICATIVA = "Cancelamento extemporâneo";
+
   private final FocusNfeApiClient focusNfeApiClient;
 
   private final CombinedScoreService combinedScoreService;
