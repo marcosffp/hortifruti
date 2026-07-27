@@ -12,6 +12,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -39,6 +40,7 @@ type TipoDestinatario = "clientes" | "contabilidade";
 
 export default function NotificacoesPage() {
   const { environment } = useAuth();
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,6 +85,21 @@ export default function NotificacoesPage() {
 
     fetchClientes();
   }, []);
+
+  // Verifica se voltou da autorização OAuth do Gmail (link mostrado quando o
+  // envio de email falha por falta de autorização — veja showErrorWithLink abaixo)
+  useEffect(() => {
+    const authStatus = searchParams?.get("auth");
+    const authMessage = searchParams?.get("message");
+
+    if (authStatus === "success") {
+      showSuccess(
+        "Autenticação com o Gmail realizada com sucesso! Você já pode enviar o email novamente.",
+      );
+    } else if (authStatus === "error") {
+      showError(`Erro na autenticação: ${authMessage || "Erro desconhecido"}`);
+    }
+  }, [searchParams]);
 
   const filteredClientes = clientes.filter(
     (cliente) =>

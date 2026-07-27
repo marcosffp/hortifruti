@@ -33,6 +33,7 @@ public class GoogleAuthService {
               .tokensDirectoryPath(tokensDirectoryPath)
               .redirectUri(redirectUri)
               .credentialsFile(base64FileDecoder.getGoogleDriveCredentialsFile())
+              .authOrigin("backup")
               .build();
 
       final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();

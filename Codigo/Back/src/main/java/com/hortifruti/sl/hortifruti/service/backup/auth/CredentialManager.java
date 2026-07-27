@@ -69,7 +69,10 @@ public class CredentialManager {
       throws IOException {
 
     String authorizationUrl =
-        flow.newAuthorizationUrl().setRedirectUri(config.getRedirectUri()).build();
+        flow.newAuthorizationUrl()
+            .setRedirectUri(config.getRedirectUri())
+            .setState(config.getAuthOrigin())
+            .build();
 
     return new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
         .setTransport(httpTransport)

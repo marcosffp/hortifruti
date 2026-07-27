@@ -18,16 +18,25 @@ public class GoogleOAuthService {
   @Value("${frontend.url}")
   private String frontendUrl;
 
-  public void processOAuth2Callback(String authorizationCode, HttpServletResponse response) {
+  /**
+   * @param state Origem da autorização ("notificacoes" ou "backup"), propagada pelo Google a
+   *     partir do valor definido em {@code CredentialConfig#getAuthOrigin()} ao gerar a URL de
+   *     autorização. Qualquer valor diferente de "notificacoes" volta para "/backup" (padrão
+   *     anterior a essa distinção existir).
+   */
+  public void processOAuth2Callback(
+      String authorizationCode, String state, HttpServletResponse response) {
+    String redirectPath = "notificacoes".equals(state) ? "/notificacoes" : "/backup";
     try {
       oauthCallbackHandler.handleAuthorizationCode(authorizationCode);
-      String redirectUrl = frontendUrl + "/backup?auth=success";
+      String redirectUrl = frontendUrl + redirectPath + "?auth=success";
       response.sendRedirect(redirectUrl);
     } catch (Exception e) {
       try {
         String redirectUrl =
             frontendUrl
-                + "/backup?auth=error&message="
+                + redirectPath
+                + "?auth=error&message="
                 + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8);
         response.sendRedirect(redirectUrl);
       } catch (IOException ioException) {
