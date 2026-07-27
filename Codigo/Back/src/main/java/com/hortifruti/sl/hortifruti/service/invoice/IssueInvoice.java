@@ -92,8 +92,15 @@ public class IssueInvoice {
     Client client = fetchClient(combinedScore.getClientId());
     String firstName = client.getClientName().split("\\s+")[0].toUpperCase().trim();
 
-    String customNoteText =
-        ClientBusinessRules.getRuleForCnpjClient(firstName).buildInvoiceNoteText(dadosAdicionais);
+    ClientBusinessRules.ClientRule clientRule = ClientBusinessRules.getRuleForCnpjClient(firstName);
+
+    if (clientRule.isRequiresDadosAdicionais()
+        && (dadosAdicionais == null || dadosAdicionais.isBlank())) {
+      throw new InvoiceException(
+          "As numerações dos pedidos são obrigatórias para gerar a NF deste cliente.");
+    }
+
+    String customNoteText = clientRule.buildInvoiceNoteText(dadosAdicionais);
     String infoText = customNoteText != null ? customNoteText : info;
 
     String dataHora =

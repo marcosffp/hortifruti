@@ -55,29 +55,41 @@ export default function CombinedScoresCards({
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [selectedScore, setSelectedScore] =
-    useState<ScoreWithBilletInfo | null>(null);
-  const [clientNumber, setClientNumber] = useState<string | null>(null);
-  const [showModalProducts, setShowModalProducts] = useState(false);
   const [clientNumberModal, setClientNumberModal] = useState({
     state: false,
     groupId: -1,
   });
-  const [showBilletModal, setShowBilletModal] = useState(false);
-  const [showBilletDataModal, setShowBilletDataModal] = useState(false);
-  const [billetPdf, setBilletPdf] = useState<Blob | null>(null);
-  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
-  const [showInvoiceDataModal, setShowInvoiceDataModal] = useState(false);
-  const [invoicePdf, setInvoicePdf] = useState<Blob | null>(null);
   const [showAdditionalDataModal, setShowAdditionalDataModal] = useState(false);
   const [pendingInvoiceScore, setPendingInvoiceScore] =
     useState<ScoreWithBilletInfo | null>(null);
   const [pendingCombinedFlow, setPendingCombinedFlow] = useState(false);
   const [client, setClient] = useState<ClientResponse | null>(null);
   const [showWildcardBilletModal, setShowWildcardBilletModal] = useState(false);
-  const [showInvoiceBilletModal, setShowInvoiceBilletModal] = useState(false);
-  const [invoiceBilletResult, setInvoiceBilletResult] =
-    useState<InvoiceWithBilletResult | null>(null);
+
+  // Cada modal abaixo guarda seu PRÓPRIO agrupamento (score), em vez de compartilhar
+  // um único "selectedScore" global. Isso evita que duas operações assíncronas para
+  // agrupamentos diferentes (ex.: gerar NF+boleto do 349, que demora minutos, enquanto
+  // o usuário abre "Ver Boleto" do 335) acabem sobrescrevendo uma à outra e abrindo o
+  // modal errado com os dados do agrupamento errado quando a operação demorada resolver.
+  const [productsModalScore, setProductsModalScore] =
+    useState<ScoreWithBilletInfo | null>(null);
+  const [billetResultModal, setBilletResultModal] = useState<{
+    score: ScoreWithBilletInfo;
+    pdf: Blob;
+    clientNumber: string | null;
+  } | null>(null);
+  const [billetDataModalScore, setBilletDataModalScore] =
+    useState<ScoreWithBilletInfo | null>(null);
+  const [invoiceResultModal, setInvoiceResultModal] = useState<{
+    score: ScoreWithBilletInfo;
+    pdf: Blob;
+  } | null>(null);
+  const [invoiceDataModalScore, setInvoiceDataModalScore] =
+    useState<ScoreWithBilletInfo | null>(null);
+  const [invoiceBilletResultModal, setInvoiceBilletResultModal] = useState<{
+    score: ScoreWithBilletInfo;
+    result: InvoiceWithBilletResult;
+  } | null>(null);
 
   // Guarda de duplo clique: bloqueia uma segunda geração de boleto/NF para o mesmo
   // agrupamento enquanto a primeira ainda está em andamento. Usa ref (além do state, só para
@@ -277,8 +289,7 @@ export default function CombinedScoresCards({
   };
 
   const handleViewProducts = (score: ScoreWithBilletInfo) => {
-    setSelectedScore(score);
-    setShowModalProducts(true);
+    setProductsModalScore(score);
   };
 
   const handleGenerateBillet = async (
@@ -296,11 +307,7 @@ export default function CombinedScoresCards({
 
       const pdfBlob = await generateBillet(scoreId, clientNumber, dueDate);
 
-      setSelectedScore(score);
-      setClientNumber(clientNumber);
-
-      setBilletPdf(pdfBlob);
-      setShowBilletModal(true);
+      setBilletResultModal({ score, pdf: pdfBlob, clientNumber });
 
       showSuccess("Boleto gerado com sucesso!");
 
@@ -333,20 +340,21 @@ export default function CombinedScoresCards({
       );
       const pdfBlob = await generateBillet(newScoreId, number, dueDate);
 
-      setSelectedScore({
-        id: newScoreId,
-        clientId,
-        totalValue: value,
-        dueDate: dueDate || null,
-        confirmedAt: new Date().toISOString(),
-        status: "PENDENTE",
-        hasBillet: true,
-        hasInvoice: false,
-        number,
+      setBilletResultModal({
+        score: {
+          id: newScoreId,
+          clientId,
+          totalValue: value,
+          dueDate: dueDate || null,
+          confirmedAt: new Date().toISOString(),
+          status: "PENDENTE",
+          hasBillet: true,
+          hasInvoice: false,
+          number,
+        },
+        pdf: pdfBlob,
+        clientNumber: number,
       });
-      setClientNumber(number);
-      setBilletPdf(pdfBlob);
-      setShowBilletModal(true);
 
       showSuccess("Boleto gerado com sucesso!");
       fetchScores();
@@ -360,10 +368,8 @@ export default function CombinedScoresCards({
 
   const handleShowBillet = async (score: ScoreWithBilletInfo) => {
     try {
-      setSelectedScore(score);
-
       if (score.billetInfo) {
-        setShowBilletDataModal(true);
+        setBilletDataModalScore(score);
         return;
       }
 
@@ -371,8 +377,7 @@ export default function CombinedScoresCards({
       showInfo("Buscando informações do boleto...");
       const billetInfo = await getBilletInfo(score.id);
       if (billetInfo) {
-        setSelectedScore({ ...score, billetInfo });
-        setShowBilletDataModal(true);
+        setBilletDataModalScore({ ...score, billetInfo });
       } else {
         showError("Não foi possível buscar as informações do boleto");
       }
@@ -385,8 +390,9 @@ export default function CombinedScoresCards({
   const handleGenerateInvoice = async (
     scoreId: number,
     dadosAdicionais?: string,
+    options?: { alreadyProcessing?: boolean },
   ) => {
-    if (!beginProcessing(scoreId)) return;
+    if (!options?.alreadyProcessing && !beginProcessing(scoreId)) return;
     try {
       const score = scores.find((s) => s.id === scoreId);
       if (!score) {
@@ -403,13 +409,14 @@ export default function CombinedScoresCards({
 
           const invoiceInfo = await getInvoiceInfo(response.ref);
 
-          setSelectedScore({
-            ...score,
-            invoiceRef: response.ref,
-            invoiceInfo: invoiceInfo,
+          setInvoiceResultModal({
+            score: {
+              ...score,
+              invoiceRef: response.ref,
+              invoiceInfo: invoiceInfo,
+            },
+            pdf: danfeBlob,
           });
-          setInvoicePdf(danfeBlob);
-          setShowInvoiceModal(true);
 
           showSuccess("Nota fiscal gerada com sucesso!");
           fetchScores();
@@ -426,28 +433,44 @@ export default function CombinedScoresCards({
         error instanceof Error ? error.message : "Erro ao gerar nota fiscal",
       );
       console.error(error);
+      fetchScores();
     } finally {
       endProcessing(scoreId);
     }
   };
 
   const handleInvoiceButtonClick = async (score: ScoreWithBilletInfo) => {
+    // Marca como "processando" já no clique (mostra o overlay de carregamento
+    // imediatamente) em vez de só depois da checagem do cliente abaixo, que faz
+    // uma chamada de rede e deixava a tela parecendo travada até ela responder.
+    if (!beginProcessing(score.id)) return;
     try {
       const clientData = await getClientById(score.clientId);
       const firstName =
-        clientData.clientName?.split("\\s+")[0]?.toUpperCase()?.trim() || "";
+        clientData.clientName?.split(/\s+/)[0]?.toUpperCase()?.trim() || "";
       const isLlineaClient = firstName.includes("LLINEA");
 
       if (isLlineaClient) {
+        // A geração real só ocorre depois que o usuário preencher o modal,
+        // então libera o "processando" aqui — ele será reativado ao confirmar.
+        endProcessing(score.id);
         setPendingInvoiceScore(score);
         setPendingCombinedFlow(false);
         setShowAdditionalDataModal(true);
       } else {
-        handleGenerateInvoice(score.id);
+        await handleGenerateInvoice(score.id, undefined, {
+          alreadyProcessing: true,
+        });
       }
     } catch (error) {
+      // Não gera a NF sem confirmar se o cliente exige a descrição especial:
+      // se não foi possível checar o cliente, é mais seguro abortar do que
+      // arriscar gerar a NF sem o preenchimento obrigatório.
       console.error("Erro ao verificar cliente:", error);
-      handleGenerateInvoice(score.id);
+      endProcessing(score.id);
+      showError(
+        "Não foi possível verificar os dados do cliente. Tente novamente.",
+      );
     }
   };
 
@@ -456,8 +479,9 @@ export default function CombinedScoresCards({
   const handleGenerateInvoiceAndBillet = async (
     scoreId: number,
     dadosAdicionais?: string,
+    options?: { alreadyProcessing?: boolean },
   ) => {
-    if (!beginProcessing(scoreId)) return;
+    if (!options?.alreadyProcessing && !beginProcessing(scoreId)) return;
     const score = scores.find((s) => s.id === scoreId);
     if (!score) {
       showError("Agrupamento não encontrado");
@@ -471,9 +495,10 @@ export default function CombinedScoresCards({
       );
       const result = await generateInvoiceWithBillet(scoreId, dadosAdicionais);
 
-      setSelectedScore({ ...score, invoiceRef: result.invoiceRef });
-      setInvoiceBilletResult(result);
-      setShowInvoiceBilletModal(true);
+      setInvoiceBilletResultModal({
+        score: { ...score, invoiceRef: result.invoiceRef },
+        result,
+      });
 
       showSuccess("Nota fiscal e boleto vinculado gerados com sucesso!");
       fetchScores();
@@ -491,40 +516,47 @@ export default function CombinedScoresCards({
   };
 
   const handleCombinedButtonClick = async (score: ScoreWithBilletInfo) => {
+    // Mesmo raciocínio de handleInvoiceButtonClick: mostra o overlay já no
+    // clique, e não gera a NF+boleto sem confirmar a exigência de descrição
+    // especial caso a checagem do cliente falhe.
+    if (!beginProcessing(score.id)) return;
     try {
       const clientData = await getClientById(score.clientId);
       const firstName =
-        clientData.clientName?.split("\\s+")[0]?.toUpperCase()?.trim() || "";
+        clientData.clientName?.split(/\s+/)[0]?.toUpperCase()?.trim() || "";
       const isLlineaClient = firstName.includes("LLINEA");
 
       if (isLlineaClient) {
+        endProcessing(score.id);
         setPendingInvoiceScore(score);
         setPendingCombinedFlow(true);
         setShowAdditionalDataModal(true);
       } else {
-        handleGenerateInvoiceAndBillet(score.id);
+        await handleGenerateInvoiceAndBillet(score.id, undefined, {
+          alreadyProcessing: true,
+        });
       }
     } catch (error) {
       console.error("Erro ao verificar cliente:", error);
-      handleGenerateInvoiceAndBillet(score.id);
+      endProcessing(score.id);
+      showError(
+        "Não foi possível verificar os dados do cliente. Tente novamente.",
+      );
     }
   };
 
   const handleShowInvoice = async (score: ScoreWithBilletInfo) => {
     try {
-      setSelectedScore(score);
-
       // Se já tem a referência e info da invoice
       if (score.invoiceRef && score.invoiceInfo) {
-        setShowInvoiceDataModal(true);
+        setInvoiceDataModalScore(score);
       } else if (score.invoiceRef) {
         // Tem a referência mas não tem a info, busca novamente
         showInfo("Buscando nota fiscal...");
         try {
           const invoiceInfo = await getInvoiceInfo(score.invoiceRef);
           if (invoiceInfo) {
-            setSelectedScore({ ...score, invoiceInfo });
-            setShowInvoiceDataModal(true);
+            setInvoiceDataModalScore({ ...score, invoiceInfo });
           } else {
             showError("Não foi possível buscar as informações da nota fiscal");
           }
@@ -832,14 +864,11 @@ export default function CombinedScoresCards({
       )}
 
       {/* Modal de produtos */}
-      {showModalProducts && selectedScore && (
+      {productsModalScore && (
         <GroupedProductsModal
-          combinedScoreId={selectedScore.id}
-          scoreNumber={selectedScore.number}
-          onClose={() => {
-            setShowModalProducts(false);
-            setSelectedScore(null);
-          }}
+          combinedScoreId={productsModalScore.id}
+          scoreNumber={productsModalScore.number}
+          onClose={() => setProductsModalScore(null)}
         />
       )}
 
@@ -852,33 +881,29 @@ export default function CombinedScoresCards({
         }}
       />
 
-      {/* Modal de boleto */}
-      {showBilletModal && billetPdf && selectedScore && (
+      {/* Modal de boleto recém-gerado */}
+      {billetResultModal && (
         <ShowBilletModal
-          isOpen={showBilletModal}
-          onClose={() => {
-            setShowBilletModal(false);
-            setBilletPdf(null);
-            setSelectedScore(null);
-            setClientNumber(null);
-          }}
-          billetData={billetPdf}
-          scoreNumber={selectedScore.number || selectedScore.id}
-          clientNumber={clientNumber}
+          isOpen={true}
+          onClose={() => setBilletResultModal(null)}
+          billetData={billetResultModal.pdf}
+          scoreNumber={
+            billetResultModal.score.number || billetResultModal.score.id
+          }
+          clientNumber={billetResultModal.clientNumber}
         />
       )}
 
-      {showBilletDataModal && selectedScore?.billetInfo && (
+      {billetDataModalScore?.billetInfo && (
         <ShowBilletDataModal
-          isOpen={showBilletDataModal}
-          onClose={() => {
-            setShowBilletDataModal(false);
-            setSelectedScore(null);
-          }}
-          billetData={selectedScore.billetInfo}
-          combinedScoreId={selectedScore.id}
+          isOpen={true}
+          onClose={() => setBilletDataModalScore(null)}
+          billetData={billetDataModalScore.billetInfo}
+          combinedScoreId={billetDataModalScore.id}
           clientNumber={
-            selectedScore.number || selectedScore.billetInfo?.seuNumero || null
+            billetDataModalScore.number ||
+            billetDataModalScore.billetInfo?.seuNumero ||
+            null
           }
           onBilletCancelled={() => {
             fetchScores(); // Recarrega os dados após cancelamento
@@ -895,30 +920,25 @@ export default function CombinedScoresCards({
         }}
       />
 
-      {/* Modal de Nota Fiscal */}
-      {showInvoiceModal && invoicePdf && selectedScore && (
+      {/* Modal de Nota Fiscal recém-gerada */}
+      {invoiceResultModal && (
         <ShowInvoiceModal
-          isOpen={showInvoiceModal}
-          onClose={() => {
-            setShowInvoiceModal(false);
-            setInvoicePdf(null);
-            setSelectedScore(null);
-          }}
-          invoiceData={invoicePdf}
-          scoreNumber={selectedScore.number || selectedScore.id}
-          ref={selectedScore.invoiceRef || ""}
-          invoiceNumber={selectedScore.invoiceInfo?.number}
+          isOpen={true}
+          onClose={() => setInvoiceResultModal(null)}
+          invoiceData={invoiceResultModal.pdf}
+          scoreNumber={
+            invoiceResultModal.score.number || invoiceResultModal.score.id
+          }
+          ref={invoiceResultModal.score.invoiceRef || ""}
+          invoiceNumber={invoiceResultModal.score.invoiceInfo?.number}
         />
       )}
 
-      {showInvoiceDataModal && selectedScore?.invoiceInfo && (
+      {invoiceDataModalScore?.invoiceInfo && (
         <ShowInvoiceDataModal
-          isOpen={showInvoiceDataModal}
-          onClose={() => {
-            setShowInvoiceDataModal(false);
-            setSelectedScore(null);
-          }}
-          invoiceData={selectedScore.invoiceInfo}
+          isOpen={true}
+          onClose={() => setInvoiceDataModalScore(null)}
+          invoiceData={invoiceDataModalScore.invoiceInfo}
           onInvoiceCancelled={() => {
             fetchScores(); // Recarrega os dados após cancelamento
           }}
@@ -965,20 +985,19 @@ export default function CombinedScoresCards({
       />
 
       {/* Modal de NF + Boleto gerados juntos */}
-      {showInvoiceBilletModal && invoiceBilletResult && selectedScore && (
+      {invoiceBilletResultModal && (
         <ShowInvoiceAndBilletModal
-          isOpen={showInvoiceBilletModal}
-          onClose={() => {
-            setShowInvoiceBilletModal(false);
-            setInvoiceBilletResult(null);
-            setSelectedScore(null);
-          }}
-          danfeBlob={invoiceBilletResult.danfeBlob}
-          xmlBlob={invoiceBilletResult.xmlBlob}
-          billetBlob={invoiceBilletResult.billetBlob}
-          scoreNumber={selectedScore.number || selectedScore.id}
-          invoiceNumber={invoiceBilletResult.invoiceNumber}
-          billetNumber={invoiceBilletResult.billetNumber}
+          isOpen={true}
+          onClose={() => setInvoiceBilletResultModal(null)}
+          danfeBlob={invoiceBilletResultModal.result.danfeBlob}
+          xmlBlob={invoiceBilletResultModal.result.xmlBlob}
+          billetBlob={invoiceBilletResultModal.result.billetBlob}
+          scoreNumber={
+            invoiceBilletResultModal.score.number ||
+            invoiceBilletResultModal.score.id
+          }
+          invoiceNumber={invoiceBilletResultModal.result.invoiceNumber}
+          billetNumber={invoiceBilletResultModal.result.billetNumber}
         />
       )}
     </div>

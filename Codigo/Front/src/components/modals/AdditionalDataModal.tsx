@@ -17,16 +17,23 @@ export default function AdditionalDataModal({
   scoreNumber,
 }: AdditionalDataModalProps) {
   const [dadosAdicionais, setDadosAdicionais] = useState("");
+  const [error, setError] = useState("");
 
   if (!isOpen) return null;
 
   const handleConfirm = () => {
-    onConfirm(dadosAdicionais);
+    if (!dadosAdicionais.trim()) {
+      setError("Preencha as numerações dos pedidos para gerar a NF.");
+      return;
+    }
+    onConfirm(dadosAdicionais.trim());
     setDadosAdicionais("");
+    setError("");
   };
 
   const handleClose = () => {
     setDadosAdicionais("");
+    setError("");
     onClose();
   };
 
@@ -57,20 +64,26 @@ export default function AdditionalDataModal({
                 htmlFor="dados-adicionais-numeracoes"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Numerações dos Pedidos
+                Numerações dos Pedidos *
               </label>
               <textarea
                 id="dados-adicionais-numeracoes"
                 value={dadosAdicionais}
-                onChange={(e) => setDadosAdicionais(e.target.value)}
+                onChange={(e) => {
+                  setDadosAdicionais(e.target.value);
+                  if (error) setError("");
+                }}
                 placeholder="Digite as numerações dos pedidos deste período da combinação..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px] resize-vertical"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px] resize-vertical ${
+                  error ? "border-red-500" : "border-gray-300"
+                }`}
                 rows={4}
               />
+              {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
               <p className="text-xs text-gray-500 mt-1">
                 Informe as numerações dos pedidos que fazem parte deste
-                agrupamento. Este campo aparecerá nas informações adicionais da
-                nota fiscal.
+                agrupamento. Este campo é obrigatório para este cliente e
+                aparecerá nas informações adicionais da nota fiscal.
               </p>
             </div>
           </div>
