@@ -8,7 +8,10 @@ public record AddressRequest(
     @NotBlank(message = "Logradouro é obrigatório") @JsonProperty("logradouro") String logradouro,
     @NotBlank(message = "Número é obrigatório") @JsonProperty("numero") String numero,
     @JsonProperty("complemento") String complemento,
-    @NotBlank(message = "Bairro é obrigatório") @JsonProperty("bairro") String bairro,
+    @NotBlank(message = "Bairro é obrigatório")
+        @Size(max = 30, message = "Bairro muito longo (máximo 30 caracteres)")
+        @JsonProperty("bairro")
+        String bairro,
     @NotBlank(message = "Município é obrigatório") @JsonProperty("municipio") String municipio,
     @NotBlank(message = "UF é obrigatória") @JsonProperty("uf") @Size(min = 2, max = 2) String uf,
     @NotBlank(message = "CEP é obrigatório") @JsonProperty("cep") String cep,

@@ -144,11 +144,11 @@ public class BilletFactory {
                 + " caracteres, incluindo rua, número e complemento). Reduza o complemento ou"
                 + " o endereço do cliente.");
       }
+      // O cadastro de clientes já limita o bairro a 30 caracteres, mas clientes
+      // cadastrados antes dessa limitação podem ter um bairro mais longo salvo.
+      // Trunca em vez de falhar a emissão do boleto.
       if (bairro.length() > BAIRRO_MAX_LENGTH) {
-        throw new BilletException(
-            "Bairro do cliente muito longo para o boleto (máximo "
-                + BAIRRO_MAX_LENGTH
-                + " caracteres). Reduza o bairro cadastrado do cliente.");
+        bairro = bairro.substring(0, BAIRRO_MAX_LENGTH).trim();
       }
 
       return new Pagador(

@@ -18,6 +18,9 @@ import {
   validarTelefone,
 } from "@/utils/validationUtils";
 
+// Limite do boleto bancário (Sicoob) para o campo de bairro do pagador.
+const BAIRRO_MAX_LENGTH = 30;
+
 export interface ClientFormData {
   nome: string;
   email: string;
@@ -127,10 +130,17 @@ export default function ClientForm({
         return;
       }
 
+      // O ViaCEP pode retornar bairros com nomes compostos que passam do limite
+      // aceito pelo boleto (30 caracteres). Trunca aqui para nunca deixar passar.
+      const bairro = (endereco.bairro || formData.bairro).slice(
+        0,
+        BAIRRO_MAX_LENGTH,
+      );
+
       setFormData((prev) => ({
         ...prev,
         endereco: endereco.logradouro || prev.endereco,
-        bairro: endereco.bairro || prev.bairro,
+        bairro,
         cidade: endereco.localidade || prev.cidade,
         estado: endereco.uf || prev.estado,
       }));
@@ -173,6 +183,8 @@ export default function ClientForm({
       formattedValue = formatarCEP(value);
     } else if (name === "stateRegistration") {
       formattedValue = formatarIEMinasGerais(value);
+    } else if (name === "bairro") {
+      formattedValue = value.slice(0, BAIRRO_MAX_LENGTH);
     }
 
     setFormData((prev) => ({
@@ -676,6 +688,7 @@ export default function ClientForm({
                     })
                   }
                   required
+                  maxLength={BAIRRO_MAX_LENGTH}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.bairro ? "border-red-500" : "border-gray-300"
                   }`}
