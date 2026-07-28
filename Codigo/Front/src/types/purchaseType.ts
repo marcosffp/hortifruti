@@ -37,3 +37,21 @@ export interface InvoiceProductUpdate {
   quantity?: number;
   unitType?: string;
 }
+
+export interface FiscalProductType {
+  code: string;
+  description: string;
+  unidadeComercial: string;
+}
+
+export interface ManualPurchaseItemRequest {
+  code: string;
+  quantity: number;
+  price: number;
+}
+
+export interface ManualPurchaseRequest {
+  clientId: number;
+  purchaseDate: string;
+  items: ManualPurchaseItemRequest[];
+}
