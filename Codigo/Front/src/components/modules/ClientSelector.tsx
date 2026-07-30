@@ -1,5 +1,5 @@
 import { UserRoundSearch } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { clientService } from "@/services/clientService";
 import type { ClientSelectionInfo } from "@/types/clientType";
 
@@ -7,11 +7,28 @@ type ClientSelectorProps = {
   onClientSelect?: (client: ClientSelectionInfo) => void;
 };
 
+const DIACRITICS_REGEX = new RegExp(
+  `[${String.fromCharCode(0x0300)}-${String.fromCharCode(0x036f)}]`,
+  "g",
+);
+
+function normalize(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(DIACRITICS_REGEX, "")
+    .toLowerCase()
+    .trim();
+}
+
 export default function ClientSelector({
   onClientSelect,
 }: ClientSelectorProps) {
   const [clientes, setClientes] = useState<ClientSelectionInfo[]>([]);
-  const [selectedId, setSelectedId] = useState<string>("none");
+  const [selected, setSelected] = useState<ClientSelectionInfo | null>(null);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [highlighted, setHighlighted] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -21,13 +38,62 @@ export default function ClientSelector({
     fetchClients();
   }, []);
 
-  const handleClientSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedId(event.target.value);
-    const selectedClient = clientes.find(
-      (client) => client.clientId === Number(event.target.value),
-    );
-    if (selectedClient && onClientSelect) {
-      onClientSelect(selectedClient);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const suggestions = clientes
+    .filter((client) => normalize(client.clientName).includes(normalize(query)))
+    .sort((a, b) => a.clientName.localeCompare(b.clientName));
+
+  const selectClient = (client: ClientSelectionInfo) => {
+    setSelected(client);
+    setQuery(client.clientName);
+    setOpen(false);
+    onClientSelect?.(client);
+  };
+
+  const handleChange = (text: string) => {
+    setQuery(text);
+    setOpen(true);
+    setHighlighted(0);
+    if (selected) setSelected(null);
+  };
+
+  const handleFocus = () => {
+    setOpen(true);
+    if (selected) setQuery("");
+  };
+
+  const handleBlur = () => {
+    if (!open) return;
+    setQuery(selected ? selected.clientName : "");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!open || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlighted((h) => Math.min(h + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlighted((h) => Math.max(h - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const candidate = suggestions[highlighted] ?? suggestions[0];
+      if (candidate) selectClient(candidate);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+      handleBlur();
     }
   };
 
@@ -41,21 +107,42 @@ export default function ClientSelector({
         <label htmlFor="client" className="font-medium text-gray-700">
           Cliente
         </label>
-        <select
-          id="client"
-          className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-green-500 transition w-full truncate"
-          value={selectedId}
-          onChange={handleClientSelect}
-        >
-          <option value="none" disabled>
-            Selecione um cliente
-          </option>
-          {clientes.map((client) => (
-            <option key={client.clientId} value={client.clientId}>
-              {client.clientName}
-            </option>
-          ))}
-        </select>
+        <div className="relative w-full" ref={containerRef}>
+          <input
+            id="client"
+            type="text"
+            value={query}
+            onChange={(e) => handleChange(e.target.value)}
+            onFocus={handleFocus}
+            onKeyDown={handleKeyDown}
+            placeholder="Digite o nome do cliente"
+            autoComplete="off"
+            className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-green-500 transition w-full truncate"
+          />
+          {open && suggestions.length > 0 && (
+            <ul className="absolute z-10 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg">
+              {suggestions.map((client, index) => (
+                <li key={client.clientId}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => selectClient(client)}
+                    className={`w-full text-left px-3 py-2 text-sm truncate ${
+                      index === highlighted ? "bg-green-50" : "hover:bg-gray-50"
+                    }`}
+                  >
+                    {client.clientName}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {open && query.trim() !== "" && suggestions.length === 0 && (
+            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-sm text-gray-500">
+              Nenhum cliente encontrado
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

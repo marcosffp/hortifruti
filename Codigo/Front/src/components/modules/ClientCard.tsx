@@ -22,6 +22,7 @@ interface ClientCardProps {
   ultimaCompra?: string;
   totalCompras?: number;
   onDelete: (id: number) => void;
+  onViewDetails: (id: number) => void;
   displayMode?: "list" | "grid";
 }
 
@@ -35,12 +36,28 @@ export default function ClientCard({
   ultimaCompra = "-",
   totalCompras = 0,
   onDelete,
+  onViewDetails,
   displayMode = "list",
 }: Readonly<ClientCardProps>) {
+  const handleActivateKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onViewDetails(id);
+    }
+  };
+
   // Grid mode card layout
   if (displayMode === "grid") {
     return (
-      <div className="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
+      // biome-ignore lint/a11y/useSemanticElements: can't be a real <button> since it contains a nested Link and button (edit/delete actions)
+      <div
+        className="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer"
+        onClick={() => onViewDetails(id)}
+        onKeyDown={handleActivateKeyDown}
+        role="button"
+        tabIndex={0}
+        aria-label={`Ver detalhes de ${nome}`}
+      >
         <div className="p-5">
           <div className="flex justify-between items-start">
             <div className="flex items-center">
@@ -144,7 +161,10 @@ export default function ClientCard({
               </div>
             </div>
             <div className="flex space-x-1">
-              <Link href={`/comercio/clientes/editar/${id}`}>
+              <Link
+                href={`/comercio/clientes/editar/${id}`}
+                onClick={(e) => e.stopPropagation()}
+              >
                 <button
                   type="button"
                   className="h-10 w-10 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-all"
@@ -160,6 +180,7 @@ export default function ClientCard({
                 aria-label="Excluir cliente"
                 onClick={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   onDelete(id);
                 }}
               >
@@ -174,7 +195,15 @@ export default function ClientCard({
 
   // Default list mode layout (for use in a table)
   return (
-    <div className="grid grid-cols-12 gap-4 px-6 py-5 border-b items-center hover:bg-gray-50 transition-all duration-300 group sm:grid-cols-12 sm:gap-4">
+    // biome-ignore lint/a11y/useSemanticElements: can't be a real <button> since it contains a nested Link and button (edit/delete actions)
+    <div
+      className="grid grid-cols-12 gap-4 px-6 py-5 border-b items-center hover:bg-gray-50 transition-all duration-300 group sm:grid-cols-12 sm:gap-4 cursor-pointer"
+      onClick={() => onViewDetails(id)}
+      onKeyDown={handleActivateKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={`Ver detalhes de ${nome}`}
+    >
       <div className="col-span-12 sm:col-span-3 flex items-start">
         <div className="mr-3 mt-1">
           <div className="h-8 w-8 bg-green-50 text-green-600 rounded-full flex items-center justify-center">
@@ -256,7 +285,10 @@ export default function ClientCard({
         </span>
       </div>
       <div className="col-span-6 sm:col-span-1 flex justify-end space-x-1">
-        <Link href={`/comercio/clientes/editar/${id}`}>
+        <Link
+          href={`/comercio/clientes/editar/${id}`}
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
             type="button"
             className="h-9 w-9 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-all"
@@ -273,6 +305,7 @@ export default function ClientCard({
           title="Excluir cliente"
           onClick={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             onDelete(id);
           }}
         >

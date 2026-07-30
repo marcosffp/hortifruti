@@ -19,8 +19,8 @@ public class GoogleOAuthService {
   private String frontendUrl;
 
   /**
-   * @param state Origem da autorização ("notificacoes" ou "backup"), propagada pelo Google a
-   *     partir do valor definido em {@code CredentialConfig#getAuthOrigin()} ao gerar a URL de
+   * @param state Origem da autorização ("notificacoes" ou "backup"), propagada pelo Google a partir
+   *     do valor definido em {@code CredentialConfig#getAuthOrigin()} ao gerar a URL de
    *     autorização. Qualquer valor diferente de "notificacoes" volta para "/backup" (padrão
    *     anterior a essa distinção existir).
    */

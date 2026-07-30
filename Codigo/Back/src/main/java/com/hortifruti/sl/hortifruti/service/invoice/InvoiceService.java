@@ -35,6 +35,11 @@ public class InvoiceService {
   }
 
   @Transactional
+  public String reconcileInvoiceStatus(Long combinedScoreId) {
+    return invoiceQueryService.reconcileInvoiceStatus(combinedScoreId);
+  }
+
+  @Transactional
   public ResponseEntity<Resource> downloadDanfe(String ref) {
     return danfeXmlService.downloadDanfe(ref);
   }

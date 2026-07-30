@@ -68,7 +68,8 @@ public class PurchaseService {
         clientRepository
             .findById(request.clientId())
             .orElseThrow(
-                () -> new ClientException("Cliente não encontrado com o ID: " + request.clientId()));
+                () ->
+                    new ClientException("Cliente não encontrado com o ID: " + request.clientId()));
 
     List<InvoiceProduct> invoiceProducts = new ArrayList<>();
     for (ManualPurchaseItemRequest item : request.items()) {

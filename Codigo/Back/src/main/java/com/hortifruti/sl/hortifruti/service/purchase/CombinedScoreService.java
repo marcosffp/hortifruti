@@ -50,29 +50,6 @@ public class CombinedScoreService {
   private final GroupedProductService productGrouper;
   private final GroupedProductRepository productGrouperRepository;
 
-  public void cancelGrouping(Long id) {
-    if (!combinedScoreRepository.existsById(id)) {
-      throw new CombinedScoreException("Agrupamento com o ID " + id + " não encontrado.");
-    }
-    CombinedScore savedEntity =
-        combinedScoreRepository
-            .findById(id)
-            .orElseThrow(
-                () ->
-                    new CombinedScoreException("Agrupamento com o ID " + id + " não encontrado."));
-    Client client =
-        clientRepository
-            .findById(savedEntity.getClientId())
-            .orElseThrow(
-                () ->
-                    new CombinedScoreException(
-                        "Cliente com ID " + savedEntity.getClientId() + " não encontrado."));
-    BigDecimal newTotal = client.getTotalPurchaseValue().subtract(savedEntity.getTotalValue());
-    client.setTotalPurchaseValue(newTotal);
-    clientRepository.save(client);
-    combinedScoreRepository.deleteById(id);
-  }
-
   public Page<CombinedScoreResponse> listGroupings(Long clientId, Pageable pageable) {
     Page<CombinedScore> groupings;
 
@@ -297,6 +274,27 @@ public class CombinedScoreService {
     }
 
     combinedScoreRepository.saveAll(combinedScores);
+  }
+
+  /**
+   * Reverte {@code hasInvoice}/{@code invoiceRef} quando a Sefaz rejeita a nota (status
+   * erro/denegado/cancelado) — sem isso o agrupamento fica com {@code hasInvoice=true} para sempre,
+   * mostrando "Ver NF" no front mesmo a nota nunca tendo sido autorizada. Diferente de {@link
+   * #updateStatusAfterInvoiceCancellation}, não mexe no {@code Status} do agrupamento: a compra em
+   * si continua válida, só a tentativa de emissão falhou, então o agrupamento deve poder tentar
+   * gerar a NF de novo. Best-effort: se o agrupamento não existir mais (já deletado), não há o que
+   * reverter.
+   */
+  @Transactional
+  public void clearInvoiceAfterRejection(String ref) {
+    combinedScoreRepository
+        .findByInvoiceRef(ref)
+        .ifPresent(
+            combinedScore -> {
+              combinedScore.setHasInvoice(false);
+              combinedScore.setInvoiceRef(null);
+              combinedScoreRepository.save(combinedScore);
+            });
   }
 
   @Transactional

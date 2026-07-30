@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.invoice;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.config.FocusNfeApiClient;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
@@ -71,7 +72,17 @@ public class IssueInvoice {
 
       String response = focusNfeApiClient.sendRequest(ref, payload);
 
-      InvoiceResponse invoiceResponse = objectMapper.readValue(response, InvoiceResponse.class);
+      JsonNode responseNode = objectMapper.readTree(response);
+      InvoiceResponse invoiceResponse =
+          objectMapper.treeToValue(responseNode, InvoiceResponse.class);
+
+      // A Focus NFe às vezes já resolve a autorização (ou rejeição) da Sefaz na própria resposta
+      // síncrona do POST, sem passar pelo "processando_autorizacao" assíncrono. Se não checarmos
+      // isso aqui, marcamos hasInvoice=true para uma nota que a Sefaz já rejeitou — o agrupamento
+      // fica travado mostrando "Ver NF" no front para uma NF que nunca existiu de fato.
+      if (isRejectedStatus(invoiceResponse.status())) {
+        throw new InvoiceException(buildRejectionMessage(responseNode, invoiceResponse.status()));
+      }
 
       updateCombinedScoreStatus(combinedScore, invoiceResponse);
 
@@ -81,6 +92,25 @@ public class IssueInvoice {
     } catch (Exception e) {
       throw new InvoiceException("Erro ao emitir nota fiscal: " + e.getMessage(), e);
     }
+  }
+
+  private boolean isRejectedStatus(String status) {
+    if (status == null) {
+      return false;
+    }
+    String normalized = status.toLowerCase();
+    return normalized.contains("erro")
+        || normalized.contains("denegado")
+        || normalized.contains("cancelado")
+        || normalized.contains("rejeitado");
+  }
+
+  private String buildRejectionMessage(JsonNode responseNode, String status) {
+    String mensagemSefaz = responseNode.path("mensagem_sefaz").asText(null);
+    if (mensagemSefaz != null && !mensagemSefaz.isBlank()) {
+      return "A Sefaz rejeitou a nota fiscal: " + mensagemSefaz;
+    }
+    return "A nota fiscal não foi autorizada pela Sefaz (status: " + status + ").";
   }
 
   private IssueInvoiceRequest buildInvoiceRequest(

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import AdditionalDataModal from "@/components/modals/AdditionalDataModal";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import GroupedProductsModal from "@/components/modals/GroupedProductsModal";
 import ShowBilletDataModal from "@/components/modals/ShowBilletDataModal";
 import ShowBilletModal from "@/components/modals/ShowBilletModal";
@@ -65,6 +66,8 @@ export default function CombinedScoresCards({
   const [pendingCombinedFlow, setPendingCombinedFlow] = useState(false);
   const [client, setClient] = useState<ClientResponse | null>(null);
   const [showWildcardBilletModal, setShowWildcardBilletModal] = useState(false);
+  const [deleteConfirmScore, setDeleteConfirmScore] =
+    useState<ScoreWithBilletInfo | null>(null);
 
   // Cada modal abaixo guarda seu PRÓPRIO agrupamento (score), em vez de compartilhar
   // um único "selectedScore" global. Isso evita que duas operações assíncronas para
@@ -137,6 +140,7 @@ export default function CombinedScoresCards({
     generateInvoiceWithBillet,
     getInvoiceInfo,
     getDanfe,
+    reconcileInvoiceStatus,
   } = useInvoice();
   const { getClientById } = useClient();
 
@@ -250,11 +254,7 @@ export default function CombinedScoresCards({
       });
   }, [clientId, getClientById]);
 
-  const handleDelete = async (id: number, number: string) => {
-    if (
-      !confirm(`Tem certeza que deseja deletar o agrupamento ${number || id}?`)
-    )
-      return;
+  const handleDelete = async (id: number) => {
     if (!beginAction(id)) return;
 
     try {
@@ -546,30 +546,40 @@ export default function CombinedScoresCards({
   };
 
   const handleShowInvoice = async (score: ScoreWithBilletInfo) => {
+    // Se já tem a referência e info da invoice
+    if (score.invoiceRef && score.invoiceInfo) {
+      setInvoiceDataModalScore(score);
+      return;
+    }
+
+    if (!score.invoiceRef) {
+      showError("Referência da nota fiscal não encontrada");
+      return;
+    }
+
+    // Tem a referência mas não tem a info, busca novamente
+    showInfo("Buscando nota fiscal...");
     try {
-      // Se já tem a referência e info da invoice
-      if (score.invoiceRef && score.invoiceInfo) {
-        setInvoiceDataModalScore(score);
-      } else if (score.invoiceRef) {
-        // Tem a referência mas não tem a info, busca novamente
-        showInfo("Buscando nota fiscal...");
-        try {
-          const invoiceInfo = await getInvoiceInfo(score.invoiceRef);
-          if (invoiceInfo) {
-            setInvoiceDataModalScore({ ...score, invoiceInfo });
-          } else {
-            showError("Não foi possível buscar as informações da nota fiscal");
-          }
-        } catch (error) {
-          showError("Erro ao buscar informações da nota fiscal");
-          console.error(error);
-        }
-      } else {
-        showError("Referência da nota fiscal não encontrada");
-      }
+      const invoiceInfo = await getInvoiceInfo(score.invoiceRef);
+      setInvoiceDataModalScore({ ...score, invoiceInfo });
     } catch (error) {
-      showError("Erro ao buscar nota fiscal");
       console.error(error);
+      // A nota nunca chegou a ser autorizada pela Sefaz (rejeitada/denegada/cancelada) — o
+      // agrupamento ficou com hasInvoice=true indevidamente. Reconcilia automaticamente com a
+      // Focus NFe: se confirmado que a nota foi mesmo rejeitada, libera o agrupamento (hasInvoice
+      // volta a false) para que "Gerar NF" e "Deletar" reapareçam no card.
+      try {
+        const reconcileResult = await reconcileInvoiceStatus(score.id);
+        await fetchScores();
+        showInfo(reconcileResult);
+      } catch (reconcileError) {
+        console.error(reconcileError);
+        showError(
+          error instanceof Error
+            ? error.message
+            : "Erro ao buscar informações da nota fiscal",
+        );
+      }
     }
   };
 
@@ -822,7 +832,7 @@ export default function CombinedScoresCards({
                     {!isBilletOpen(score) && !score.hasInvoice && (
                       <button
                         type="button"
-                        onClick={() => handleDelete(score.id, score.number)}
+                        onClick={() => setDeleteConfirmScore(score)}
                         disabled={actionProcessingIds.has(score.id)}
                         className="flex items-center justify-center gap-1 px-2 py-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -871,6 +881,25 @@ export default function CombinedScoresCards({
           onClose={() => setProductsModalScore(null)}
         />
       )}
+
+      <ConfirmDeleteModal
+        open={!!deleteConfirmScore}
+        onClose={() => setDeleteConfirmScore(null)}
+        confirmDisabled={
+          deleteConfirmScore
+            ? actionProcessingIds.has(deleteConfirmScore.id)
+            : false
+        }
+        onConfirm={() => {
+          if (deleteConfirmScore) {
+            handleDelete(deleteConfirmScore.id);
+          }
+          setDeleteConfirmScore(null);
+        }}
+        title={`Tem certeza que deseja deletar o agrupamento ${
+          deleteConfirmScore?.number || deleteConfirmScore?.id
+        }? Esta ação não pode ser desfeita.`}
+      />
 
       <WildcardBilletModal
         open={showWildcardBilletModal}

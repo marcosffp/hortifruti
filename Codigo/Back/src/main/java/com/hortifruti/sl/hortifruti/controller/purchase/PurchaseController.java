@@ -45,7 +45,10 @@ public class PurchaseController {
     Purchase purchase = purchaseService.createManualPurchase(request);
     return ResponseEntity.ok(
         new PurchaseResponse(
-            purchase.getId(), purchase.getPurchaseDate(), purchase.getTotal(), purchase.getUpdatedAt()));
+            purchase.getId(),
+            purchase.getPurchaseDate(),
+            purchase.getTotal(),
+            purchase.getUpdatedAt()));
   }
 
   @PreAuthorize("hasRole('MANAGER')")

@@ -17,8 +17,8 @@ import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.Yaml;
 
 /**
- * Sincroniza o catálogo fiscal (products.yml, hoje usado apenas pelo ProductNFService na emissão
- * de NF-e) com a tabela {@code fiscal_products}, usada para alimentar o dropdown de produtos na
+ * Sincroniza o catálogo fiscal (products.yml, hoje usado apenas pelo ProductNFService na emissão de
+ * NF-e) com a tabela {@code fiscal_products}, usada para alimentar o dropdown de produtos na
  * criação manual de compras. Parsing independente do ProductNFService de propósito, para não
  * arriscar o fluxo de emissão de NF-e que já funciona.
  */
@@ -105,7 +105,8 @@ public class FiscalProductInitializer implements CommandLineRunner {
   @SuppressWarnings("unchecked")
   private List<Map<String, Object>> loadYamlProducts() {
     Yaml yaml = new Yaml();
-    try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("products.yml")) {
+    try (InputStream inputStream =
+        getClass().getClassLoader().getResourceAsStream("products.yml")) {
       Map<String, Object> data = yaml.load(inputStream);
       return (List<Map<String, Object>>) data.get("products");
     } catch (Exception e) {

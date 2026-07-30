@@ -308,3 +308,46 @@ h6 {
 .animate-loading-stripes {
   animation: loadingStripes 0.7s linear infinite;
 }
+
+/* Live 3D tumbling icon for summary card icons (client purchases dashboard) */
+.icon-3d-wrapper {
+  perspective: 400px;
+}
+
+/* Tilts on both axes but never reaches 90deg, so the flat icon never
+   collapses into an edge-on line — it always reads as a solid shape. */
+@keyframes icon3DSpin {
+  0% {
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+  25% {
+    transform: rotateX(18deg) rotateY(35deg);
+  }
+  50% {
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+  75% {
+    transform: rotateX(-18deg) rotateY(-35deg);
+  }
+  100% {
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+}
+
+.animate-icon-3d-spin {
+  animation: icon3DSpin 3.2s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+@keyframes valueFlash {
+  0% {
+    color: var(--primary-dark);
+  }
+  100% {
+    color: inherit;
+  }
+}
+
+.animate-value-flash {
+  animation: valueFlash 0.9s ease-out;
+}

@@ -63,9 +63,14 @@ export const invoiceService = {
       });
 
       if (!response.ok) {
-        throw new Error(
-          `Erro ao buscar informações da nota fiscal: ${response.status}`,
-        );
+        let message = `Erro ao buscar informações da nota fiscal: ${response.status}`;
+        try {
+          const errorBody = await response.json();
+          if (errorBody?.message) message = errorBody.message;
+        } catch {
+          // corpo do erro não é JSON, mantém a mensagem padrão
+        }
+        throw new Error(message);
       }
 
       const result: InvoiceResponseGet = await response.json();
@@ -185,6 +190,31 @@ export const invoiceService = {
       return result;
     } catch (error) {
       console.error("Falha ao buscar notas fiscais em aberto:", error);
+      throw error;
+    }
+  },
+
+  async reconcileInvoiceStatus(combinedScoreId: number): Promise<string> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/invoices/${combinedScoreId}/reconciliar`,
+        {
+          method: "POST",
+          headers: getAuthHeaders(),
+          credentials: "include",
+        },
+      );
+
+      const result = await response.text();
+      if (!response.ok) {
+        throw new Error(
+          result || `Erro ao reconciliar nota fiscal: ${response.status}`,
+        );
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Falha ao reconciliar status da nota fiscal:", error);
       throw error;
     }
   },

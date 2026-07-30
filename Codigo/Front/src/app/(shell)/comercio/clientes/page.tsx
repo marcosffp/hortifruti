@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import ClientDetailModal from "@/components/modals/ClientDetailModal";
 import ClientCard from "@/components/modules/ClientCard";
 import Button from "@/components/ui/Button";
 import { clientService } from "@/services/clientService";
@@ -101,6 +102,9 @@ export default function ClientesPage() {
   );
 
   const [clienteParaExcluir, setClienteParaExcluir] = useState<number | null>(
+    null,
+  );
+  const [clienteDetalhesId, setClienteDetalhesId] = useState<number | null>(
     null,
   );
 
@@ -351,6 +355,7 @@ export default function ClientesPage() {
                   ultimaCompra={cliente.ultimaCompra}
                   totalCompras={cliente.totalCompras || 0}
                   onDelete={handleExcluirCliente}
+                  onViewDetails={setClienteDetalhesId}
                   displayMode="list"
                 />
               ))}
@@ -371,6 +376,7 @@ export default function ClientesPage() {
                       ultimaCompra={cliente.ultimaCompra}
                       totalCompras={cliente.totalCompras || 0}
                       onDelete={handleExcluirCliente}
+                      onViewDetails={setClienteDetalhesId}
                       displayMode="grid"
                     />
                   ))}
@@ -409,6 +415,11 @@ export default function ClientesPage() {
           </div>
         </div>
       )}
+
+      <ClientDetailModal
+        clientId={clienteDetalhesId}
+        onClose={() => setClienteDetalhesId(null)}
+      />
     </>
   );
 }

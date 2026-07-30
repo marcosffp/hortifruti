@@ -127,6 +127,7 @@ public class FiscalNoteXmlStorageService {
             || status.contains("erro")) {
           log.warn(
               "[FiscalNoteXmlStorage] NF ref={} com status={}, salvamento cancelado", ref, status);
+          revertInvoiceOnRejection(ref, status);
           return;
         }
       }
@@ -352,6 +353,27 @@ public class FiscalNoteXmlStorageService {
           e.getMessage());
       deleteUploadedQuietly(xmlKey);
       deleteUploadedQuietly(danfeKey);
+    }
+  }
+
+  /**
+   * A Sefaz rejeitou/cancelou/denegou a NF depois que {@link IssueInvoice} já tinha marcado {@code
+   * hasInvoice=true} otimisticamente (a Focus NFe respondeu "processando_autorizacao" na hora da
+   * emissão). Sem reverter aqui, o agrupamento fica travado mostrando "Ver NF" no front para uma
+   * nota que nunca foi autorizada. Best-effort: uma falha aqui não deve derrubar o job de polling,
+   * só fica registrada para investigação manual.
+   */
+  private void revertInvoiceOnRejection(String ref, String status) {
+    try {
+      combinedScoreService.clearInvoiceAfterRejection(ref);
+    } catch (Exception e) {
+      log.error(
+          "[FiscalNoteXmlStorage] Falha ao reverter hasInvoice do agrupamento para ref={}"
+              + " (status={}): {}",
+          ref,
+          status,
+          e.getMessage(),
+          e);
     }
   }
 
