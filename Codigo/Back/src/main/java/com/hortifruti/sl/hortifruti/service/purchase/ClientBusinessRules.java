@@ -98,12 +98,6 @@ public class ClientBusinessRules {
     RULES_BY_NAME.put("INDUSTRIA", new ClientRule(20, WeekendAdjustment.NEXT_FRIDAY, false, null));
     RULES_BY_NAME.put(
         "ROCA", new ClientRule(15, WeekendAdjustment.NONE, true, null)); // 15 dias úteis
-
-    // === ADICIONE NOVAS REGRAS AQUI (vencimento e/ou texto da nota) ===
-    // Exemplo dias corridos:  RULES_BY_NAME.put("EMPRESA", new ClientRule(30,
-    // WeekendAdjustment.PREVIOUS_FRIDAY, false, null));
-    // Exemplo dias úteis:     RULES_BY_NAME.put("EMPRESA", new ClientRule(30,
-    // WeekendAdjustment.NONE, true, null));
   }
 
   private ClientBusinessRules() {}

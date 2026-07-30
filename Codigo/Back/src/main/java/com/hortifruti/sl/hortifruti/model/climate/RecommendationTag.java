@@ -33,12 +33,7 @@ public enum RecommendationTag {
     return description;
   }
 
-  /**
-   * Determina a tag baseada na pontuação da recomendação
-   *
-   * @param score pontuação da recomendação (0-25)
-   * @return tag correspondente
-   */
+  /** @param score pontuação da recomendação (0-25) */
   public static RecommendationTag fromScore(double score) {
     if (score >= 10.0) {
       return BOM;

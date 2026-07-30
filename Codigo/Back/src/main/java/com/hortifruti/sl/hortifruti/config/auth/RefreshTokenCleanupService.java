@@ -15,7 +15,6 @@ public class RefreshTokenCleanupService {
 
   private final RefreshTokenRepository refreshTokenRepository;
 
-  /** Executa diariamente às 3h para remover refresh tokens expirados. */
   @Scheduled(cron = "0 0 3 * * *")
   @Transactional
   public void purgeExpiredTokens() {

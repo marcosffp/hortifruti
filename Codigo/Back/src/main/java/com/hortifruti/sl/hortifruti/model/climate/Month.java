@@ -1,6 +1,5 @@
 package com.hortifruti.sl.hortifruti.model.climate;
 
-/** Enum representando os meses do ano para sistema de temporadas */
 public enum Month {
   JANEIRO(1, "Janeiro"),
   FEVEREIRO(2, "Fevereiro"),

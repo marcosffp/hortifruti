@@ -22,12 +22,6 @@ public class EntityCleanupService {
   private final TransactionRepository transactionRepository;
   private final StatementRepository statementRepository;
 
-  /**
-   * Remove entidades do banco de dados com base no período especificado.
-   *
-   * @param startDate Data inicial do período.
-   * @param endDate Data final do período.
-   */
   @Transactional
   public void cleanupEntitiesForPeriod(LocalDateTime startDate, LocalDateTime endDate) {
     try {

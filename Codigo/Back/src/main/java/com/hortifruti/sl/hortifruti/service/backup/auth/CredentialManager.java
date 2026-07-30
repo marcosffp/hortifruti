@@ -81,7 +81,6 @@ public class CredentialManager {
         .setAccessToken("AUTHORIZATION_REQUIRED:" + authorizationUrl);
   }
 
-  /** Carrega os client secrets do arquivo de credenciais */
   private GoogleClientSecrets loadClientSecrets(java.io.File credentialsFile) throws IOException {
     if (!credentialsFile.exists()) {
       throw new BackupException("Arquivo de credenciais não encontrado.");

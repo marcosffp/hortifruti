@@ -21,7 +21,6 @@ public class DueDateCalculator {
   private static final ClientRule CPF_DEFAULT_RULE =
       new ClientRule(15, WeekendAdjustment.PREVIOUS_FRIDAY, false, null);
 
-  // Regra default geral (quando não for CPF nem CNPJ)
   private static final ClientRule DEFAULT_RULE =
       new ClientRule(20, WeekendAdjustment.NONE, false, null);
 
@@ -166,10 +165,6 @@ public class DueDateCalculator {
     }
   }
 
-  /**
-   * Ajusta a data para a quinta-feira anterior se cair em final de semana. Sábado → volta 2 dias
-   * (quinta). Domingo → volta 3 dias (quinta).
-   */
   private static LocalDate adjustToPreviousThursday(LocalDate date) {
     DayOfWeek dayOfWeek = date.getDayOfWeek();
 

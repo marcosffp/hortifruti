@@ -26,7 +26,6 @@ final class BrazilianHolidays {
   private static Set<LocalDate> buildHolidays(int year) {
     Set<LocalDate> holidays = new HashSet<>();
 
-    // Feriados fixos
     holidays.add(LocalDate.of(year, Month.JANUARY, 1)); // Confraternização Universal
     holidays.add(LocalDate.of(year, Month.APRIL, 21)); // Tiradentes
     holidays.add(LocalDate.of(year, Month.MAY, 1)); // Dia do Trabalho
@@ -42,7 +41,6 @@ final class BrazilianHolidays {
           LocalDate.of(year, Month.NOVEMBER, 20)); // Dia Nacional de Zumbi e da Consciência Negra
     }
 
-    // Feriados móveis, calculados a partir do Domingo de Páscoa
     LocalDate easter = calculateEaster(year);
     holidays.add(easter.minusDays(48)); // Carnaval (segunda-feira)
     holidays.add(easter.minusDays(47)); // Carnaval (terça-feira)

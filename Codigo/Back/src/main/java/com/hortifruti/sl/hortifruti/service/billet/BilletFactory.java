@@ -52,15 +52,6 @@ public class BilletFactory {
         );
   }
 
-  /**
-   * Cria o objeto BilletRequestSimplified a partir do CombinedScore e do Pagador.
-   *
-   * @param combinedScore CombinedScore
-   * @param combinedScoreId ID do CombinedScore
-   * @param pagador Objeto Pagador
-   * @param number Seu número (identificador do boleto)
-   * @retu rn Objeto BilletRequestSimplified
-   */
   public BilletRequestSimplified createBilletRequest(
       CombinedScore combinedScore, Long combinedScoreId, Pagador pagador, String number) {
     return new BilletRequestSimplified(
@@ -71,12 +62,6 @@ public class BilletFactory {
         pagador);
   }
 
-  /**
-   * Cria o objeto Pagador a partir dos dados do cliente.
-   *
-   * @param client Cliente
-   * @return Objeto Pagador
-   */
   public Pagador createPagadorFromClient(Client client) {
     String address = client.getAddress();
 

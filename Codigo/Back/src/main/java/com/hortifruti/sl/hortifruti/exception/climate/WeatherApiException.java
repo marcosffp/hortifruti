@@ -1,6 +1,5 @@
 package com.hortifruti.sl.hortifruti.exception.climate;
 
-/** Exceção específica para erros na API do OpenWeather */
 public class WeatherApiException extends Exception {
 
   public WeatherApiException(String message) {

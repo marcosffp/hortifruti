@@ -30,13 +30,6 @@ public class CsvGeneratorService {
   private final TransactionRepository transactionRepository;
   private final StatementRepository statementRepository;
 
-  /**
-   * Gera arquivos CSV para as entidades especificadas dentro de um período.
-   *
-   * @param startDate Data inicial do período.
-   * @param endDate Data final do período.
-   * @return Lista de caminhos dos arquivos CSV gerados.
-   */
   public List<String> generateCSVsForPeriod(LocalDateTime startDate, LocalDateTime endDate) {
     String tempDir = System.getProperty("java.io.tmpdir");
 

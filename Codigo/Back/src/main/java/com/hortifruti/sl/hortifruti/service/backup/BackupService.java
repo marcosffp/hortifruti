@@ -26,13 +26,6 @@ public class BackupService {
   private final EntityCleanupService entityCleanupService;
   private final DatabaseStorageService databaseStorageService;
 
-  /**
-   * Realiza o backup completo para um período especificado.
-   *
-   * @param startDate Data inicial do período.
-   * @param endDate Data final do período.
-   * @return Mensagem de sucesso ou erro.
-   */
   public BackupResponse performBackupForPeriod(LocalDateTime startDate, LocalDateTime endDate) {
     try {
       List<String> csvFiles = csvGeneratorService.generateCSVsForPeriod(startDate, endDate);
@@ -69,13 +62,6 @@ public class BackupService {
     }
   }
 
-  /**
-   * Realiza o backup para um período especificado.
-   *
-   * @param startDate Data inicial do período.
-   * @param endDate Data final do período.
-   * @return Mensagem de sucesso ou erro.
-   */
   public BackupResponse handleBackupRequest(String startDate, String endDate) {
     try {
       if (startDate != null && endDate != null) {
@@ -94,13 +80,6 @@ public class BackupService {
     return new BackupResponse("Backup não realizado: parâmetros inválidos ou erro desconhecido.");
   }
 
-  /**
-   * Realiza o backup para um período especificado com link de autenticação.
-   *
-   * @param startDate Data inicial do período.
-   * @param endDate Data final do período.
-   * @return Mensagem de sucesso ou erro.
-   */
   public BackupResponse handleBackupRequestWithAuthLink(String startDate, String endDate) {
     try {
       if (startDate != null && endDate != null) {

@@ -22,14 +22,7 @@ public class BilletController {
 
   private final BilletService billetService;
 
-  /**
-   * Emite um boleto e retorna o PDF.
-   *
-   * @param combinedScoreId ID do CombinedScore
-   * @param number Número identificador do cliente
-   * @param dueDate Data de vencimento opcional (formato yyyy-MM-dd)
-   * @return PDF do boleto emitido.
-   */
+  /** @param number Número identificador do cliente */
   @GetMapping("/generate/{combinedScoreId}")
   public ResponseEntity<byte[]> generateBillet(
       @PathVariable Long combinedScoreId,
@@ -51,11 +44,7 @@ public class BilletController {
   /**
    * Lista boletos de um pagador específico. Sem filtros, retorna os boletos em aberto.
    *
-   * @param clientId ID do cliente (CPF ou CNPJ).
    * @param codigoSituacao Situação do boleto (1=Em aberto, 2=Baixado, 3=Liquidado), opcional.
-   * @param dataInicio Data de vencimento inicial do filtro, opcional.
-   * @param dataFim Data de vencimento final do filtro, opcional.
-   * @return Lista de boletos do pagador que atendem aos filtros informados.
    */
   @GetMapping("/client/{clientId}")
   public ResponseEntity<List<BilletResponse>> listBilletByPayer(
@@ -78,11 +67,7 @@ public class BilletController {
     }
   }
 
-  /**
-   * Lista todos os boletos em aberto de todos os clientes, ordenados por data de vencimento.
-   *
-   * @return Lista de boletos em aberto.
-   */
+  /** Lista todos os boletos em aberto de todos os clientes, ordenados por data de vencimento. */
   @GetMapping("/open")
   public ResponseEntity<List<OpenBilletResponse>> listAllOpenBillets() {
     try {
@@ -93,12 +78,6 @@ public class BilletController {
     }
   }
 
-  /**
-   * Emite a segunda via de um boleto e retorna o PDF.
-   *
-   * @param idCombinedScore ID do CombinedScore associado ao boleto.
-   * @return PDF do boleto emitido.
-   */
   @GetMapping("/issue-copy/{idCombinedScore}")
   public ResponseEntity<byte[]> issueCopy(@PathVariable Long idCombinedScore) {
     try {
@@ -112,21 +91,12 @@ public class BilletController {
   /**
    * Baixa o PDF do boleto exatamente como foi gerado e guardado no bucket (R2), sem emitir uma via
    * nova no Sicoob.
-   *
-   * @param combinedScoreId ID do CombinedScore associado ao boleto.
-   * @return PDF do boleto armazenado.
    */
   @GetMapping("/{combinedScoreId}/file")
   public ResponseEntity<byte[]> downloadStoredBillet(@PathVariable Long combinedScoreId) {
     return billetService.getStoredBilletFile(combinedScoreId);
   }
 
-  /**
-   * Realiza a baixa (cancelamento) de um boleto.
-   *
-   * @param idCombinedScore ID do CombinedScore associado ao boleto.
-   * @return Resposta indicando o sucesso ou falha da operação.
-   */
   @PostMapping("/cancel/{idCombinedScore}")
   public ResponseEntity<String> cancelBillet(@PathVariable Long idCombinedScore) {
     try {
@@ -155,9 +125,6 @@ public class BilletController {
    * Realiza a baixa (cancelamento) manual de um boleto direto pelo "nosso número" informado, sem
    * exigir um agrupamento (CombinedScore) local conhecido. Útil para boletos avulsos/legados cuja
    * referência local não existe ou foi perdida.
-   *
-   * @param nossoNumero Nosso número do boleto no Sicoob.
-   * @return Resposta indicando o sucesso ou falha da operação.
    */
   @PostMapping("/cancel-by-number")
   public ResponseEntity<String> cancelBilletByNumber(@RequestParam String nossoNumero) {
@@ -186,12 +153,6 @@ public class BilletController {
     }
   }
 
-  /**
-   * Lista o boleto associado a um CombinedScore específico.
-   *
-   * @param combinedScoreId ID do CombinedScore
-   * @return Detalhes do boleto associado
-   */
   @GetMapping("/{combinedScoreId}")
   public ResponseEntity<BilletResponse> getBilletCombinedScore(@PathVariable long combinedScoreId) {
     try {
@@ -206,9 +167,6 @@ public class BilletController {
   /**
    * Marca manualmente como pago um agrupamento com boleto (ex: pagamento recebido fora do Sicoob),
    * removendo-o da lista de boletos em aberto.
-   *
-   * @param combinedScoreId ID do CombinedScore associado ao boleto.
-   * @return Resposta indicando o sucesso ou falha da operação.
    */
   @PatchMapping("/mark-paid/{combinedScoreId}")
   public ResponseEntity<String> markBilletAsPaid(@PathVariable Long combinedScoreId) {

@@ -14,15 +14,6 @@ public class BackupPathService {
   private static final String BACKUP_FOLDER_NAME = "backups";
   private final GoogleFolderService googleFolderService;
 
-  /**
-   * Calcula e cria o caminho correto para o backup no Google Drive com base no tipo de entidade e
-   * período.
-   *
-   * @param entityName Nome da entidade (ex.: "Statement", "Purchase").
-   * @param startDate Data inicial do período.
-   * @param endDate Data final do período.
-   * @return O ID da pasta de backup no Google Drive.
-   */
   public String getOrCreateBackupPath(String entityName, LocalDate startDate, LocalDate endDate) {
 
     try {
