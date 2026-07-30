@@ -4,12 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/check-env.mjs",
+    "prebuild": "node --env-file-if-exists=.env scripts/check-env.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "biome check",
+    "lint:fix": "biome check --write",
     "format": "biome format --write",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "prepare": "cd ../.. && git config core.hooksPath .husky"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -31,7 +33,9 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "husky": "^9.1.7",
     "leaflet": "^1.9.4",
+    "lint-staged": "^17.2.0",
     "react-leaflet": "^5.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
@@ -41,5 +45,10 @@
       "postcss": "^8.5.18"
     },
     "sharp": "^0.35.3"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,mjs,cjs,json,jsonc,css,md}": [
+      "biome check --write --no-errors-on-unmatched"
+    ]
   }
 }

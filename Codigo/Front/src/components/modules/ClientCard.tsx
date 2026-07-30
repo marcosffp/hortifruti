@@ -46,7 +46,6 @@ export default function ClientCard({
     }
   };
 
-  // Grid mode card layout
   if (displayMode === "grid") {
     return (
       // biome-ignore lint/a11y/useSemanticElements: can't be a real <button> since it contains a nested Link and button (edit/delete actions)
@@ -193,7 +192,6 @@ export default function ClientCard({
     );
   }
 
-  // Default list mode layout (for use in a table)
   return (
     // biome-ignore lint/a11y/useSemanticElements: can't be a real <button> since it contains a nested Link and button (edit/delete actions)
     <div

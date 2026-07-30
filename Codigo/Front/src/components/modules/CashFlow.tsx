@@ -33,7 +33,6 @@ ChartJS.register(
   ArcElement,
 );
 
-// Mapeamento de meses em inglês para português
 const monthNames: { [key: string]: string } = {
   JANUARY: "Janeiro",
   FEBRUARY: "Fevereiro",
@@ -49,7 +48,6 @@ const monthNames: { [key: string]: string } = {
   DECEMBER: "Dezembro",
 };
 
-// Ordem dos meses para ordenação
 const monthOrder: { [key: string]: number } = {
   JANUARY: 1,
   FEBRUARY: 2,
@@ -65,7 +63,6 @@ const monthOrder: { [key: string]: number } = {
   DECEMBER: 12,
 };
 
-// Mapeamento de categorias para nomes mais amigáveis
 const categoryNames: { [key: string]: string } = {
   VENDAS_CARTAO: "Vendas Cartão",
   VENDAS_PIX: "Vendas PIX",
@@ -143,7 +140,6 @@ export default function CashFlow({
     setEndDate(draftEndDate);
   };
 
-  // Dados para gráfico de linha (Fluxo de Caixa) - ORDENADO e com valores NEGATIVOS
   const lineChartData = (() => {
     if (!dashboardData?.FluxoDeCaixa) {
       return {
@@ -167,7 +163,6 @@ export default function CashFlow({
       };
     }
 
-    // Ordenar os meses em ordem crescente (Janeiro -> Dezembro)
     const sortedMonths = Object.keys(dashboardData.FluxoDeCaixa).sort(
       (a, b) => (monthOrder[a] || 0) - (monthOrder[b] || 0),
     );
@@ -202,7 +197,6 @@ export default function CashFlow({
     };
   })();
 
-  // Dados para gráfico de barras (Receitas por Tipo)
   const barChartData = {
     labels: ["Vendas Cartão", "Vendas PIX"],
     datasets: [
@@ -221,7 +215,6 @@ export default function CashFlow({
     ],
   };
 
-  // Dados para gráfico de pizza (Porcentagem por Categoria)
   const pieChartData = {
     labels: dashboardData
       ? Object.keys(dashboardData.PorcentagemPorCategoria || {}).map(
@@ -257,7 +250,6 @@ export default function CashFlow({
     ],
   };
 
-  // Dados para gráfico de barras horizontais (Fluxo de Vendas)
   const salesFlowChartData = {
     labels: dashboardData
       ? Object.keys(dashboardData["Fluxo de Vendas"] || {})
@@ -275,7 +267,6 @@ export default function CashFlow({
     ],
   };
 
-  // Dados para gráfico de barras horizontais (Top 10 Produtos por Quantidade)
   const topProductsByQuantityChartData = {
     labels: dashboardData
       ? dashboardData.Top10ProdutosPorQuantidade?.map((p) => p.Nome) || []
@@ -299,11 +290,10 @@ export default function CashFlow({
   const truncate = (text: string, max = 18) =>
     text.length > max ? `${text.slice(0, max)}…` : text;
 
-  // Opções padrão de gráficos (responsivo e sem manter proporção fixa)
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    layout: { padding: { left: 0, right: 0, top: 0, bottom: 0 } }, // reduz espaços
+    layout: { padding: { left: 0, right: 0, top: 0, bottom: 0 } },
     plugins: {
       legend: {
         position: "bottom" as const,
@@ -382,7 +372,6 @@ export default function CashFlow({
           autoSkip: true,
           maxTicksLimit: 10,
           font: { size: 10 },
-          // Trunca labels de semanas se necessário
           callback: (_val: number | string, index: number) =>
             truncate((salesFlowChartData.labels as string[])[index]),
         },
@@ -421,7 +410,6 @@ export default function CashFlow({
           autoSkip: true,
           maxTicksLimit: 10,
           font: { size: 10 },
-          // Trunca nomes de produtos longos (evita "passar" da tela)
           callback: (_val: number | string, index: number) =>
             truncate(
               (topProductsByQuantityChartData.labels as string[])[index],
@@ -453,7 +441,6 @@ export default function CashFlow({
             const _datasetIndex = context.datasetIndex;
             const dataIndex = context.dataIndex;
 
-            // Pega o valor em reais do objeto original
             const categoryKey = Object.keys(
               dashboardData?.PorcentagemPorCategoria || {},
             )[dataIndex];

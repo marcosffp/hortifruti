@@ -58,8 +58,7 @@ function recalcRow(
       next.price =
         next.quantity !== 0 ? round(next.total / next.quantity, 2) : 0;
     } else if (target === "quantity") {
-      next.quantity =
-        next.price !== 0 ? round(next.total / next.price, 3) : 0;
+      next.quantity = next.price !== 0 ? round(next.total / next.price, 3) : 0;
     }
   }
 

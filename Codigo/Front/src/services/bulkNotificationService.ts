@@ -208,7 +208,6 @@ export const bulkNotificationService = {
     };
   },
 
-
   async getAccountingRecipients(): Promise<string[]> {
     try {
       const response = await fetch(

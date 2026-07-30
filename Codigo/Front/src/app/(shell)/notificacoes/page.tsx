@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import RoleGuard from "@/components/auth/RoleGuard";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -137,9 +137,7 @@ async function saveDraft(draft: NotificacoesDraft) {
 function clearDraft() {
   try {
     sessionStorage.removeItem(DRAFT_STORAGE_KEY);
-  } catch {
-    // ignore
-  }
+  } catch {}
 }
 
 export default function NotificacoesPage() {
@@ -262,11 +260,14 @@ export default function NotificacoesPage() {
       cliente.telefone.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const clienteElegivel = (cliente: Cliente) => {
-    if (canaisEnvio.email && !cliente.email) return false;
-    if (canaisEnvio.whatsapp && !cliente.telefone) return false;
-    return true;
-  };
+  const clienteElegivel = useCallback(
+    (cliente: Cliente) => {
+      if (canaisEnvio.email && !cliente.email) return false;
+      if (canaisEnvio.whatsapp && !cliente.telefone) return false;
+      return true;
+    },
+    [canaisEnvio],
+  );
 
   useEffect(() => {
     setClientes((prev) =>
@@ -274,7 +275,7 @@ export default function NotificacoesPage() {
         c.selecionado && !clienteElegivel(c) ? { ...c, selecionado: false } : c,
       ),
     );
-  }, [canaisEnvio]);
+  }, [clienteElegivel]);
 
   const toggleCliente = (id: number) => {
     setClientes(

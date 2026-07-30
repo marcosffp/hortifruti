@@ -61,7 +61,6 @@ export default function ClientProductsTable({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Debounce refs
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -77,7 +76,6 @@ export default function ClientProductsTable({
     // Se for custom, não altera nada
   }, [groupBy]);
 
-  // Debounced fetch
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey is intentionally unused inside the effect — it only exists to force a refetch when the parent bumps it
   useEffect(() => {
     if (!clientId) return;
@@ -129,7 +127,6 @@ export default function ClientProductsTable({
       });
   };
 
-  // Mapeamento das colunas para display
   const columnLabels: Record<keyof GroupedProductRequest, string> = {
     code: "Código",
     name: "Produto",
@@ -138,7 +135,6 @@ export default function ClientProductsTable({
     totalValue: "Valor Total",
   };
 
-  // Filtro de datas
   const renderDateFilter = () => (
     <div className="mb-4 p-4 bg-white">
       <div className="flex flex-wrap *:flex-grow items-end gap-6">
@@ -208,7 +204,6 @@ export default function ClientProductsTable({
     </div>
   );
 
-  // Skeleton loading
   if (isLoading || !clientId) {
     return (
       <SkeletonTableLoading

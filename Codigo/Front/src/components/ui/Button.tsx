@@ -22,7 +22,6 @@ const Button: React.FC<ButtonProps> = ({
   const getButtonClasses = () => {
     let classes = "";
 
-    // Base button styling
     classes +=
       variant === "primary"
         ? " btn-primary"
@@ -30,19 +29,16 @@ const Button: React.FC<ButtonProps> = ({
           ? " btn-outline"
           : "";
 
-    // Size variations
     if (size === "sm") {
       classes += " text-sm py-1 px-3";
     } else if (size === "lg") {
       classes += " text-lg py-3 px-5";
     }
 
-    // Width
     if (fullWidth) {
       classes += " w-full";
     }
 
-    // Disabled state
     if (disabled) {
       classes += " opacity-60 cursor-not-allowed";
     }

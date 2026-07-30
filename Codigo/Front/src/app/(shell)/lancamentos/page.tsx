@@ -177,7 +177,7 @@ export default function FinancialLaunchesPage() {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       fetchTransactionsData();
-    }, 300); // Debounce de 300ms
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [fetchTransactionsData]);

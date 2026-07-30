@@ -931,7 +931,7 @@ export default function CombinedScoresCards({
             null
           }
           onBilletCancelled={() => {
-            fetchScores(); // Recarrega os dados após cancelamento
+            fetchScores();
           }}
         />
       )}
@@ -965,7 +965,7 @@ export default function CombinedScoresCards({
           onClose={() => setInvoiceDataModalScore(null)}
           invoiceData={invoiceDataModalScore.invoiceInfo}
           onInvoiceCancelled={() => {
-            fetchScores(); // Recarrega os dados após cancelamento
+            fetchScores();
           }}
         />
       )}

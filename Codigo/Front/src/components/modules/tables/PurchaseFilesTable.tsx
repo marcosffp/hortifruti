@@ -72,7 +72,6 @@ export default function PurchaseFilesTable({
   });
   const [confirmedAt, setConfirmedAt] = useState(() => todaySaoPaulo());
 
-  // Debounce refs
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {

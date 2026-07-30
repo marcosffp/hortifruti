@@ -1,0 +1,45 @@
+#!/usr/bin/env sh
+# Roda a pipeline de qualidade do Front antes de cada commit.
+# Ativado via `git config core.hooksPath .husky` (raiz do repo), então este
+# script executa com cwd = raiz do repositório.
+
+FRONT_DIR="Codigo/Front"
+
+# Só roda se houver algo staged dentro do Front
+if ! git diff --cached --name-only --diff-filter=ACM | grep -q "^${FRONT_DIR}/"; then
+  exit 0
+fi
+
+echo "▶ Front: biome check (lint + format + organize imports, com fix automático)"
+if ! (cd "$FRONT_DIR" && npx lint-staged); then
+  echo ""
+  echo "❌ Commit bloqueado: o Biome encontrou problemas em Codigo/Front que não puderam ser corrigidos automaticamente."
+  echo "   Rode 'npm run lint:fix' dentro de Codigo/Front, revise o que sobrar manualmente e tente commitar de novo."
+  exit 1
+fi
+
+echo "▶ Front: checando tipos (tsc --noEmit)"
+if ! (cd "$FRONT_DIR" && npx tsc --noEmit); then
+  echo ""
+  echo "❌ Commit bloqueado: erros de tipagem em Codigo/Front."
+  echo "   Rode 'npm run check-types' dentro de Codigo/Front para ver os erros e corrija antes de commitar."
+  exit 1
+fi
+
+echo "▶ Front: npm audit (bloqueando em vulnerabilidades moderate/high/critical)"
+if ! (cd "$FRONT_DIR" && npm audit --audit-level=moderate); then
+  echo ""
+  echo "❌ Commit bloqueado: vulnerabilidades encontradas em Codigo/Front."
+  echo "   Rode 'npm audit' dentro de Codigo/Front para ver detalhes e 'npm audit fix' para tentar corrigir."
+  exit 1
+fi
+
+echo "▶ Front: build de produção (next build)"
+if ! (cd "$FRONT_DIR" && npm run build); then
+  echo ""
+  echo "❌ Commit bloqueado: o build de produção falhou em Codigo/Front."
+  echo "   Rode 'npm run build' dentro de Codigo/Front para ver o erro completo e corrija antes de commitar."
+  exit 1
+fi
+
+echo "✅ Front: todos os checks passaram."
