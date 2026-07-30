@@ -108,20 +108,43 @@ export default function NotificacoesPage() {
       cliente.telefone.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
+  // Cliente só pode ser selecionado se tiver o contato exigido por todos os
+  // canais ativos no momento (sem e-mail bloqueia se o canal E-mail estiver
+  // ligado, sem telefone bloqueia se WhatsApp estiver ligado).
+  const clienteElegivel = (cliente: Cliente) => {
+    if (canaisEnvio.email && !cliente.email) return false;
+    if (canaisEnvio.whatsapp && !cliente.telefone) return false;
+    return true;
+  };
+
+  // Se o canal de envio mudar e algum cliente já selecionado deixar de ter o
+  // contato necessário, desmarca ele em vez de deixar uma seleção inválida.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: clienteElegivel é recriada a cada render mas só depende de canaisEnvio, incluí-la causaria loop
+  useEffect(() => {
+    setClientes((prev) =>
+      prev.map((c) =>
+        c.selecionado && !clienteElegivel(c) ? { ...c, selecionado: false } : c,
+      ),
+    );
+  }, [canaisEnvio]);
+
   const toggleCliente = (id: number) => {
     setClientes(
       clientes.map((c) =>
-        c.id === id ? { ...c, selecionado: !c.selecionado } : c,
+        c.id === id && clienteElegivel(c)
+          ? { ...c, selecionado: !c.selecionado }
+          : c,
       ),
     );
   };
 
   const toggleTodos = () => {
-    const todosAtivos = filteredClientes.every((c) => c.selecionado);
+    const elegiveisFiltrados = filteredClientes.filter(clienteElegivel);
+    const todosAtivos = elegiveisFiltrados.every((c) => c.selecionado);
     setClientes(
       clientes.map((c) => ({
         ...c,
-        selecionado: filteredClientes.some((fc) => fc.id === c.id)
+        selecionado: elegiveisFiltrados.some((fc) => fc.id === c.id)
           ? !todosAtivos
           : c.selecionado,
       })),
@@ -278,8 +301,10 @@ export default function NotificacoesPage() {
   };
 
   const clientesSelecionados = clientes.filter((c) => c.selecionado).length;
+  const elegiveisFiltrados = filteredClientes.filter(clienteElegivel);
   const todosAtivos =
-    filteredClientes.length > 0 && filteredClientes.every((c) => c.selecionado);
+    elegiveisFiltrados.length > 0 &&
+    elegiveisFiltrados.every((c) => c.selecionado);
 
   if (environment === "hml") {
     return (
@@ -560,57 +585,70 @@ export default function NotificacoesPage() {
                         </p>
                       );
                     }
-                    return filteredClientes.map((cliente) => (
-                      <label
-                        key={cliente.id}
-                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                          cliente.selecionado
-                            ? "border-[var(--primary)] bg-[var(--primary-bg)]"
-                            : "border-[var(--neutral-200)] hover:border-[var(--neutral-300)] bg-white"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={cliente.selecionado}
-                          onChange={() => toggleCliente(cliente.id)}
-                          className="mt-1 w-4 h-4 text-[var(--primary)] border-[var(--neutral-300)] rounded focus:ring-[var(--primary)]"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-[var(--neutral-900)] truncate">
-                            {cliente.nome}
-                          </p>
-                          <div className="space-y-1">
-                            {canaisEnvio.email &&
-                              (cliente.email ? (
-                                <p className="text-sm text-[var(--neutral-600)] truncate flex items-center gap-1">
-                                  <Mail className="w-3 h-3" />
-                                  {cliente.email}
-                                </p>
-                              ) : (
-                                <p className="text-xs text-[var(--secondary)] flex items-center gap-1">
-                                  <Mail className="w-3 h-3" />
-                                  Sem e-mail cadastrado
-                                </p>
-                              ))}
-                            {canaisEnvio.whatsapp &&
-                              (cliente.telefone ? (
-                                <p className="text-sm text-[var(--neutral-600)] truncate flex items-center gap-1">
-                                  <MessageCircle className="w-3 h-3" />
-                                  {cliente.telefone}
-                                </p>
-                              ) : (
-                                <p className="text-xs text-[var(--secondary)] flex items-center gap-1">
-                                  <MessageCircle className="w-3 h-3" />
-                                  Sem telefone cadastrado
-                                </p>
-                              ))}
+                    return filteredClientes.map((cliente) => {
+                      const elegivel = clienteElegivel(cliente);
+                      return (
+                        <label
+                          key={cliente.id}
+                          title={
+                            elegivel
+                              ? undefined
+                              : "Cliente sem o contato necessário para o canal selecionado"
+                          }
+                          className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
+                            !elegivel
+                              ? "cursor-not-allowed opacity-50 border-[var(--neutral-200)] bg-[var(--neutral-50)]"
+                              : "cursor-pointer"
+                          } ${
+                            cliente.selecionado
+                              ? "border-[var(--primary)] bg-[var(--primary-bg)]"
+                              : "border-[var(--neutral-200)] hover:border-[var(--neutral-300)] bg-white"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={cliente.selecionado}
+                            disabled={!elegivel}
+                            onChange={() => toggleCliente(cliente.id)}
+                            className="mt-1 w-4 h-4 text-[var(--primary)] border-[var(--neutral-300)] rounded focus:ring-[var(--primary)] disabled:cursor-not-allowed"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-[var(--neutral-900)] truncate">
+                              {cliente.nome}
+                            </p>
+                            <div className="space-y-1">
+                              {canaisEnvio.email &&
+                                (cliente.email ? (
+                                  <p className="text-sm text-[var(--neutral-600)] truncate flex items-center gap-1">
+                                    <Mail className="w-3 h-3" />
+                                    {cliente.email}
+                                  </p>
+                                ) : (
+                                  <p className="text-xs text-[var(--secondary)] flex items-center gap-1">
+                                    <Mail className="w-3 h-3" />
+                                    Sem e-mail cadastrado
+                                  </p>
+                                ))}
+                              {canaisEnvio.whatsapp &&
+                                (cliente.telefone ? (
+                                  <p className="text-sm text-[var(--neutral-600)] truncate flex items-center gap-1">
+                                    <MessageCircle className="w-3 h-3" />
+                                    {cliente.telefone}
+                                  </p>
+                                ) : (
+                                  <p className="text-xs text-[var(--secondary)] flex items-center gap-1">
+                                    <MessageCircle className="w-3 h-3" />
+                                    Sem telefone cadastrado
+                                  </p>
+                                ))}
+                            </div>
                           </div>
-                        </div>
-                        {cliente.selecionado && (
-                          <CheckCircle2 className="w-5 h-5 text-[var(--primary)] flex-shrink-0" />
-                        )}
-                      </label>
-                    ));
+                          {cliente.selecionado && (
+                            <CheckCircle2 className="w-5 h-5 text-[var(--primary)] flex-shrink-0" />
+                          )}
+                        </label>
+                      );
+                    });
                   })()}
                 </div>
               </div>

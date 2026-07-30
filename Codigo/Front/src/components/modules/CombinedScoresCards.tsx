@@ -400,7 +400,6 @@ export default function CombinedScoresCards({
         return;
       }
 
-      showInfo("Gerando nota fiscal... Isso pode levar alguns segundos.");
       const response = await generateInvoice(scoreId, dadosAdicionais);
 
       if (response.ref) {
@@ -490,9 +489,6 @@ export default function CombinedScoresCards({
     }
 
     try {
-      showInfo(
-        "Gerando NF e boleto vinculado... Isso pode levar até alguns minutos, aguarde.",
-      );
       const result = await generateInvoiceWithBillet(scoreId, dadosAdicionais);
 
       setInvoiceBilletResultModal({

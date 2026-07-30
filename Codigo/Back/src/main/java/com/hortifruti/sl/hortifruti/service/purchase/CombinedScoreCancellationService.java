@@ -4,19 +4,16 @@ import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
 import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import com.hortifruti.sl.hortifruti.exception.purchase.CombinedScoreException;
 import com.hortifruti.sl.hortifruti.model.billet.BilletFile;
-import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.model.purchase.Status;
 import com.hortifruti.sl.hortifruti.repository.billet.BilletFileRepository;
 import com.hortifruti.sl.hortifruti.repository.invoice.FiscalNoteXmlStorageRepository;
-import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
 import com.hortifruti.sl.hortifruti.service.billet.BilletService;
 import com.hortifruti.sl.hortifruti.service.invoice.InvoiceCancelService;
 import com.hortifruti.sl.hortifruti.service.invoice.InvoiceService;
 import com.hortifruti.sl.hortifruti.service.storage.R2StorageService;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +40,6 @@ public class CombinedScoreCancellationService {
 
   private final CombinedScoreService combinedScoreService;
   private final CombinedScoreRepository combinedScoreRepository;
-  private final ClientRepository clientRepository;
   private final InvoiceService invoiceService;
   private final BilletService billetService;
   private final BilletFileRepository billetFileRepository;
@@ -127,17 +123,6 @@ public class CombinedScoreCancellationService {
           "Não é possível excluir o agrupamento: ainda há nota fiscal ou boleto ativos"
               + " vinculados a ele.");
     }
-
-    Client client =
-        clientRepository
-            .findById(combinedScore.getClientId())
-            .orElseThrow(
-                () ->
-                    new CombinedScoreException(
-                        "Cliente com ID " + combinedScore.getClientId() + " não encontrado."));
-    BigDecimal newTotal = client.getTotalPurchaseValue().subtract(combinedScore.getTotalValue());
-    client.setTotalPurchaseValue(newTotal);
-    clientRepository.save(client);
 
     deleteBilletFiles(id);
     deleteFiscalNoteXml(combinedScore.getInvoiceRef());

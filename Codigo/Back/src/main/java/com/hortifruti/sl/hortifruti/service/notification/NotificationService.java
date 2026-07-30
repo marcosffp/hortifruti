@@ -3,6 +3,7 @@ package com.hortifruti.sl.hortifruti.service.notification;
 import com.hortifruti.sl.hortifruti.config.notification.NotificationEnvironmentGuard;
 import com.hortifruti.sl.hortifruti.dto.notification.*;
 import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
+import com.hortifruti.sl.hortifruti.model.notification.NotificationChannel;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.service.notification.email.EmailGreetingUtil;
@@ -89,6 +90,8 @@ public class NotificationService {
               .findById(request.clientId())
               .orElseThrow(() -> new NotificationException("Cliente não encontrado"));
 
+      requireContactForChannel(client, request.channel());
+
       List<byte[]> attachments = new ArrayList<>();
       List<String> fileNames = new ArrayList<>();
 
@@ -120,6 +123,25 @@ public class NotificationService {
 
     } catch (IOException e) {
       throw new NotificationException("Erro ao processar arquivos: " + e.getMessage());
+    }
+  }
+
+  // Email/telefone deixaram de ser obrigatórios no cadastro do cliente, então
+  // validamos aqui, antes de tentar enviar, em vez de deixar o
+  // NotificationCoordinator/provedor externo estourar um erro genérico.
+  private void requireContactForChannel(Client client, NotificationChannel channel) {
+    boolean needsEmail =
+        channel == NotificationChannel.EMAIL || channel == NotificationChannel.BOTH;
+    boolean needsWhatsApp =
+        channel == NotificationChannel.WHATSAPP || channel == NotificationChannel.BOTH;
+
+    if (needsEmail && (client.getEmail() == null || client.getEmail().isBlank())) {
+      throw new NotificationException(
+          "Cliente \"" + client.getClientName() + "\" não possui e-mail cadastrado.");
+    }
+    if (needsWhatsApp && (client.getPhoneNumber() == null || client.getPhoneNumber().isBlank())) {
+      throw new NotificationException(
+          "Cliente \"" + client.getClientName() + "\" não possui telefone cadastrado.");
     }
   }
 

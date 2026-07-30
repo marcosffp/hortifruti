@@ -2,8 +2,8 @@ export interface ClientRequest {
   clientName: string;
   variablePrice: boolean;
   document: string;
-  phoneNumber: string;
-  email: string;
+  phoneNumber: string | null;
+  email: string | null;
   address: string;
   stateRegistration?: string | null;
   stateIndicator?: number | null;
@@ -16,9 +16,9 @@ export interface ClientResponse {
   clientName: string;
   variablePrice: boolean;
   document: string;
-  phoneNumber: string;
+  phoneNumber: string | null;
   address: string;
-  email: string;
+  email: string | null;
   stateRegistration: string | null;
   stateIndicator: number | null;
   cideCode: string | null;

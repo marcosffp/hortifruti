@@ -16,14 +16,54 @@ interface CreateManualPurchaseModalProps {
   onCreated: () => void;
 }
 
+type NumericField = "quantity" | "price" | "total";
+
 interface ManualItemRow {
   code: string;
   quantity: number;
   price: number;
+  total: number;
+  // Campos numéricos na ordem em que foram editados por último (máx. 2).
+  // O único campo dos 3 que não está aqui é o que fica "em aberto" e passa
+  // a ser calculado automaticamente a partir dos outros dois.
+  lastEdited: NumericField[];
 }
 
 function emptyRow(): ManualItemRow {
-  return { code: "", quantity: 0, price: 0 };
+  return { code: "", quantity: 0, price: 0, total: 0, lastEdited: [] };
+}
+
+function round(value: number, decimals: number): number {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
+
+const NUMERIC_FIELDS: NumericField[] = ["quantity", "price", "total"];
+
+function recalcRow(
+  row: ManualItemRow,
+  field: NumericField,
+  value: number,
+): ManualItemRow {
+  const next: ManualItemRow = { ...row, [field]: value };
+  next.lastEdited = [...row.lastEdited.filter((f) => f !== field), field].slice(
+    -2,
+  );
+
+  if (next.lastEdited.length === 2) {
+    const target = NUMERIC_FIELDS.find((f) => !next.lastEdited.includes(f));
+    if (target === "total") {
+      next.total = round(next.quantity * next.price, 2);
+    } else if (target === "price") {
+      next.price =
+        next.quantity !== 0 ? round(next.total / next.quantity, 2) : 0;
+    } else if (target === "quantity") {
+      next.quantity =
+        next.price !== 0 ? round(next.total / next.price, 3) : 0;
+    }
+  }
+
+  return next;
 }
 
 export default function CreateManualPurchaseModal({
@@ -48,9 +88,19 @@ export default function CreateManualPurchaseModal({
       .finally(() => setLoadingProducts(false));
   }, []);
 
-  const updateRow = (index: number, patch: Partial<ManualItemRow>) => {
+  const updateRowCode = (index: number, code: string) => {
     setRows((prev) =>
-      prev.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+      prev.map((row, i) => (i === index ? { ...row, code } : row)),
+    );
+  };
+
+  const updateRowField = (
+    index: number,
+    field: NumericField,
+    value: number,
+  ) => {
+    setRows((prev) =>
+      prev.map((row, i) => (i === index ? recalcRow(row, field, value) : row)),
     );
   };
 
@@ -60,9 +110,7 @@ export default function CreateManualPurchaseModal({
     setRows((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const rowTotal = (row: ManualItemRow) => row.quantity * row.price;
-
-  const grandTotal = rows.reduce((sum, row) => sum + rowTotal(row), 0);
+  const grandTotal = rows.reduce((sum, row) => sum + row.total, 0);
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", {
@@ -156,26 +204,32 @@ export default function CreateManualPurchaseModal({
                   <ProductAutocompleteField
                     products={products}
                     value={row.code}
-                    onSelect={(code) => updateRow(index, { code })}
+                    onSelect={(code) => updateRowCode(index, code)}
                     disabled={loadingProducts}
                   />
                 </div>
                 <div className="flex gap-2">
                   <MaskedDecimalInput
                     value={row.quantity}
-                    onChange={(quantity) => updateRow(index, { quantity })}
-                    placeholder="0,00"
+                    onChange={(quantity) =>
+                      updateRowField(index, "quantity", quantity)
+                    }
+                    decimalPlaces={3}
+                    placeholder="0,000"
                     className="w-full md:w-24 p-2 border border-gray-300 rounded-lg text-right focus:outline-none focus:ring-1 focus:ring-green-500"
                   />
                   <MaskedDecimalInput
                     value={row.price}
-                    onChange={(price) => updateRow(index, { price })}
+                    onChange={(price) => updateRowField(index, "price", price)}
                     placeholder="0,00"
                     className="w-full md:w-24 p-2 border border-gray-300 rounded-lg text-right focus:outline-none focus:ring-1 focus:ring-green-500"
                   />
-                  <div className="w-24 flex items-center justify-end font-semibold">
-                    {formatCurrency(rowTotal(row))}
-                  </div>
+                  <MaskedDecimalInput
+                    value={row.total}
+                    onChange={(total) => updateRowField(index, "total", total)}
+                    placeholder="0,00"
+                    className="w-full md:w-24 p-2 border border-gray-300 rounded-lg text-right font-semibold focus:outline-none focus:ring-1 focus:ring-green-500"
+                  />
                   <button
                     type="button"
                     onClick={() => removeRow(index)}

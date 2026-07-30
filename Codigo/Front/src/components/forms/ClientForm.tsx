@@ -21,6 +21,9 @@ import {
 // Limite do boleto bancário (Sicoob) para o campo de bairro do pagador.
 const BAIRRO_MAX_LENGTH = 30;
 
+// Código IBGE do município padrão (Santa Luzia/MG), pré-preenchido no campo CIDE.
+const SANTA_LUZIA_CIDE_CODE = "3157807";
+
 export interface ClientFormData {
   nome: string;
   email: string;
@@ -72,7 +75,7 @@ export default function ClientForm({
     variablePrice: "false",
     stateRegistration: "",
     stateIndicator: "9", // Padrão: Não contribuinte
-    cideCode: "",
+    cideCode: SANTA_LUZIA_CIDE_CODE,
     onlyBillet: "false",
     ...initialData,
   });
@@ -219,9 +222,9 @@ export default function ClientForm({
       case "nome":
         return !value.trim() ? "Nome é obrigatório" : "";
       case "email":
-        return !validarEmail(value) ? "Email inválido" : "";
+        return value.trim() && !validarEmail(value) ? "Email inválido" : "";
       case "telefone":
-        return !validarTelefone(value)
+        return value.trim() && !validarTelefone(value)
           ? "Telefone inválido. Formato: (XX) XXXXX-XXXX"
           : "";
       case "cpfCnpj":
@@ -380,7 +383,7 @@ export default function ClientForm({
                   htmlFor="email"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  E-mail *
+                  E-mail
                 </label>
                 <input
                   type="email"
@@ -394,7 +397,6 @@ export default function ClientForm({
                       email: validateField("email", e.target.value),
                     })
                   }
-                  required
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.email ? "border-red-500" : "border-gray-300"
                   }`}
@@ -411,7 +413,7 @@ export default function ClientForm({
                   htmlFor="telefone"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Telefone *
+                  Telefone
                 </label>
                 <input
                   type="tel"
@@ -425,7 +427,6 @@ export default function ClientForm({
                       telefone: validateField("telefone", e.target.value),
                     })
                   }
-                  required
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.telefone ? "border-red-500" : "border-gray-300"
                   }`}
@@ -542,6 +543,9 @@ export default function ClientForm({
                     <p className="text-red-500 text-xs mt-1">
                       {formErrors.cideCode}
                     </p>
+                  )}
+                  {formData.cideCode === SANTA_LUZIA_CIDE_CODE && (
+                    <p className="text-xs text-gray-500 mt-1">Santa Luzia</p>
                   )}
                   <p className="text-xs text-gray-500 mt-1">
                     Obrigatório para empresas (CNPJ)

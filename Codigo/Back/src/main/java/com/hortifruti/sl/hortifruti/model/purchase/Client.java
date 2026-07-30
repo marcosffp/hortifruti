@@ -12,7 +12,6 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -38,10 +37,10 @@ public class Client {
   private String clientName;
 
   @Email
-  @Column(nullable = false, unique = true)
+  @Column(nullable = true, unique = true)
   private String email;
 
-  @Column(nullable = false)
+  @Column(nullable = true)
   private String phoneNumber;
 
   @Column(nullable = false)
@@ -76,16 +75,12 @@ public class Client {
   private List<Purchase> purchases;
 
   @Column(nullable = true)
-  private BigDecimal totalPurchaseValue;
-
-  @Column(nullable = true)
   private LocalDate lastPurchaseDate;
 
   @PrePersist
   protected void onCreate() {
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.totalPurchaseValue = BigDecimal.ZERO;
     this.lastPurchaseDate = null;
 
     if (this.cideCode == null) {
