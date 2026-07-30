@@ -37,6 +37,16 @@ public class NotificationController {
   private final BulkNotificationService bulkNotificationService;
   private final DatabaseStorageService databaseStorageService;
 
+  @PreAuthorize("hasRole('MANAGER')")
+  @GetMapping("/accounting/recipients")
+  @Operation(
+      summary = "Listar destinatários da contabilidade",
+      description =
+          "Retorna os emails configurados em ACCOUNTING_EMAIL para receber envios da contabilidade")
+  public ResponseEntity<List<String>> getAccountingRecipients() {
+    return ResponseEntity.ok(notificationService.getAccountingRecipients());
+  }
+
   @Operation(
       summary = "Enviar arquivos genéricos para contabilidade",
       description =

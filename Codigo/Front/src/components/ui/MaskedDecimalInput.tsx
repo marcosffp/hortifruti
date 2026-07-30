@@ -29,6 +29,7 @@ interface MaskedDecimalInputProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  id?: string;
 }
 
 /**
@@ -43,6 +44,7 @@ export default function MaskedDecimalInput({
   placeholder,
   className,
   disabled,
+  id,
 }: MaskedDecimalInputProps) {
   const [digits, setDigits] = useState(() =>
     numberToDigits(value, decimalPlaces),
@@ -75,6 +77,7 @@ export default function MaskedDecimalInput({
       placeholder={placeholder}
       disabled={disabled}
       className={className}
+      id={id}
     />
   );
 }

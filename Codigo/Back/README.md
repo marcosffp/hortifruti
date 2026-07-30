@@ -364,7 +364,7 @@ SENDGRID_FROM_EMAIL=noreply@seudominio.com
 GMAIL_SMTP_HOST=smtp.gmail.com
 GMAIL_SMTP_PORT=587
 NOTIFICATION_SENDER_NAME=Nome exibido na assinatura dos e-mails
-ACCOUNTING_EMAIL=contabilidade@empresa.com
+ACCOUNTING_EMAIL=contabilidade@empresa.com,contabilidade2@empresa.com
 ACCOUNTING_WHATSAPP=5531999999999
 OVERDUE_NOTIFICATION_EMAILS=email1@empresa.com,email2@empresa.com
 

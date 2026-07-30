@@ -14,10 +14,12 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
@@ -27,6 +29,8 @@ public class NotificationService {
   private final EmailTemplateService emailTemplateService;
   private final NotificationEnvironmentGuard notificationEnvironmentGuard;
 
+  // Pode ser um único email ou uma lista separada por vírgulas (mesmo formato usado em
+  // overdue.notification.emails), ex.: "a@x.com,b@y.com".
   @Value("${accounting.email}")
   private String accountingEmail;
 
@@ -65,12 +69,33 @@ public class NotificationService {
               !fileContents.isEmpty(),
               fileContents.size());
 
-      boolean emailSent =
-          notificationCoordinator.sendEmailOnly(
-              accountingEmail, subject, emailBody, fileContents, fileNames);
+      List<String> recipients = getAccountingRecipients();
+      if (recipients.isEmpty()) {
+        return new NotificationResponse(
+            false, "Nenhum email de contabilidade configurado (ACCOUNTING_EMAIL).");
+      }
+
+      boolean anySent = false;
+      for (String recipient : recipients) {
+        try {
+          boolean sent =
+              notificationCoordinator.sendEmailOnly(
+                  recipient, subject, emailBody, fileContents, fileNames);
+          anySent = anySent || sent;
+        } catch (NotificationException e) {
+          if (e.getMessage() != null && e.getMessage().contains("Autorização")) {
+            // Falha de autorização (token OAuth do Gmail expirado/revogado) afeta todos os
+            // destinatários igualmente — não adianta continuar tentando os próximos, e o front
+            // precisa receber essa exceção para mostrar o link de reautorização ao usuário.
+            throw e;
+          }
+          log.error(
+              "Falha ao enviar email de contabilidade para {}: {}", recipient, e.getMessage());
+        }
+      }
 
       return new NotificationResponse(
-          emailSent, emailSent ? "Email enviado com sucesso" : "Falha no envio do email");
+          anySent, anySent ? "Email enviado com sucesso" : "Falha no envio do email");
 
     } catch (IOException e) {
       throw new NotificationException("Erro ao processar arquivos: " + e.getMessage());
@@ -143,6 +168,22 @@ public class NotificationService {
       throw new NotificationException(
           "Cliente \"" + client.getClientName() + "\" não possui telefone cadastrado.");
     }
+  }
+
+  // Público para que o front possa exibir a lista atual (configurada em ACCOUNTING_EMAIL) na tela
+  // de notificações, sem precisar duplicar esse valor num env var próprio do front.
+  public List<String> getAccountingRecipients() {
+    List<String> recipients = new ArrayList<>();
+    if (accountingEmail == null) {
+      return recipients;
+    }
+    for (String email : accountingEmail.split(",")) {
+      String trimmed = email.trim();
+      if (!trimmed.isEmpty()) {
+        recipients.add(trimmed);
+      }
+    }
+    return recipients;
   }
 
   private String buildGenericFilesMessage(

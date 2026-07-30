@@ -643,12 +643,32 @@ export default function ClientForm({
                       numero: validateField("numero", e.target.value),
                     })
                   }
+                  disabled={formData.numero === "S/N"}
                   required
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.numero ? "border-red-500" : "border-gray-300"
-                  }`}
+                  } ${formData.numero === "S/N" ? "bg-gray-100 cursor-not-allowed" : ""}`}
                   placeholder="123"
                 />
+                <label className="flex items-center mt-1 text-xs text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={formData.numero === "S/N"}
+                    onChange={(e) => {
+                      const semNumero = e.target.checked;
+                      setFormData((prev) => ({
+                        ...prev,
+                        numero: semNumero ? "S/N" : "",
+                      }));
+                      setFormErrors((prev) => ({
+                        ...prev,
+                        numero: semNumero ? "" : validateField("numero", ""),
+                      }));
+                    }}
+                    className="mr-1.5"
+                  />
+                  Endereço sem número (usar S/N)
+                </label>
                 {formErrors.numero && (
                   <p className="text-red-500 text-xs mt-1">
                     {formErrors.numero}

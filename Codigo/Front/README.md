@@ -220,9 +220,6 @@ NEXT_PUBLIC_API_URL=/api
 # Chave da API do Google Maps (autocomplete de endereços / cálculo de frete)
 GOOGLE_MAPS_KEY=sua_api_key_google_maps
 
-# E-mail da contabilidade exibido na interface
-NEXT_PUBLIC_CONTABILIDADE_EMAIL=contabilidade@empresa.com
-
 # Link da planilha de controle de notas (Google Sheets)
 NEXT_PUBLIC_LINK_PLANILHA_NOTINHAS=https://docs.google.com/spreadsheets/d/SEU_ID/edit
 
