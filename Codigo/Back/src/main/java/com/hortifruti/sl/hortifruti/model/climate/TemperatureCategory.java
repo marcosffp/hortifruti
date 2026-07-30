@@ -28,7 +28,9 @@ public enum TemperatureCategory {
     return maxTemp;
   }
 
-  /** @param avgTemp temperatura média em Celsius */
+  /**
+   * @param avgTemp temperatura média em Celsius
+   */
   public static TemperatureCategory fromTemperature(double avgTemp) {
     if (avgTemp <= 5) {
       return CONGELANDO;

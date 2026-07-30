@@ -22,7 +22,9 @@ public class BilletController {
 
   private final BilletService billetService;
 
-  /** @param number Número identificador do cliente */
+  /**
+   * @param number Número identificador do cliente
+   */
   @GetMapping("/generate/{combinedScoreId}")
   public ResponseEntity<byte[]> generateBillet(
       @PathVariable Long combinedScoreId,

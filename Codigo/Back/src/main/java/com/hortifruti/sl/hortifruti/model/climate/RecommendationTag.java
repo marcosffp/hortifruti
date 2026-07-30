@@ -33,7 +33,9 @@ public enum RecommendationTag {
     return description;
   }
 
-  /** @param score pontuação da recomendação (0-25) */
+  /**
+   * @param score pontuação da recomendação (0-25)
+   */
   public static RecommendationTag fromScore(double score) {
     if (score >= 10.0) {
       return BOM;
