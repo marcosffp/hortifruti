@@ -2,6 +2,7 @@
 
 import { Eye, Plus, Trash, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import CreateManualPurchaseModal from "@/components/modals/CreateManualPurchaseModal";
 import InvoiceProductsModal from "@/components/modals/InvoiceProductsModal";
 import { combinedScoreService } from "@/services/combinedScoreService";
@@ -71,6 +72,7 @@ export default function PurchaseFilesTable({
     return lastDay.toISOString().split("T")[0];
   });
   const [confirmedAt, setConfirmedAt] = useState(() => todaySaoPaulo());
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
 
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -118,10 +120,14 @@ export default function PurchaseFilesTable({
     };
   }, [fetchPurchases, refreshKey]);
 
-  const handleDelete = async (purchaseId: number) => {
-    if (!confirm("Tem certeza que deseja deletar este arquivo de compra?"))
-      return;
+  const handleDelete = (purchaseId: number) => {
+    setDeleteTarget(purchaseId);
+  };
 
+  const confirmDeletePurchase = async () => {
+    if (deleteTarget === null) return;
+    const purchaseId = deleteTarget;
+    setDeleteTarget(null);
     try {
       await purchaseService.deletePurchaseFile(purchaseId);
       showSuccess("Arquivo deletado com sucesso");
@@ -550,6 +556,13 @@ export default function PurchaseFilesTable({
           onUpdate={fetchPurchases}
         />
       )}
+
+      <ConfirmDeleteModal
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDeletePurchase}
+        title="Tem certeza que deseja deletar este arquivo de compra?"
+      />
     </div>
   );
 }

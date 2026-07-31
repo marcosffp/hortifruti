@@ -260,17 +260,17 @@ export default function ClientCard({
             </div>
             <div className="min-w-0">
               <div className="font-medium text-gray-800 truncate">{nome}</div>
-              <div className="text-sm text-gray-500 truncate">
-                {email || "Sem e-mail cadastrado"}
-              </div>
+              {telefone && (
+                <div className="text-sm text-gray-500 truncate">{telefone}</div>
+              )}
             </div>
           </div>
           <div className="shrink-0">{statusBadge}</div>
         </div>
 
         <div className="flex items-center gap-1.5 text-sm text-gray-600">
-          <Phone size={14} className="text-gray-400 shrink-0" />
-          <span>{telefone || "Não informado"}</span>
+          <Mail size={14} className="text-gray-400 shrink-0" />
+          <span>{email || "Não informado"}</span>
         </div>
 
         <div className="flex items-center gap-1.5 text-sm text-gray-600 min-w-0">
@@ -313,17 +313,17 @@ export default function ClientCard({
             <div className="font-medium text-gray-800 group-hover:text-green-600 transition-colors truncate">
               {nome}
             </div>
-            <div className="text-sm text-gray-500 truncate">
-              {email || "Sem e-mail cadastrado"}
-            </div>
+            {telefone && (
+              <div className="text-sm text-gray-500 truncate">{telefone}</div>
+            )}
           </div>
         </div>
 
         <div className="text-gray-700 flex items-center min-w-0">
-          {telefone ? (
+          {email ? (
             <div className="flex items-center min-w-0">
-              <Phone size={14} className="text-gray-400 mr-1.5 shrink-0" />
-              <span className="truncate">{telefone}</span>
+              <Mail size={14} className="text-gray-400 mr-1.5 shrink-0" />
+              <span className="truncate">{email}</span>
             </div>
           ) : (
             <span className="text-gray-400 italic text-sm">Não informado</span>

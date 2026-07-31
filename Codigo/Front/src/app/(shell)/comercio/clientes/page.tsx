@@ -6,8 +6,8 @@ import {
   DollarSign,
   LayoutGrid,
   LayoutList,
+  Mail,
   MapPin,
-  Phone,
   Plus,
   Search,
   Settings,
@@ -233,7 +233,7 @@ export default function ClientesPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2 min-w-0">
-                  <Phone size={16} className="text-gray-500 shrink-0" />
+                  <Mail size={16} className="text-gray-500 shrink-0" />
                   <span className="font-semibold text-gray-800 truncate">
                     Contato
                   </span>
