@@ -63,9 +63,14 @@ export const invoiceService = {
       });
 
       if (!response.ok) {
-        throw new Error(
-          `Erro ao buscar informações da nota fiscal: ${response.status}`,
-        );
+        let message = `Erro ao buscar informações da nota fiscal: ${response.status}`;
+        try {
+          const errorBody = await response.json();
+          if (errorBody?.message) message = errorBody.message;
+        } catch {
+          // corpo do erro não é JSON, mantém a mensagem padrão
+        }
+        throw new Error(message);
       }
 
       const result: InvoiceResponseGet = await response.json();
@@ -189,23 +194,40 @@ export const invoiceService = {
     }
   },
 
-  async cancelInvoice(
-    ref: string,
-    justificativa: string,
-    extemporaneo?: boolean,
-  ): Promise<string> {
+  async reconcileInvoiceStatus(combinedScoreId: number): Promise<string> {
     try {
-      const params = new URLSearchParams({ justificativa });
-      if (extemporaneo) params.append("extemporaneo", "true");
-
       const response = await fetch(
-        `${API_BASE_URL}/invoices/${ref}/cancel?${params.toString()}`,
+        `${API_BASE_URL}/invoices/${combinedScoreId}/reconciliar`,
         {
-          method: "DELETE",
+          method: "POST",
           headers: getAuthHeaders(),
           credentials: "include",
         },
       );
+
+      const result = await response.text();
+      if (!response.ok) {
+        throw new Error(
+          result || `Erro ao reconciliar nota fiscal: ${response.status}`,
+        );
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Falha ao reconciliar status da nota fiscal:", error);
+      throw error;
+    }
+  },
+
+  async cancelInvoice(ref: string): Promise<string> {
+    try {
+      // O motivo do cancelamento não é mais enviado pelo cliente — o backend
+      // sempre usa a justificativa fixa "Cancelamento extemporâneo".
+      const response = await fetch(`${API_BASE_URL}/invoices/${ref}/cancel`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
 
       const result = await response.text();
       if (!response.ok) {

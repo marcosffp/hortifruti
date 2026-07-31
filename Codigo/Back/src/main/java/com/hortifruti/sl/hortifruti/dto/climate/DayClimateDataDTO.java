@@ -3,10 +3,6 @@ package com.hortifruti.sl.hortifruti.dto.climate;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 
-/**
- * DTO para representar dados climáticos de um dia específico Usado para passar dados entre
- * front-end e back-end quando um card de clima é clicado
- */
 @Schema(description = "Dados climáticos de um dia específico para recomendações de produtos")
 public record DayClimateDataDTO(
     @Schema(description = "Data do dia", example = "2025-09-27") LocalDate date,

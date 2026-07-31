@@ -16,15 +16,6 @@ public class DashboardController {
 
   private final DashboardService dashboardService;
 
-  /**
-   * Endpoint para obter os dados do dashboard.
-   *
-   * @param startDate Data de início do período (formato: yyyy-MM-dd).
-   * @param endDate Data de fim do período (formato: yyyy-MM-dd).
-   * @param month Mês para o ranking de categorias de gastos.
-   * @param year Ano para o ranking de categorias de gastos.
-   * @return Um objeto contendo todas as divisórias do dashboard.
-   */
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping
   public ResponseEntity<Map<String, Object>> getDashboardData(

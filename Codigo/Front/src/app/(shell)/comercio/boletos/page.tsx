@@ -358,6 +358,7 @@ export default function BoletosPage() {
   } | null>(null);
   const [bulkAction, setBulkAction] = useState<BulkActionType | null>(null);
   const [cancelTarget, setCancelTarget] = useState<number[] | null>(null);
+  const [payTarget, setPayTarget] = useState<number[] | null>(null);
   const [showManualCancelModal, setShowManualCancelModal] = useState(false);
 
   // Aba "Consultar por cliente"
@@ -392,8 +393,9 @@ export default function BoletosPage() {
   const [cancelInvoiceTarget, setCancelInvoiceTarget] = useState<
     number[] | null
   >(null);
-  const [cancelInvoiceJustificativa, setCancelInvoiceJustificativa] =
-    useState("");
+  const [payInvoiceTarget, setPayInvoiceTarget] = useState<number[] | null>(
+    null,
+  );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: getOpenInvoiceOnly is recreated on every render by useInvoice and is not part of the fetch identity
   const fetchOpenInvoices = useCallback(async () => {
@@ -428,28 +430,59 @@ export default function BoletosPage() {
     });
   };
 
-  const handleConfirmInvoicePayment = async (invoice: OpenInvoiceResponse) => {
-    if (
-      !window.confirm(
-        `Confirmar o pagamento da NF de ${invoice.clientName} (${formatCurrency(invoice.totalValue)})? Ele deixará de aparecer na lista de NF sem boleto.`,
-      )
-    ) {
-      return;
+  const handleConfirmInvoicePayment = (invoice: OpenInvoiceResponse) => {
+    setPayInvoiceTarget([invoice.combinedScoreId]);
+  };
+
+  const executeConfirmInvoicePayment = async (ids: number[]) => {
+    const succeeded: number[] = [];
+    const failed: number[] = [];
+    for (const id of ids) {
+      try {
+        await combinedScoreService.confirmPayment(id);
+        succeeded.push(id);
+      } catch (error) {
+        failed.push(id);
+        console.error(error);
+      }
     }
-    setInvoiceRowAction({ id: invoice.combinedScoreId, type: "pay" });
-    try {
-      await combinedScoreService.confirmPayment(invoice.combinedScoreId);
-      showSuccess("Pagamento confirmado com sucesso.");
-      removeInvoices([invoice.combinedScoreId]);
-    } catch (error) {
+    if (succeeded.length > 0) {
+      removeInvoices(succeeded);
+    }
+    if (failed.length === 0) {
+      showSuccess(
+        succeeded.length > 1
+          ? `${succeeded.length} pagamento(s) confirmado(s) com sucesso.`
+          : "Pagamento confirmado com sucesso.",
+      );
+    } else if (succeeded.length === 0) {
       showError(
-        error instanceof Error
-          ? error.message
+        failed.length > 1
+          ? `Não foi possível confirmar o pagamento de ${failed.length} NF(s).`
           : "Não foi possível confirmar o pagamento da NF",
       );
-      console.error(error);
+    } else {
+      showError(
+        `${succeeded.length} pagamento(s) confirmado(s), ${failed.length} falharam.`,
+      );
+    }
+  };
+
+  const confirmPayInvoice = async () => {
+    if (!payInvoiceTarget) return;
+    const ids = payInvoiceTarget;
+    const isSingle = ids.length === 1;
+    setPayInvoiceTarget(null);
+    if (isSingle) {
+      setInvoiceRowAction({ id: ids[0], type: "pay" });
+    } else {
+      setInvoiceBulkAction("pay");
+    }
+    try {
+      await executeConfirmInvoicePayment(ids);
     } finally {
       setInvoiceRowAction(null);
+      setInvoiceBulkAction(null);
     }
   };
 
@@ -472,10 +505,7 @@ export default function BoletosPage() {
     }
   };
 
-  const executeCancelInvoices = async (
-    ids: number[],
-    justificativa: string,
-  ) => {
+  const executeCancelInvoices = async (ids: number[]) => {
     const succeeded: number[] = [];
     const failed: number[] = [];
     for (const id of ids) {
@@ -485,7 +515,7 @@ export default function BoletosPage() {
         continue;
       }
       try {
-        await cancelInvoiceApi(invoice.invoiceRef, justificativa);
+        await cancelInvoiceApi(invoice.invoiceRef);
         succeeded.push(id);
       } catch (error) {
         failed.push(id);
@@ -515,14 +545,12 @@ export default function BoletosPage() {
   };
 
   const handleCancelInvoice = (invoice: OpenInvoiceResponse) => {
-    setCancelInvoiceJustificativa("");
     setCancelInvoiceTarget([invoice.combinedScoreId]);
   };
 
   const confirmCancelInvoice = async () => {
     if (!cancelInvoiceTarget) return;
     const ids = cancelInvoiceTarget;
-    const justificativa = cancelInvoiceJustificativa.trim();
     const isSingle = ids.length === 1;
     setCancelInvoiceTarget(null);
     if (isSingle) {
@@ -531,7 +559,7 @@ export default function BoletosPage() {
       setInvoiceBulkAction("cancel");
     }
     try {
-      await executeCancelInvoices(ids, justificativa);
+      await executeCancelInvoices(ids);
     } finally {
       setInvoiceRowAction(null);
       setInvoiceBulkAction(null);
@@ -590,46 +618,23 @@ export default function BoletosPage() {
     [openInvoices, selectedInvoiceIds],
   );
 
-  const handleBulkConfirmInvoicePayment = async () => {
+  const handleBulkConfirmInvoicePayment = () => {
     if (selectedInvoices.length === 0) return;
-    if (
-      !window.confirm(
-        `Confirmar o pagamento das ${selectedInvoices.length} NF selecionadas? Elas deixarão de aparecer na lista de NF sem boleto.`,
-      )
-    ) {
-      return;
-    }
-    setInvoiceBulkAction("pay");
-    const ids = selectedInvoices.map((i) => i.combinedScoreId);
-    const succeeded: number[] = [];
-    const failed: number[] = [];
-    for (const id of ids) {
-      try {
-        await combinedScoreService.confirmPayment(id);
-        succeeded.push(id);
-      } catch (error) {
-        failed.push(id);
-        console.error(error);
-      }
-    }
-    if (succeeded.length > 0) {
-      removeInvoices(succeeded);
-    }
-    if (failed.length === 0) {
-      showSuccess(
-        `${succeeded.length} pagamento(s) confirmado(s) com sucesso.`,
-      );
-    } else if (succeeded.length === 0) {
-      showError(
-        `Não foi possível confirmar o pagamento de ${failed.length} NF(s).`,
-      );
-    } else {
-      showError(
-        `${succeeded.length} pagamento(s) confirmado(s), ${failed.length} falharam.`,
-      );
-    }
-    setInvoiceBulkAction(null);
+    setPayInvoiceTarget(selectedInvoices.map((i) => i.combinedScoreId));
   };
+
+  const payInvoiceConfirmTitle = (() => {
+    if (!payInvoiceTarget) return "";
+    if (payInvoiceTarget.length === 1) {
+      const invoice = openInvoices.find(
+        (i) => i.combinedScoreId === payInvoiceTarget[0],
+      );
+      return `Confirmar o pagamento da NF de ${invoice?.clientName ?? "cliente"}${
+        invoice ? ` (${formatCurrency(invoice.totalValue)})` : ""
+      }? Ele deixará de aparecer na lista de NF sem boleto.`;
+    }
+    return `Confirmar o pagamento das ${payInvoiceTarget.length} NF selecionadas? Elas deixarão de aparecer na lista de NF sem boleto.`;
+  })();
 
   const handleBulkDownloadInvoices = async () => {
     if (selectedInvoices.length === 0) return;
@@ -664,7 +669,6 @@ export default function BoletosPage() {
 
   const handleBulkCancelInvoices = () => {
     if (selectedInvoices.length === 0) return;
-    setCancelInvoiceJustificativa("");
     setCancelInvoiceTarget(selectedInvoices.map((i) => i.combinedScoreId));
   };
 
@@ -712,28 +716,59 @@ export default function BoletosPage() {
     });
   };
 
-  const handleMarkAsPaid = async (billet: OpenBilletResponse) => {
-    if (
-      !window.confirm(
-        `Confirmar o pagamento do boleto de ${billet.clientName} (${formatCurrency(billet.totalValue)})? Ele deixará de aparecer na lista de boletos em aberto.`,
-      )
-    ) {
-      return;
+  const handleMarkAsPaid = (billet: OpenBilletResponse) => {
+    setPayTarget([billet.combinedScoreId]);
+  };
+
+  const executeMarkAsPaid = async (ids: number[]) => {
+    const succeeded: number[] = [];
+    const failed: number[] = [];
+    for (const id of ids) {
+      try {
+        await markBilletAsPaid(id);
+        succeeded.push(id);
+      } catch (error) {
+        failed.push(id);
+        console.error(error);
+      }
     }
-    setRowAction({ id: billet.combinedScoreId, type: "pay" });
-    try {
-      await markBilletAsPaid(billet.combinedScoreId);
-      showSuccess("Pagamento confirmado com sucesso.");
-      removeBillets([billet.combinedScoreId]);
-    } catch (error) {
+    if (succeeded.length > 0) {
+      removeBillets(succeeded);
+    }
+    if (failed.length === 0) {
+      showSuccess(
+        succeeded.length > 1
+          ? `${succeeded.length} pagamento(s) confirmado(s) com sucesso.`
+          : "Pagamento confirmado com sucesso.",
+      );
+    } else if (succeeded.length === 0) {
       showError(
-        error instanceof Error
-          ? error.message
+        failed.length > 1
+          ? `Não foi possível confirmar o pagamento de ${failed.length} boleto(s).`
           : "Não foi possível confirmar o pagamento do boleto",
       );
-      console.error(error);
+    } else {
+      showError(
+        `${succeeded.length} pagamento(s) confirmado(s), ${failed.length} falharam.`,
+      );
+    }
+  };
+
+  const confirmPayBillet = async () => {
+    if (!payTarget) return;
+    const ids = payTarget;
+    const isSingle = ids.length === 1;
+    setPayTarget(null);
+    if (isSingle) {
+      setRowAction({ id: ids[0], type: "pay" });
+    } else {
+      setBulkAction("pay");
+    }
+    try {
+      await executeMarkAsPaid(ids);
     } finally {
       setRowAction(null);
+      setBulkAction(null);
     }
   };
 
@@ -858,46 +893,23 @@ export default function BoletosPage() {
     [openBillets, selectedIds],
   );
 
-  const handleBulkMarkAsPaid = async () => {
+  const handleBulkMarkAsPaid = () => {
     if (selectedBillets.length === 0) return;
-    if (
-      !window.confirm(
-        `Confirmar o pagamento dos ${selectedBillets.length} boletos selecionados? Eles deixarão de aparecer na lista de boletos em aberto.`,
-      )
-    ) {
-      return;
-    }
-    setBulkAction("pay");
-    const ids = selectedBillets.map((b) => b.combinedScoreId);
-    const succeeded: number[] = [];
-    const failed: number[] = [];
-    for (const id of ids) {
-      try {
-        await markBilletAsPaid(id);
-        succeeded.push(id);
-      } catch (error) {
-        failed.push(id);
-        console.error(error);
-      }
-    }
-    if (succeeded.length > 0) {
-      removeBillets(succeeded);
-    }
-    if (failed.length === 0) {
-      showSuccess(
-        `${succeeded.length} pagamento(s) confirmado(s) com sucesso.`,
-      );
-    } else if (succeeded.length === 0) {
-      showError(
-        `Não foi possível confirmar o pagamento de ${failed.length} boleto(s).`,
-      );
-    } else {
-      showError(
-        `${succeeded.length} pagamento(s) confirmado(s), ${failed.length} falharam.`,
-      );
-    }
-    setBulkAction(null);
+    setPayTarget(selectedBillets.map((b) => b.combinedScoreId));
   };
+
+  const payConfirmTitle = (() => {
+    if (!payTarget) return "";
+    if (payTarget.length === 1) {
+      const billet = openBillets.find(
+        (b) => b.combinedScoreId === payTarget[0],
+      );
+      return `Confirmar o pagamento do boleto de ${billet?.clientName ?? "cliente"}${
+        billet ? ` (${formatCurrency(billet.totalValue)})` : ""
+      }? Ele deixará de aparecer na lista de boletos em aberto.`;
+    }
+    return `Confirmar o pagamento dos ${payTarget.length} boletos selecionados? Eles deixarão de aparecer na lista de boletos em aberto.`;
+  })();
 
   const handleBulkDownload = async () => {
     if (selectedBillets.length === 0) return;
@@ -1916,6 +1928,13 @@ export default function BoletosPage() {
       />
 
       <ConfirmDeleteModal
+        open={payTarget !== null}
+        onClose={() => setPayTarget(null)}
+        onConfirm={confirmPayBillet}
+        title={payConfirmTitle}
+      />
+
+      <ConfirmDeleteModal
         open={cancelClientBilletTarget !== null}
         onClose={() => setCancelClientBilletTarget(null)}
         onConfirm={confirmCancelClientBillet}
@@ -1927,23 +1946,14 @@ export default function BoletosPage() {
         onClose={() => setCancelInvoiceTarget(null)}
         onConfirm={confirmCancelInvoice}
         title={cancelInvoiceConfirmTitle}
-        confirmDisabled={!cancelInvoiceJustificativa.trim()}
-      >
-        <label
-          htmlFor="cancel-invoice-justificativa"
-          className="block text-xs font-medium text-gray-600 mb-1"
-        >
-          Justificativa do cancelamento (obrigatória para a SEFAZ)
-        </label>
-        <textarea
-          id="cancel-invoice-justificativa"
-          className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-          rows={3}
-          value={cancelInvoiceJustificativa}
-          onChange={(e) => setCancelInvoiceJustificativa(e.target.value)}
-          placeholder="Ex: Pagamento combinado por outro meio, NF emitida indevidamente..."
-        />
-      </ConfirmDeleteModal>
+      />
+
+      <ConfirmDeleteModal
+        open={payInvoiceTarget !== null}
+        onClose={() => setPayInvoiceTarget(null)}
+        onConfirm={confirmPayInvoice}
+        title={payInvoiceConfirmTitle}
+      />
     </main>
   );
 }

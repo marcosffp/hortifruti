@@ -25,7 +25,6 @@ const MapComponent = ({ routeData }: { routeData: RouteData | null }) => {
     });
   }, []);
 
-  // Função para buscar a rota da API OSRM
   const fetchRoute = useCallback(
     async (origin: Location, destination: Location) => {
       try {
@@ -36,7 +35,6 @@ const MapComponent = ({ routeData }: { routeData: RouteData | null }) => {
         const data = await response.json();
 
         if (data.routes && data.routes.length > 0) {
-          // Converter formato do GeoJSON para array de [lat, lng]
           const points: [number, number][] =
             data.routes[0].geometry.coordinates.map(
               (coord: [number, number]) => [coord[1], coord[0]], // OSRM retorna [lng, lat], precisamos inverter para [lat, lng]
@@ -52,14 +50,12 @@ const MapComponent = ({ routeData }: { routeData: RouteData | null }) => {
     [],
   );
 
-  // Buscar os pontos da rota quando routeData mudar
   useEffect(() => {
     if (routeData) {
       fetchRoute(routeData.origin, routeData.destination);
     }
   }, [routeData, fetchRoute]);
 
-  // Determinar o centro do mapa e o zoom
   const center: [number, number] = routeData
     ? [
         (routeData.origin.lat + routeData.destination.lat) / 2,

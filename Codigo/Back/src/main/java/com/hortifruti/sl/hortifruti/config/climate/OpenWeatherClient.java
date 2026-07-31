@@ -34,12 +34,7 @@ public class OpenWeatherClient {
   @Qualifier("genericRestTemplate")
   private final RestTemplate restTemplate;
 
-  /**
-   * Busca a previsão do tempo para 5 dias, em intervalos de 3 horas
-   *
-   * @return Mapa contendo os dados da previsão
-   * @throws WeatherApiException se ocorrer um erro na chamada à API
-   */
+  /** Busca a previsão do tempo para 5 dias, em intervalos de 3 horas. */
   @SuppressWarnings("unchecked")
   public Map<String, Object> fetch5DayForecast() throws WeatherApiException {
     String encodedCity = city.replace(" ", "+");

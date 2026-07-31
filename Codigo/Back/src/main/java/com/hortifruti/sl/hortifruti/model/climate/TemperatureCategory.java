@@ -1,6 +1,5 @@
 package com.hortifruti.sl.hortifruti.model.climate;
 
-/** Enum representando as categorias de temperatura para recomendação de produtos */
 public enum TemperatureCategory {
   CONGELANDO("Congelando", 0, 5),
   FRIO("Frio", 6, 14),
@@ -30,10 +29,7 @@ public enum TemperatureCategory {
   }
 
   /**
-   * Determina a categoria de temperatura baseada na temperatura média
-   *
    * @param avgTemp temperatura média em Celsius
-   * @return categoria de temperatura
    */
   public static TemperatureCategory fromTemperature(double avgTemp) {
     if (avgTemp <= 5) {

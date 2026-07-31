@@ -30,7 +30,6 @@ public class ClimateProductRecommendationController {
 
   private final ClimateProductRecommendationService recommendationService;
 
-  /** Obtém produtos por categoria de temperatura Acesso restrito apenas para usuários MANAGER */
   @GetMapping("/by-temperature/{category}")
   @PreAuthorize("hasRole('MANAGER')")
   @ApiResponses({
@@ -54,10 +53,7 @@ public class ClimateProductRecommendationController {
     return ResponseEntity.ok(products);
   }
 
-  /**
-   * Recomendações baseadas apenas na data O frontend envia apenas a data, e buscamos os dados
-   * climáticos via API
-   */
+  /** O frontend envia apenas a data; os dados climáticos são buscados via API a partir dela. */
   @GetMapping("/by-date")
   @PreAuthorize("hasRole('MANAGER')")
   @Operation(

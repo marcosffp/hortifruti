@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import RoleGuard from "@/components/auth/RoleGuard";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import Button from "@/components/ui/Button";
 import GameLoadingOverlay from "@/components/ui/GameLoadingOverlay";
 import Loading from "@/components/ui/Loading";
@@ -107,6 +108,7 @@ export default function FinancialLaunchesPage() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [currentTransaction, setCurrentTransaction] =
     useState<TransactionResponse | null>(null);
   const [isGeneratingExtratos, setIsGeneratingExtratos] = useState(false);
@@ -177,20 +179,25 @@ export default function FinancialLaunchesPage() {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       fetchTransactionsData();
-    }, 300); // Debounce de 300ms
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [fetchTransactionsData]);
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Tem certeza que deseja excluir este lançamento?")) {
-      try {
-        await deleteTransaction(id);
-        alert("Lançamento excluído com sucesso!");
-        fetchSummaryData();
-      } catch (err) {
-        alert(`Erro ao excluir lançamento: ${getErrorMessage(err)}`);
-      }
+  const handleDelete = (id: number) => {
+    setDeleteTarget(id);
+  };
+
+  const confirmDeleteTransaction = async () => {
+    if (deleteTarget === null) return;
+    const id = deleteTarget;
+    setDeleteTarget(null);
+    try {
+      await deleteTransaction(id);
+      showSuccess("Lançamento excluído com sucesso!");
+      fetchSummaryData();
+    } catch (err) {
+      showError(`Erro ao excluir lançamento: ${getErrorMessage(err)}`);
     }
   };
 
@@ -1323,6 +1330,13 @@ export default function FinancialLaunchesPage() {
                 "Quase lá...",
               ]
         }
+      />
+
+      <ConfirmDeleteModal
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDeleteTransaction}
+        title="Tem certeza que deseja excluir este lançamento?"
       />
     </main>
   );

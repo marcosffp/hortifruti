@@ -69,7 +69,10 @@ public class CredentialManager {
       throws IOException {
 
     String authorizationUrl =
-        flow.newAuthorizationUrl().setRedirectUri(config.getRedirectUri()).build();
+        flow.newAuthorizationUrl()
+            .setRedirectUri(config.getRedirectUri())
+            .setState(config.getAuthOrigin())
+            .build();
 
     return new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
         .setTransport(httpTransport)
@@ -78,7 +81,6 @@ public class CredentialManager {
         .setAccessToken("AUTHORIZATION_REQUIRED:" + authorizationUrl);
   }
 
-  /** Carrega os client secrets do arquivo de credenciais */
   private GoogleClientSecrets loadClientSecrets(java.io.File credentialsFile) throws IOException {
     if (!credentialsFile.exists()) {
       throw new BackupException("Arquivo de credenciais não encontrado.");

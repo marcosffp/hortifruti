@@ -18,6 +18,12 @@ import {
   validarTelefone,
 } from "@/utils/validationUtils";
 
+// Limite do boleto bancário (Sicoob) para o campo de bairro do pagador.
+const BAIRRO_MAX_LENGTH = 30;
+
+// Código IBGE do município padrão (Santa Luzia/MG), pré-preenchido no campo CIDE.
+const SANTA_LUZIA_CIDE_CODE = "3157807";
+
 export interface ClientFormData {
   nome: string;
   email: string;
@@ -69,7 +75,7 @@ export default function ClientForm({
     variablePrice: "false",
     stateRegistration: "",
     stateIndicator: "9", // Padrão: Não contribuinte
-    cideCode: "",
+    cideCode: SANTA_LUZIA_CIDE_CODE,
     onlyBillet: "false",
     ...initialData,
   });
@@ -127,10 +133,17 @@ export default function ClientForm({
         return;
       }
 
+      // O ViaCEP pode retornar bairros com nomes compostos que passam do limite
+      // aceito pelo boleto (30 caracteres). Trunca aqui para nunca deixar passar.
+      const bairro = (endereco.bairro || formData.bairro).slice(
+        0,
+        BAIRRO_MAX_LENGTH,
+      );
+
       setFormData((prev) => ({
         ...prev,
         endereco: endereco.logradouro || prev.endereco,
-        bairro: endereco.bairro || prev.bairro,
+        bairro,
         cidade: endereco.localidade || prev.cidade,
         estado: endereco.uf || prev.estado,
       }));
@@ -173,6 +186,8 @@ export default function ClientForm({
       formattedValue = formatarCEP(value);
     } else if (name === "stateRegistration") {
       formattedValue = formatarIEMinasGerais(value);
+    } else if (name === "bairro") {
+      formattedValue = value.slice(0, BAIRRO_MAX_LENGTH);
     }
 
     setFormData((prev) => ({
@@ -207,9 +222,9 @@ export default function ClientForm({
       case "nome":
         return !value.trim() ? "Nome é obrigatório" : "";
       case "email":
-        return !validarEmail(value) ? "Email inválido" : "";
+        return value.trim() && !validarEmail(value) ? "Email inválido" : "";
       case "telefone":
-        return !validarTelefone(value)
+        return value.trim() && !validarTelefone(value)
           ? "Telefone inválido. Formato: (XX) XXXXX-XXXX"
           : "";
       case "cpfCnpj":
@@ -368,7 +383,7 @@ export default function ClientForm({
                   htmlFor="email"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  E-mail *
+                  E-mail
                 </label>
                 <input
                   type="email"
@@ -382,7 +397,6 @@ export default function ClientForm({
                       email: validateField("email", e.target.value),
                     })
                   }
-                  required
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.email ? "border-red-500" : "border-gray-300"
                   }`}
@@ -399,7 +413,7 @@ export default function ClientForm({
                   htmlFor="telefone"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Telefone *
+                  Telefone
                 </label>
                 <input
                   type="tel"
@@ -413,7 +427,6 @@ export default function ClientForm({
                       telefone: validateField("telefone", e.target.value),
                     })
                   }
-                  required
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.telefone ? "border-red-500" : "border-gray-300"
                   }`}
@@ -531,6 +544,9 @@ export default function ClientForm({
                       {formErrors.cideCode}
                     </p>
                   )}
+                  {formData.cideCode === SANTA_LUZIA_CIDE_CODE && (
+                    <p className="text-xs text-gray-500 mt-1">Santa Luzia</p>
+                  )}
                   <p className="text-xs text-gray-500 mt-1">
                     Obrigatório para empresas (CNPJ)
                   </p>
@@ -627,12 +643,32 @@ export default function ClientForm({
                       numero: validateField("numero", e.target.value),
                     })
                   }
+                  disabled={formData.numero === "S/N"}
                   required
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.numero ? "border-red-500" : "border-gray-300"
-                  }`}
+                  } ${formData.numero === "S/N" ? "bg-gray-100 cursor-not-allowed" : ""}`}
                   placeholder="123"
                 />
+                <label className="flex items-center mt-1 text-xs text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={formData.numero === "S/N"}
+                    onChange={(e) => {
+                      const semNumero = e.target.checked;
+                      setFormData((prev) => ({
+                        ...prev,
+                        numero: semNumero ? "S/N" : "",
+                      }));
+                      setFormErrors((prev) => ({
+                        ...prev,
+                        numero: semNumero ? "" : validateField("numero", ""),
+                      }));
+                    }}
+                    className="mr-1.5"
+                  />
+                  Endereço sem número (usar S/N)
+                </label>
                 {formErrors.numero && (
                   <p className="text-red-500 text-xs mt-1">
                     {formErrors.numero}
@@ -676,6 +712,7 @@ export default function ClientForm({
                     })
                   }
                   required
+                  maxLength={BAIRRO_MAX_LENGTH}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
                     formErrors.bairro ? "border-red-500" : "border-gray-300"
                   }`}

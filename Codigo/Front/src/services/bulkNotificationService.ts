@@ -208,6 +208,25 @@ export const bulkNotificationService = {
     };
   },
 
+  async getAccountingRecipients(): Promise<string[]> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/notifications/accounting/recipients`,
+        {
+          method: "GET",
+          credentials: "include",
+        },
+      );
+
+      if (!response.ok) return [];
+
+      return await response.json();
+    } catch (error) {
+      console.error("Falha ao buscar destinatários da contabilidade:", error);
+      return [];
+    }
+  },
+
   async testService(): Promise<boolean> {
     try {
       const headers: HeadersInit = {

@@ -26,7 +26,6 @@ public class TransactionUtil {
   private static Map<String, Category> initCategoryKeywords() {
     Map<String, Category> map = new HashMap<>();
 
-    // Serviços Bancários
     map.put("pronampe", Category.SERVICOS_BANCARIOS);
     map.put("emprestimo", Category.SERVICOS_BANCARIOS);
     map.put("rende fácil", Category.SERVICOS_BANCARIOS);
@@ -45,7 +44,6 @@ public class TransactionUtil {
     map.put("devolucao", Category.SERVICOS_BANCARIOS);
     map.put("estorno", Category.SERVICOS_BANCARIOS);
 
-    // Vendas Cartão
     map.put("cielo", Category.VENDAS_CARTAO);
     map.put("alelo", Category.VENDAS_CARTAO);
     map.put("hortifruti", Category.VENDAS_CARTAO);
@@ -54,33 +52,26 @@ public class TransactionUtil {
     map.put("cr compras", Category.VENDAS_CARTAO);
     map.put("cr anteci", Category.VENDAS_CARTAO);
 
-    // Funcionário
     map.put("alexandre c", Category.FUNCIONARIO);
     map.put("marlucia natania vieira", Category.FUNCIONARIO);
     map.put("amanda gabriele da silva", Category.FUNCIONARIO);
     map.put("anderson cosme de souza", Category.FUNCIONARIO);
     map.put("alexandre conceição dos sa", Category.FUNCIONARIO);
 
-    // Família
     map.put("marcos", Category.FAMÍLIA);
 
-    // Serviços Telefônicos
     map.put("claro", Category.SERVICOS_TELEFONICOS);
     map.put("vivo", Category.SERVICOS_TELEFONICOS);
 
-    // Cemig
     map.put("cemig", Category.CEMIG);
 
-    // Copasa
     map.put("cia de saneamento de mg", Category.COPASA);
 
-    // Impostos
     map.put("codigo de barras", Category.IMPOSTOS);
     map.put("rfb-darf codigo de barras", Category.IMPOSTOS);
     map.put("das - simples nacional", Category.IMPOSTOS);
     map.put("cef matriz", Category.IMPOSTOS);
 
-    // Fiscal
     map.put("singular", Category.FISCAL);
     map.put("next", Category.FISCAL);
     return map;

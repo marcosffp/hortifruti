@@ -43,12 +43,6 @@ public class StatementSelectionService {
 
   private Optional<Statement> getBestStatementForPeriod(
       Bank bank, LocalDate startDate, LocalDate endDate) {
-    // Estratégia em 3 etapas:
-    // 1. Tentar encontrar statements que tenham transações exatamente no período
-    // 2. Se não encontrar, buscar statements que tenham pelo menos algumas transações no período
-    // 3. Se ainda não encontrar, pegar o statement mais recente do banco
-
-    // Etapa 1: Buscar statements com melhor cobertura do período
     List<Statement> bestCoverageStatements =
         statementRepository.findBestCoverageStatementsForPeriod(bank, startDate, endDate);
 
@@ -57,7 +51,6 @@ public class StatementSelectionService {
       return Optional.of(bestStatement);
     }
 
-    // Etapa 2: Buscar qualquer statement que tenha transações no período
     List<Statement> statementsWithTransactions =
         statementRepository.findStatementsWithTransactionsInPeriod(bank, startDate, endDate);
 
@@ -66,7 +59,6 @@ public class StatementSelectionService {
       return Optional.of(statement);
     }
 
-    // Etapa 3: Pegar o statement mais recente como fallback
     return statementRepository.findTopByBankOrderByCreatedAtDesc(bank);
   }
 

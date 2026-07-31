@@ -9,14 +9,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class PdfCreate {
-  /**
-   * Cria uma resposta HTTP contendo um PDF.
-   *
-   * @param pdfBase64 String Base64 contendo o PDF
-   * @param nomeArquivo Nome do arquivo PDF para download
-   * @return Resposta HTTP com o PDF
-   * @throws BilletException Se o PDF em Base64 for inválido ou ocorrer algum erro na decodificação
-   */
   public ResponseEntity<byte[]> createResponsePdf(String pdfBase64, String nomeArquivo) {
     try {
       if (pdfBase64 == null || pdfBase64.trim().isEmpty()) {
@@ -39,13 +31,6 @@ public class PdfCreate {
     }
   }
 
-  /**
-   * Decodifica uma string Base64 contendo um PDF e retorna os bytes.
-   *
-   * @param pdfBase64 String Base64 contendo o PDF
-   * @return Array de bytes do PDF
-   * @throws BilletException Se o PDF em Base64 for inválido ou ocorrer algum erro na decodificação
-   */
   public byte[] convertBase64ToBytes(String pdfBase64) {
     try {
       if (pdfBase64 == null || pdfBase64.trim().isEmpty()) {

@@ -9,6 +9,7 @@ import {
   showSuccess,
 } from "@/services/notificationService";
 import type { InvoiceResponseGet } from "@/types/invoiceType";
+import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
 interface ShowInvoiceDataModalProps {
   isOpen: boolean;
@@ -25,7 +26,6 @@ export default function ShowInvoiceDataModal({
 }: ShowInvoiceDataModalProps) {
   const { getDanfe, getXml, cancelInvoice, isLoading } = useInvoice();
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [justificativa, setJustificativa] = useState("");
   const [cancelling, setCancelling] = useState(false);
 
   const handleDownloadDanfe = async () => {
@@ -72,25 +72,11 @@ export default function ShowInvoiceDataModal({
   };
 
   const handleCancelInvoice = async () => {
-    if (!justificativa.trim() || justificativa.trim().length < 15) {
-      showError("A justificativa deve ter no mínimo 15 caracteres");
-      return;
-    }
-
-    if (
-      !confirm(
-        "Tem certeza que deseja cancelar esta nota fiscal? Esta ação não pode ser desfeita.",
-      )
-    ) {
-      return;
-    }
-
+    setShowCancelModal(false);
     setCancelling(true);
     try {
-      await cancelInvoice(invoiceData.reference, justificativa);
+      await cancelInvoice(invoiceData.reference);
       showSuccess("Nota fiscal cancelada com sucesso!");
-      setShowCancelModal(false);
-      setJustificativa("");
       onInvoiceCancelled?.();
       onClose();
     } catch (error) {
@@ -231,76 +217,22 @@ export default function ShowInvoiceDataModal({
             <button
               type="button"
               onClick={() => setShowCancelModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors cursor-pointer"
+              disabled={cancelling}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <AlertTriangle className="w-4 h-4" />
-              Cancelar Nota Fiscal
+              {cancelling ? "Cancelando..." : "Cancelar Nota Fiscal"}
             </button>
           )}
         </div>
       </div>
 
-      {showCancelModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-red-100 rounded-full">
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
-                </div>
-                <h3 className="text-lg font-semibold">Cancelar Nota Fiscal</h3>
-              </div>
-
-              <p className="text-gray-600 mb-4">
-                Para cancelar a nota fiscal, é necessário informar uma
-                justificativa com no mínimo 15 caracteres.
-              </p>
-
-              <div className="mb-4">
-                <label
-                  htmlFor="justificativa-cancelamento"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Justificativa *
-                </label>
-                <textarea
-                  id="justificativa-cancelamento"
-                  value={justificativa}
-                  onChange={(e) => setJustificativa(e.target.value)}
-                  placeholder="Digite a justificativa para o cancelamento..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 min-h-[100px]"
-                  maxLength={255}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {justificativa.length}/255 caracteres (mínimo 15)
-                </p>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCancelModal(false);
-                    setJustificativa("");
-                  }}
-                  disabled={cancelling}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
-                >
-                  Voltar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelInvoice}
-                  disabled={cancelling || justificativa.trim().length < 15}
-                  className="flex-1 px-4 py-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {cancelling ? "Cancelando..." : "Confirmar Cancelamento"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDeleteModal
+        open={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={handleCancelInvoice}
+        title="Tem certeza que deseja cancelar esta nota fiscal? Esta ação não pode ser desfeita."
+      />
     </div>
   );
 }

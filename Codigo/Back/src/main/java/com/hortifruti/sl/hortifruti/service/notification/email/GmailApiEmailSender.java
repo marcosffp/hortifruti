@@ -124,6 +124,7 @@ public class GmailApiEmailSender implements EmailSender {
               .tokensDirectoryPath(tokensDirectoryPath)
               .redirectUri(redirectUri)
               .credentialsFile(base64FileDecoder.getGoogleDriveCredentialsFile())
+              .authOrigin("notificacoes")
               .build();
 
       NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();

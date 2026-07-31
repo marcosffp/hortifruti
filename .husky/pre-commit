@@ -1,0 +1,83 @@
+#!/usr/bin/env sh
+# Roda a pipeline de qualidade do Front e do Back antes de cada commit.
+# Ativado via `git config core.hooksPath .husky` (raiz do repo), então este
+# script executa com cwd = raiz do repositório.
+
+FRONT_DIR="Codigo/Front"
+BACK_DIR="Codigo/Back"
+
+# Só roda a pipeline do Front se houver algo staged dentro dele
+if git diff --cached --name-only --diff-filter=ACM | grep -q "^${FRONT_DIR}/"; then
+  echo "▶ Front: biome check (lint + format + organize imports, com fix automático)"
+  if ! (cd "$FRONT_DIR" && npx lint-staged); then
+    echo ""
+    echo "❌ Commit bloqueado: o Biome encontrou problemas em Codigo/Front que não puderam ser corrigidos automaticamente."
+    echo "   Rode 'npm run lint:fix' dentro de Codigo/Front, revise o que sobrar manualmente e tente commitar de novo."
+    exit 1
+  fi
+
+  echo "▶ Front: checando tipos (tsc --noEmit)"
+  if ! (cd "$FRONT_DIR" && npx tsc --noEmit); then
+    echo ""
+    echo "❌ Commit bloqueado: erros de tipagem em Codigo/Front."
+    echo "   Rode 'npm run check-types' dentro de Codigo/Front para ver os erros e corrija antes de commitar."
+    exit 1
+  fi
+
+  echo "▶ Front: npm audit (bloqueando em vulnerabilidades moderate/high/critical)"
+  if ! (cd "$FRONT_DIR" && npm audit --audit-level=moderate); then
+    echo ""
+    echo "❌ Commit bloqueado: vulnerabilidades encontradas em Codigo/Front."
+    echo "   Rode 'npm audit' dentro de Codigo/Front para ver detalhes e 'npm audit fix' para tentar corrigir."
+    exit 1
+  fi
+
+  echo "▶ Front: build de produção (next build)"
+  if ! (cd "$FRONT_DIR" && npm run build); then
+    echo ""
+    echo "❌ Commit bloqueado: o build de produção falhou em Codigo/Front."
+    echo "   Rode 'npm run build' dentro de Codigo/Front para ver o erro completo e corrija antes de commitar."
+    exit 1
+  fi
+
+  echo "✅ Front: todos os checks passaram."
+fi
+
+# Só roda a pipeline do Back se houver algo staged dentro dele
+STAGED_BACK_FILES=$(git diff --cached --name-only --diff-filter=ACM -- "${BACK_DIR}")
+if [ -n "$STAGED_BACK_FILES" ]; then
+  STAGED_JAVA_FILES=$(echo "$STAGED_BACK_FILES" | grep '\.java$')
+
+  if [ -n "$STAGED_JAVA_FILES" ]; then
+    SPOTLESS_FILES=$(echo "$STAGED_JAVA_FILES" | sed "s|^${BACK_DIR}/||" | paste -sd, -)
+
+    echo "▶ Back: spotless (Google Java Format, com fix automático)"
+    if ! (cd "$BACK_DIR" && mvn -q spotless:apply -DspotlessFiles="$SPOTLESS_FILES"); then
+      echo ""
+      echo "❌ Commit bloqueado: o Spotless encontrou um erro ao formatar Codigo/Back."
+      echo "   Rode './format.sh' (ou 'format.bat' no Windows) dentro de Codigo/Back e tente commitar de novo."
+      exit 1
+    fi
+
+    # Re-adiciona os arquivos que o Spotless pode ter reformatado
+    echo "$STAGED_JAVA_FILES" | xargs git add
+  fi
+
+  echo "▶ Back: checando compilação (mvn compile)"
+  if ! (cd "$BACK_DIR" && mvn -q compile); then
+    echo ""
+    echo "❌ Commit bloqueado: erros de compilação em Codigo/Back."
+    echo "   Rode 'mvn compile' dentro de Codigo/Back para ver os erros e corrija antes de commitar."
+    exit 1
+  fi
+
+  echo "▶ Back: build de produção (mvn package, sem testes)"
+  if ! (cd "$BACK_DIR" && mvn -q -DskipTests package); then
+    echo ""
+    echo "❌ Commit bloqueado: o build de produção falhou em Codigo/Back."
+    echo "   Rode 'mvn -DskipTests package' dentro de Codigo/Back para ver o erro completo e corrija antes de commitar."
+    exit 1
+  fi
+
+  echo "✅ Back: todos os checks passaram."
+fi

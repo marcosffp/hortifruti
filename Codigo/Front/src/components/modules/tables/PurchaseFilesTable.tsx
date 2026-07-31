@@ -2,6 +2,8 @@
 
 import { Eye, Plus, Trash, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
+import CreateManualPurchaseModal from "@/components/modals/CreateManualPurchaseModal";
 import InvoiceProductsModal from "@/components/modals/InvoiceProductsModal";
 import { combinedScoreService } from "@/services/combinedScoreService";
 import { showError, showSuccess } from "@/services/notificationService";
@@ -60,21 +62,18 @@ export default function PurchaseFilesTable({
   );
   const [showModal, setShowModal] = useState(false);
   const [showGroupingModal, setShowGroupingModal] = useState(false);
+  const [showManualPurchaseModal, setShowManualPurchaseModal] = useState(false);
   const [groupBy, setGroupBy] = useState<"week" | "month" | "custom">("custom");
   const [creatingGrouping, setCreatingGrouping] = useState(false);
-  const [startDate, setStartDate] = useState(() => {
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    return firstDay.toISOString().split("T")[0];
-  });
+  const [startDate, setStartDate] = useState(() => todaySaoPaulo());
   const [endDate, setEndDate] = useState(() => {
     const now = new Date();
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return lastDay.toISOString().split("T")[0];
   });
   const [confirmedAt, setConfirmedAt] = useState(() => todaySaoPaulo());
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
 
-  // Debounce refs
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -121,10 +120,14 @@ export default function PurchaseFilesTable({
     };
   }, [fetchPurchases, refreshKey]);
 
-  const handleDelete = async (purchaseId: number) => {
-    if (!confirm("Tem certeza que deseja deletar este arquivo de compra?"))
-      return;
+  const handleDelete = (purchaseId: number) => {
+    setDeleteTarget(purchaseId);
+  };
 
+  const confirmDeletePurchase = async () => {
+    if (deleteTarget === null) return;
+    const purchaseId = deleteTarget;
+    setDeleteTarget(null);
     try {
       await purchaseService.deletePurchaseFile(purchaseId);
       showSuccess("Arquivo deletado com sucesso");
@@ -211,24 +214,37 @@ export default function PurchaseFilesTable({
   return (
     <div className="space-y-4">
       {/* Header com título e botão */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-2 flex-wrap">
         <h2 className="text-lg font-semibold">Arquivos de Compra</h2>
-        <button
-          type="button"
-          onClick={() => {
-            setConfirmedAt(todaySaoPaulo());
-            setShowGroupingModal(true);
-          }}
-          disabled={!clientId || purchases.length === 0}
-          className={`flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors ${
-            !clientId || purchases.length === 0
-              ? "opacity-50 cursor-not-allowed"
-              : ""
-          }`}
-        >
-          <Plus className="w-4 h-4" />
-          Criar Agrupamento
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowManualPurchaseModal(true)}
+            disabled={!clientId}
+            className={`flex items-center gap-2 px-4 py-2 bg-white text-green-700 border border-green-600 rounded-lg hover:bg-green-50 transition-colors ${
+              !clientId ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            <Plus className="w-4 h-4" />
+            Criar Compra
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setConfirmedAt(todaySaoPaulo());
+              setShowGroupingModal(true);
+            }}
+            disabled={!clientId || purchases.length === 0}
+            className={`flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors ${
+              !clientId || purchases.length === 0
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            }`}
+          >
+            <Plus className="w-4 h-4" />
+            Criar Agrupamento
+          </button>
+        </div>
       </div>
 
       {/* Loading skeleton */}
@@ -520,6 +536,15 @@ export default function PurchaseFilesTable({
         </div>
       )}
 
+      {/* Modal de criação manual de compra */}
+      {showManualPurchaseModal && clientId && (
+        <CreateManualPurchaseModal
+          clientId={clientId}
+          onClose={() => setShowManualPurchaseModal(false)}
+          onCreated={fetchPurchases}
+        />
+      )}
+
       {/* Modal de produtos */}
       {showModal && selectedPurchase && (
         <InvoiceProductsModal
@@ -531,6 +556,13 @@ export default function PurchaseFilesTable({
           onUpdate={fetchPurchases}
         />
       )}
+
+      <ConfirmDeleteModal
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDeletePurchase}
+        title="Tem certeza que deseja deletar este arquivo de compra?"
+      />
     </div>
   );
 }

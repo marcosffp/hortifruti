@@ -6,8 +6,8 @@ import {
   DollarSign,
   LayoutGrid,
   LayoutList,
+  Mail,
   MapPin,
-  Phone,
   Plus,
   Search,
   Settings,
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import ClientDetailModal from "@/components/modals/ClientDetailModal";
 import ClientCard from "@/components/modules/ClientCard";
 import Button from "@/components/ui/Button";
 import { clientService } from "@/services/clientService";
@@ -101,6 +102,9 @@ export default function ClientesPage() {
   );
 
   const [clienteParaExcluir, setClienteParaExcluir] = useState<number | null>(
+    null,
+  );
+  const [clienteDetalhesId, setClienteDetalhesId] = useState<number | null>(
     null,
   );
 
@@ -221,44 +225,44 @@ export default function ClientesPage() {
             </div>
 
             {viewMode === "list" && (
-              <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 border-b bg-gradient-to-r from-gray-50 to-gray-100 shadow-sm">
-                <div className="col-span-3 flex items-center gap-2">
-                  <User size={16} className="text-gray-500" />
+              <div className="hidden md:grid grid-cols-[2.2fr_1.2fr_1.7fr_1.3fr_1.2fr_1fr_100px] gap-4 px-6 py-4 border-b bg-gradient-to-r from-gray-50 to-gray-100 shadow-sm">
+                <div className="flex items-center gap-2 min-w-0">
+                  <User size={16} className="text-gray-500 shrink-0" />
                   <span className="font-semibold text-gray-800 truncate">
                     Cliente
                   </span>
                 </div>
-                <div className="col-span-2 flex items-center gap-2">
-                  <Phone size={16} className="text-gray-500" />
+                <div className="flex items-center gap-2 min-w-0">
+                  <Mail size={16} className="text-gray-500 shrink-0" />
                   <span className="font-semibold text-gray-800 truncate">
                     Contato
                   </span>
                 </div>
-                <div className="col-span-3 flex items-center gap-2">
-                  <MapPin size={16} className="text-gray-500" />
+                <div className="flex items-center gap-2 min-w-0">
+                  <MapPin size={16} className="text-gray-500 shrink-0" />
                   <span className="font-semibold text-gray-800 truncate">
                     Endereço
                   </span>
                 </div>
-                <div className="col-span-1 flex items-center gap-2">
-                  <CircleCheck size={16} className="text-gray-500" />
+                <div className="flex items-center gap-2 min-w-0">
+                  <CircleCheck size={16} className="text-gray-500 shrink-0" />
                   <span className="font-semibold text-gray-800 truncate">
                     Preço
                   </span>
                 </div>
-                <div className="col-span-1 flex items-center gap-2">
-                  <Calendar size={16} className="text-gray-500" />
+                <div className="flex items-center gap-2 min-w-0">
+                  <Calendar size={16} className="text-gray-500 shrink-0" />
                   <span className="font-semibold text-gray-800 truncate">
-                    Compras
+                    Última compra
                   </span>
                 </div>
-                <div className="col-span-1 flex items-center gap-2">
-                  <DollarSign size={16} className="text-gray-500" />
+                <div className="flex items-center gap-2 min-w-0">
+                  <DollarSign size={16} className="text-gray-500 shrink-0" />
                   <span className="font-semibold text-gray-800 truncate">
                     Total
                   </span>
                 </div>
-                <div className="col-span-1 flex justify-end">
+                <div className="flex justify-end">
                   <Settings size={16} className="text-gray-500" />
                 </div>
               </div>
@@ -351,6 +355,7 @@ export default function ClientesPage() {
                   ultimaCompra={cliente.ultimaCompra}
                   totalCompras={cliente.totalCompras || 0}
                   onDelete={handleExcluirCliente}
+                  onViewDetails={setClienteDetalhesId}
                   displayMode="list"
                 />
               ))}
@@ -371,6 +376,7 @@ export default function ClientesPage() {
                       ultimaCompra={cliente.ultimaCompra}
                       totalCompras={cliente.totalCompras || 0}
                       onDelete={handleExcluirCliente}
+                      onViewDetails={setClienteDetalhesId}
                       displayMode="grid"
                     />
                   ))}
@@ -409,6 +415,11 @@ export default function ClientesPage() {
           </div>
         </div>
       )}
+
+      <ClientDetailModal
+        clientId={clienteDetalhesId}
+        onClose={() => setClienteDetalhesId(null)}
+      />
     </>
   );
 }

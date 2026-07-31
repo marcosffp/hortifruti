@@ -12,9 +12,12 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import RoleGuard from "@/components/auth/RoleGuard";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import MaskedDecimalInput from "@/components/ui/MaskedDecimalInput";
 import { useAuth } from "@/hooks/useAuth";
 import {
   type BulkNotificationRequest,
@@ -37,8 +40,109 @@ interface Cliente {
 
 type TipoDestinatario = "clientes" | "contabilidade";
 
+const DRAFT_STORAGE_KEY = "notificacoes:rascunho";
+const DRAFT_TTL_MS = 30 * 60 * 1000;
+const DRAFT_KEY_MATERIAL = "hortifruti-sl-notificacoes-draft-v1";
+const DRAFT_SALT = new TextEncoder().encode("hortifruti-sl-notificacoes-salt");
+
+interface NotificacoesDraft {
+  tipoDestinatario: TipoDestinatario;
+  mensagemPersonalizada: string;
+  canaisEnvio: { email: boolean; whatsapp: boolean };
+  cardValue: number;
+  cashValue: number;
+  selectedClientIds: number[];
+}
+
+async function getDraftCryptoKey(): Promise<CryptoKey> {
+  const baseKey = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(DRAFT_KEY_MATERIAL),
+    "PBKDF2",
+    false,
+    ["deriveKey"],
+  );
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: DRAFT_SALT, iterations: 100_000, hash: "SHA-256" },
+    baseKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"],
+  );
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes));
+}
+
+function base64ToBytes(base64: string): Uint8Array<ArrayBuffer> {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function loadDraft(): Promise<NotificacoesDraft | null> {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+
+    const { iv, data } = JSON.parse(raw);
+    const key = await getDraftCryptoKey();
+    const plaintext = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: base64ToBytes(iv) },
+      key,
+      base64ToBytes(data),
+    );
+    const parsed = JSON.parse(new TextDecoder().decode(plaintext));
+
+    if (Date.now() - parsed.savedAt > DRAFT_TTL_MS) {
+      sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+async function saveDraft(draft: NotificacoesDraft) {
+  try {
+    const key = await getDraftCryptoKey();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const plaintext = new TextEncoder().encode(
+      JSON.stringify({ ...draft, savedAt: Date.now() }),
+    );
+    const ciphertext = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      key,
+      plaintext,
+    );
+
+    sessionStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        iv: bytesToBase64(iv),
+        data: bytesToBase64(new Uint8Array(ciphertext)),
+      }),
+    );
+  } catch {
+    // sessionStorage/WebCrypto indisponível (ex.: modo privado) — rascunho não é essencial, ignora
+  }
+}
+
+function clearDraft() {
+  try {
+    sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+  } catch {}
+}
+
 export default function NotificacoesPage() {
-  const { environment } = useAuth();
+  const { environment, hasRole } = useAuth();
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,8 +158,60 @@ export default function NotificacoesPage() {
   const [_valorBoleto, setValorBoleto] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  const [cardValue, setCardValue] = useState("");
-  const [cashValue, setCashValue] = useState("");
+  const [cardValue, setCardValue] = useState(0);
+  const [cashValue, setCashValue] = useState(0);
+  const [contabilidadeEmails, setContabilidadeEmails] = useState<string[]>([]);
+
+  // IDs de clientes selecionados no rascunho, aplicados assim que a lista de clientes carregar
+  // (a lista em si vem sempre fresca da API, então a seleção precisa ser reaplicada por id).
+  const pendingSelectedClientIdsRef = useRef<number[]>([]);
+
+  const isGestor = hasRole("MANAGER");
+
+  useEffect(() => {
+    loadDraft().then((draft) => {
+      if (!draft) return;
+
+      setTipoDestinatario(draft.tipoDestinatario);
+      setMensagemPersonalizada(draft.mensagemPersonalizada);
+      setCanaisEnvio(draft.canaisEnvio);
+      setCardValue(draft.cardValue);
+      setCashValue(draft.cashValue);
+      pendingSelectedClientIdsRef.current = draft.selectedClientIds;
+    });
+  }, []);
+
+  useEffect(() => {
+    saveDraft({
+      tipoDestinatario,
+      mensagemPersonalizada,
+      canaisEnvio,
+      cardValue,
+      cashValue,
+      selectedClientIds: clientes.filter((c) => c.selecionado).map((c) => c.id),
+    });
+  }, [
+    tipoDestinatario,
+    mensagemPersonalizada,
+    canaisEnvio,
+    cardValue,
+    cashValue,
+    clientes,
+  ]);
+
+  useEffect(() => {
+    if (tipoDestinatario === "contabilidade" && !isGestor) {
+      setTipoDestinatario("clientes");
+    }
+  }, [isGestor, tipoDestinatario]);
+
+  useEffect(() => {
+    if (tipoDestinatario !== "contabilidade" || !isGestor) return;
+
+    bulkNotificationService
+      .getAccountingRecipients()
+      .then(setContabilidadeEmails);
+  }, [tipoDestinatario, isGestor]);
 
   useEffect(() => {
     const fetchClientes = async () => {
@@ -68,7 +224,7 @@ export default function NotificacoesPage() {
           nome: client.clientName,
           email: client.email || "",
           telefone: client.phoneNumber || "",
-          selecionado: false,
+          selecionado: pendingSelectedClientIdsRef.current.includes(client.id),
         }));
 
         setClientes(clientesUI);
@@ -84,6 +240,19 @@ export default function NotificacoesPage() {
     fetchClientes();
   }, []);
 
+  useEffect(() => {
+    const authStatus = searchParams?.get("auth");
+    const authMessage = searchParams?.get("message");
+
+    if (authStatus === "success") {
+      showSuccess(
+        "Autenticação com o Gmail realizada com sucesso! Você já pode enviar o email novamente.",
+      );
+    } else if (authStatus === "error") {
+      showError(`Erro na autenticação: ${authMessage || "Erro desconhecido"}`);
+    }
+  }, [searchParams]);
+
   const filteredClientes = clientes.filter(
     (cliente) =>
       cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -91,20 +260,40 @@ export default function NotificacoesPage() {
       cliente.telefone.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
+  const clienteElegivel = useCallback(
+    (cliente: Cliente) => {
+      if (canaisEnvio.email && !cliente.email) return false;
+      if (canaisEnvio.whatsapp && !cliente.telefone) return false;
+      return true;
+    },
+    [canaisEnvio],
+  );
+
+  useEffect(() => {
+    setClientes((prev) =>
+      prev.map((c) =>
+        c.selecionado && !clienteElegivel(c) ? { ...c, selecionado: false } : c,
+      ),
+    );
+  }, [clienteElegivel]);
+
   const toggleCliente = (id: number) => {
     setClientes(
       clientes.map((c) =>
-        c.id === id ? { ...c, selecionado: !c.selecionado } : c,
+        c.id === id && clienteElegivel(c)
+          ? { ...c, selecionado: !c.selecionado }
+          : c,
       ),
     );
   };
 
   const toggleTodos = () => {
-    const todosAtivos = filteredClientes.every((c) => c.selecionado);
+    const elegiveisFiltrados = filteredClientes.filter(clienteElegivel);
+    const todosAtivos = elegiveisFiltrados.every((c) => c.selecionado);
     setClientes(
       clientes.map((c) => ({
         ...c,
-        selecionado: filteredClientes.some((fc) => fc.id === c.id)
+        selecionado: elegiveisFiltrados.some((fc) => fc.id === c.id)
           ? !todosAtivos
           : c.selecionado,
       })),
@@ -127,7 +316,6 @@ export default function NotificacoesPage() {
       setArquivos((prev) => [...prev, ...newFiles]);
       showSuccess(`${newFiles.length} arquivo(s) adicionado(s) com sucesso`);
 
-      // Limpar o input para permitir adicionar o mesmo arquivo novamente
       e.target.value = "";
     }
   };
@@ -221,8 +409,8 @@ export default function NotificacoesPage() {
       };
 
       if (tipoDestinatario === "contabilidade") {
-        if (cardValue) requestData.cardValue = cardValue;
-        if (cashValue) requestData.cashValue = cashValue;
+        if (cardValue > 0) requestData.cardValue = cardValue.toFixed(2);
+        if (cashValue > 0) requestData.cashValue = cashValue.toFixed(2);
       }
 
       const response =
@@ -238,8 +426,9 @@ export default function NotificacoesPage() {
         setClientes(clientes.map((c) => ({ ...c, selecionado: false })));
         setCanaisEnvio({ email: true, whatsapp: false });
 
-        setCardValue("");
-        setCashValue("");
+        setCardValue(0);
+        setCashValue(0);
+        clearDraft();
       } else if (response.authorizationUrl) {
         showErrorWithLink(response.message, response.authorizationUrl);
       } else {
@@ -261,8 +450,10 @@ export default function NotificacoesPage() {
   };
 
   const clientesSelecionados = clientes.filter((c) => c.selecionado).length;
+  const elegiveisFiltrados = filteredClientes.filter(clienteElegivel);
   const todosAtivos =
-    filteredClientes.length > 0 && filteredClientes.every((c) => c.selecionado);
+    elegiveisFiltrados.length > 0 &&
+    elegiveisFiltrados.every((c) => c.selecionado);
 
   if (environment === "hml") {
     return (
@@ -301,7 +492,9 @@ export default function NotificacoesPage() {
                 <div className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
                   Destinatário
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div
+                  className={`grid gap-3 ${isGestor ? "grid-cols-2" : "grid-cols-1"}`}
+                >
                   <button
                     type="button"
                     onClick={() => setTipoDestinatario("clientes")}
@@ -314,18 +507,20 @@ export default function NotificacoesPage() {
                     <Users className="w-5 h-5" />
                     <span className="font-medium">Clientes</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setTipoDestinatario("contabilidade")}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                      tipoDestinatario === "contabilidade"
-                        ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
-                        : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
-                    }`}
-                  >
-                    <Building2 className="w-5 h-5" />
-                    <span className="font-medium">Contabilidade</span>
-                  </button>
+                  <RoleGuard roles="MANAGER" ignoreRedirect>
+                    <button
+                      type="button"
+                      onClick={() => setTipoDestinatario("contabilidade")}
+                      className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                        tipoDestinatario === "contabilidade"
+                          ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
+                          : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
+                      }`}
+                    >
+                      <Building2 className="w-5 h-5" />
+                      <span className="font-medium">Contabilidade</span>
+                    </button>
+                  </RoleGuard>
                 </div>
               </div>
 
@@ -442,16 +637,16 @@ export default function NotificacoesPage() {
                       >
                         Valor de Cartão (R$)
                       </label>
-                      <input
-                        type="number"
+                      <MaskedDecimalInput
                         id="cartao"
-                        step="0.01"
-                        min="0"
-                        placeholder="0,00"
                         value={cardValue}
-                        onChange={(e) => setCardValue(e.target.value)}
+                        onChange={setCardValue}
+                        placeholder="0,00"
                         className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                       />
+                      <p className="text-xs text-[var(--neutral-500)] mt-1">
+                        Apenas 40% deste valor será informado no e-mail
+                      </p>
                     </div>
 
                     <div>
@@ -461,14 +656,11 @@ export default function NotificacoesPage() {
                       >
                         Valor em Dinheiro (R$)
                       </label>
-                      <input
-                        type="number"
+                      <MaskedDecimalInput
                         id="dinheiro"
-                        step="0.01"
-                        min="0"
-                        placeholder="0,00"
                         value={cashValue}
-                        onChange={(e) => setCashValue(e.target.value)}
+                        onChange={setCashValue}
+                        placeholder="0,00"
                         className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                       />
                     </div>
@@ -543,57 +735,70 @@ export default function NotificacoesPage() {
                         </p>
                       );
                     }
-                    return filteredClientes.map((cliente) => (
-                      <label
-                        key={cliente.id}
-                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                          cliente.selecionado
-                            ? "border-[var(--primary)] bg-[var(--primary-bg)]"
-                            : "border-[var(--neutral-200)] hover:border-[var(--neutral-300)] bg-white"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={cliente.selecionado}
-                          onChange={() => toggleCliente(cliente.id)}
-                          className="mt-1 w-4 h-4 text-[var(--primary)] border-[var(--neutral-300)] rounded focus:ring-[var(--primary)]"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-[var(--neutral-900)] truncate">
-                            {cliente.nome}
-                          </p>
-                          <div className="space-y-1">
-                            {canaisEnvio.email &&
-                              (cliente.email ? (
-                                <p className="text-sm text-[var(--neutral-600)] truncate flex items-center gap-1">
-                                  <Mail className="w-3 h-3" />
-                                  {cliente.email}
-                                </p>
-                              ) : (
-                                <p className="text-xs text-[var(--secondary)] flex items-center gap-1">
-                                  <Mail className="w-3 h-3" />
-                                  Sem e-mail cadastrado
-                                </p>
-                              ))}
-                            {canaisEnvio.whatsapp &&
-                              (cliente.telefone ? (
-                                <p className="text-sm text-[var(--neutral-600)] truncate flex items-center gap-1">
-                                  <MessageCircle className="w-3 h-3" />
-                                  {cliente.telefone}
-                                </p>
-                              ) : (
-                                <p className="text-xs text-[var(--secondary)] flex items-center gap-1">
-                                  <MessageCircle className="w-3 h-3" />
-                                  Sem telefone cadastrado
-                                </p>
-                              ))}
+                    return filteredClientes.map((cliente) => {
+                      const elegivel = clienteElegivel(cliente);
+                      return (
+                        <label
+                          key={cliente.id}
+                          title={
+                            elegivel
+                              ? undefined
+                              : "Cliente sem o contato necessário para o canal selecionado"
+                          }
+                          className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
+                            !elegivel
+                              ? "cursor-not-allowed opacity-50 border-[var(--neutral-200)] bg-[var(--neutral-50)]"
+                              : "cursor-pointer"
+                          } ${
+                            cliente.selecionado
+                              ? "border-[var(--primary)] bg-[var(--primary-bg)]"
+                              : "border-[var(--neutral-200)] hover:border-[var(--neutral-300)] bg-white"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={cliente.selecionado}
+                            disabled={!elegivel}
+                            onChange={() => toggleCliente(cliente.id)}
+                            className="mt-1 w-4 h-4 text-[var(--primary)] border-[var(--neutral-300)] rounded focus:ring-[var(--primary)] disabled:cursor-not-allowed"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-[var(--neutral-900)] truncate">
+                              {cliente.nome}
+                            </p>
+                            <div className="space-y-1">
+                              {canaisEnvio.email &&
+                                (cliente.email ? (
+                                  <p className="text-sm text-[var(--neutral-600)] truncate flex items-center gap-1">
+                                    <Mail className="w-3 h-3" />
+                                    {cliente.email}
+                                  </p>
+                                ) : (
+                                  <p className="text-xs text-[var(--secondary)] flex items-center gap-1">
+                                    <Mail className="w-3 h-3" />
+                                    Sem e-mail cadastrado
+                                  </p>
+                                ))}
+                              {canaisEnvio.whatsapp &&
+                                (cliente.telefone ? (
+                                  <p className="text-sm text-[var(--neutral-600)] truncate flex items-center gap-1">
+                                    <MessageCircle className="w-3 h-3" />
+                                    {cliente.telefone}
+                                  </p>
+                                ) : (
+                                  <p className="text-xs text-[var(--secondary)] flex items-center gap-1">
+                                    <MessageCircle className="w-3 h-3" />
+                                    Sem telefone cadastrado
+                                  </p>
+                                ))}
+                            </div>
                           </div>
-                        </div>
-                        {cliente.selecionado && (
-                          <CheckCircle2 className="w-5 h-5 text-[var(--primary)] flex-shrink-0" />
-                        )}
-                      </label>
-                    ));
+                          {cliente.selecionado && (
+                            <CheckCircle2 className="w-5 h-5 text-[var(--primary)] flex-shrink-0" />
+                          )}
+                        </label>
+                      );
+                    });
                   })()}
                 </div>
               </div>
@@ -609,12 +814,16 @@ export default function NotificacoesPage() {
                     </p>
                   </div>
                   <div className="space-y-1">
-                    {canaisEnvio.email && (
-                      <p className="text-sm text-[var(--neutral-600)] flex items-center gap-2">
-                        <Mail className="w-4 h-4" />
-                        {process.env.NEXT_PUBLIC_CONTABILIDADE_EMAIL}
-                      </p>
-                    )}
+                    {canaisEnvio.email &&
+                      contabilidadeEmails.map((email) => (
+                        <p
+                          key={email}
+                          className="text-sm text-[var(--neutral-600)] flex items-center gap-2"
+                        >
+                          <Mail className="w-4 h-4" />
+                          {email}
+                        </p>
+                      ))}
                     {canaisEnvio.whatsapp && (
                       <p className="text-sm text-[var(--neutral-600)] flex items-center gap-2">
                         <MessageCircle className="w-4 h-4" />

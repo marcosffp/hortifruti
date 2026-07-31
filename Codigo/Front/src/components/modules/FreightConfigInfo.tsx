@@ -6,7 +6,6 @@ import { freightService } from "@/services/freightService";
 import type { FreightConfigDTO } from "@/types/freightType";
 import FreightConfigModal from "../modals/FreightConfigsModal";
 
-// Componente auxiliar para os itens de informação
 const InfoItem = ({
   label,
   value,

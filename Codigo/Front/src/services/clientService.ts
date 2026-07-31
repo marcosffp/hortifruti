@@ -66,7 +66,7 @@ export const clientService = {
       }
 
       const data = await response.json();
-      return data.client || data; // Tenta obter client da resposta, caso contrário retorna a resposta inteira
+      return data.client || data;
     } catch (error) {
       console.error("Falha ao criar cliente:", error);
       throw error;

@@ -28,13 +28,6 @@ public class BilletIssue {
   private final BilletValidation billetValidation;
   private final BilletInfoCombinedAndClient billetInfoCombinedAndClient;
 
-  /**
-   * Emite um boleto através da API do Sicoob e retorna o PDF para download.
-   *
-   * @param boleto Dados simplificados do boleto
-   * @return Resposta HTTP contendo o PDF do boleto emitido
-   * @throws IOException Se houver erro na comunicação ou no processamento da resposta
-   */
   public ResponseEntity<Map<String, Object>> issueBillet(BilletRequestSimplified boleto)
       throws IOException {
     try {
@@ -54,13 +47,6 @@ public class BilletIssue {
     }
   }
 
-  /**
-   * Emite a segunda via de um boleto e retorna o PDF através da API do Sicoob.
-   *
-   * @param nossoNumero Número identificador do boleto no Sisbr
-   * @return Resposta da API contendo o PDF do boleto emitido
-   * @throws IOException Se houver erro na comunicação ou no processamento da resposta
-   */
   public ResponseEntity<byte[]> issueCopy(Long idCombinedScore) throws IOException {
     CombinedScore combinedScore =
         billetInfoCombinedAndClient.findCombinedScoreById(idCombinedScore);

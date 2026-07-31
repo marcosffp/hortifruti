@@ -1,7 +1,10 @@
 package com.hortifruti.sl.hortifruti.controller.purchase;
 
 import com.hortifruti.sl.hortifruti.dto.purchase.InvoiceProductResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.ManualPurchaseItemRequest;
+import com.hortifruti.sl.hortifruti.dto.purchase.ManualPurchaseRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.PurchaseResponse;
+import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
 import com.hortifruti.sl.hortifruti.service.purchase.PurchaseService;
 import java.io.IOException;
 import java.util.List;
@@ -36,6 +39,19 @@ public class PurchaseController {
   }
 
   @PreAuthorize("hasRole('MANAGER')")
+  @PostMapping(value = "/manual", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<PurchaseResponse> createManualPurchase(
+      @RequestBody ManualPurchaseRequest request) {
+    Purchase purchase = purchaseService.createManualPurchase(request);
+    return ResponseEntity.ok(
+        new PurchaseResponse(
+            purchase.getId(),
+            purchase.getPurchaseDate(),
+            purchase.getTotal(),
+            purchase.getUpdatedAt()));
+  }
+
+  @PreAuthorize("hasRole('MANAGER')")
   @DeleteMapping("/{id}")
   public ResponseEntity<?> deletePurchase(@PathVariable Long id) {
     purchaseService.deletePurchaseById(id);
@@ -58,6 +74,14 @@ public class PurchaseController {
       @PathVariable Long id) {
     List<InvoiceProductResponse> products = purchaseService.getInvoiceProductsByPurchaseId(id);
     return ResponseEntity.ok(products);
+  }
+
+  @PreAuthorize("hasRole('MANAGER')")
+  @PostMapping(value = "/{id}/products", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<InvoiceProductResponse> addInvoiceProduct(
+      @PathVariable Long id, @RequestBody ManualPurchaseItemRequest item) {
+    InvoiceProductResponse created = purchaseService.addInvoiceProduct(id, item);
+    return ResponseEntity.ok(created);
   }
 
   @GetMapping("/date-range")

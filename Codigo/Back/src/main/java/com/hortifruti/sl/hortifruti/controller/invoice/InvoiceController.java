@@ -5,6 +5,7 @@ import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceWithBilletResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.OpenInvoiceResponse;
+import com.hortifruti.sl.hortifruti.service.invoice.InvoiceCancelService;
 import com.hortifruti.sl.hortifruti.service.invoice.InvoiceService;
 import com.hortifruti.sl.hortifruti.service.invoice.IssueInvoiceWithBilletService;
 import java.time.LocalDate;
@@ -70,6 +71,21 @@ public class InvoiceController {
     return ResponseEntity.ok(response);
   }
 
+  /**
+   * Corrige agrupamentos com {@code hasInvoice=true} indevido, deixados por notas que a Sefaz
+   * rejeitou antes da checagem de status ter sido adicionada em {@link
+   * com.hortifruti.sl.hortifruti.service.invoice.IssueInvoice}. Consulta o status atual na Focus
+   * NFe e, se for erro/denegado/cancelado, libera o agrupamento para nova emissão.
+   *
+   * <p>Sem restrição de role (diferente de {@code /xml-storage}): é chamado automaticamente pelo
+   * front sempre que "Ver NF" encontra uma nota rejeitada, então precisa estar disponível para
+   * qualquer usuário autenticado, não só MANAGER.
+   */
+  @PostMapping("/{combinedScoreId}/reconciliar")
+  public ResponseEntity<String> reconcileInvoice(@PathVariable Long combinedScoreId) {
+    return ResponseEntity.ok(invoiceService.reconcileInvoiceStatus(combinedScoreId));
+  }
+
   @GetMapping("/{ref}/danfe")
   public ResponseEntity<Resource> downloadDanfe(@PathVariable String ref) {
     return invoiceService.downloadDanfe(ref);
@@ -85,16 +101,16 @@ public class InvoiceController {
    * (ex: cancelamento manual/avulso) — se existir um agrupamento local, seu status também é
    * atualizado, mas isso não é obrigatório para a operação ter sucesso.
    *
-   * @param extemporaneo Indica que o cancelamento está sendo feito fora do prazo normal de ~24h da
-   *     SEFAZ (autorização excepcional já obtida pelo operador junto à SEFAZ do estado).
+   * <p>A justificativa não é mais informada pelo cliente: todo cancelamento disparado pela UI é
+   * tratado como extemporâneo (fora do prazo normal de ~24h da SEFAZ, autorização excepcional já
+   * obtida pelo operador junto à SEFAZ do estado) e usa sempre o texto fixo {@link
+   * InvoiceCancelService#MANUAL_CANCEL_JUSTIFICATIVA}.
    */
   @DeleteMapping("/{ref}/cancel")
-  public ResponseEntity<String> cancelInvoice(
-      @PathVariable String ref,
-      @RequestParam String justificativa,
-      @RequestParam(required = false, defaultValue = "false") boolean extemporaneo) {
+  public ResponseEntity<String> cancelInvoice(@PathVariable String ref) {
     try {
-      String response = invoiceService.cancelInvoice(ref, justificativa, extemporaneo);
+      String response =
+          invoiceService.cancelInvoice(ref, InvoiceCancelService.MANUAL_CANCEL_JUSTIFICATIVA, true);
       return ResponseEntity.ok(response);
     } catch (Exception e) {
       log.error("Erro ao cancelar a NF-e para ref {}", ref, e);

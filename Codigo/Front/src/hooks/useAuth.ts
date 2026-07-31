@@ -1,7 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { publicPages } from "@/config/publicPages";
 import { authService, LoginError } from "@/services/authService";
 
 export interface LoginResult {
@@ -12,6 +13,7 @@ export interface LoginResult {
 
 export function useAuth() {
   const router = useRouter();
+  const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [userName, setUserName] = useState<string>("");
@@ -21,7 +23,9 @@ export function useAuth() {
   const checkAuth = useCallback(async () => {
     let user = await authService.me();
 
-    if (!user) {
+    // Na tela de login nunca existe sessão a renovar — sem essa checagem, todo
+    // acesso a /login sem sessão disparava um refresh fadado a falhar com 403.
+    if (!user && !publicPages.includes(pathname)) {
       const refreshed = await authService.refresh();
       if (refreshed) {
         user = await authService.me();
@@ -41,7 +45,7 @@ export function useAuth() {
     }
 
     setIsLoading(false);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     checkAuth();

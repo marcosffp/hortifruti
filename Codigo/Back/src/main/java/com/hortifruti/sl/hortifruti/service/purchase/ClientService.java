@@ -12,6 +12,8 @@ import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,13 +31,58 @@ public class ClientService {
 
   public Map<String, ClientResponse> saveClient(ClientRequest clientRequest) {
     Client client = clientMapper.toClient(clientRequest);
+    client.setEmail(blankToNull(client.getEmail()));
+    client.setPhoneNumber(blankToNull(client.getPhoneNumber()));
     Client savedClient = clientRepository.save(client);
-    ClientResponse clientResponse = clientMapper.toClientResponse(savedClient);
+    // Cliente recém-criado não tem compras ainda.
+    ClientResponse clientResponse =
+        withTotalPurchaseValue(clientMapper.toClientResponse(savedClient), BigDecimal.ZERO);
     return Map.of("client", clientResponse);
   }
 
+  // E-mail é único no banco; string vazia é um valor "de verdade" pra essa
+  // constraint (diferente de NULL), então normalizamos pra NULL aqui pra
+  // permitir vários clientes sem e-mail cadastrado.
+  private String blankToNull(String value) {
+    return (value == null || value.isBlank()) ? null : value;
+  }
+
+  // "Valor Total em Compras" é sempre a soma real das compras do cliente, calculada aqui
+  // em vez de mantida como um contador incrementado/decrementado em outros serviços — esse
+  // contador dessincronizava (ex.: chegava a ficar negativo) porque nem toda confirmação de
+  // pagamento passava pelo mesmo caminho que o cancelamento.
+  private ClientResponse withTotalPurchaseValue(ClientResponse response, BigDecimal total) {
+    return new ClientResponse(
+        response.id(),
+        response.clientName(),
+        response.email(),
+        response.phoneNumber(),
+        response.address(),
+        response.document(),
+        response.variablePrice(),
+        response.stateRegistration(),
+        response.stateIndicator(),
+        response.cideCode(),
+        response.onlyBillet(),
+        response.lastPurchaseDate(),
+        total);
+  }
+
   public List<ClientResponse> getAllClients() {
-    return clientRepository.findAll().stream().map(clientMapper::toClientResponse).toList();
+    List<Client> clients = clientRepository.findAll();
+
+    Map<Long, BigDecimal> totalsByClientId = new HashMap<>();
+    for (Object[] row : purchaseRepository.sumTotalGroupedByClientId()) {
+      totalsByClientId.put((Long) row[0], (BigDecimal) row[1]);
+    }
+
+    return clients.stream()
+        .map(
+            client ->
+                withTotalPurchaseValue(
+                    clientMapper.toClientResponse(client),
+                    totalsByClientId.getOrDefault(client.getId(), BigDecimal.ZERO)))
+        .toList();
   }
 
   public ClientResponse getClientByNameClient(String nameClient) {
@@ -43,7 +90,9 @@ public class ClientService {
         clientRepository
             .findByClientName(nameClient)
             .orElseThrow(() -> new ClientException("Cliente não encontrado"));
-    return clientMapper.toClientResponse(client);
+    return withTotalPurchaseValue(
+        clientMapper.toClientResponse(client),
+        purchaseRepository.sumTotalByClientId(client.getId()));
   }
 
   public ClientResponse updateClient(Long id, ClientRequest clientRequest) {
@@ -53,8 +102,8 @@ public class ClientService {
             .orElseThrow(() -> new ClientException("Cliente não encontrado"));
 
     existingClient.setClientName(clientRequest.clientName());
-    existingClient.setEmail(clientRequest.email());
-    existingClient.setPhoneNumber(clientRequest.phoneNumber());
+    existingClient.setEmail(blankToNull(clientRequest.email()));
+    existingClient.setPhoneNumber(blankToNull(clientRequest.phoneNumber()));
     existingClient.setAddress(clientRequest.address());
     existingClient.setDocument(clientRequest.document());
     existingClient.setVariablePrice(clientRequest.variablePrice());
@@ -69,7 +118,8 @@ public class ClientService {
     }
 
     Client updatedClient = clientRepository.save(existingClient);
-    return clientMapper.toClientResponse(updatedClient);
+    return withTotalPurchaseValue(
+        clientMapper.toClientResponse(updatedClient), purchaseRepository.sumTotalByClientId(id));
   }
 
   public ClientResponse getClientById(Long id) {
@@ -77,7 +127,8 @@ public class ClientService {
         clientRepository
             .findById(id)
             .orElseThrow(() -> new ClientException("Cliente não encontrado"));
-    return clientMapper.toClientResponse(client);
+    return withTotalPurchaseValue(
+        clientMapper.toClientResponse(client), purchaseRepository.sumTotalByClientId(id));
   }
 
   public void deleteClient(Long id) {

@@ -21,7 +21,7 @@ public final class SicoobExtratoFormatUtil {
   /** Ex.: "1.234,56" (sem "R$" nem sinal). */
   public static String formatValorAbsoluto(BigDecimal valor) {
     BigDecimal abs = valor.abs().setScale(2, RoundingMode.HALF_UP);
-    String semLocale = abs.toPlainString(); // "1234.56"
+    String semLocale = abs.toPlainString();
     String[] partes = semLocale.split("\\.");
     String inteiro = partes[0];
     String decimais = partes.length > 1 ? partes[1] : "00";

@@ -23,16 +23,32 @@ public class ClientBusinessRules {
     private final WeekendAdjustment dueDateWeekendAdjustment;
     private final boolean dueDateBusinessDays; // true = dias úteis, false = dias corridos
     private final String invoiceNoteTemplate; // null = usa o texto padrão da nota
+    private final boolean requiresDadosAdicionais;
 
     public ClientRule(
         int dueDateDaysToAdd,
         WeekendAdjustment dueDateWeekendAdjustment,
         boolean dueDateBusinessDays,
         String invoiceNoteTemplate) {
+      this(
+          dueDateDaysToAdd,
+          dueDateWeekendAdjustment,
+          dueDateBusinessDays,
+          invoiceNoteTemplate,
+          false);
+    }
+
+    public ClientRule(
+        int dueDateDaysToAdd,
+        WeekendAdjustment dueDateWeekendAdjustment,
+        boolean dueDateBusinessDays,
+        String invoiceNoteTemplate,
+        boolean requiresDadosAdicionais) {
       this.dueDateDaysToAdd = dueDateDaysToAdd;
       this.dueDateWeekendAdjustment = dueDateWeekendAdjustment;
       this.dueDateBusinessDays = dueDateBusinessDays;
       this.invoiceNoteTemplate = invoiceNoteTemplate;
+      this.requiresDadosAdicionais = requiresDadosAdicionais;
     }
 
     public int getDueDateDaysToAdd() {
@@ -45,6 +61,11 @@ public class ClientBusinessRules {
 
     public boolean isDueDateBusinessDays() {
       return dueDateBusinessDays;
+    }
+
+    /** Se {@code true}, a NF deste cliente não pode ser emitida sem dadosAdicionais preenchido. */
+    public boolean isRequiresDadosAdicionais() {
+      return requiresDadosAdicionais;
     }
 
     /** Monta o texto da nota fiscal para este cliente, ou {@code null} se deve usar o padrão. */
@@ -68,17 +89,15 @@ public class ClientBusinessRules {
     RULES_BY_NAME.put(
         "LLINEA",
         new ClientRule(
-            20, WeekendAdjustment.PREVIOUS_THURSDAY, false, "Numerações AF: {dadosAdicionais}"));
+            20,
+            WeekendAdjustment.PREVIOUS_THURSDAY,
+            false,
+            "Numerações AF: {dadosAdicionais}",
+            true)); // exige numerações dos pedidos preenchidas antes de emitir a NF
     RULES_BY_NAME.put("APTA", new ClientRule(15, WeekendAdjustment.PREVIOUS_FRIDAY, false, null));
     RULES_BY_NAME.put("INDUSTRIA", new ClientRule(20, WeekendAdjustment.NEXT_FRIDAY, false, null));
     RULES_BY_NAME.put(
         "ROCA", new ClientRule(15, WeekendAdjustment.NONE, true, null)); // 15 dias úteis
-
-    // === ADICIONE NOVAS REGRAS AQUI (vencimento e/ou texto da nota) ===
-    // Exemplo dias corridos:  RULES_BY_NAME.put("EMPRESA", new ClientRule(30,
-    // WeekendAdjustment.PREVIOUS_FRIDAY, false, null));
-    // Exemplo dias úteis:     RULES_BY_NAME.put("EMPRESA", new ClientRule(30,
-    // WeekendAdjustment.NONE, true, null));
   }
 
   private ClientBusinessRules() {}

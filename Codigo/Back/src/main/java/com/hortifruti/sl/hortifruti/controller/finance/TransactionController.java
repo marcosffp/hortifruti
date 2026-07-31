@@ -163,7 +163,6 @@ public class TransactionController {
         .body(pdf);
   }
 
-  /** Mesmo relatório consolidado de {@link #exportTransactionsReportPdf}, em Excel. */
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping(value = "/report/excel")
   public ResponseEntity<byte[]> exportTransactionsReportExcel(

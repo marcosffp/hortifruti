@@ -79,13 +79,6 @@ public class BilletQuery {
     }
   }
 
-  /**
-   * Consulta o boleto específico associado a um CombinedScore.
-   *
-   * @param combinedScoreId ID do CombinedScore
-   * @return Detalhes do boleto associado
-   * @throws IOException Se houver erro na comunicação ou no processamento da resposta
-   */
   public BilletResponse getBilletByCombinedScore(long combinedScoreId) throws IOException {
     CombinedScore combinedScore =
         billetInfoCombinedAndClient.findCombinedScoreById(combinedScoreId);

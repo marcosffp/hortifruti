@@ -12,6 +12,7 @@ import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
+import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -31,8 +32,65 @@ public class InvoiceQuery {
   private final FocusNfeApiClient focusNfeApiClient;
   private final ClientRepository clientRepository;
   private final CombinedScoreRepository combinedScoreRepository;
+  private final CombinedScoreService combinedScoreService;
 
   private final int COMPLETE = 1;
+
+  /**
+   * Corrige agrupamentos que ficaram com {@code hasInvoice=true} indevidamente — registros criados
+   * antes da checagem de status ter sido adicionada em {@link IssueInvoice} e no polling de {@link
+   * FiscalNoteXmlStorageService}, quando uma NF era rejeitada pela Sefaz mas o agrupamento nunca
+   * era corrigido de volta. Consulta o status atual na Focus NFe pela ref e, se for
+   * erro/denegado/cancelado, libera o agrupamento (via {@link
+   * CombinedScoreService#clearInvoiceAfterRejection}) para uma nova tentativa de emissão.
+   */
+  @Transactional
+  public String reconcileInvoiceStatus(Long combinedScoreId) {
+    CombinedScore combinedScore = combinedScoreService.findById(combinedScoreId);
+    String ref = combinedScore.getInvoiceRef();
+
+    if (ref == null || ref.isBlank()) {
+      return "Agrupamento " + combinedScoreId + " não tem referência de nota fiscal associada.";
+    }
+
+    String status;
+    try {
+      JsonNode rootNode = parseJson(fetchInvoiceData(ref));
+      status = rootNode.path("status").asText();
+    } catch (Exception e) {
+      throw new InvoiceException(
+          "Erro ao consultar a nota fiscal com referência: " + ref + " para reconciliação", e);
+    }
+
+    if (isRejectedStatus(status)) {
+      combinedScoreService.clearInvoiceAfterRejection(ref);
+      return "Agrupamento "
+          + combinedScoreId
+          + " (ref="
+          + ref
+          + ") estava com status '"
+          + status
+          + "' na Sefaz — hasInvoice revertido, liberado para nova tentativa de emissão.";
+    }
+
+    return "Agrupamento "
+        + combinedScoreId
+        + " (ref="
+        + ref
+        + ") está com status '"
+        + status
+        + "' na Sefaz — nenhuma correção necessária.";
+  }
+
+  private boolean isRejectedStatus(String status) {
+    if (status == null) {
+      return false;
+    }
+    String normalized = status.toLowerCase();
+    return normalized.contains("erro")
+        || normalized.contains("denegado")
+        || normalized.contains("cancelado");
+  }
 
   @Transactional
   public InvoiceResponseGet consultInvoice(String ref) {
@@ -60,6 +118,17 @@ public class InvoiceQuery {
           "A nota fiscal ainda está sendo processada. Status: "
               + status
               + ". Aguarde alguns instantes e tente novamente.");
+    }
+
+    // Nota rejeitada/cancelada/denegada nunca teve número/valor_total atribuídos pela Sefaz — sem
+    // essa checagem, cai em validateRequiredFields logo abaixo e o usuário vê um erro genérico
+    // tipo "valor total não disponível" em vez do motivo real da rejeição.
+    if (status.contains("erro") || status.contains("denegado") || status.contains("cancelado")) {
+      String mensagemSefaz = rootNode.path("mensagem_sefaz").asText(null);
+      String detalhe =
+          mensagemSefaz != null && !mensagemSefaz.isBlank() ? ": " + mensagemSefaz : "";
+      throw new InvoiceException(
+          "A nota fiscal não foi autorizada pela Sefaz (status: " + status + ")" + detalhe);
     }
 
     JsonNode requisicaoNode = rootNode.path("requisicao_nota_fiscal");

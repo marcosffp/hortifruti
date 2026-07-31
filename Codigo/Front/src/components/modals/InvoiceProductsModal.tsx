@@ -1,10 +1,16 @@
 "use client";
 
-import { Check, Edit, Trash2, X } from "lucide-react";
+import { Check, Edit, Plus, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import MaskedDecimalInput from "@/components/ui/MaskedDecimalInput";
+import ProductAutocompleteField from "@/components/ui/ProductAutocompleteField";
+import { fiscalProductService } from "@/services/fiscalProductService";
 import { purchaseService } from "@/services/purchaseService";
-import type { InvoiceProductType } from "@/types/purchaseType";
+import type {
+  FiscalProductType,
+  InvoiceProductType,
+} from "@/types/purchaseType";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
 interface InvoiceProductsModalProps {
@@ -27,6 +33,25 @@ export default function InvoiceProductsModal({
 
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<InvoiceProductType>>({});
+
+  const [catalogProducts, setCatalogProducts] = useState<FiscalProductType[]>(
+    [],
+  );
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
+  const [addingItem, setAddingItem] = useState(false);
+  const [newItem, setNewItem] = useState({ code: "", quantity: 0, price: 0 });
+  const [savingNewItem, setSavingNewItem] = useState(false);
+
+  useEffect(() => {
+    fiscalProductService
+      .getFiscalProducts()
+      .then(setCatalogProducts)
+      .catch((error) => {
+        toast.error("Erro ao carregar catálogo de produtos");
+        console.error(error);
+      })
+      .finally(() => setLoadingCatalog(false));
+  }, []);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -54,6 +79,29 @@ export default function InvoiceProductsModal({
     } catch (error) {
       toast.error("Erro ao deletar produto");
       console.error(error);
+    }
+  };
+
+  const handleAddItem = async () => {
+    if (!newItem.code || newItem.quantity <= 0 || newItem.price < 0) {
+      toast.error("Selecione um produto e informe quantidade e preço válidos");
+      return;
+    }
+    setSavingNewItem(true);
+    try {
+      await purchaseService.addInvoiceProduct(purchaseId, newItem);
+      toast.success("Produto adicionado com sucesso");
+      setAddingItem(false);
+      setNewItem({ code: "", quantity: 0, price: 0 });
+      fetchProducts();
+      onUpdate();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao adicionar produto",
+      );
+      console.error(error);
+    } finally {
+      setSavingNewItem(false);
     }
   };
 
@@ -144,6 +192,71 @@ export default function InvoiceProductsModal({
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex justify-end mb-4">
+            <button
+              type="button"
+              onClick={() => setAddingItem((prev) => !prev)}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-white text-green-700 border border-green-600 rounded-lg hover:bg-green-50 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Adicionar Item
+            </button>
+          </div>
+
+          {addingItem && (
+            <div className="flex flex-col md:flex-row md:items-center gap-2 border border-gray-200 rounded-lg p-3 mb-4 bg-gray-50">
+              <div className="flex-1">
+                <ProductAutocompleteField
+                  products={catalogProducts}
+                  value={newItem.code}
+                  onSelect={(code) => setNewItem((prev) => ({ ...prev, code }))}
+                  disabled={loadingCatalog || savingNewItem}
+                />
+              </div>
+              <div className="flex gap-2">
+                <MaskedDecimalInput
+                  value={newItem.quantity}
+                  onChange={(quantity) =>
+                    setNewItem((prev) => ({ ...prev, quantity }))
+                  }
+                  placeholder="Qtd."
+                  disabled={savingNewItem}
+                  className="w-full md:w-24 p-2 border border-gray-300 rounded-lg text-right focus:outline-none focus:ring-1 focus:ring-green-500"
+                />
+                <MaskedDecimalInput
+                  value={newItem.price}
+                  onChange={(price) =>
+                    setNewItem((prev) => ({ ...prev, price }))
+                  }
+                  placeholder="Preço"
+                  disabled={savingNewItem}
+                  className="w-full md:w-24 p-2 border border-gray-300 rounded-lg text-right focus:outline-none focus:ring-1 focus:ring-green-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddItem}
+                  disabled={savingNewItem}
+                  className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors disabled:opacity-50"
+                  title="Salvar"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAddingItem(false);
+                    setNewItem({ code: "", quantity: 0, price: 0 });
+                  }}
+                  disabled={savingNewItem}
+                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                  title="Cancelar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="space-y-2">
               {[...Array(5)].map((_, i) => (

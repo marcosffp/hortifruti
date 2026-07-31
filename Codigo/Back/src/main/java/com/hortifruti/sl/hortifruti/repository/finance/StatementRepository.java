@@ -33,10 +33,6 @@ public interface StatementRepository extends JpaRepository<Statement, Long> {
       @Param("startDate") java.time.LocalDate startDate,
       @Param("endDate") java.time.LocalDate endDate);
 
-  /**
-   * Busca o statement que melhor cobre um período específico Retorna o statement com maior número
-   * de transações no período solicitado
-   */
   @Query(
       "SELECT s FROM Statement s JOIN s.transactions t "
           + "WHERE s.bank = :bank AND t.transactionDate BETWEEN :startDate AND :endDate "

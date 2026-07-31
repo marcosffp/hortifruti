@@ -100,7 +100,6 @@ public class ClimateProductRecommendationService {
     return MEDIUM_SEASON_SCORE;
   }
 
-  /** Obtém o mês atual baseado no enum Month customizado */
   private Month getCurrentMonth() {
     int currentMonthNumber = LocalDate.now().getMonthValue();
     return Month.values()[currentMonthNumber - 1];
@@ -125,10 +124,6 @@ public class ClimateProductRecommendationService {
         .collect(Collectors.toList());
   }
 
-  /**
-   * Gera recomendações baseadas apenas na data. Busca os dados climáticos da API para a data
-   * especificada.
-   */
   public List<ClimateProductRecommendationDTO> getRecommendationsByDate(String dateString) {
     if (dateString == null || dateString.trim().isEmpty()) {
       throw new RecommendationException("Data não pode ser vazia.");

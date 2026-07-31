@@ -18,7 +18,7 @@ export function proxy(request: NextRequest) {
     `style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com`,
     `img-src 'self' data: blob:`,
     `font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com`,
-    `connect-src 'self'${apiOrigin ? ` ${apiOrigin}` : ""}`,
+    `connect-src 'self' https://viacep.com.br${apiOrigin ? ` ${apiOrigin}` : ""}`,
     `frame-src 'self' blob:`,
     `frame-ancestors 'none'`,
     `base-uri 'self'`,

@@ -3,6 +3,9 @@ import type { GroupedProductRequest } from "@/types/groupedType";
 import type {
   InvoiceProductType,
   InvoiceProductUpdate,
+  ManualPurchaseItemRequest,
+  ManualPurchaseRequest,
+  PurchaseType,
 } from "@/types/purchaseType";
 import { getAuthHeaders, getAuthHeadersForFormData } from "@/utils/httpUtils";
 
@@ -25,6 +28,30 @@ export const purchaseService = {
 
     const data = await response.json();
     return { message: data.message };
+  },
+
+  async createManualPurchase(
+    payload: ManualPurchaseRequest,
+  ): Promise<PurchaseType> {
+    const headers = {
+      ...(getAuthHeaders() || {}),
+      "Content-Type": "application/json",
+    };
+    const response = await fetch(`${API_BASE_URL}/purchases/manual`, {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(
+        errorData?.message || errorData?.error || "Erro ao criar compra",
+      );
+    }
+
+    return await response.json();
   },
 
   async fetchClientProducts(
@@ -98,6 +125,36 @@ export const purchaseService = {
       { headers: getAuthHeaders(), credentials: "include" },
     );
     if (!response.ok) throw new Error("Erro ao buscar produtos da compra");
+    return await response.json();
+  },
+
+  async addInvoiceProduct(
+    purchaseId: number,
+    item: ManualPurchaseItemRequest,
+  ): Promise<InvoiceProductType> {
+    const headers = {
+      ...(getAuthHeaders() || {}),
+      "Content-Type": "application/json",
+    };
+    const response = await fetch(
+      `${API_BASE_URL}/purchases/${purchaseId}/products`,
+      {
+        method: "POST",
+        headers,
+        credentials: "include",
+        body: JSON.stringify(item),
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(
+        errorData?.message ||
+          errorData?.error ||
+          `Erro ao adicionar produto (status ${response.status})`,
+      );
+    }
+
     return await response.json();
   },
 

@@ -34,9 +34,7 @@ export function useInvoice() {
     }
   };
 
-  const getInvoiceInfo = async (
-    ref: string,
-  ): Promise<InvoiceResponseGet | null> => {
+  const getInvoiceInfo = async (ref: string): Promise<InvoiceResponseGet> => {
     setIsLoading(true);
     setError(null);
     try {
@@ -48,7 +46,7 @@ export function useInvoice() {
           ? err.message
           : "Erro ao buscar informações da nota fiscal",
       );
-      return null;
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -126,19 +124,30 @@ export function useInvoice() {
     }
   };
 
-  const cancelInvoice = async (
-    ref: string,
-    justificativa: string,
-    extemporaneo?: boolean,
-  ) => {
+  const reconcileInvoiceStatus = async (combinedScoreId: number) => {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await invoiceService.cancelInvoice(
-        ref,
-        justificativa,
-        extemporaneo,
+      const result =
+        await invoiceService.reconcileInvoiceStatus(combinedScoreId);
+      return result;
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Erro ao reconciliar status da nota fiscal",
       );
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const cancelInvoice = async (ref: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await invoiceService.cancelInvoice(ref);
       return result;
     } catch (err) {
       setError(
@@ -158,6 +167,7 @@ export function useInvoice() {
     getXml,
     getOpenInvoiceOnly,
     cancelInvoice,
+    reconcileInvoiceStatus,
     isLoading,
     error,
   };

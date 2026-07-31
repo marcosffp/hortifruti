@@ -5,6 +5,7 @@ import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.WildcardBilletRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientLastGroupingResponse;
+import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreCancellationService;
 import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 public class CombinedScoreController {
 
   private final CombinedScoreService combinedScoreService;
+  private final CombinedScoreCancellationService combinedScoreCancellationService;
 
   @PostMapping("/create")
   public ResponseEntity<?> createCombinedScore(@Valid @RequestBody CombinedScoreRequest request) {
@@ -63,7 +65,7 @@ public class CombinedScoreController {
 
   @DeleteMapping("/{id}")
   public ResponseEntity<?> cancelGrouping(@PathVariable Long id) {
-    combinedScoreService.cancelGrouping(id);
+    combinedScoreCancellationService.cancelGrouping(id);
     return ResponseEntity.ok("Agrupamento cancelado com sucesso.");
   }
 

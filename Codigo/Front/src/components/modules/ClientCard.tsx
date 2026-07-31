@@ -22,6 +22,7 @@ interface ClientCardProps {
   ultimaCompra?: string;
   totalCompras?: number;
   onDelete: (id: number) => void;
+  onViewDetails: (id: number) => void;
   displayMode?: "list" | "grid";
 }
 
@@ -35,12 +36,27 @@ export default function ClientCard({
   ultimaCompra = "-",
   totalCompras = 0,
   onDelete,
+  onViewDetails,
   displayMode = "list",
 }: Readonly<ClientCardProps>) {
-  // Grid mode card layout
+  const handleActivateKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onViewDetails(id);
+    }
+  };
+
   if (displayMode === "grid") {
     return (
-      <div className="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
+      // biome-ignore lint/a11y/useSemanticElements: can't be a real <button> since it contains a nested Link and button (edit/delete actions)
+      <div
+        className="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer"
+        onClick={() => onViewDetails(id)}
+        onKeyDown={handleActivateKeyDown}
+        role="button"
+        tabIndex={0}
+        aria-label={`Ver detalhes de ${nome}`}
+      >
         <div className="p-5">
           <div className="flex justify-between items-start">
             <div className="flex items-center">
@@ -144,7 +160,10 @@ export default function ClientCard({
               </div>
             </div>
             <div className="flex space-x-1">
-              <Link href={`/comercio/clientes/editar/${id}`}>
+              <Link
+                href={`/comercio/clientes/editar/${id}`}
+                onClick={(e) => e.stopPropagation()}
+              >
                 <button
                   type="button"
                   className="h-10 w-10 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-all"
@@ -160,6 +179,7 @@ export default function ClientCard({
                 aria-label="Excluir cliente"
                 onClick={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   onDelete(id);
                 }}
               >
@@ -172,112 +192,176 @@ export default function ClientCard({
     );
   }
 
-  // Default list mode layout (for use in a table)
+  const statusBadge = (
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+        status === "preco-fixo"
+          ? "bg-green-100 text-green-800 border border-green-200"
+          : "bg-blue-100 text-blue-800 border border-blue-200"
+      }`}
+    >
+      <DollarSign
+        size={12}
+        className={
+          status === "preco-fixo" ? "mr-1 text-green-600" : "mr-1 text-blue-600"
+        }
+      />
+      {status === "preco-fixo" ? "Preço Fixo" : "Preço Variável"}
+    </span>
+  );
+
+  const editButton = (
+    <Link
+      href={`/comercio/clientes/editar/${id}`}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        className="h-9 w-9 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-all"
+        aria-label="Editar cliente"
+        title="Editar cliente"
+      >
+        <Edit size={16} />
+      </button>
+    </Link>
+  );
+
+  const deleteButton = (
+    <button
+      type="button"
+      className="h-9 w-9 flex items-center justify-center text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-all"
+      aria-label="Excluir cliente"
+      title="Excluir cliente"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onDelete(id);
+      }}
+    >
+      <Trash2 size={16} />
+    </button>
+  );
+
   return (
-    <div className="grid grid-cols-12 gap-4 px-6 py-5 border-b items-center hover:bg-gray-50 transition-all duration-300 group sm:grid-cols-12 sm:gap-4">
-      <div className="col-span-12 sm:col-span-3 flex items-start">
-        <div className="mr-3 mt-1">
-          <div className="h-8 w-8 bg-green-50 text-green-600 rounded-full flex items-center justify-center">
-            <User size={18} />
+    // biome-ignore lint/a11y/useSemanticElements: can't be a real <button> since it contains a nested Link and button (edit/delete actions)
+    <div
+      className="border-b hover:bg-gray-50 transition-all duration-300 group cursor-pointer"
+      onClick={() => onViewDetails(id)}
+      onKeyDown={handleActivateKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={`Ver detalhes de ${nome}`}
+    >
+      <div className="md:hidden p-4 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-9 w-9 shrink-0 bg-green-50 text-green-600 rounded-full flex items-center justify-center">
+              <User size={18} />
+            </div>
+            <div className="min-w-0">
+              <div className="font-medium text-gray-800 truncate">{nome}</div>
+              {telefone && (
+                <div className="text-sm text-gray-500 truncate">{telefone}</div>
+              )}
+            </div>
+          </div>
+          <div className="shrink-0">{statusBadge}</div>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-sm text-gray-600">
+          <Mail size={14} className="text-gray-400 shrink-0" />
+          <span>{email || "Não informado"}</span>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-sm text-gray-600 min-w-0">
+          <MapPin size={14} className="text-gray-400 shrink-0" />
+          <span className="truncate">
+            {endereco || "Sem endereço cadastrado"}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 pt-3 mt-1 border-t border-gray-100">
+          <div className="min-w-0 text-sm">
+            <div className="flex items-center gap-1.5 text-gray-500">
+              <Calendar size={14} className="text-gray-400 shrink-0" />
+              <span>Última compra</span>
+            </div>
+            <div className="font-medium text-gray-700 mt-0.5">
+              {ultimaCompra || "Nenhuma"}
+            </div>
+          </div>
+          <div className="flex items-center font-medium text-gray-800 shrink-0">
+            <DollarSign size={14} className="text-gray-400 mr-0.5" />
+            {totalCompras.toFixed(2).replace(".", ",")}
           </div>
         </div>
-        <div>
-          <div className="font-medium text-gray-800 group-hover:text-green-600 transition-colors">
-            {nome}
-          </div>
-          <div className="text-sm text-gray-500 mt-0.5">
-            {email || "Sem e-mail cadastrado"}
-          </div>
+
+        <div className="flex justify-end gap-2 pt-1">
+          {editButton}
+          {deleteButton}
         </div>
       </div>
-      <div className="col-span-12 sm:col-span-2 text-gray-700 flex items-center">
-        {telefone ? (
-          <div className="flex items-center">
-            <Phone size={14} className="text-gray-400 mr-1.5 flex-shrink-0" />
-            <span>{telefone}</span>
+
+      <div className="hidden md:grid grid-cols-[2.2fr_1.2fr_1.7fr_1.3fr_1.2fr_1fr_100px] gap-4 px-6 py-4 items-center">
+        <div className="flex items-center min-w-0">
+          <div className="mr-3 shrink-0">
+            <div className="h-9 w-9 bg-green-50 text-green-600 rounded-full flex items-center justify-center">
+              <User size={18} />
+            </div>
           </div>
-        ) : (
-          <span className="text-gray-400 italic text-sm">Não informado</span>
-        )}
-      </div>
-      <div className="col-span-12 sm:col-span-3 text-gray-700 relative group/tooltip">
-        <div className="flex items-center gap-1.5">
-          <MapPin size={14} className="text-gray-400 flex-shrink-0" />
-          <div className="truncate max-w-[250px]">{endereco}</div>
-          {endereco.length > 30 && (
-            <span
-              className="text-xs text-blue-500 cursor-help"
-              title="Ver endereço completo"
-            >
-              ...
-            </span>
+          <div className="min-w-0">
+            <div className="font-medium text-gray-800 group-hover:text-green-600 transition-colors truncate">
+              {nome}
+            </div>
+            {telefone && (
+              <div className="text-sm text-gray-500 truncate">{telefone}</div>
+            )}
+          </div>
+        </div>
+
+        <div className="text-gray-700 flex items-center min-w-0">
+          {email ? (
+            <div className="flex items-center min-w-0">
+              <Mail size={14} className="text-gray-400 mr-1.5 shrink-0" />
+              <span className="truncate">{email}</span>
+            </div>
+          ) : (
+            <span className="text-gray-400 italic text-sm">Não informado</span>
           )}
         </div>
-        <div className="hidden group-hover/tooltip:block absolute z-10 bg-gray-800 text-white p-2 rounded shadow-lg text-sm max-w-xs left-0 mt-1">
-          {endereco}
-        </div>
-      </div>
-      <div className="col-span-6 sm:col-span-1">
-        <span
-          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-            status === "preco-fixo"
-              ? "bg-green-100 text-green-800 border border-green-200"
-              : "bg-blue-100 text-blue-800 border border-blue-200"
-          }`}
-        >
-          <DollarSign
-            size={12}
-            className={
-              status === "preco-fixo"
-                ? "mr-1 text-green-600"
-                : "mr-1 text-blue-600"
-            }
-          />
-          {status === "preco-fixo" ? "Preço Fixo" : "Preço Variável"}
-        </span>
-      </div>
-      <div className="col-span-6 sm:col-span-1 text-gray-700">
-        <div className="flex items-center">
-          <Calendar size={14} className="text-gray-400 mr-1.5 flex-shrink-0" />
-          <div className="flex flex-col">
-            <span className="text-xs text-gray-500 leading-tight">
-              Última compra
-            </span>
-            <span className="font-medium text-gray-700 text-sm leading-tight">
-              {ultimaCompra || "Nenhuma"}
+
+        <div className="text-gray-700 relative group/tooltip min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <MapPin size={14} className="text-gray-400 shrink-0" />
+            <span className="truncate">
+              {endereco || "Sem endereço cadastrado"}
             </span>
           </div>
+          {endereco && endereco.length > 30 && (
+            <div className="hidden group-hover/tooltip:block absolute z-10 bg-gray-800 text-white p-2 rounded shadow-lg text-sm max-w-xs left-0 mt-1">
+              {endereco}
+            </div>
+          )}
         </div>
-      </div>
-      <div className="col-span-6 sm:col-span-1 flex items-center">
-        <DollarSign size={14} className="text-gray-400 mr-1 flex-shrink-0" />
-        <span className="font-medium text-gray-800">
-          {totalCompras.toFixed(2).replace(".", ",")}
-        </span>
-      </div>
-      <div className="col-span-6 sm:col-span-1 flex justify-end space-x-1">
-        <Link href={`/comercio/clientes/editar/${id}`}>
-          <button
-            type="button"
-            className="h-9 w-9 flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-all"
-            aria-label="Editar cliente"
-            title="Editar cliente"
-          >
-            <Edit size={16} />
-          </button>
-        </Link>
-        <button
-          type="button"
-          className="h-9 w-9 flex items-center justify-center text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-all"
-          aria-label="Excluir cliente"
-          title="Excluir cliente"
-          onClick={(e) => {
-            e.preventDefault();
-            onDelete(id);
-          }}
-        >
-          <Trash2 size={16} />
-        </button>
+
+        <div className="min-w-0">{statusBadge}</div>
+
+        <div className="text-sm text-gray-700 flex items-center min-w-0">
+          <Calendar size={14} className="text-gray-400 mr-1.5 shrink-0" />
+          <span className="truncate">{ultimaCompra || "Nenhuma"}</span>
+        </div>
+
+        <div className="flex items-center font-medium text-gray-800 min-w-0">
+          <DollarSign size={14} className="text-gray-400 mr-1 shrink-0" />
+          <span className="truncate">
+            {totalCompras.toFixed(2).replace(".", ",")}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-end gap-2">
+          {editButton}
+          {deleteButton}
+        </div>
       </div>
     </div>
   );

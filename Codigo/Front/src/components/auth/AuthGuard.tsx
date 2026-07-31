@@ -2,9 +2,9 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { publicPages } from "@/config/publicPages";
 import { authService } from "@/services/authService";
 
-const publicPages = ["/login"];
 const SILENT_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
 
 export default function AuthGuard({

@@ -52,7 +52,12 @@ export const combinedScoreService = {
       credentials: "include",
       body: JSON.stringify(requestWithDateTime),
     });
-    if (!response.ok) throw new Error("Erro ao criar agrupamento");
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(
+        errorData?.message || errorData?.error || "Erro ao criar agrupamento",
+      );
+    }
     return await response.text();
   },
 

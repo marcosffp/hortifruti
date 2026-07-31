@@ -52,15 +52,6 @@ public class BilletFactory {
         );
   }
 
-  /**
-   * Cria o objeto BilletRequestSimplified a partir do CombinedScore e do Pagador.
-   *
-   * @param combinedScore CombinedScore
-   * @param combinedScoreId ID do CombinedScore
-   * @param pagador Objeto Pagador
-   * @param number Seu número (identificador do boleto)
-   * @retu rn Objeto BilletRequestSimplified
-   */
   public BilletRequestSimplified createBilletRequest(
       CombinedScore combinedScore, Long combinedScoreId, Pagador pagador, String number) {
     return new BilletRequestSimplified(
@@ -71,12 +62,6 @@ public class BilletFactory {
         pagador);
   }
 
-  /**
-   * Cria o objeto Pagador a partir dos dados do cliente.
-   *
-   * @param client Cliente
-   * @return Objeto Pagador
-   */
   public Pagador createPagadorFromClient(Client client) {
     String address = client.getAddress();
 
@@ -144,11 +129,11 @@ public class BilletFactory {
                 + " caracteres, incluindo rua, número e complemento). Reduza o complemento ou"
                 + " o endereço do cliente.");
       }
+      // O cadastro de clientes já limita o bairro a 30 caracteres, mas clientes
+      // cadastrados antes dessa limitação podem ter um bairro mais longo salvo.
+      // Trunca em vez de falhar a emissão do boleto.
       if (bairro.length() > BAIRRO_MAX_LENGTH) {
-        throw new BilletException(
-            "Bairro do cliente muito longo para o boleto (máximo "
-                + BAIRRO_MAX_LENGTH
-                + " caracteres). Reduza o bairro cadastrado do cliente.");
+        bairro = bairro.substring(0, BAIRRO_MAX_LENGTH).trim();
       }
 
       return new Pagador(

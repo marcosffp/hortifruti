@@ -29,14 +29,6 @@ public class BilletCancel {
   private final BilletInfoCombinedAndClient billetInfoCombinedAndClient;
   private final BilletFileStorageService billetFileStorageService;
 
-  /**
-   * Realiza a baixa (cancelamento) de um boleto através da API do Sicoob.
-   *
-   * @param idCombinedScore ID do CombinedScore
-   * @return Resposta indicando o sucesso ou falha da operação
-   * @throws IOException Se houver erro na comunicação ou no processamento da resposta
-   * @throws BilletException Se houver erro específico da API de boletos
-   */
   public ResponseEntity<String> cancelBillet(Long idCombinedScore)
       throws IOException, BilletException {
     CombinedScore combinedScore =
@@ -67,9 +59,6 @@ public class BilletCancel {
    * manual/avulso (ex: boleto legado, ou cuja referência local foi perdida). Se existir um
    * agrupamento local com esse número, seu status é atualizado; caso contrário a baixa no Sicoob é
    * considerada bem-sucedida mesmo assim.
-   *
-   * @param nossoNumero Nosso número do boleto no Sicoob
-   * @return Resposta indicando o sucesso ou falha da operação
    */
   public ResponseEntity<String> cancelBilletByNumber(String nossoNumero) throws BilletException {
     if (nossoNumero == null || nossoNumero.trim().isEmpty()) {

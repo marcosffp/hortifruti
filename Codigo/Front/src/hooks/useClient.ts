@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { API_BASE_URL } from "@/config/api";
 import { getAuthHeaders } from "@/utils/httpUtils";
 
@@ -8,7 +8,11 @@ export function useClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getClientById = async (clientId: number) => {
+  // useCallback é essencial aqui: componentes que usam getClientById como
+  // dependência de useEffect (ex: CombinedScoresCards) entravam em loop infinito
+  // de fetch, já que uma referência nova a cada render (causada pelos próprios
+  // setIsLoading/setError abaixo) reexecutava o efeito indefinidamente.
+  const getClientById = useCallback(async (clientId: number) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -30,7 +34,7 @@ export function useClient() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   return { getClientById, isLoading, error };
 }

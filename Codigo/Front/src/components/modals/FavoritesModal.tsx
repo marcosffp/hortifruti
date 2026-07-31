@@ -1,5 +1,6 @@
 import { Edit, MapPin, Plus, Store, Trash2, X } from "lucide-react";
 import { useState } from "react";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import AddressAutocomplete from "@/components/modules/AddressAutocomplete";
 import type {
   AddressType,
@@ -44,6 +45,9 @@ const FavoritesModal = ({
   });
   const [newLocationName, setNewLocationName] = useState("");
   const [newLocationAddress, setNewLocationAddress] = useState("");
+  const [deleteLocationTarget, setDeleteLocationTarget] = useState<
+    number | null
+  >(null);
 
   if (!isOpen) return null;
 
@@ -107,13 +111,17 @@ const FavoritesModal = ({
   };
 
   const handleDeleteFavoriteLocation = (id: number) => {
-    if (window.confirm("Tem certeza que deseja excluir este local favorito?")) {
-      const updated = favoriteLocations.filter(
-        (loc: FavoriteLocation) => loc.id !== id,
-      );
-      setFavoriteLocations(updated);
-      localStorage.setItem("favoriteLocations", JSON.stringify(updated));
-    }
+    setDeleteLocationTarget(id);
+  };
+
+  const confirmDeleteFavoriteLocation = () => {
+    if (deleteLocationTarget === null) return;
+    const updated = favoriteLocations.filter(
+      (loc: FavoriteLocation) => loc.id !== deleteLocationTarget,
+    );
+    setFavoriteLocations(updated);
+    localStorage.setItem("favoriteLocations", JSON.stringify(updated));
+    setDeleteLocationTarget(null);
   };
 
   const handleSelectLocation = (location: Location) => {
@@ -400,6 +408,13 @@ const FavoritesModal = ({
           </div>
         )}
       </div>
+
+      <ConfirmDeleteModal
+        open={deleteLocationTarget !== null}
+        onClose={() => setDeleteLocationTarget(null)}
+        onConfirm={confirmDeleteFavoriteLocation}
+        title="Tem certeza que deseja excluir este local favorito?"
+      />
     </div>
   );
 };

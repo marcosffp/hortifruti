@@ -47,7 +47,6 @@ public class EmailTemplateService {
       String key = entry.getKey();
       String value = entry.getValue() != null ? entry.getValue() : "";
 
-      // Substituir variáveis simples: {{VARIABLE}}
       result = result.replace("{{" + key + "}}", value);
 
       // Processar blocos condicionais: {{#VARIABLE}} conteúdo {{/VARIABLE}}
