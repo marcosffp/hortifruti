@@ -1,6 +1,7 @@
 "use client";
 
 import { API_BASE_URL } from "@/config/api";
+import { markRefreshed } from "@/utils/authRefreshCoordinator";
 
 export interface AuthRequest {
   username: string;
@@ -96,6 +97,8 @@ export const authService = {
           method: "POST",
           credentials: "include",
         });
+
+        if (response.ok) markRefreshed();
 
         return response.ok;
       } catch {
