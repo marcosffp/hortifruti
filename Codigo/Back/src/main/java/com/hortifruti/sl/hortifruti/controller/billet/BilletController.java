@@ -3,6 +3,7 @@ package com.hortifruti.sl.hortifruti.controller.billet;
 import com.hortifruti.sl.hortifruti.dto.billet.BilletResponse;
 import com.hortifruti.sl.hortifruti.dto.billet.OpenBilletResponse;
 import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
+import com.hortifruti.sl.hortifruti.exception.purchase.CombinedScoreException;
 import com.hortifruti.sl.hortifruti.service.billet.BilletService;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -33,12 +34,18 @@ public class BilletController {
       throws IOException {
     try {
       return billetService.generateBillet(combinedScoreId, number, dueDate);
-    } catch (Exception e) {
+    } catch (BilletException | CombinedScoreException e) {
+      // Mensagens de validação de negócio (ex.: endereço muito longo, boleto já gerado) já são
+      // escritas para o usuário final — diferente do catch genérico abaixo, aqui é seguro repassar
+      // e.getMessage() na resposta em vez de esconder atrás de "Erro ao emitir boleto.".
       log.error("Erro ao emitir boleto para CombinedScore {}", combinedScoreId, e);
-      String errorMessage = e.getMessage() != null ? e.getMessage() : "";
+      String errorMessage = e.getMessage() != null ? e.getMessage() : "Erro ao emitir boleto.";
       if (errorMessage.contains("já foi gerado")) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorMessage.getBytes());
       }
+      return ResponseEntity.badRequest().body(errorMessage.getBytes());
+    } catch (Exception e) {
+      log.error("Erro ao emitir boleto para CombinedScore {}", combinedScoreId, e);
       return ResponseEntity.badRequest().body("Erro ao emitir boleto.".getBytes());
     }
   }

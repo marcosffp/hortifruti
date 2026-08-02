@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
@@ -17,13 +18,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Refresh tokens são rotacionados a cada uso: o token apresentado é revogado e um novo é emitido na
- * mesma chamada. Se um token já revogado for reapresentado (reuso), é sinal de que ele vazou —
- * todas as sessões ativas do usuário são revogadas como resposta.
+ * mesma chamada. Se um token já revogado for reapresentado (reuso), é sinal de que ele vazou — mas
+ * uma reapresentação de um token revogado há poucos segundos é, na prática, quase sempre uma corrida
+ * benigna (duas abas, refresh proativo x reativo quase simultâneos, ou a resposta da rotação
+ * anterior se perdendo por causa de um restart do backend) — não um ataque. Só fora dessa janela de
+ * tolerância é que tratamos como vazamento e revogamos todas as sessões ativas do usuário.
  */
 @Component
 @RequiredArgsConstructor
 public class RefreshTokenService {
   private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+  private static final Duration REUSE_GRACE_PERIOD = Duration.ofSeconds(30);
 
   private final RefreshTokenRepository refreshTokenRepository;
 
@@ -47,7 +52,11 @@ public class RefreshTokenService {
                             + " novamente."));
 
     if (existing.getRevokedAt() != null) {
-      refreshTokenRepository.revokeAllActiveByUserId(existing.getUserId(), LocalDateTime.now());
+      boolean possivelCorridaBenigna =
+          existing.getRevokedAt().isAfter(LocalDateTime.now().minus(REUSE_GRACE_PERIOD));
+      if (!possivelCorridaBenigna) {
+        refreshTokenRepository.revokeAllActiveByUserId(existing.getUserId(), LocalDateTime.now());
+      }
       throw new TokenException(
           "O token de sessão é inválido ou expirou. Por favor, faça login novamente.");
     }
