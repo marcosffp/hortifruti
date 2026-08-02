@@ -6,6 +6,7 @@ import {
   FileText,
   Mail,
   MessageCircle,
+  RotateCcw,
   Send,
   ShieldAlert,
   Upload,
@@ -39,6 +40,7 @@ interface Cliente {
 }
 
 type TipoDestinatario = "clientes" | "contabilidade";
+type TipoReferencia = "mes" | "periodo";
 
 const DRAFT_STORAGE_KEY = "notificacoes:rascunho";
 const DRAFT_TTL_MS = 30 * 60 * 1000;
@@ -52,6 +54,58 @@ interface NotificacoesDraft {
   cardValue: number;
   cashValue: number;
   selectedClientIds: number[];
+  tipoReferencia: TipoReferencia;
+  mesReferencia: number;
+  anoReferencia: number;
+  dataInicialReferencia: string;
+  dataFinalReferencia: string;
+  textoEditadoManualmente: boolean;
+}
+
+const MESES_PT_BR = Array.from({ length: 12 }, (_, i) =>
+  new Date(2000, i, 1).toLocaleString("pt-BR", { month: "long" }),
+);
+
+// "Mês" por padrão sugere o mês anterior ao de hoje (o mês do pedido mais recente já fechado).
+function getMesAnoAnteriorPadrao(): { mes: number; ano: number } {
+  const hoje = new Date();
+  const mesAtual = hoje.getMonth(); // 0-indexado: janeiro = 0
+  if (mesAtual === 0) {
+    return { mes: 12, ano: hoje.getFullYear() - 1 };
+  }
+  // mesAtual (0-indexado) coincide numericamente com o mês anterior em 1-indexado.
+  return { mes: mesAtual, ano: hoje.getFullYear() };
+}
+
+// "Período" por padrão sugere os últimos 7 dias (incluindo hoje).
+function getPeriodoPadrao(): { dataInicial: string; dataFinal: string } {
+  const hoje = new Date();
+  const inicio = new Date(hoje);
+  inicio.setDate(hoje.getDate() - 6);
+  const paraISO = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { dataInicial: paraISO(inicio), dataFinal: paraISO(hoje) };
+}
+
+function formatarDiaMes(dataISO: string): string {
+  const [ano, mes, dia] = dataISO.split("-").map(Number);
+  const nomeMes = new Date(ano, mes - 1, dia).toLocaleString("pt-BR", {
+    month: "long",
+  });
+  return `${String(dia).padStart(2, "0")} de ${nomeMes}`;
+}
+
+function gerarTextoReferencia(
+  tipo: TipoReferencia,
+  mes: number,
+  ano: number,
+  dataInicial: string,
+  dataFinal: string,
+): string {
+  if (tipo === "mes") {
+    return `Encaminhamos as informações referentes ao pedido realizado no mês de ${MESES_PT_BR[mes - 1]} de ${ano}.`;
+  }
+  return `Encaminhamos as informações referentes ao pedido realizado no período de ${formatarDiaMes(dataInicial)} a ${formatarDiaMes(dataFinal)}.`;
 }
 
 async function getDraftCryptoKey(): Promise<CryptoKey> {
@@ -154,6 +208,20 @@ export default function NotificacoesPage() {
   }>({ email: true, whatsapp: false });
   const [tipoDestinatario, setTipoDestinatario] =
     useState<TipoDestinatario>("clientes");
+  const [tipoReferencia, setTipoReferencia] = useState<TipoReferencia>("mes");
+  const [mesReferencia, setMesReferencia] = useState(
+    () => getMesAnoAnteriorPadrao().mes,
+  );
+  const [anoReferencia, setAnoReferencia] = useState(
+    () => getMesAnoAnteriorPadrao().ano,
+  );
+  const [dataInicialReferencia, setDataInicialReferencia] = useState(
+    () => getPeriodoPadrao().dataInicial,
+  );
+  const [dataFinalReferencia, setDataFinalReferencia] = useState(
+    () => getPeriodoPadrao().dataFinal,
+  );
+  const [textoEditadoManualmente, setTextoEditadoManualmente] = useState(false);
   const [_dataVencimento, setDataVencimento] = useState("");
   const [_valorBoleto, setValorBoleto] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -177,6 +245,17 @@ export default function NotificacoesPage() {
       setCanaisEnvio(draft.canaisEnvio);
       setCardValue(draft.cardValue);
       setCashValue(draft.cashValue);
+      // "?? padrão" cobre rascunhos salvos antes desses campos existirem.
+      setTipoReferencia(draft.tipoReferencia ?? "mes");
+      setMesReferencia(draft.mesReferencia ?? getMesAnoAnteriorPadrao().mes);
+      setAnoReferencia(draft.anoReferencia ?? getMesAnoAnteriorPadrao().ano);
+      setDataInicialReferencia(
+        draft.dataInicialReferencia ?? getPeriodoPadrao().dataInicial,
+      );
+      setDataFinalReferencia(
+        draft.dataFinalReferencia ?? getPeriodoPadrao().dataFinal,
+      );
+      setTextoEditadoManualmente(draft.textoEditadoManualmente ?? false);
       pendingSelectedClientIdsRef.current = draft.selectedClientIds;
     });
   }, []);
@@ -189,6 +268,12 @@ export default function NotificacoesPage() {
       cardValue,
       cashValue,
       selectedClientIds: clientes.filter((c) => c.selecionado).map((c) => c.id),
+      tipoReferencia,
+      mesReferencia,
+      anoReferencia,
+      dataInicialReferencia,
+      dataFinalReferencia,
+      textoEditadoManualmente,
     });
   }, [
     tipoDestinatario,
@@ -197,7 +282,48 @@ export default function NotificacoesPage() {
     cardValue,
     cashValue,
     clientes,
+    tipoReferencia,
+    mesReferencia,
+    anoReferencia,
+    dataInicialReferencia,
+    dataFinalReferencia,
+    textoEditadoManualmente,
   ]);
+
+  // Regenera o texto automaticamente quando o tipo de referência ou as datas mudam — mas só
+  // enquanto o usuário não tiver editado o texto manualmente, pra não sobrescrever uma edição.
+  useEffect(() => {
+    if (textoEditadoManualmente) return;
+    setMensagemPersonalizada(
+      gerarTextoReferencia(
+        tipoReferencia,
+        mesReferencia,
+        anoReferencia,
+        dataInicialReferencia,
+        dataFinalReferencia,
+      ),
+    );
+  }, [
+    tipoReferencia,
+    mesReferencia,
+    anoReferencia,
+    dataInicialReferencia,
+    dataFinalReferencia,
+    textoEditadoManualmente,
+  ]);
+
+  const handleRestaurarTextoPadrao = () => {
+    setMensagemPersonalizada(
+      gerarTextoReferencia(
+        tipoReferencia,
+        mesReferencia,
+        anoReferencia,
+        dataInicialReferencia,
+        dataFinalReferencia,
+      ),
+    );
+    setTextoEditadoManualmente(false);
+  };
 
   useEffect(() => {
     if (tipoDestinatario === "contabilidade" && !isGestor) {
@@ -420,7 +546,6 @@ export default function NotificacoesPage() {
         showSuccess(response.message);
 
         setArquivos([]);
-        setMensagemPersonalizada("");
         setDataVencimento("");
         setValorBoleto("");
         setClientes(clientes.map((c) => ({ ...c, selecionado: false })));
@@ -428,6 +553,25 @@ export default function NotificacoesPage() {
 
         setCardValue(0);
         setCashValue(0);
+
+        const mesAnoPadrao = getMesAnoAnteriorPadrao();
+        const periodoPadrao = getPeriodoPadrao();
+        setTipoReferencia("mes");
+        setMesReferencia(mesAnoPadrao.mes);
+        setAnoReferencia(mesAnoPadrao.ano);
+        setDataInicialReferencia(periodoPadrao.dataInicial);
+        setDataFinalReferencia(periodoPadrao.dataFinal);
+        setTextoEditadoManualmente(false);
+        setMensagemPersonalizada(
+          gerarTextoReferencia(
+            "mes",
+            mesAnoPadrao.mes,
+            mesAnoPadrao.ano,
+            periodoPadrao.dataInicial,
+            periodoPadrao.dataFinal,
+          ),
+        );
+
         clearDraft();
       } else if (response.authorizationUrl) {
         showErrorWithLink(response.message, response.authorizationUrl);
@@ -607,18 +751,144 @@ export default function NotificacoesPage() {
               </div>
 
               <div>
-                <label
-                  htmlFor="mensagem"
-                  className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
-                >
-                  Mensagem Personalizada (opcional)
-                </label>
+                <div className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
+                  Tipo de Referência
+                </div>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setTipoReferencia("mes")}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                      tipoReferencia === "mes"
+                        ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
+                        : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
+                    }`}
+                  >
+                    <span className="font-medium">Mês</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTipoReferencia("periodo")}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                      tipoReferencia === "periodo"
+                        ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
+                        : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
+                    }`}
+                  >
+                    <span className="font-medium">Período</span>
+                  </button>
+                </div>
+
+                {tipoReferencia === "mes" ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label
+                        htmlFor="mesReferencia"
+                        className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
+                      >
+                        Mês
+                      </label>
+                      <select
+                        id="mesReferencia"
+                        value={mesReferencia}
+                        onChange={(e) =>
+                          setMesReferencia(Number(e.target.value))
+                        }
+                        className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                      >
+                        {MESES_PT_BR.map((nome, index) => (
+                          <option key={nome} value={index + 1}>
+                            {nome.replace(/^\w/, (c) => c.toUpperCase())}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="anoReferencia"
+                        className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
+                      >
+                        Ano
+                      </label>
+                      <input
+                        id="anoReferencia"
+                        type="number"
+                        min={2000}
+                        max={2100}
+                        value={anoReferencia}
+                        onChange={(e) =>
+                          setAnoReferencia(Number(e.target.value))
+                        }
+                        className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label
+                        htmlFor="dataInicialReferencia"
+                        className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
+                      >
+                        Data Inicial
+                      </label>
+                      <input
+                        id="dataInicialReferencia"
+                        type="date"
+                        value={dataInicialReferencia}
+                        onChange={(e) =>
+                          setDataInicialReferencia(e.target.value)
+                        }
+                        className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="dataFinalReferencia"
+                        className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
+                      >
+                        Data Final
+                      </label>
+                      <input
+                        id="dataFinalReferencia"
+                        type="date"
+                        value={dataFinalReferencia}
+                        onChange={(e) => setDataFinalReferencia(e.target.value)}
+                        className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label
+                    htmlFor="mensagem"
+                    className="block text-sm font-medium text-[var(--neutral-700)]"
+                  >
+                    Mensagem Personalizada (opcional)
+                  </label>
+                  {textoEditadoManualmente && (
+                    <button
+                      type="button"
+                      onClick={handleRestaurarTextoPadrao}
+                      className="flex items-center gap-1 text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] font-medium cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      Restaurar texto padrão
+                    </button>
+                  )}
+                </div>
                 <textarea
                   id="mensagem"
                   rows={4}
                   placeholder="Digite uma mensagem para enviar junto com o arquivo..."
                   value={mensagemPersonalizada}
-                  onChange={(e) => setMensagemPersonalizada(e.target.value)}
+                  onChange={(e) => {
+                    setMensagemPersonalizada(e.target.value);
+                    setTextoEditadoManualmente(true);
+                  }}
                   className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent resize-none"
                 />
               </div>

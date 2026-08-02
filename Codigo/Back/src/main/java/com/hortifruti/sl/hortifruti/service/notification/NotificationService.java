@@ -227,11 +227,18 @@ public class NotificationService {
     LocalDate today = EmailGreetingUtil.today();
     variables.put("CURRENT_DATE", today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
     variables.put("GREETING", EmailGreetingUtil.timeOfDayGreeting());
-    variables.put("PERIOD_RANGE", EmailGreetingUtil.weekPeriodLabel(today));
     variables.put("SENDER_NAME", senderName);
 
-    variables.put("DEFAULT_MESSAGE", "true");
-    variables.put("CUSTOM_MESSAGE", request.customMessage() != null ? request.customMessage() : "");
+    // A saudação e a despedida são sempre fixas — só a frase de referência ao pedido muda: usa o
+    // texto que o front gerou/o usuário editou (Mês ou Período) quando presente, senão cai no
+    // período padrão (últimos 7 dias) calculado aqui mesmo.
+    String referenceMessage =
+        request.customMessage() != null && !request.customMessage().isEmpty()
+            ? request.customMessage()
+            : "Encaminhamos as informações referentes ao pedido realizado no período de "
+                + EmailGreetingUtil.weekPeriodLabel(today)
+                + ".";
+    variables.put("REFERENCE_MESSAGE", referenceMessage);
 
     return emailTemplateService.processTemplate("client-documents", variables);
   }
