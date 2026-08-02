@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { publicPages } from "@/config/publicPages";
 import { authService } from "@/services/authService";
 import {
-  getLastRefreshedAt,
+  getLastRefreshAttemptedAt,
+  markRefreshAttempted,
   tryAcquireRefreshLock,
 } from "@/utils/authRefreshCoordinator";
 
@@ -71,15 +72,33 @@ export default function AuthGuard({
   useEffect(() => {
     if (!isAuthenticated) return;
 
+    // Fica true assim que uma tentativa falha de verdade (403 — refresh token inválido), em vez de
+    // um erro transitório (429/rede). Nesse caso o token está morto e não vai se recuperar sozinho
+    // até um novo login, então paramos de bater no /auth/refresh a cada tick — só retoma quando
+    // esse efeito remontar (ex.: troca de sessão via navegação).
+    let refreshConfirmedDead = false;
+
     const maybeRefresh = () => {
-      const elapsed = Date.now() - getLastRefreshedAt();
+      if (refreshConfirmedDead) return;
+
+      // Usa o horário da última *tentativa* (sucesso ou falha), não só de sucesso — senão uma
+      // falha nunca atualiza o relógio e a checagem seguinte (1 min depois) acha que já passou da
+      // hora e tenta de novo imediatamente, virando um loop de tentativa a cada minuto.
+      const elapsed = Date.now() - getLastRefreshAttemptedAt();
       if (elapsed < SILENT_REFRESH_INTERVAL_MS) return;
       // Evita duas abas chamando /auth/refresh ao mesmo tempo: o refresh token é de uso único e o
       // backend revoga todas as sessões do usuário se detectar reuso de um token já rotacionado.
       if (!tryAcquireRefreshLock()) return;
-      authService.refresh().catch(() => {
-        // Falha silenciosa (rate limit/rede) — próximo tick ou o interceptor reativo tentam de novo.
-      });
+
+      markRefreshAttempted();
+      authService
+        .refresh()
+        .then((refreshed) => {
+          if (!refreshed) refreshConfirmedDead = true;
+        })
+        .catch(() => {
+          // 429/rede — transitório, tenta de novo no próximo ciclo.
+        });
     };
 
     const handleVisibilityChange = () => {

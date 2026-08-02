@@ -1,4 +1,5 @@
 const LAST_REFRESH_KEY = "auth:lastRefreshAt";
+const LAST_ATTEMPT_KEY = "auth:lastRefreshAttemptAt";
 const REFRESH_LOCK_KEY = "auth:refreshLock";
 const LOCK_TTL_MS = 10_000;
 
@@ -20,6 +21,28 @@ export function markRefreshed(timestamp = Date.now()) {
 export function getLastRefreshedAt(): number {
   try {
     return Number(localStorage.getItem(LAST_REFRESH_KEY)) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Marca uma *tentativa* de refresh (sucesso ou falha) — diferente de {@link markRefreshed}, que só
+ * marca sucesso. Usado para não bater no /auth/refresh a cada checagem enquanto o token estiver
+ * genuinamente morto: sem isso, uma falha nunca atualiza "última renovação", então toda checagem
+ * seguinte acha que já passou da hora e tenta de novo imediatamente.
+ */
+export function markRefreshAttempted(timestamp = Date.now()) {
+  try {
+    localStorage.setItem(LAST_ATTEMPT_KEY, String(timestamp));
+  } catch {
+    // localStorage indisponível — segue sem coordenação entre abas
+  }
+}
+
+export function getLastRefreshAttemptedAt(): number {
+  try {
+    return Number(localStorage.getItem(LAST_ATTEMPT_KEY)) || 0;
   } catch {
     return 0;
   }
