@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Loading from "@/components/ui/Loading";
-import { authService, TransientAuthCheckError } from "@/services/authService";
+import { authService } from "@/services/authService";
 
 export default function App() {
   const router = useRouter();
@@ -19,10 +19,10 @@ export default function App() {
           router.push("/landing");
         }
       } catch (error) {
-        if (!(error instanceof TransientAuthCheckError)) throw error;
-        // Não deu pra confirmar a sessão agora (rate limit/rede) — manda pra landing como
-        // fallback seguro em vez de propagar o erro; se o usuário estiver logado, a próxima
-        // navegação autenticada confirma a sessão normalmente.
+        // Não deu pra confirmar a sessão agora (rate limit, rede, resposta abortada) — manda pra
+        // landing como fallback seguro em vez de propagar o erro; se o usuário estiver logado, a
+        // próxima navegação autenticada confirma a sessão normalmente.
+        console.error("Falha ao verificar sessão:", error);
         router.push("/landing");
       }
     })();

@@ -90,7 +90,16 @@ export const authService = {
 
         if (!response.ok) return null;
 
-        return await response.json();
+        try {
+          return await response.json();
+        } catch {
+          // Corpo vazio/truncado costuma ser uma navegação concorrente abortando a resposta em
+          // andamento (ex.: redirect pro /login disparado por outra chamada) — não é uma resposta
+          // "não autenticado" de verdade.
+          throw new TransientAuthCheckError(
+            "Resposta de /auth/me incompleta ao verificar sessão.",
+          );
+        }
       } finally {
         pendingMeRequest = null;
       }

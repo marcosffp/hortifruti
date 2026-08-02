@@ -3,11 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { publicPages } from "@/config/publicPages";
-import {
-  authService,
-  LoginError,
-  TransientAuthCheckError,
-} from "@/services/authService";
+import { authService, LoginError } from "@/services/authService";
 
 export interface LoginResult {
   success: boolean;
@@ -49,9 +45,10 @@ export function useAuth() {
         setEnvironment("");
       }
     } catch (error) {
-      if (!(error instanceof TransientAuthCheckError)) throw error;
-      // Não deu pra confirmar a sessão agora (rate limit/rede) — mantém o estado atual em vez de
-      // deslogar; a próxima checagem (troca de página) tenta de novo.
+      // Não deu pra confirmar a sessão agora (rate limit, rede, resposta abortada por uma
+      // navegação concorrente) — mantém o estado atual em vez de deslogar; a próxima checagem
+      // (troca de página) tenta de novo.
+      console.error("Falha ao verificar sessão:", error);
     } finally {
       setIsLoading(false);
     }

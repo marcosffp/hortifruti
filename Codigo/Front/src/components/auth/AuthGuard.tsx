@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { publicPages } from "@/config/publicPages";
-import { authService, TransientAuthCheckError } from "@/services/authService";
+import { authService } from "@/services/authService";
 import {
   getLastRefreshedAt,
   tryAcquireRefreshLock,
@@ -55,9 +55,10 @@ export default function AuthGuard({
         setIsAuthChecked(true);
       } catch (error) {
         if (cancelled) return;
-        if (!(error instanceof TransientAuthCheckError)) throw error;
-        // Não deu pra confirmar a sessão agora (rate limit/rede) — mantém o estado atual em vez de
-        // deslogar; a checagem roda de novo na próxima navegação.
+        // Não deu pra confirmar a sessão agora (rate limit, rede, resposta abortada por uma
+        // navegação concorrente) — mantém o estado atual em vez de deslogar; a checagem roda de
+        // novo na próxima navegação.
+        console.error("Falha ao verificar sessão:", error);
         setIsAuthChecked(true);
       }
     })();
