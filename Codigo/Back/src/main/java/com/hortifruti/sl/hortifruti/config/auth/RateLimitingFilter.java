@@ -18,6 +18,18 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
 
+  private static final Bandwidth DEFAULT_LIMIT =
+      Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1)));
+
+  /**
+   * /auth/me é uma checagem de sessão sem efeito colateral, disparada pelo front a cada navegação
+   * (AuthGuard/useAuth) — sem relação com força bruta, então recebe um limite bem mais folgado que
+   * os demais endpoints. Sem isso, navegação ativa normal esgota o limite padrão e o front interpreta
+   * o 429 resultante como "sessão expirada", derrubando o usuário para o login.
+   */
+  private static final Map<String, Bandwidth> ENDPOINT_LIMITS =
+      Map.of("/auth/me", Bandwidth.classic(60, Refill.greedy(60, Duration.ofMinutes(1))));
+
   private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
   @Override
@@ -28,7 +40,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     String endpoint = request.getRequestURI();
     String key = clientIp + ":" + endpoint;
 
-    Bucket bucket = buckets.computeIfAbsent(key, this::createNewBucket);
+    Bucket bucket = buckets.computeIfAbsent(key, k -> createNewBucket(endpoint));
 
     if (bucket.tryConsume(1)) {
       filterChain.doFilter(request, response);
@@ -40,8 +52,8 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     }
   }
 
-  private Bucket createNewBucket(String key) {
-    Bandwidth limit = Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1)));
+  private Bucket createNewBucket(String endpoint) {
+    Bandwidth limit = ENDPOINT_LIMITS.getOrDefault(endpoint, DEFAULT_LIMIT);
     return Bucket.builder().addLimit(limit).build();
   }
 }

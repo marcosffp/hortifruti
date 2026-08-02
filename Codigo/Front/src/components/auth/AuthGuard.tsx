@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { publicPages } from "@/config/publicPages";
-import { authService } from "@/services/authService";
+import { authService, TransientAuthCheckError } from "@/services/authService";
 import {
   getLastRefreshedAt,
   tryAcquireRefreshLock,
@@ -28,29 +28,38 @@ export default function AuthGuard({
 
     (async () => {
       const isPublicPage = publicPages.includes(pathname);
-      let user = await authService.me();
 
-      if (!user && !isPublicPage) {
-        const refreshed = await authService.refresh();
-        if (refreshed) {
-          user = await authService.me();
+      try {
+        let user = await authService.me();
+
+        if (!user && !isPublicPage) {
+          const refreshed = await authService.refresh();
+          if (refreshed) {
+            user = await authService.me();
+          }
         }
+
+        const authenticated = !!user;
+
+        if (cancelled) return;
+
+        if (!authenticated && !isPublicPage) {
+          router.push("/login");
+        }
+
+        if (authenticated && pathname === "/login") {
+          router.push("/");
+        }
+
+        setIsAuthenticated(authenticated);
+        setIsAuthChecked(true);
+      } catch (error) {
+        if (cancelled) return;
+        if (!(error instanceof TransientAuthCheckError)) throw error;
+        // Não deu pra confirmar a sessão agora (rate limit/rede) — mantém o estado atual em vez de
+        // deslogar; a checagem roda de novo na próxima navegação.
+        setIsAuthChecked(true);
       }
-
-      const authenticated = !!user;
-
-      if (cancelled) return;
-
-      if (!authenticated && !isPublicPage) {
-        router.push("/login");
-      }
-
-      if (authenticated && pathname === "/login") {
-        router.push("/");
-      }
-
-      setIsAuthenticated(authenticated);
-      setIsAuthChecked(true);
     })();
 
     return () => {
@@ -67,7 +76,9 @@ export default function AuthGuard({
       // Evita duas abas chamando /auth/refresh ao mesmo tempo: o refresh token é de uso único e o
       // backend revoga todas as sessões do usuário se detectar reuso de um token já rotacionado.
       if (!tryAcquireRefreshLock()) return;
-      authService.refresh();
+      authService.refresh().catch(() => {
+        // Falha silenciosa (rate limit/rede) — próximo tick ou o interceptor reativo tentam de novo.
+      });
     };
 
     const handleVisibilityChange = () => {

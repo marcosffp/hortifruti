@@ -34,6 +34,13 @@ export class LoginError extends Error {
 let pendingMeRequest: Promise<AuthUser | null> | null = null;
 let pendingRefreshRequest: Promise<boolean> | null = null;
 
+/**
+ * Lançado quando não foi possível confirmar o estado de autenticação (429 de rate limit, rede
+ * fora do ar). Diferente de um 401/403, isso não significa "sessão inválida" — quem chama deve
+ * manter o estado atual em vez de deslogar o usuário.
+ */
+export class TransientAuthCheckError extends Error {}
+
 export const authService = {
   async login(credentials: AuthRequest): Promise<AuthUser> {
     try {
@@ -75,11 +82,15 @@ export const authService = {
           credentials: "include",
         });
 
+        if (response.status === 429) {
+          throw new TransientAuthCheckError(
+            "Limite de requisições atingido ao verificar sessão.",
+          );
+        }
+
         if (!response.ok) return null;
 
         return await response.json();
-      } catch {
-        return null;
       } finally {
         pendingMeRequest = null;
       }
@@ -98,11 +109,15 @@ export const authService = {
           credentials: "include",
         });
 
+        if (response.status === 429) {
+          throw new TransientAuthCheckError(
+            "Limite de requisições atingido ao renovar sessão.",
+          );
+        }
+
         if (response.ok) markRefreshed();
 
         return response.ok;
-      } catch {
-        return false;
       } finally {
         pendingRefreshRequest = null;
       }
