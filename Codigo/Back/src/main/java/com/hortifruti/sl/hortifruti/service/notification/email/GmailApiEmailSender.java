@@ -47,9 +47,6 @@ public class GmailApiEmailSender implements EmailSender {
   @Value("${google.redirect.uri}")
   private String redirectUri;
 
-  @Value("${google.tokens.directory}")
-  private String tokensDirectoryPath;
-
   @Value("${GMAIL:}")
   private String senderAddress;
 
@@ -121,7 +118,6 @@ public class GmailApiEmailSender implements EmailSender {
       CredentialConfig config =
           CredentialConfig.builder()
               .applicationName(APPLICATION_NAME)
-              .tokensDirectoryPath(tokensDirectoryPath)
               .redirectUri(redirectUri)
               .credentialsFile(base64FileDecoder.getGoogleDriveCredentialsFile())
               .authOrigin("notificacoes")
