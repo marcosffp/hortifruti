@@ -6,6 +6,7 @@ import com.sendgrid.helpers.mail.Mail;
 import com.sendgrid.helpers.mail.objects.Attachments;
 import com.sendgrid.helpers.mail.objects.Content;
 import com.sendgrid.helpers.mail.objects.Email;
+import com.sendgrid.helpers.mail.objects.Personalization;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
@@ -32,17 +33,36 @@ public class SendGridEmailSender implements EmailSender {
 
   @Override
   public boolean sendSimpleEmail(String to, String subject, String text) {
-    return doSend(to, subject, text, null, null);
+    return doSend(List.of(to), subject, text, null, null);
   }
 
   @Override
   public boolean sendEmailWithAttachments(
       String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
+    return doSend(List.of(to), subject, text, attachments, fileNames);
+  }
+
+  @Override
+  public boolean sendSimpleEmail(List<String> to, String subject, String text) {
+    return doSend(to, subject, text, null, null);
+  }
+
+  @Override
+  public boolean sendEmailWithAttachments(
+      List<String> to,
+      String subject,
+      String text,
+      List<byte[]> attachments,
+      List<String> fileNames) {
     return doSend(to, subject, text, attachments, fileNames);
   }
 
   private boolean doSend(
-      String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
+      List<String> to,
+      String subject,
+      String text,
+      List<byte[]> attachments,
+      List<String> fileNames) {
     if (sendGridApiKey == null || sendGridApiKey.isBlank()) {
       throw new NotificationException("SendGrid API key não configurada");
     }
@@ -52,9 +72,16 @@ public class SendGridEmailSender implements EmailSender {
 
     try {
       Email from = new Email(fromEmail);
-      Email toEmail = new Email(to);
       Content content = new Content("text/html", text);
-      Mail mail = new Mail(from, subject, toEmail, content);
+
+      Personalization personalization = new Personalization();
+      to.forEach(recipient -> personalization.addTo(new Email(recipient)));
+
+      Mail mail = new Mail();
+      mail.setFrom(from);
+      mail.setSubject(subject);
+      mail.addContent(content);
+      mail.addPersonalization(personalization);
 
       addInlineLogo(mail);
 

@@ -19,6 +19,7 @@ import RoleGuard from "@/components/auth/RoleGuard";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import MaskedDecimalInput from "@/components/ui/MaskedDecimalInput";
+import MaskedThousandsInput from "@/components/ui/MaskedThousandsInput";
 import { useAuth } from "@/hooks/useAuth";
 import {
   type BulkNotificationRequest,
@@ -926,13 +927,16 @@ export default function NotificacoesPage() {
                       >
                         Valor em Dinheiro (R$)
                       </label>
-                      <MaskedDecimalInput
+                      <MaskedThousandsInput
                         id="dinheiro"
                         value={cashValue}
                         onChange={setCashValue}
                         placeholder="0,00"
                         className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                       />
+                      <p className="text-xs text-[var(--neutral-500)] mt-1">
+                        Digite apenas os milhares — ex.: "5" vira R$ 5.000,00
+                      </p>
                     </div>
                   </div>
                 </div>

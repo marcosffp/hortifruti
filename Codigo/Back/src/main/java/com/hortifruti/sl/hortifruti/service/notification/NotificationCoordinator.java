@@ -147,6 +147,34 @@ public class NotificationCoordinator {
     }
   }
 
+  /**
+   * Envia uma única mensagem com todos os destinatários no "to" (em vez de uma mensagem por
+   * destinatário) — usado quando várias pessoas precisam ver exatamente o mesmo email, na mesma
+   * thread, como acontece com a contabilidade quando há mais de um email cadastrado.
+   */
+  public boolean sendEmailOnly(
+      List<String> recipients,
+      String subject,
+      String body,
+      List<byte[]> attachments,
+      List<String> fileNames) {
+
+    if (recipients == null || recipients.isEmpty()) {
+      throw new NotificationException("Destinatário de email inválido.");
+    }
+
+    try {
+      if (attachments != null && !attachments.isEmpty()) {
+        return emailService.sendEmailWithAttachments(
+            recipients, subject, body, attachments, fileNames);
+      } else {
+        return emailService.sendSimpleEmail(recipients, subject, body);
+      }
+    } catch (Exception e) {
+      throw new NotificationException("Erro ao enviar email: " + e.getMessage());
+    }
+  }
+
   private String getEmailStatus(NotificationChannel channel, boolean emailSent) {
     if (channel == NotificationChannel.EMAIL || channel == NotificationChannel.BOTH) {
       return emailSent ? "OK" : "FALHA";

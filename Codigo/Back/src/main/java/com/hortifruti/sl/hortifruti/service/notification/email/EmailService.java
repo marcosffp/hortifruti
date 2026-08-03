@@ -42,6 +42,19 @@ public class EmailService {
     return resolveSender().sendEmailWithAttachments(to, subject, text, attachments, fileNames);
   }
 
+  public boolean sendSimpleEmail(List<String> to, String subject, String text) {
+    return resolveSender().sendSimpleEmail(to, subject, text);
+  }
+
+  public boolean sendEmailWithAttachments(
+      List<String> to,
+      String subject,
+      String text,
+      List<byte[]> attachments,
+      List<String> fileNames) {
+    return resolveSender().sendEmailWithAttachments(to, subject, text, attachments, fileNames);
+  }
+
   public boolean sendEmailWithSingleAttachment(
       String to, String subject, String text, byte[] attachment, String fileName) {
     return sendEmailWithAttachments(to, subject, text, List.of(attachment), List.of(fileName));

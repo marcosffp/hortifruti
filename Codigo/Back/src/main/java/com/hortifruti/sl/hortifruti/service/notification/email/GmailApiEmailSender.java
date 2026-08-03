@@ -63,17 +63,36 @@ public class GmailApiEmailSender implements EmailSender {
 
   @Override
   public boolean sendSimpleEmail(String to, String subject, String text) {
-    return doSend(to, subject, text, null, null);
+    return doSend(List.of(to), subject, text, null, null);
   }
 
   @Override
   public boolean sendEmailWithAttachments(
       String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
+    return doSend(List.of(to), subject, text, attachments, fileNames);
+  }
+
+  @Override
+  public boolean sendSimpleEmail(List<String> to, String subject, String text) {
+    return doSend(to, subject, text, null, null);
+  }
+
+  @Override
+  public boolean sendEmailWithAttachments(
+      List<String> to,
+      String subject,
+      String text,
+      List<byte[]> attachments,
+      List<String> fileNames) {
     return doSend(to, subject, text, attachments, fileNames);
   }
 
   private boolean doSend(
-      String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
+      List<String> to,
+      String subject,
+      String text,
+      List<byte[]> attachments,
+      List<String> fileNames) {
     try {
       // Verifica a autorização OAuth antes do endereço remetente: se a conta Google nunca
       // foi autorizada, é mais útil o usuário ver o link de autorização (acionável) do que o
@@ -142,14 +161,18 @@ public class GmailApiEmailSender implements EmailSender {
   }
 
   private MimeMessage buildMimeMessage(
-      String to, String subject, String text, List<byte[]> attachments, List<String> fileNames)
+      List<String> to,
+      String subject,
+      String text,
+      List<byte[]> attachments,
+      List<String> fileNames)
       throws MessagingException {
     Session session = Session.getDefaultInstance(new Properties());
     MimeMessage mimeMessage = new MimeMessage(session);
     MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
     helper.setFrom(senderAddress);
-    helper.setTo(to);
+    helper.setTo(to.toArray(new String[0]));
     helper.setSubject(subject);
     helper.setText(text, true);
 
