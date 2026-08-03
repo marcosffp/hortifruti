@@ -41,6 +41,14 @@ public class RefreshToken {
   @Column(name = "revoked_at")
   private LocalDateTime revokedAt;
 
+  /**
+   * Hash do token emitido na rotação deste. Permite, quando o token revogado é reapresentado numa
+   * corrida benigna (duas chamadas concorrentes com o mesmo token), localizar o token vigente da
+   * cadeia em vez de rejeitar a chamada perdedora.
+   */
+  @Column(name = "replaced_by_hash", length = 64)
+  private String replacedByHash;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
