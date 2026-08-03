@@ -34,6 +34,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
   private static final String COOKIE_NAME = "auth_token";
   private static final String REFRESH_COOKIE_NAME = "refresh_token";
+  // O front acessa a API via rewrite do Next (/api/:path* -> backend /:path*, ver
+  // Codigo/Front/next.config.ts), então o navegador nunca vê o path "/auth" puro — ele só
+  // enxerga "/api/auth/...". O path do cookie precisa refletir isso, senão o navegador nunca
+  // reenvia o refresh_token e todo /auth/refresh cai em 403.
+  private static final String REFRESH_COOKIE_PATH = "/api/auth";
 
   private final Auth auth;
   private final TokenConfiguration tokenConfiguration;
@@ -57,7 +62,10 @@ public class AuthController {
         buildCookie(COOKIE_NAME, result.token(), tokenConfiguration.getExpirationSeconds(), "/");
     ResponseCookie refreshCookie =
         buildCookie(
-            REFRESH_COOKIE_NAME, refreshToken, refreshTokenService.getExpirationSeconds(), "/auth");
+            REFRESH_COOKIE_NAME,
+            refreshToken,
+            refreshTokenService.getExpirationSeconds(),
+            REFRESH_COOKIE_PATH);
 
     return ResponseEntity.ok()
         .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
@@ -69,7 +77,7 @@ public class AuthController {
   public ResponseEntity<AuthUserResponse> me() {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     if (!(authentication != null && authentication.getPrincipal() instanceof User user)) {
-      return ResponseEntity.ok(null);
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     return ResponseEntity.ok(toResponse(user));
@@ -104,7 +112,7 @@ public class AuthController {
             REFRESH_COOKIE_NAME,
             rotation.rawToken(),
             refreshTokenService.getExpirationSeconds(),
-            "/auth");
+            REFRESH_COOKIE_PATH);
 
     return ResponseEntity.ok()
         .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
@@ -125,7 +133,7 @@ public class AuthController {
     }
 
     ResponseCookie accessCookie = buildCookie(COOKIE_NAME, "", 0, "/");
-    ResponseCookie refreshCookie = buildCookie(REFRESH_COOKIE_NAME, "", 0, "/auth");
+    ResponseCookie refreshCookie = buildCookie(REFRESH_COOKIE_NAME, "", 0, REFRESH_COOKIE_PATH);
 
     return ResponseEntity.noContent()
         .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
@@ -135,7 +143,7 @@ public class AuthController {
 
   private ResponseEntity<AuthUserResponse> clearedCookiesResponse() {
     ResponseCookie accessCookie = buildCookie(COOKIE_NAME, "", 0, "/");
-    ResponseCookie refreshCookie = buildCookie(REFRESH_COOKIE_NAME, "", 0, "/auth");
+    ResponseCookie refreshCookie = buildCookie(REFRESH_COOKIE_NAME, "", 0, REFRESH_COOKIE_PATH);
 
     return ResponseEntity.status(HttpStatus.FORBIDDEN)
         .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
