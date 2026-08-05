@@ -3,6 +3,7 @@ import {
   BadgeDollarSign,
   BarChart,
   Bell,
+  Camera,
   ChevronDown,
   Database,
   FileCode,
@@ -77,6 +78,12 @@ export const menu: MenuItem[] = [
     label: "Gerenciamento de Compras",
     icon: ShoppingBasket,
     href: "/comercio/compras",
+    roles: ["MANAGER", "EMPLOYEE"],
+  },
+  {
+    label: "Capturar Nota",
+    icon: Camera,
+    href: "/comercio/capturar-nota",
     roles: ["MANAGER", "EMPLOYEE"],
   },
   {

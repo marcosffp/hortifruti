@@ -26,8 +26,10 @@ const allShortcuts = [
   ),
 ];
 
-// Primeira linha do grid: os atalhos mais usados no dia a dia
+// Primeira linha do grid: os atalhos mais usados no dia a dia. Captura de nota vem primeiro
+// porque só faz sentido no celular — é o principal motivo de alguém abrir esse grid.
 const priorityHrefs = [
+  "/comercio/capturar-nota",
   "/comercio/boletos",
   "/comercio/compras",
   "/notificacoes",

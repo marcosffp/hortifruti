@@ -1,9 +1,10 @@
 "use client";
 
-import { Camera, Leaf, Smartphone } from "lucide-react";
+import { Leaf, Smartphone } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import CapturaNotaCamera from "@/components/modules/CapturaNotaCamera";
 import { API_BASE_URL } from "@/config/api";
 import {
   DEVICE_TOKEN_STORAGE_KEY,
@@ -186,59 +187,26 @@ interface CapturaFotoProps {
  * lá, não aqui. Por isso o celular só precisa confirmar o envio, sem esperar resultado.
  */
 function CapturaFoto({ deviceToken, onDesvincular }: CapturaFotoProps) {
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  const enviar = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files?.[0] ?? null;
-    setFile(selected);
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(selected ? URL.createObjectURL(selected) : null);
-  };
+    const response = await fetch(`${API_BASE_URL}/api/compras/notas/capturas`, {
+      method: "POST",
+      headers: { "X-Device-Token": deviceToken },
+      body: formData,
+    });
 
-  const limparSelecao = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setFile(null);
-    setPreviewUrl(null);
-  };
-
-  const enviar = async () => {
-    if (!file) return;
-    setEnviando(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/compras/notas/capturas`,
-        {
-          method: "POST",
-          headers: { "X-Device-Token": deviceToken },
-          body: formData,
-        },
+    if (response.status === 401) {
+      onDesvincular();
+      throw new Error(
+        "Este dispositivo foi desvinculado. Peça um novo pareamento no PC.",
       );
-
-      if (response.status === 401) {
-        onDesvincular();
-        throw new Error(
-          "Este dispositivo foi desvinculado. Peça um novo pareamento no PC.",
-        );
-      }
-      if (!response.ok) {
-        throw new Error(
-          await extrairMensagemErro(response, "Falha ao enviar a foto."),
-        );
-      }
-
-      showSuccess("Foto enviada! Já aparece na fila do PC.");
-      limparSelecao();
-    } catch (error) {
-      showError(
-        error instanceof Error ? error.message : "Falha ao enviar a foto.",
+    }
+    if (!response.ok) {
+      throw new Error(
+        await extrairMensagemErro(response, "Falha ao enviar a foto."),
       );
-    } finally {
-      setEnviando(false);
     }
   };
 
@@ -252,43 +220,10 @@ function CapturaFoto({ deviceToken, onDesvincular }: CapturaFotoProps) {
         computador.
       </p>
 
-      {/* Input nativo escondido — o texto do botão de um <input type="file"> é controlado pelo
-          navegador (ex.: "Escolher arquivo") e não dá pra customizar, por isso o gatilho visível
-          é o label abaixo, que abre a câmera do celular via `capture="environment"`. */}
-      <input
-        id="captura-foto"
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleFileChange}
-        className="hidden"
+      <CapturaNotaCamera
+        enviar={enviar}
+        mensagemSucesso="Foto enviada! Já aparece na fila do PC."
       />
-
-      {previewUrl && (
-        // biome-ignore lint: preview da foto selecionada, não é asset do next/image
-        <img
-          src={previewUrl}
-          alt="Preview da nota"
-          className="max-h-64 mx-auto rounded-lg border border-gray-200"
-        />
-      )}
-
-      <label
-        htmlFor="captura-foto"
-        className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-white border-2 border-green-600 text-green-700 font-semibold hover:bg-green-50 transition-colors cursor-pointer"
-      >
-        <Camera className="w-5 h-5" />
-        {file ? "Tirar outra foto" : "Tirar foto da nota"}
-      </label>
-
-      <button
-        type="button"
-        disabled={!file || enviando}
-        onClick={enviar}
-        className="w-full py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-      >
-        {enviando ? "Enviando..." : "Enviar foto"}
-      </button>
 
       <button
         type="button"
