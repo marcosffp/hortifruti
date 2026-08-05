@@ -1,6 +1,6 @@
 "use client";
 
-import { Leaf, Smartphone } from "lucide-react";
+import { Camera, Leaf, Smartphone } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -252,13 +252,16 @@ function CapturaFoto({ deviceToken, onDesvincular }: CapturaFotoProps) {
         computador.
       </p>
 
+      {/* Input nativo escondido — o texto do botão de um <input type="file"> é controlado pelo
+          navegador (ex.: "Escolher arquivo") e não dá pra customizar, por isso o gatilho visível
+          é o label abaixo, que abre a câmera do celular via `capture="environment"`. */}
       <input
         id="captura-foto"
         type="file"
         accept="image/*"
         capture="environment"
         onChange={handleFileChange}
-        className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
+        className="hidden"
       />
 
       {previewUrl && (
@@ -269,6 +272,14 @@ function CapturaFoto({ deviceToken, onDesvincular }: CapturaFotoProps) {
           className="max-h-64 mx-auto rounded-lg border border-gray-200"
         />
       )}
+
+      <label
+        htmlFor="captura-foto"
+        className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-white border-2 border-green-600 text-green-700 font-semibold hover:bg-green-50 transition-colors cursor-pointer"
+      >
+        <Camera className="w-5 h-5" />
+        {file ? "Tirar outra foto" : "Tirar foto da nota"}
+      </label>
 
       <button
         type="button"
