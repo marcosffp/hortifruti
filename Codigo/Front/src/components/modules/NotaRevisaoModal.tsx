@@ -2,9 +2,12 @@
 
 import { RotateCcw, Trash2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { useEffect, useState } from "react";
+import ClientAutocompleteField from "@/components/ui/ClientAutocompleteField";
 import MaskedDecimalInput from "@/components/ui/MaskedDecimalInput";
 import ProductAutocompleteField from "@/components/ui/ProductAutocompleteField";
+import { clientService } from "@/services/clientService";
 import { fiscalProductService } from "@/services/fiscalProductService";
+import type { ClientSelectionInfo } from "@/types/clientType";
 import type { FiscalProductType } from "@/types/purchaseType";
 
 export type ProdutoSugerido = {
@@ -127,7 +130,9 @@ export default function NotaRevisaoModal({
 }: NotaRevisaoModalProps) {
   const [products, setProducts] = useState<FiscalProductType[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
-  const [cliente, setCliente] = useState(extraction.cliente ?? "");
+  const [clients, setClients] = useState<ClientSelectionInfo[]>([]);
+  const [clienteId, setClienteId] = useState<number | null>(null);
+  const [clienteNome, setClienteNome] = useState(extraction.cliente ?? "");
   const [data, setData] = useState(extraction.data ?? "");
   const [rows, setRows] = useState<RevisaoRow[]>(
     extraction.itens.map(itemToRow),
@@ -141,6 +146,20 @@ export default function NotaRevisaoModal({
       .catch((error) => console.error(error))
       .finally(() => setLoadingProducts(false));
   }, []);
+
+  // O nome lido pela OCR raramente bate exatamente com o cadastro (abreviações, acentos, etc.) —
+  // por isso só usa pra pré-preencher a busca, nunca resolve sozinho pra um cliente selecionado.
+  useEffect(() => {
+    clientService
+      .getAllClientsForSelection()
+      .then(setClients)
+      .catch((error) => console.error(error));
+  }, []);
+
+  const selecionarCliente = (id: number | null, nome: string) => {
+    setClienteId(id);
+    setClienteNome(nome);
+  };
 
   const updateRowCode = (index: number, code: string) => {
     setRows((prev) =>
@@ -245,20 +264,21 @@ export default function NotaRevisaoModal({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label
-                  htmlFor="revisao-cliente"
-                  className="block text-xs font-medium text-gray-500 uppercase mb-1"
-                >
-                  Cliente lido
-                </label>
-                <input
-                  id="revisao-cliente"
-                  type="text"
-                  value={cliente}
-                  onChange={(e) => setCliente(e.target.value)}
-                  placeholder="(não identificado)"
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500"
+                <p className="block text-xs font-medium text-gray-500 uppercase mb-1">
+                  Cliente{" "}
+                  {extraction.cliente ? `(lido: "${extraction.cliente}")` : ""}
+                </p>
+                <ClientAutocompleteField
+                  clients={clients}
+                  value={clienteId}
+                  onSelect={selecionarCliente}
+                  initialQuery={extraction.cliente ?? ""}
                 />
+                {!clienteId && clienteNome.trim() !== "" && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Nenhum cliente do cadastro selecionado ainda.
+                  </p>
+                )}
               </div>
               <div>
                 <label
