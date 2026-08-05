@@ -15,12 +15,12 @@
 //     /dispositivo/vincular): só a câmera + upload via X-Device-Token, sem login normal.
 
 import { useEffect, useState } from "react";
-import { DEVICE_TOKEN_STORAGE_KEY } from "@/services/dispositivoService";
-import { showError, showSuccess } from "@/services/notificationService";
 import NotaRevisaoModal, {
   type NotaExtracaoResponse,
-} from "./NotaRevisaoModal";
-import NotasPendentesFila from "./NotasPendentesFila";
+} from "@/components/modules/NotaRevisaoModal";
+import NotasPendentesFila from "@/components/modules/NotasPendentesFila";
+import { DEVICE_TOKEN_STORAGE_KEY } from "@/services/dispositivoService";
+import { showError, showSuccess } from "@/services/notificationService";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 

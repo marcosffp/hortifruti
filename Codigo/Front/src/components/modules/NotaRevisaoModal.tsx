@@ -1,8 +1,5 @@
 "use client";
 
-// ⚠️ Parte da tela temporária de dev — ver aviso em page.tsx. Fica junto do resto em
-// src/app/dev/ pra remoção ser só apagar essa pasta.
-
 import { RotateCcw, Trash2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import MaskedDecimalInput from "@/components/ui/MaskedDecimalInput";
@@ -405,8 +402,8 @@ export default function NotaRevisaoModal({
 
         <div className="flex justify-between items-center p-4 border-t border-gray-300 shrink-0">
           <p className="text-xs text-gray-500">
-            Revisão isolada de teste — ainda não cria a compra de verdade (falta
-            matching de produto/Etapa 3 e integração final/Etapa 7 da spec).
+            Esta revisão ainda não cria a compra automaticamente — use-a pra
+            conferir os dados antes de lançar a compra manualmente.
           </p>
           <button
             type="button"

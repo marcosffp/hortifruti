@@ -4,11 +4,20 @@ import { Leaf, Smartphone } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { API_BASE_URL } from "@/config/api";
 import {
   DEVICE_TOKEN_STORAGE_KEY,
   dispositivoService,
 } from "@/services/dispositivoService";
 import { showError, showSuccess } from "@/services/notificationService";
+
+async function extrairMensagemErro(
+  response: Response,
+  fallback: string,
+): Promise<string> {
+  const body = await response.json().catch(() => null);
+  return body?.message || body?.error || fallback;
+}
 
 function nomeDispositivoPadrao(): string {
   const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
@@ -104,22 +113,10 @@ function VincularDispositivoPageInner() {
   if (tokenExistente) {
     return (
       <Cartao>
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full">
-            <Smartphone className="w-6 h-6 text-green-600" />
-          </div>
-          <p className="text-gray-700">
-            Este celular já está vinculado. Ele já pode ser usado pra fotografar
-            notas de compra.
-          </p>
-          <button
-            type="button"
-            onClick={esquecerDispositivo}
-            className="text-xs text-gray-400 underline"
-          >
-            Vincular com outro código
-          </button>
-        </div>
+        <CapturaFoto
+          deviceToken={tokenExistente}
+          onDesvincular={esquecerDispositivo}
+        />
       </Cartao>
     );
   }
@@ -176,5 +173,119 @@ function VincularDispositivoPageInner() {
         </button>
       </div>
     </Cartao>
+  );
+}
+
+interface CapturaFotoProps {
+  deviceToken: string;
+  onDesvincular: () => void;
+}
+
+/**
+ * Cada foto vai pra fila do PC assim que enviada — a extração (Gemini) e a revisão acontecem
+ * lá, não aqui. Por isso o celular só precisa confirmar o envio, sem esperar resultado.
+ */
+function CapturaFoto({ deviceToken, onDesvincular }: CapturaFotoProps) {
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0] ?? null;
+    setFile(selected);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(selected ? URL.createObjectURL(selected) : null);
+  };
+
+  const limparSelecao = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setFile(null);
+    setPreviewUrl(null);
+  };
+
+  const enviar = async () => {
+    if (!file) return;
+    setEnviando(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/compras/notas/capturas`,
+        {
+          method: "POST",
+          headers: { "X-Device-Token": deviceToken },
+          body: formData,
+        },
+      );
+
+      if (response.status === 401) {
+        onDesvincular();
+        throw new Error(
+          "Este dispositivo foi desvinculado. Peça um novo pareamento no PC.",
+        );
+      }
+      if (!response.ok) {
+        throw new Error(
+          await extrairMensagemErro(response, "Falha ao enviar a foto."),
+        );
+      }
+
+      showSuccess("Foto enviada! Já aparece na fila do PC.");
+      limparSelecao();
+    } catch (error) {
+      showError(
+        error instanceof Error ? error.message : "Falha ao enviar a foto.",
+      );
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <div className="text-center space-y-4">
+      <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full">
+        <Smartphone className="w-6 h-6 text-green-600" />
+      </div>
+      <p className="text-sm text-gray-700">
+        Dispositivo vinculado — tire a foto da nota, cada uma vai pra fila do
+        computador.
+      </p>
+
+      <input
+        id="captura-foto"
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
+      />
+
+      {previewUrl && (
+        // biome-ignore lint: preview da foto selecionada, não é asset do next/image
+        <img
+          src={previewUrl}
+          alt="Preview da nota"
+          className="max-h-64 mx-auto rounded-lg border border-gray-200"
+        />
+      )}
+
+      <button
+        type="button"
+        disabled={!file || enviando}
+        onClick={enviar}
+        className="w-full py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+      >
+        {enviando ? "Enviando..." : "Enviar foto"}
+      </button>
+
+      <button
+        type="button"
+        onClick={onDesvincular}
+        className="text-xs text-gray-400 underline"
+      >
+        Vincular com outro código
+      </button>
+    </div>
   );
 }

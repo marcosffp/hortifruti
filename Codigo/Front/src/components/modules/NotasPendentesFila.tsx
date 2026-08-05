@@ -1,15 +1,12 @@
 "use client";
 
-// ⚠️ Parte da tela temporária de dev — ver aviso em page.tsx.
-
 import { useCallback, useEffect, useState } from "react";
+import { API_BASE_URL } from "@/config/api";
 import { useRealtimeSocket } from "@/hooks/useRealtimeSocket";
 import { showError, showInfo } from "@/services/notificationService";
 import NotaRevisaoModal, {
   type NotaExtracaoResponse,
 } from "./NotaRevisaoModal";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 type StatusCaptura =
   | "RECEBIDA"

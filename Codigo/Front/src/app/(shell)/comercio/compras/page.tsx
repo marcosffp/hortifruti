@@ -7,6 +7,7 @@ import ClientSelector from "@/components/modules/ClientSelector";
 import ClientSummaryCards from "@/components/modules/ClientSummaryCards";
 import CombinedScoresCards from "@/components/modules/CombinedScoresCards";
 import EnhancedUploadNotes from "@/components/modules/EnhancedUploadNotes";
+import NotasPendentesFila from "@/components/modules/NotasPendentesFila";
 import PurchaseFilesTable from "@/components/modules/tables/PurchaseFilesTable";
 import { clientService } from "@/services/clientService";
 import type { ClientSelectionInfo } from "@/types/clientType";
@@ -100,6 +101,10 @@ export default function PurchasesPage() {
           clientId={selectedClient?.clientId}
           onUploadSuccess={handleUploadSuccess}
         />
+      </div>
+
+      <div className="mb-8">
+        <NotasPendentesFila />
       </div>
 
       <ClientSummaryCards
