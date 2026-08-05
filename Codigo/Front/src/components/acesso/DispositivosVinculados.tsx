@@ -39,7 +39,9 @@ function origemPareamento(): string {
  * tempo-real.md`): gerar código/QR de pareamento, listar dispositivos já vinculados e revogar. Vive
  * no Módulo Acesso porque um dispositivo vinculado é um conceito de autenticação/controle de
  * acesso, não de domínio de compras — mesmo raciocínio usado pra colocar `DispositivoVinculado` ao
- * lado de `User` no backend, em vez de dentro do pacote de compras.
+ * lado de `User` no backend, em vez de dentro do pacote de compras. Visual segue o mesmo padrão de
+ * avatar circular da tabela "Usuários do Sistema" logo abaixo, pra ler como uma extensão dela, não
+ * como um bloco solto.
  */
 export default function DispositivosVinculados() {
   const [dispositivos, setDispositivos] = useState<Dispositivo[]>([]);
@@ -98,7 +100,10 @@ export default function DispositivosVinculados() {
     try {
       const { codigo, expiraEm } = await dispositivoService.iniciarPareamento();
       const url = `${origemPareamento()}/dispositivo/vincular?codigo=${codigo}`;
-      const qrDataUrl = await QRCode.toDataURL(url);
+      const qrDataUrl = await QRCode.toDataURL(url, {
+        margin: 1,
+        color: { dark: "#1f2937", light: "#ffffff" },
+      });
       setPareamento({ codigo, expiraEm, qrDataUrl });
     } catch (error) {
       showError(
@@ -132,74 +137,71 @@ export default function DispositivosVinculados() {
 
   return (
     <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden mb-6">
-      <div className="px-6 py-4 border-b flex flex-wrap justify-between items-center gap-2">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            <Smartphone className="w-5 h-5 text-gray-600" /> Dispositivos
-            vinculados
-          </h2>
-          <span className="text-sm text-gray-500">
-            Celulares autorizados a fotografar notas de compra sem precisar
-            logar
+      <div className="px-6 py-4 border-b flex flex-wrap justify-between items-center gap-3">
+        <div className="flex items-center gap-3">
+          <span className="bg-primary-bg p-2.5 rounded-full">
+            <Smartphone className="text-primary" size={20} />
           </span>
-        </div>
-        <Button
-          variant="primary"
-          onClick={gerarCodigo}
-          disabled={gerandoPareamento}
-          className="bg-green-600 hover:bg-green-700"
-          icon={<QrCode size={18} />}
-        >
-          {gerandoPareamento ? "Gerando..." : "Vincular novo dispositivo"}
-        </Button>
-      </div>
-
-      {pareamento && (
-        <div className="flex flex-col sm:flex-row items-center gap-4 bg-gray-50 border-b border-gray-200 p-4">
-          {/* biome-ignore lint: QR gerado dinamicamente como data URL, não é asset do next/image */}
-          <img
-            src={pareamento.qrDataUrl}
-            alt="QR code de pareamento"
-            className="w-36 h-36 shrink-0"
-          />
-          <div className="text-sm text-gray-600 space-y-1">
-            <p>
-              Peça pra escanear o QR com a câmera do celular — ele abre direto
-              na tela de confirmação, sem precisar digitar nada.
-            </p>
-            <p>
-              Ou acesse{" "}
-              <span className="font-medium text-gray-800">
-                {origemPareamento()}/dispositivo/vincular
-              </span>{" "}
-              e digite o código:
-            </p>
-            <p className="text-2xl font-mono font-bold tracking-widest text-gray-800">
-              {pareamento.codigo}
-            </p>
-            <p className="text-xs text-gray-400">
-              Expira às{" "}
-              {new Date(pareamento.expiraEm).toLocaleTimeString("pt-BR")}
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800">
+              Dispositivos vinculados
+            </h2>
+            <p className="text-sm text-gray-500">
+              Celulares autorizados a fotografar notas de compra sem precisar
+              logar
             </p>
           </div>
         </div>
-      )}
-
-      <div className="px-6 py-3 border-b bg-gray-50 flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-700">
-          {dispositivos.length} dispositivo(s) ativo(s)
-        </span>
-        <button
-          type="button"
-          onClick={carregarDispositivos}
-          className="p-1.5 hover:bg-gray-200 rounded-md transition-colors"
-          title="Atualizar lista"
-        >
-          <RefreshCw
-            className={`w-4 h-4 text-gray-600 ${carregando ? "animate-spin" : ""}`}
-          />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={carregarDispositivos}
+            className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Atualizar lista"
+          >
+            <RefreshCw
+              className={`w-4 h-4 ${carregando ? "animate-spin" : ""}`}
+            />
+          </button>
+          <Button
+            variant="primary"
+            onClick={gerarCodigo}
+            disabled={gerandoPareamento}
+            icon={<QrCode size={18} />}
+          >
+            {gerandoPareamento ? "Gerando..." : "Vincular novo dispositivo"}
+          </Button>
+        </div>
       </div>
+
+      {pareamento && (
+        <div className="bg-primary-bg border-b border-gray-200 p-6">
+          <div className="flex flex-col sm:flex-row items-center gap-6 max-w-xl mx-auto">
+            {/* biome-ignore lint: QR gerado dinamicamente como data URL, não é asset do next/image */}
+            <img
+              src={pareamento.qrDataUrl}
+              alt="QR code de pareamento"
+              className="w-32 h-32 shrink-0 rounded-lg border border-gray-200 bg-white p-1.5 shadow-sm"
+            />
+            <div className="text-center sm:text-left space-y-2">
+              <p className="text-sm text-gray-600">
+                Escaneie com a câmera do celular, ou acesse{" "}
+                <span className="font-medium text-gray-800">
+                  {origemPareamento()}/dispositivo/vincular
+                </span>{" "}
+                e digite o código:
+              </p>
+              <p className="text-3xl font-mono font-bold tracking-[0.3em] text-gray-800">
+                {pareamento.codigo}
+              </p>
+              <p className="text-xs text-gray-500">
+                Expira às{" "}
+                {new Date(pareamento.expiraEm).toLocaleTimeString("pt-BR")}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="p-4">
         {carregando ? (
@@ -207,29 +209,37 @@ export default function DispositivosVinculados() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
           </div>
         ) : dispositivos.length === 0 ? (
-          <p className="text-sm text-gray-400 italic py-2">
-            Nenhum dispositivo vinculado ainda.
-          </p>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Smartphone size={40} className="text-gray-300 mb-2" />
+            <p className="text-sm text-gray-400">
+              Nenhum dispositivo vinculado ainda.
+            </p>
+          </div>
         ) : (
           <div className="space-y-2">
             {dispositivos.map((dispositivo) => (
               <div
                 key={dispositivo.id}
-                className="flex items-center justify-between border border-gray-200 rounded-lg p-3"
+                className="flex items-center justify-between gap-3 border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors"
               >
-                <div>
-                  <p className="font-medium text-gray-800">
-                    {dispositivo.nome}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Pareado em {formatarData(dispositivo.pareadoEm)} — último
-                    uso: {formatarData(dispositivo.ultimoUsoEm)}
-                  </p>
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="bg-primary-bg p-2 rounded-full shrink-0">
+                    <Smartphone className="text-primary" size={18} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-800 truncate">
+                      {dispositivo.nome}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      Pareado em {formatarData(dispositivo.pareadoEm)} —
+                      último uso: {formatarData(dispositivo.ultimoUsoEm)}
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setParaRevogar(dispositivo)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
                   title="Revogar dispositivo"
                 >
                   <Trash2 className="w-4 h-4" />
