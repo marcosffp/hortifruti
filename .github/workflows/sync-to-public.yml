@@ -1,0 +1,53 @@
+name: Sync Branches to Public Repo
+
+on:
+  push:
+    branches:
+      - prod
+      - master
+      - dev
+      - hml
+
+jobs:
+  sync-to-public:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout branch atual
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+          persist-credentials: false
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config --unset-all http.https://github.com/.extraheader || true
+
+      - name: Debug - Verificar secret
+        run: |
+          if [ -z "${{ secrets.PUBLIC_REPO_TOKEN }}" ]; then
+            echo "::error::PUBLIC_REPO_TOKEN não configurado"
+            exit 1
+          fi
+          echo "✅ Secret encontrado"
+
+      - name: Sincronizar branch para o repositório público
+        env:
+          GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+        run: |
+          CURRENT_BRANCH="${{ github.ref_name }}"
+          echo "📌 Branch atual: $CURRENT_BRANCH"
+          
+          # Configurar credenciais
+          git config --local credential.helper '!f() { echo "username=x-access-token"; echo "password=$GITHUB_TOKEN"; }; f'
+          
+          # Adicionar remote
+          git remote add public https://github.com/marcosffp/hortifruti.git
+          
+          echo "📤 Enviando $CURRENT_BRANCH → $CURRENT_BRANCH para o repositório público..."
+          git push public "$CURRENT_BRANCH:$CURRENT_BRANCH" --force --verbose
+          
+          echo "✅ Sincronização de $CURRENT_BRANCH concluída!"
