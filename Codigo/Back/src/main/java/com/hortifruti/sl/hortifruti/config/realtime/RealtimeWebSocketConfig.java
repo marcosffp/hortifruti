@@ -13,6 +13,7 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 public class RealtimeWebSocketConfig implements WebSocketConfigurer {
 
   private final RealtimeWebSocketHandler realtimeWebSocketHandler;
+  private final AuthHandshakeInterceptor authHandshakeInterceptor;
 
   @Value("${frontend.url}")
   private String frontendUrl;
@@ -24,7 +25,7 @@ public class RealtimeWebSocketConfig implements WebSocketConfigurer {
   public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
     registry
         .addHandler(realtimeWebSocketHandler, "/ws/realtime")
-        .addInterceptors(new AuthHandshakeInterceptor())
+        .addInterceptors(authHandshakeInterceptor)
         .setAllowedOrigins(frontendUrl, backendUrl);
   }
 }
