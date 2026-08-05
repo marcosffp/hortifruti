@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import DispositivosVinculados from "@/components/acesso/DispositivosVinculados";
 import RoleGuard from "@/components/auth/RoleGuard";
 import Button from "@/components/ui/Button";
 import { backupService } from "@/services/acessoService";
@@ -282,6 +283,8 @@ export default function AcessoPage() {
               </Button>
             </Link>
           </div>
+
+          <DispositivosVinculados />
 
           <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b flex justify-between items-center">

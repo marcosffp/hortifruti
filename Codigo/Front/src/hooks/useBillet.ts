@@ -35,13 +35,12 @@ export function useBillet() {
     setIsLoading(true);
     setError(null);
     try {
-      // Não baixa automaticamente: quem chama exibe o boleto num modal (ShowBilletModal) com seu
-      // próprio botão "Baixar PDF" — igual aos outros fluxos de download já existentes.
       const blob = await billetService.generateBillet(
         combinedScoreId,
         number,
         dueDate,
       );
+      downloadBillet(blob, combinedScoreId, number);
       return blob;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar boleto");

@@ -158,13 +158,21 @@
                 <td class="message-cell">
                     <h2 class="message-title">Envio de Documentos</h2>
                     
+                    {{#DEFAULT_MESSAGE}}
                     <div class="message-content">
                         <p>Prezados,</p>
                         <p>{{GREETING}}.</p>
-                        <p>{{REFERENCE_MESSAGE}}</p>
+                        <p>Encaminhamos as informações referentes ao pedido realizado no período de {{PERIOD_RANGE}}.</p>
                         <p>Qualquer dúvida, estamos à disposição.</p>
                         <p>Atenciosamente,<br>{{SENDER_NAME}}<br>Hortifruti Santa Luzia</p>
                     </div>
+                    {{/DEFAULT_MESSAGE}}
+                    
+                    {{#CUSTOM_MESSAGE}}
+                    <div class="message-content">
+                        <p>{{CUSTOM_MESSAGE}}</p>
+                    </div>
+                    {{/CUSTOM_MESSAGE}}
                 </td>
                 <td class="logo-cell">
                     <img src="cid:logo" alt="Hortifruti SL" title="Hortifruti SL" />

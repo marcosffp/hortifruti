@@ -119,17 +119,15 @@ public class BilletFactory {
       String enderecoCompleto =
           rua + ", " + numero + (complemento.isEmpty() ? "" : ", " + complemento);
 
-      // O Sicoob trunca silenciosamente (sem erro) os campos de endereço/bairro do pagador que
-      // excedem o limite do boleto, cortando o texto no meio da palavra. Tentamos primeiro sem o
-      // complemento — rua e número já identificam o endereço sozinhos — e, se mesmo assim não
-      // couber, cortamos o restante até o limite (preferindo cortar num espaço em vez de no meio de
-      // uma palavra, mas cortando de qualquer forma se necessário) em vez de bloquear a emissão.
-      if (enderecoCompleto.length() > ENDERECO_MAX_LENGTH && !complemento.isEmpty()) {
-        enderecoCompleto = rua + ", " + numero;
-      }
-
+      // O Sicoob trunca silenciosamente (sem erro) os campos de endereço/bairro do
+      // pagador que excedem o limite do boleto, cortando o texto no meio da palavra.
+      // Validamos aqui para avisar o usuário em vez de gerar um boleto com endereço cortado.
       if (enderecoCompleto.length() > ENDERECO_MAX_LENGTH) {
-        enderecoCompleto = truncateAteLimite(enderecoCompleto, ENDERECO_MAX_LENGTH);
+        throw new BilletException(
+            "Endereço do cliente muito longo para o boleto (máximo "
+                + ENDERECO_MAX_LENGTH
+                + " caracteres, incluindo rua, número e complemento). Reduza o complemento ou"
+                + " o endereço do cliente.");
       }
       // O cadastro de clientes já limita o bairro a 30 caracteres, mas clientes
       // cadastrados antes dessa limitação podem ter um bairro mais longo salvo.
@@ -158,19 +156,5 @@ public class BilletFactory {
               + "'",
           e);
     }
-  }
-
-  /**
-   * Corta {@code text} em até {@code maxLength} caracteres, preferindo recuar até o último espaço
-   * dentro do limite (evita cortar no meio de uma palavra) — mas corta no limite exato mesmo assim
-   * se não houver um espaço razoavelmente próximo do fim.
-   */
-  private String truncateAteLimite(String text, int maxLength) {
-    String truncated = text.substring(0, maxLength);
-    int lastSpace = truncated.lastIndexOf(' ');
-    if (lastSpace > maxLength * 0.6) {
-      return truncated.substring(0, lastSpace).trim();
-    }
-    return truncated.trim();
   }
 }

@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Permite acessar o dev server por outro host além de localhost (ex.: testar do celular pelo
+  // IP da rede local). Sem isso, o Next bloqueia o WebSocket de hot-reload por origem não
+  // autorizada, o que trava a hidratação do React (a página carrega mas nada reage a clique).
+  // Só afeta `next dev` — ignorado em build/produção. Atualize o IP se ele mudar (rede
+  // diferente, DHCP renovado) — no Mac: `ipconfig getifaddr en0`.
+  allowedDevOrigins: ["192.168.100.68"],
+  // A compressão gzip embutida do Next precisa acumular um bloco inteiro antes de liberar
+  // qualquer byte pro cliente — isso inclui as respostas proxeadas por `rewrites()` abaixo, como o
+  // SSE de `/api/compras/notas/stream` (ver CapturaSseEmitterRegistry). Resultado: a conexão do
+  // EventSource fica "aberta" no Network do DevTools, mas nenhum evento chega em tempo real, só
+  // quando o buffer enche ou a conexão fecha — na prática, obriga a recarregar a página pra ver
+  // qualquer atualização. Desligar a compressão aqui resolve; o Railway/proxy de produção já
+  // comprime na frente do Next de qualquer forma.
+  compress: false,
   // O proxy de rewrites do Next mata a conexão em 30s por padrão (http-proxy
   // interno, ver proxy-request.js). Relatórios como /transactions/export-complete
   // consultam APIs fiscais externas lentas e passam bem disso, então a resposta

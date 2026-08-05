@@ -21,37 +21,30 @@ export function useAuth() {
   const [environment, setEnvironment] = useState<string>("");
 
   const checkAuth = useCallback(async () => {
-    try {
-      let user = await authService.me();
+    let user = await authService.me();
 
-      // Na tela de login nunca existe sessão a renovar — sem essa checagem, todo
-      // acesso a /login sem sessão disparava um refresh fadado a falhar com 403.
-      if (!user && !publicPages.includes(pathname)) {
-        const refreshed = await authService.refresh();
-        if (refreshed) {
-          user = await authService.me();
-        }
+    // Na tela de login nunca existe sessão a renovar — sem essa checagem, todo
+    // acesso a /login sem sessão disparava um refresh fadado a falhar com 403.
+    if (!user && !publicPages.includes(pathname)) {
+      const refreshed = await authService.refresh();
+      if (refreshed) {
+        user = await authService.me();
       }
-
-      setIsAuthenticated(!!user);
-
-      if (user) {
-        setUserName(user.name || "");
-        setUserRoles(user.roles || []);
-        setEnvironment(user.environment || "");
-      } else {
-        setUserName("");
-        setUserRoles([]);
-        setEnvironment("");
-      }
-    } catch (error) {
-      // Não deu pra confirmar a sessão agora (rate limit, rede, resposta abortada por uma
-      // navegação concorrente) — mantém o estado atual em vez de deslogar; a próxima checagem
-      // (troca de página) tenta de novo.
-      console.error("Falha ao verificar sessão:", error);
-    } finally {
-      setIsLoading(false);
     }
+
+    setIsAuthenticated(!!user);
+
+    if (user) {
+      setUserName(user.name || "");
+      setUserRoles(user.roles || []);
+      setEnvironment(user.environment || "");
+    } else {
+      setUserName("");
+      setUserRoles([]);
+      setEnvironment("");
+    }
+
+    setIsLoading(false);
   }, [pathname]);
 
   useEffect(() => {

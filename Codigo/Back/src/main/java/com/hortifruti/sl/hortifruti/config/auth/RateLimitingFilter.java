@@ -18,17 +18,19 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
 
-  private static final Bandwidth DEFAULT_LIMIT =
+  private static final Bandwidth LIMITE_PADRAO =
       Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1)));
 
   /**
-   * /auth/me é uma checagem de sessão sem efeito colateral, disparada pelo front a cada navegação
-   * (AuthGuard/useAuth) — sem relação com força bruta, então recebe um limite bem mais folgado que
-   * os demais endpoints. Sem isso, navegação ativa normal esgota o limite padrão e o front interpreta
-   * o 429 resultante como "sessão expirada", derrubando o usuário para o login.
+   * {@code /pareamento/confirmar} é o único endpoint público novo da feature de dispositivo
+   * vinculado — sem cookie nem token, só o código de 6 dígitos de vida curta o protege (ver
+   * DispositivoVinculadoService) — então recebe um limite bem mais apertado que o padrão de 10/min,
+   * pra dificultar força bruta do código.
    */
-  private static final Map<String, Bandwidth> ENDPOINT_LIMITS =
-      Map.of("/auth/me", Bandwidth.classic(60, Refill.greedy(60, Duration.ofMinutes(1))));
+  private static final Map<String, Bandwidth> LIMITES_POR_ENDPOINT =
+      Map.of(
+          "/api/dispositivos/pareamento/confirmar",
+          Bandwidth.classic(5, Refill.greedy(5, Duration.ofMinutes(1))));
 
   private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
@@ -46,6 +48,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
       filterChain.doFilter(request, response);
     } else {
       response.setStatus(429);
+      response.setContentType("application/json");
       response
           .getWriter()
           .write("{\"error\": \"Too many requests to this endpoint. Please try again later.\"}");
@@ -53,7 +56,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
   }
 
   private Bucket createNewBucket(String endpoint) {
-    Bandwidth limit = ENDPOINT_LIMITS.getOrDefault(endpoint, DEFAULT_LIMIT);
+    Bandwidth limit = LIMITES_POR_ENDPOINT.getOrDefault(endpoint, LIMITE_PADRAO);
     return Bucket.builder().addLimit(limit).build();
   }
 }

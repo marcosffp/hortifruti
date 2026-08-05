@@ -376,6 +376,17 @@ R2_SECRET_ACCESS_KEY=secret_access_key_r2
 R2_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
 HML_R2_BUCKET_NAME=nome_do_bucket_hml
 PROD_R2_BUCKET_NAME=nome_do_bucket_prod
+
+# ── Gemini (extração de notas de compra via foto) ─
+# Mesma chave free tier em todos os ambientes — não varia por profile.
+GEMINI_API_KEY=sua_api_key_gemini
+# gemini-2.5-flash (default original) não é mais oferecido pra chaves novas — use o alias
+# estável abaixo, que a Google mantém apontando pro Flash mais recente disponível.
+GEMINI_MODEL=gemini-flash-latest
+# Latência real do free tier pra extração com response_schema variou entre ~17s e ~30s nos
+# testes (mesma imagem, chamadas consecutivas) — 15000 (default original da spec) estoura
+# quase sempre. 60000 dá folga de verdade.
+GEMINI_TIMEOUT_MS=60000
 ```
 
 ---

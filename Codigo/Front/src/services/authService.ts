@@ -1,7 +1,6 @@
 "use client";
 
 import { API_BASE_URL } from "@/config/api";
-import { markRefreshed } from "@/utils/authRefreshCoordinator";
 
 export interface AuthRequest {
   username: string;
@@ -33,13 +32,6 @@ export class LoginError extends Error {
 
 let pendingMeRequest: Promise<AuthUser | null> | null = null;
 let pendingRefreshRequest: Promise<boolean> | null = null;
-
-/**
- * Lançado quando não foi possível confirmar o estado de autenticação (429 de rate limit, rede
- * fora do ar). Diferente de um 401/403, isso não significa "sessão inválida" — quem chama deve
- * manter o estado atual em vez de deslogar o usuário.
- */
-export class TransientAuthCheckError extends Error {}
 
 export const authService = {
   async login(credentials: AuthRequest): Promise<AuthUser> {
@@ -82,24 +74,11 @@ export const authService = {
           credentials: "include",
         });
 
-        if (response.status === 429) {
-          throw new TransientAuthCheckError(
-            "Limite de requisições atingido ao verificar sessão.",
-          );
-        }
-
         if (!response.ok) return null;
 
-        try {
-          return await response.json();
-        } catch {
-          // Corpo vazio/truncado costuma ser uma navegação concorrente abortando a resposta em
-          // andamento (ex.: redirect pro /login disparado por outra chamada) — não é uma resposta
-          // "não autenticado" de verdade.
-          throw new TransientAuthCheckError(
-            "Resposta de /auth/me incompleta ao verificar sessão.",
-          );
-        }
+        return await response.json();
+      } catch {
+        return null;
       } finally {
         pendingMeRequest = null;
       }
@@ -118,15 +97,9 @@ export const authService = {
           credentials: "include",
         });
 
-        if (response.status === 429) {
-          throw new TransientAuthCheckError(
-            "Limite de requisições atingido ao renovar sessão.",
-          );
-        }
-
-        if (response.ok) markRefreshed();
-
         return response.ok;
+      } catch {
+        return false;
       } finally {
         pendingRefreshRequest = null;
       }

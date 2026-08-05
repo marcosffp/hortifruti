@@ -262,18 +262,11 @@ public class BulkNotificationService {
         java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
     variables.put("CURRENT_DATE", today.format(formatter));
     variables.put("GREETING", EmailGreetingUtil.timeOfDayGreeting());
+    variables.put("PERIOD_RANGE", EmailGreetingUtil.weekPeriodLabel(today));
     variables.put("SENDER_NAME", senderName);
 
-    // Mesmo template client-documents-clean.html do NotificationService.buildClientMessage — a
-    // saudação/despedida ficam fixas, só a frase de referência muda (texto custom ou período
-    // padrão dos últimos 7 dias).
-    String referenceMessage =
-        customMessage != null && !customMessage.isEmpty()
-            ? customMessage
-            : "Encaminhamos as informações referentes ao pedido realizado no período de "
-                + EmailGreetingUtil.weekPeriodLabel(today)
-                + ".";
-    variables.put("REFERENCE_MESSAGE", referenceMessage);
+    variables.put(DEFAULT_MESSAGE, "true");
+    variables.put(CUSTOM_MESSAGE, customMessage != null ? customMessage : EMPTY_STRING);
 
     return emailTemplateService.processTemplate("client-documents", variables);
   }

@@ -84,36 +84,17 @@ public class GmailSmtpEmailSender implements EmailSender {
 
   @Override
   public boolean sendSimpleEmail(String to, String subject, String text) {
-    return doSend(List.of(to), subject, text, null, null);
-  }
-
-  @Override
-  public boolean sendEmailWithAttachments(
-      String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
-    return doSend(List.of(to), subject, text, attachments, fileNames);
-  }
-
-  @Override
-  public boolean sendSimpleEmail(List<String> to, String subject, String text) {
     return doSend(to, subject, text, null, null);
   }
 
   @Override
   public boolean sendEmailWithAttachments(
-      List<String> to,
-      String subject,
-      String text,
-      List<byte[]> attachments,
-      List<String> fileNames) {
+      String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
     return doSend(to, subject, text, attachments, fileNames);
   }
 
   private boolean doSend(
-      List<String> to,
-      String subject,
-      String text,
-      List<byte[]> attachments,
-      List<String> fileNames) {
+      String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
     if (username == null || username.isBlank() || appPassword == null || appPassword.isBlank()) {
       throw new NotificationException(
           "Credenciais do Gmail não configuradas (GMAIL/GMAIL_PASSWORD)");
@@ -125,7 +106,7 @@ public class GmailSmtpEmailSender implements EmailSender {
       MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
       helper.setFrom(username);
-      helper.setTo(to.toArray(new String[0]));
+      helper.setTo(to);
       helper.setSubject(subject);
       helper.setText(text, true);
 

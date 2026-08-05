@@ -6,6 +6,11 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
 // 'self' e não é uma origem válida em CSP.
 const apiOrigin = /^https?:\/\//.test(apiUrl) ? apiUrl : "";
 
+// WebSocket de tempo real (ver useRealtimeSocket.ts) vai direto pro backend, nunca pelo proxy
+// same-origin de `/api` — precisa da própria entrada no connect-src, senão o navegador bloqueia
+// a conexão mesmo com o handshake sendo aceito pelo servidor.
+const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "";
+
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   // Em dev o React usa eval() para reconstruir stack traces; isso nunca
@@ -18,7 +23,7 @@ export function proxy(request: NextRequest) {
     `style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com`,
     `img-src 'self' data: blob:`,
     `font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com`,
-    `connect-src 'self' https://viacep.com.br${apiOrigin ? ` ${apiOrigin}` : ""}`,
+    `connect-src 'self' https://viacep.com.br${apiOrigin ? ` ${apiOrigin}` : ""}${wsUrl ? ` ${wsUrl}` : ""}`,
     `frame-src 'self' blob:`,
     `frame-ancestors 'none'`,
     `base-uri 'self'`,

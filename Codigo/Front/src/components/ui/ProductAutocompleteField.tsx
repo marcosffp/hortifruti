@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { FiscalProductType } from "@/types/purchaseType";
 
 // Faixa Unicode dos diacríticos combinantes (acentos após NFD); construída via charCode em vez de
@@ -97,12 +97,6 @@ function displayLabel(product: FiscalProductType): string {
   return `${product.code} — ${product.description}`;
 }
 
-// Espera o usuário parar de digitar antes de auto-resolver por match exato — sem isso, digitar
-// "3" pra chegar em "31" já seleciona sozinho um produto de código "3" (se existir), e digitar
-// "alface" pra chegar em "alface roxo" seleciona "Alface" assim que o texto bate exatamente com
-// esse outro produto, interrompendo a digitação em andamento.
-const AUTO_RESOLVE_DELAY_MS = 400;
-
 interface ProductAutocompleteFieldProps {
   products: FiscalProductType[];
   value: string;
@@ -126,23 +120,17 @@ export default function ProductAutocompleteField({
   const [query, setQuery] = useState(selected ? displayLabel(selected) : "");
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
-  const autoResolveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
 
-  useEffect(() => {
-    return () => {
-      if (autoResolveTimeoutRef.current) {
-        clearTimeout(autoResolveTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: só deve resincronizar o texto exibido quando o código selecionado (controlado pelo pai) mudar, não a cada render de `products`
+  // Depende também de `products`, não só de `value`: quando o pai já inicializa a linha com um
+  // código selecionado (ex.: sugestão de matching) mas o catálogo ainda está carregando, o
+  // catálogo chega DEPOIS do primeiro render sem que `value` mude — sem essa dependência o texto
+  // exibido nunca resincroniza e o campo fica com o código certo por baixo mas aparência vazia.
+  // Seguro: só reescreve `query` quando acha um produto pro `value` atual, então não atropela
+  // texto que o usuário está digitando (nesse caso `product` é undefined e o guard abaixo pula).
   useEffect(() => {
     const product = products.find((p) => p.code === value);
     if (product) setQuery(displayLabel(product));
-  }, [value]);
+  }, [value, products]);
 
   const suggestions = open ? getSuggestions(products, query) : [];
 
@@ -164,22 +152,10 @@ export default function ProductAutocompleteField({
     setQuery(text);
     setOpen(true);
     setHighlighted(0);
-
-    if (autoResolveTimeoutRef.current) {
-      clearTimeout(autoResolveTimeoutRef.current);
-    }
-    autoResolveTimeoutRef.current = setTimeout(
-      () => tryAutoResolve(text),
-      AUTO_RESOLVE_DELAY_MS,
-    );
+    tryAutoResolve(text);
   };
 
   const selectProduct = (product: FiscalProductType) => {
-    // Uma seleção explícita (clique ou Enter) cancela qualquer auto-resolução pendente do texto
-    // digitado antes — senão ela dispararia depois e sobrescreveria essa escolha.
-    if (autoResolveTimeoutRef.current) {
-      clearTimeout(autoResolveTimeoutRef.current);
-    }
     onSelect(product.code);
     setQuery(displayLabel(product));
     setOpen(false);

@@ -18,6 +18,7 @@ Configurações gerais do Spring (beans, clientes HTTP, inicialização de dados
 - `climate/` — cliente da API OpenWeather (ver `climate/README.md`).
 - `email/` — `RestTemplate` genérico usado pelo envio de e-mail (ver `email/README.md`).
 - `freight/` — propriedades de configuração de cálculo de frete (ver `freight/README.md`).
+- `gemini/` — `RestTemplate` dedicado à extração de notas via Gemini Vision, com timeout próprio (ver `gemini/README.md`).
 - `sicoob/` — cliente da API de Extrato (Conta Corrente v4) do Sicoob (ver `sicoob/README.md`).
 - `ssl/` — infraestrutura compartilhada de mTLS reaproveitada por BB e Sicoob (ver `ssl/README.md`).
 - `storage/` — configuração do cliente S3 para Cloudflare R2 (ver `storage/README.md`).

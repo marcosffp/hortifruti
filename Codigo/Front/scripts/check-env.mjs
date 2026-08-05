@@ -33,3 +33,17 @@ if (isProduction && !backendUrl.startsWith("https://")) {
   );
   process.exit(1);
 }
+
+// NEXT_PUBLIC_WS_URL (pareamento de dispositivo + fila de notas em tempo real) é opcional — sem
+// ela, a página só perde a atualização automática e continua funcionando via refresh manual. Mas
+// se alguém a definir com "ws://" numa build de produção (servida em https://), o navegador
+// bloqueia a conexão por mixed content sem erro nenhum visível — silenciosamente quebrado. Falhar
+// o build aqui é mais barato que descobrir isso em produção.
+const wsUrl = process.env.NEXT_PUBLIC_WS_URL;
+if (isProduction && wsUrl && !wsUrl.startsWith("wss://")) {
+  console.error(
+    `\nErro de build: NEXT_PUBLIC_WS_URL="${wsUrl}" precisa começar com "wss://" em produção ` +
+      '(uma página servida em https:// não pode abrir WebSocket "ws://" — mixed content).\n',
+  );
+  process.exit(1);
+}

@@ -54,15 +54,7 @@ export function installFetchInterceptor() {
       return response;
     }
 
-    let refreshed: boolean;
-    try {
-      refreshed = await authService.refresh();
-    } catch {
-      // Não deu pra renovar agora (rate limit/rede) — devolve a resposta 403 original em vez de
-      // forçar logout; a próxima ação do usuário tenta de novo.
-      return response;
-    }
-
+    const refreshed = await authService.refresh();
     if (!refreshed) {
       redirectToLogin();
       return response;

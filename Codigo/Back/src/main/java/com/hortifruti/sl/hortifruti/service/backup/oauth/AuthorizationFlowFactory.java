@@ -5,11 +5,11 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.gmail.GmailScopes;
 import com.hortifruti.sl.hortifruti.config.Base64FileDecoder;
 import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
-import com.hortifruti.sl.hortifruti.service.backup.auth.DatabaseDataStoreFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -22,8 +22,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AuthorizationFlowFactory {
 
+  private static final String TOKENS_DIRECTORY_PATH = "temp/google/tokens";
   private final Base64FileDecoder base64FileDecoder;
-  private final DatabaseDataStoreFactory databaseDataStoreFactory;
 
   protected OAuthFlowContext createFlowContext() {
     try {
@@ -45,13 +45,14 @@ public class AuthorizationFlowFactory {
       throws IOException {
 
     GoogleClientSecrets clientSecrets = loadClientSecrets();
+    ensureTokensDirectoryExists();
 
     return new GoogleAuthorizationCodeFlow.Builder(
             httpTransport,
             GsonFactory.getDefaultInstance(),
             clientSecrets,
             List.of(DriveScopes.DRIVE, GmailScopes.GMAIL_SEND))
-        .setDataStoreFactory(databaseDataStoreFactory)
+        .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
         .setAccessType("offline")
         .build();
   }
@@ -69,5 +70,12 @@ public class AuthorizationFlowFactory {
     return GoogleClientSecrets.load(
         GsonFactory.getDefaultInstance(),
         new InputStreamReader(new FileInputStream(credentialsFile), StandardCharsets.UTF_8));
+  }
+
+  private void ensureTokensDirectoryExists() {
+    java.io.File tokensDir = new java.io.File(TOKENS_DIRECTORY_PATH);
+    if (!tokensDir.exists()) {
+      tokensDir.mkdirs();
+    }
   }
 }

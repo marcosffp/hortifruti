@@ -47,6 +47,9 @@ public class GmailApiEmailSender implements EmailSender {
   @Value("${google.redirect.uri}")
   private String redirectUri;
 
+  @Value("${google.tokens.directory}")
+  private String tokensDirectoryPath;
+
   @Value("${GMAIL:}")
   private String senderAddress;
 
@@ -63,36 +66,17 @@ public class GmailApiEmailSender implements EmailSender {
 
   @Override
   public boolean sendSimpleEmail(String to, String subject, String text) {
-    return doSend(List.of(to), subject, text, null, null);
-  }
-
-  @Override
-  public boolean sendEmailWithAttachments(
-      String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
-    return doSend(List.of(to), subject, text, attachments, fileNames);
-  }
-
-  @Override
-  public boolean sendSimpleEmail(List<String> to, String subject, String text) {
     return doSend(to, subject, text, null, null);
   }
 
   @Override
   public boolean sendEmailWithAttachments(
-      List<String> to,
-      String subject,
-      String text,
-      List<byte[]> attachments,
-      List<String> fileNames) {
+      String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
     return doSend(to, subject, text, attachments, fileNames);
   }
 
   private boolean doSend(
-      List<String> to,
-      String subject,
-      String text,
-      List<byte[]> attachments,
-      List<String> fileNames) {
+      String to, String subject, String text, List<byte[]> attachments, List<String> fileNames) {
     try {
       // Verifica a autorização OAuth antes do endereço remetente: se a conta Google nunca
       // foi autorizada, é mais útil o usuário ver o link de autorização (acionável) do que o
@@ -137,6 +121,7 @@ public class GmailApiEmailSender implements EmailSender {
       CredentialConfig config =
           CredentialConfig.builder()
               .applicationName(APPLICATION_NAME)
+              .tokensDirectoryPath(tokensDirectoryPath)
               .redirectUri(redirectUri)
               .credentialsFile(base64FileDecoder.getGoogleDriveCredentialsFile())
               .authOrigin("notificacoes")
@@ -161,18 +146,14 @@ public class GmailApiEmailSender implements EmailSender {
   }
 
   private MimeMessage buildMimeMessage(
-      List<String> to,
-      String subject,
-      String text,
-      List<byte[]> attachments,
-      List<String> fileNames)
+      String to, String subject, String text, List<byte[]> attachments, List<String> fileNames)
       throws MessagingException {
     Session session = Session.getDefaultInstance(new Properties());
     MimeMessage mimeMessage = new MimeMessage(session);
     MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
     helper.setFrom(senderAddress);
-    helper.setTo(to.toArray(new String[0]));
+    helper.setTo(to);
     helper.setSubject(subject);
     helper.setText(text, true);
 

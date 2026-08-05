@@ -27,6 +27,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
   private final SecurityFilter securityFilter;
   private final RateLimitingFilter rateLimitingFilter;
+  private final DeviceTokenAuthFilter deviceTokenAuthFilter;
 
   @Value("${frontend.url}")
   private String frontendUrl;
@@ -39,52 +40,77 @@ public class SecurityConfig {
    *
    * <ul>
    *   <li>{@code /auth/**} (login/refresh/logout/me), {@code /swagger-ui/**}/{@code
-   *       /v3/api-docs/**} (docs, desabilitadas em prod — ver application-prod.properties) e {@code
-   *       /backup/oauth2callback} (callback do Google) precisam ser públicas por natureza do fluxo,
-   *       sem alternativa.
+   *       /v3/api-docs/**} (docs, desabilitadas em prod — ver application-prod.properties), {@code
+   *       /backup/oauth2callback} (callback do Google) e {@code
+   *       /api/dispositivos/pareamento/confirmar} (o celular ainda não tem cookie/JWT nesse momento
+   *       — a segurança do endpoint é o código de pareamento de vida curta e uso único, não uma
+   *       sessão) precisam ser públicas por natureza do fluxo, sem alternativa.
+   *   <li>{@code POST /api/compras/notas/capturas} é o único endpoint que um {@code deviceToken}
+   *       (ver {@link DeviceTokenAuthFilter}, autoridade {@code ROLE_DEVICE_CAPTURE}) pode acessar —
+   *       precisa de matcher próprio aqui porque a regra abaixo, no catch-all, deliberadamente não
+   *       inclui essa role.
    *   <li>Domínios de negócio (produtos, transações, recomendações, notificações) exigem {@code
    *       MANAGER}; leitura de clientes/usuários aceita {@code EMPLOYEE} ou {@code MANAGER}. Regras
    *       mais finas que a role (ex.: mutação x leitura dentro do mesmo domínio) devem usar
    *       {@code @PreAuthorize} no controller, perto do código que protegem, em vez de entrar aqui.
-   *   <li>Qualquer rota nova sem matcher explícito cai em {@code anyRequest().authenticated()} — ou
-   *       seja, qualquer usuário autenticado (independente do papel) consegue acessá-la a menos que
-   *       o controller declare {@code @PreAuthorize} explicitamente.
+   *   <li>Qualquer rota nova sem matcher explícito cai no catch-all {@code
+   *       anyRequest().hasAnyRole("EMPLOYEE", "MANAGER")} — de propósito, não {@code
+   *       .authenticated()}: como {@code ROLE_DEVICE_CAPTURE} também é uma autenticação válida
+   *       (populada pelo {@link DeviceTokenAuthFilter}), um catch-all baseado só em "autenticado"
+   *       deixaria qualquer endpoint sem {@code @PreAuthorize} explícito acessível por um celular
+   *       vinculado — inclusive os de outros módulos (boletos, NF-e, financeiro) que hoje contam só
+   *       com esta regra central e nenhum {@code @PreAuthorize} próprio. Exigir a role aqui garante
+   *       que um {@code deviceToken} nunca alcança nada além do que está explicitamente liberado
+   *       acima, mesmo que um controller novo esqueça de declarar sua própria checagem.
    * </ul>
    */
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    return http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-        .csrf(csrf -> csrf.disable())
-        .sessionManagement(
-            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers(
-                        "/auth",
-                        "/auth/logout",
-                        "/auth/refresh",
-                        "/auth/me",
-                        "/swagger-ui/**",
-                        "/v3/api-docs/**",
-                        "/backup/oauth2callback")
-                    .permitAll()
-                    .requestMatchers(org.springframework.http.HttpMethod.GET, "/clients/**")
-                    .hasAnyRole("EMPLOYEE", "MANAGER")
-                    .requestMatchers("/users/**")
-                    .hasRole("MANAGER")
-                    .requestMatchers("/products/**")
-                    .hasRole("MANAGER")
-                    .requestMatchers("/api/recommendations/**")
-                    .hasRole("MANAGER")
-                    .requestMatchers("/api/notifications/test/**")
-                    .hasRole("MANAGER")
-                    .requestMatchers("/api/notifications/**")
-                    .hasAnyRole("EMPLOYEE", "MANAGER")
-                    .anyRequest()
-                    .authenticated())
-        .addFilterBefore(rateLimitingFilter, BasicAuthenticationFilter.class)
-        .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
-        .build();
+    SecurityFilterChain chain =
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(
+                session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(
+                auth ->
+                    auth.requestMatchers(
+                            "/auth",
+                            "/auth/logout",
+                            "/auth/refresh",
+                            "/auth/me",
+                            "/swagger-ui/**",
+                            "/v3/api-docs/**",
+                            "/backup/oauth2callback",
+                            "/api/dispositivos/pareamento/confirmar")
+                        .permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/clients/**")
+                        .hasAnyRole("EMPLOYEE", "MANAGER")
+                        .requestMatchers("/users/**")
+                        .hasRole("MANAGER")
+                        .requestMatchers("/products/**")
+                        .hasRole("MANAGER")
+                        .requestMatchers("/api/recommendations/**")
+                        .hasRole("MANAGER")
+                        .requestMatchers("/api/notifications/test/**")
+                        .hasRole("MANAGER")
+                        .requestMatchers("/api/notifications/**")
+                        .hasAnyRole("EMPLOYEE", "MANAGER")
+                        .requestMatchers(
+                            org.springframework.http.HttpMethod.POST,
+                            "/api/compras/notas/capturas")
+                        .hasAnyRole("EMPLOYEE", "MANAGER", "DEVICE_CAPTURE")
+                        .anyRequest()
+                        .hasAnyRole("EMPLOYEE", "MANAGER"))
+            .addFilterBefore(rateLimitingFilter, BasicAuthenticationFilter.class)
+            // addFilterBefore(X, Y.class) exige que Y.class já tenha uma posição registrada no
+            // momento da chamada (não é resolvido só no .build()) — por isso securityFilter precisa
+            // ser registrado (ancorado a um filtro padrão do Spring Security) antes de qualquer
+            // outro
+            // filtro tentar se ancorar em SecurityFilter.class.
+            .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(deviceTokenAuthFilter, SecurityFilter.class)
+            .build();
+    return chain;
   }
 
   @Bean

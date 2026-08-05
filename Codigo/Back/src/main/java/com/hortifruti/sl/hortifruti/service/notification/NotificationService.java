@@ -14,10 +14,12 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
@@ -73,15 +75,27 @@ public class NotificationService {
             false, "Nenhum email de contabilidade configurado (ACCOUNTING_EMAIL).");
       }
 
-      // Uma única mensagem com todos os destinatários no "to" — assim todo mundo da contabilidade
-      // vê o mesmo email na mesma thread (com os outros destinatários visíveis), em vez de cada um
-      // receber uma mensagem separada e isolada.
-      boolean sent =
-          notificationCoordinator.sendEmailOnly(
-              recipients, subject, emailBody, fileContents, fileNames);
+      boolean anySent = false;
+      for (String recipient : recipients) {
+        try {
+          boolean sent =
+              notificationCoordinator.sendEmailOnly(
+                  recipient, subject, emailBody, fileContents, fileNames);
+          anySent = anySent || sent;
+        } catch (NotificationException e) {
+          if (e.getMessage() != null && e.getMessage().contains("Autorização")) {
+            // Falha de autorização (token OAuth do Gmail expirado/revogado) afeta todos os
+            // destinatários igualmente — não adianta continuar tentando os próximos, e o front
+            // precisa receber essa exceção para mostrar o link de reautorização ao usuário.
+            throw e;
+          }
+          log.error(
+              "Falha ao enviar email de contabilidade para {}: {}", recipient, e.getMessage());
+        }
+      }
 
       return new NotificationResponse(
-          sent, sent ? "Email enviado com sucesso" : "Falha no envio do email");
+          anySent, anySent ? "Email enviado com sucesso" : "Falha no envio do email");
 
     } catch (IOException e) {
       throw new NotificationException("Erro ao processar arquivos: " + e.getMessage());
@@ -213,18 +227,11 @@ public class NotificationService {
     LocalDate today = EmailGreetingUtil.today();
     variables.put("CURRENT_DATE", today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
     variables.put("GREETING", EmailGreetingUtil.timeOfDayGreeting());
+    variables.put("PERIOD_RANGE", EmailGreetingUtil.weekPeriodLabel(today));
     variables.put("SENDER_NAME", senderName);
 
-    // A saudação e a despedida são sempre fixas — só a frase de referência ao pedido muda: usa o
-    // texto que o front gerou/o usuário editou (Mês ou Período) quando presente, senão cai no
-    // período padrão (últimos 7 dias) calculado aqui mesmo.
-    String referenceMessage =
-        request.customMessage() != null && !request.customMessage().isEmpty()
-            ? request.customMessage()
-            : "Encaminhamos as informações referentes ao pedido realizado no período de "
-                + EmailGreetingUtil.weekPeriodLabel(today)
-                + ".";
-    variables.put("REFERENCE_MESSAGE", referenceMessage);
+    variables.put("DEFAULT_MESSAGE", "true");
+    variables.put("CUSTOM_MESSAGE", request.customMessage() != null ? request.customMessage() : "");
 
     return emailTemplateService.processTemplate("client-documents", variables);
   }

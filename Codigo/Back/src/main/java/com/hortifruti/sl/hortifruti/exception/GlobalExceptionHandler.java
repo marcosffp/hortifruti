@@ -2,6 +2,8 @@ package com.hortifruti.sl.hortifruti.exception;
 
 import com.hortifruti.sl.hortifruti.exception.auth.AccountLockedException;
 import com.hortifruti.sl.hortifruti.exception.auth.AuthException;
+import com.hortifruti.sl.hortifruti.exception.auth.DispositivoException;
+import com.hortifruti.sl.hortifruti.exception.auth.DispositivoNaoEncontradoException;
 import com.hortifruti.sl.hortifruti.exception.auth.TokenException;
 import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
 import com.hortifruti.sl.hortifruti.exception.bb.BBApiException;
@@ -13,8 +15,12 @@ import com.hortifruti.sl.hortifruti.exception.freight.DistanceException;
 import com.hortifruti.sl.hortifruti.exception.freight.FreightException;
 import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
+import com.hortifruti.sl.hortifruti.exception.purchase.CapturaNotaPendenteNaoEncontradaException;
 import com.hortifruti.sl.hortifruti.exception.purchase.ClientException;
 import com.hortifruti.sl.hortifruti.exception.purchase.CombinedScoreException;
+import com.hortifruti.sl.hortifruti.exception.purchase.GeminiExtractionException;
+import com.hortifruti.sl.hortifruti.exception.purchase.InvalidNotaFileException;
+import com.hortifruti.sl.hortifruti.exception.purchase.NotaFileTooLargeException;
 import com.hortifruti.sl.hortifruti.exception.purchase.PurchaseException;
 import com.hortifruti.sl.hortifruti.exception.sicoob.SicoobExtratoException;
 import com.hortifruti.sl.hortifruti.exception.storage.StorageException;
@@ -88,6 +94,21 @@ public class GlobalExceptionHandler {
       TokenException ex, HttpServletRequest request) {
     log.warn("Erro de token em {}: {}", request.getRequestURI(), ex.getMessage());
     return errorResponse(HttpStatus.FORBIDDEN, "Erro de Token", ex.getMessage());
+  }
+
+  @ExceptionHandler(DispositivoException.class)
+  public ResponseEntity<Map<String, String>> handleDispositivoException(
+      DispositivoException ex, HttpServletRequest request) {
+    log.warn(
+        "Erro de pareamento de dispositivo em {}: {}", request.getRequestURI(), ex.getMessage());
+    return errorResponse(HttpStatus.BAD_REQUEST, "Erro de Pareamento", ex.getMessage());
+  }
+
+  @ExceptionHandler(DispositivoNaoEncontradoException.class)
+  public ResponseEntity<Map<String, String>> handleDispositivoNaoEncontradoException(
+      DispositivoNaoEncontradoException ex, HttpServletRequest request) {
+    log.warn("Dispositivo não encontrado em {}: {}", request.getRequestURI(), ex.getMessage());
+    return errorResponse(HttpStatus.NOT_FOUND, "Dispositivo Não Encontrado", ex.getMessage());
   }
 
   /**
@@ -245,6 +266,38 @@ public class GlobalExceptionHandler {
     log.warn("Erro no processamento da compra em {}: {}", request.getRequestURI(), ex.getMessage());
     return errorResponse(
         HttpStatus.BAD_REQUEST, "Erro no Processamento da Compra", ex.getMessage());
+  }
+
+  @ExceptionHandler(InvalidNotaFileException.class)
+  public ResponseEntity<Map<String, String>> handleInvalidNotaFileException(
+      InvalidNotaFileException ex, HttpServletRequest request) {
+    log.warn("Arquivo de nota inválido em {}: {}", request.getRequestURI(), ex.getMessage());
+    return errorResponse(HttpStatus.BAD_REQUEST, "Arquivo Inválido", ex.getMessage());
+  }
+
+  @ExceptionHandler(NotaFileTooLargeException.class)
+  public ResponseEntity<Map<String, String>> handleNotaFileTooLargeException(
+      NotaFileTooLargeException ex, HttpServletRequest request) {
+    log.warn(
+        "Arquivo de nota excede o tamanho máximo em {}: {}",
+        request.getRequestURI(),
+        ex.getMessage());
+    return errorResponse(HttpStatus.CONTENT_TOO_LARGE, "Arquivo Muito Grande", ex.getMessage());
+  }
+
+  @ExceptionHandler(CapturaNotaPendenteNaoEncontradaException.class)
+  public ResponseEntity<Map<String, String>> handleCapturaNotaPendenteNaoEncontradaException(
+      CapturaNotaPendenteNaoEncontradaException ex, HttpServletRequest request) {
+    log.warn("Captura de nota não encontrada em {}: {}", request.getRequestURI(), ex.getMessage());
+    return errorResponse(HttpStatus.NOT_FOUND, "Captura Não Encontrada", ex.getMessage());
+  }
+
+  @ExceptionHandler(GeminiExtractionException.class)
+  public ResponseEntity<Map<String, String>> handleGeminiExtractionException(
+      GeminiExtractionException ex, HttpServletRequest request) {
+    log.error(
+        "Erro na extração de nota via Gemini em {}: {}", request.getRequestURI(), ex.getMessage());
+    return errorResponse(HttpStatus.BAD_GATEWAY, "Erro na Extração da Nota", ex.getMessage());
   }
 
   @ExceptionHandler(ProductException.class)

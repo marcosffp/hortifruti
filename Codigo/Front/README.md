@@ -217,6 +217,20 @@ BACKEND_URL=http://localhost:8080
 # first-party (evita o bloqueio de cookies cross-site em Safari/iOS).
 NEXT_PUBLIC_API_URL=/api
 
+# WebSocket de tempo real (pareamento de dispositivo + fila de notas — Módulo Acesso /
+# Gerenciamento de Compras). Conecta direto no backend, não passa pelo rewrite de /api. Opcional
+# (sem ela a tela só perde a atualização automática, funciona via refresh manual), mas em
+# produção PRECISA ser wss:// — o build falha (check-env.mjs) se vier como ws:// numa build de
+# produção, já que uma página https:// não pode abrir WebSocket ws:// (mixed content).
+NEXT_PUBLIC_WS_URL=ws://localhost:8080
+
+# Só pra montar o link/QR de pareamento de dispositivo quando o PC que gera o código está numa
+# origem diferente da que o celular precisa acessar (ex.: dev local, PC em localhost por causa do
+# cookie de sessão, celular só alcançando pelo IP da rede). Deixe vazio em produção — o código já
+# cai em window.location.origin sozinho, que é a origem certa quando PC e celular usam o mesmo
+# domínio público.
+NEXT_PUBLIC_PAREAMENTO_URL=
+
 # Chave da API do Google Maps (autocomplete de endereços / cálculo de frete)
 GOOGLE_MAPS_KEY=sua_api_key_google_maps
 
@@ -268,7 +282,8 @@ npm run check-types   # Checagem de tipos TypeScript (tsc --noEmit)
 ### Observações importantes
 
 - ⚠️ **`BACKEND_URL`** deve apontar para o backend correspondente (local ou produção) — é o destino do *rewrite* de `/api/*`
-- ⚠️ Em produção, **`NEXT_PUBLIC_API_URL`** precisa ser um caminho relativo (ex.: `/api`) e **`BACKEND_URL`** precisa ser `https://` — o build falha caso contrário (`scripts/check-env.mjs`)
+- ⚠️ Em produção, **`NEXT_PUBLIC_API_URL`** precisa ser um caminho relativo (ex.: `/api`), **`BACKEND_URL`** precisa ser `https://`, e **`NEXT_PUBLIC_WS_URL`** (se definida) precisa ser `wss://` — o build falha caso contrário (`scripts/check-env.mjs`)
+- ⚠️ O backend também precisa de **`FRONTEND_URL`**/**`BACKEND_URL`** corretos (as versões `https://` reais, não `localhost`) — além de CORS, eles definem as origens aceitas no handshake do WebSocket de tempo real (`RealtimeWebSocketConfig`)
 - ⚠️ Variáveis com prefixo **`NEXT_PUBLIC_`** ficam expostas no bundle do cliente — nunca usar para segredos
 - 🗺️ O módulo de frete depende de `GOOGLE_MAPS_KEY` (autocomplete) e do serviço público de roteamento OSRM (Leaflet)
 - 🔑 A sessão é mantida em um cookie `httpOnly` emitido pelo backend — o frontend nunca lê nem decodifica o JWT, apenas chama `GET /auth/me` para saber quem está autenticado e com quais papéis

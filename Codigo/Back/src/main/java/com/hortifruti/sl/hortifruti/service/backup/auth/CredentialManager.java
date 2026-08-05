@@ -7,6 +7,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.gmail.GmailScopes;
 import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
@@ -26,7 +27,6 @@ public class CredentialManager {
   private static final List<String> SCOPES = List.of(DriveScopes.DRIVE, GmailScopes.GMAIL_SEND);
   private final TokenValidator tokenValidator;
   private final TokenExceptionHandler tokenExceptionHandler;
-  private final DatabaseDataStoreFactory databaseDataStoreFactory;
 
   public Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT, CredentialConfig config)
       throws IOException {
@@ -41,7 +41,8 @@ public class CredentialManager {
 
     return new GoogleAuthorizationCodeFlow.Builder(
             httpTransport, JSON_FACTORY, clientSecrets, SCOPES)
-        .setDataStoreFactory(databaseDataStoreFactory)
+        .setDataStoreFactory(
+            new FileDataStoreFactory(new java.io.File(config.getTokensDirectoryPath())))
         .setAccessType("offline")
         .build();
   }
