@@ -231,8 +231,8 @@ export default function DispositivosVinculados() {
                       {dispositivo.nome}
                     </p>
                     <p className="text-xs text-gray-500 truncate">
-                      Pareado em {formatarData(dispositivo.pareadoEm)} —
-                      último uso: {formatarData(dispositivo.ultimoUsoEm)}
+                      Pareado em {formatarData(dispositivo.pareadoEm)} — último
+                      uso: {formatarData(dispositivo.ultimoUsoEm)}
                     </p>
                   </div>
                 </div>
