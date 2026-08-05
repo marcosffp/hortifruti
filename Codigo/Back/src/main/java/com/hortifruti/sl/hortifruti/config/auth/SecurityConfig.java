@@ -45,6 +45,12 @@ public class SecurityConfig {
    *       /api/dispositivos/pareamento/confirmar} (o celular ainda não tem cookie/JWT nesse momento
    *       — a segurança do endpoint é o código de pareamento de vida curta e uso único, não uma
    *       sessão) precisam ser públicas por natureza do fluxo, sem alternativa.
+   *   <li>{@code /ws/realtime} nunca carrega o cookie {@code auth_token} (conecta direto no domínio
+   *       do backend, fora do rewrite same-origin do Next — ver {@code useRealtimeSocket.ts}), então
+   *       cai fora do modelo de sessão/role daqui por natureza; quem autentica o handshake é o
+   *       {@code AuthHandshakeInterceptor}, trocando um ticket de uso único (ver {@link
+   *       com.hortifruti.sl.hortifruti.service.realtime.RealtimeTicketService}) — o próprio ticket só
+   *       é emitido para quem já passou pelo catch-all abaixo em {@code /realtime/ws-ticket}.
    *   <li>{@code POST /api/compras/notas/capturas} é o único endpoint que um {@code deviceToken}
    *       (ver {@link DeviceTokenAuthFilter}, autoridade {@code ROLE_DEVICE_CAPTURE}) pode acessar —
    *       precisa de matcher próprio aqui porque a regra abaixo, no catch-all, deliberadamente não
@@ -81,7 +87,8 @@ public class SecurityConfig {
                             "/swagger-ui/**",
                             "/v3/api-docs/**",
                             "/backup/oauth2callback",
-                            "/api/dispositivos/pareamento/confirmar")
+                            "/api/dispositivos/pareamento/confirmar",
+                            "/ws/realtime")
                         .permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/clients/**")
                         .hasAnyRole("EMPLOYEE", "MANAGER")
