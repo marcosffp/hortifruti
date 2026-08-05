@@ -55,6 +55,14 @@ public class Client {
   @Column(nullable = false)
   private boolean onlyBillet;
 
+  /**
+   * Se {@code true}, a foto original da nota é mantida no R2 quando uma compra desse cliente vem
+   * de uma captura por celular (ver {@code CapturaNotaPendenteService#confirmarComoCompra}); se
+   * {@code false} (padrão), só os dados extraídos são guardados e a foto é descartada.
+   */
+  @Column(nullable = false)
+  private boolean requiresPurchaseProof;
+
   @Column(nullable = true)
   private String stateRegistration;
 

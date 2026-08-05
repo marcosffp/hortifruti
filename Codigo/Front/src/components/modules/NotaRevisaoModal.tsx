@@ -5,10 +5,31 @@ import { useEffect, useState } from "react";
 import ClientAutocompleteField from "@/components/ui/ClientAutocompleteField";
 import MaskedDecimalInput from "@/components/ui/MaskedDecimalInput";
 import ProductAutocompleteField from "@/components/ui/ProductAutocompleteField";
+import { API_BASE_URL } from "@/config/api";
 import { clientService } from "@/services/clientService";
 import { fiscalProductService } from "@/services/fiscalProductService";
+import { showError, showSuccess } from "@/services/notificationService";
 import type { ClientSelectionInfo } from "@/types/clientType";
 import type { FiscalProductType } from "@/types/purchaseType";
+import { todaySaoPaulo } from "@/utils/dateUtils";
+
+async function extrairMensagemErro(
+  response: Response,
+  fallback: string,
+): Promise<string> {
+  const body = await response.json().catch(() => null);
+  return body?.message || body?.error || fallback;
+}
+
+// A "data lida" vem da OCR como texto solto (dd/mm/aaaa) — tenta converter pra ISO (o formato que
+// <input type="date"> e o backend esperam); se não bater com esse formato, quem chama cai pro
+// default de hoje em vez de mandar uma data inválida/vazia pro backend.
+function parseDataLidaParaIso(dataLida: string | null): string | null {
+  const match = dataLida?.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return null;
+  const [, dia, mes, ano] = match;
+  return `${ano}-${mes}-${dia}`;
+}
 
 export type ProdutoSugerido = {
   id: number;
@@ -118,15 +139,24 @@ function formatCurrency(value: number) {
 }
 
 interface NotaRevisaoModalProps {
+  /**
+   * Ausente só na tela de dev que testa `/api/compras/notas/extrair` direto, sem passar pela fila
+   * de capturas — nesse caso não existe compra pra lançar, só a comparação visual.
+   */
+  capturaId?: number;
   imageUrl: string;
   extraction: NotaExtracaoResponse;
   onClose: () => void;
+  /** Chamado após confirmar a compra com sucesso — quem usa deve fechar o modal e recarregar a fila. */
+  onConfirmado?: () => void;
 }
 
 export default function NotaRevisaoModal({
+  capturaId,
   imageUrl,
   extraction,
   onClose,
+  onConfirmado,
 }: NotaRevisaoModalProps) {
   const [products, setProducts] = useState<FiscalProductType[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -134,10 +164,14 @@ export default function NotaRevisaoModal({
   const [clienteId, setClienteId] = useState<number | null>(null);
   const [clienteNome, setClienteNome] = useState(extraction.cliente ?? "");
   const [data, setData] = useState(extraction.data ?? "");
+  const [purchaseDate, setPurchaseDate] = useState(
+    () => parseDataLidaParaIso(extraction.data) ?? todaySaoPaulo(),
+  );
   const [rows, setRows] = useState<RevisaoRow[]>(
     extraction.itens.map(itemToRow),
   );
   const [zoom, setZoom] = useState(1);
+  const [confirmando, setConfirmando] = useState(false);
 
   useEffect(() => {
     fiscalProductService
@@ -179,6 +213,49 @@ export default function NotaRevisaoModal({
 
   const removeRow = (index: number) => {
     setRows((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const podeConfirmar =
+    capturaId !== undefined && clienteId !== null && rows.length > 0;
+
+  const confirmarCompra = async () => {
+    if (!podeConfirmar || clienteId === null || capturaId === undefined) return;
+
+    setConfirmando(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/compras/notas/pendentes/${capturaId}/confirmar`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            clientId: clienteId,
+            purchaseDate,
+            items: rows.map((row) => ({
+              code: row.code,
+              quantity: row.quantity,
+              price: row.price,
+            })),
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          await extrairMensagemErro(response, "Falha ao lançar a compra."),
+        );
+      }
+
+      showSuccess("Compra lançada com sucesso!");
+      onConfirmado?.();
+    } catch (error) {
+      showError(
+        error instanceof Error ? error.message : "Falha ao lançar a compra.",
+      );
+    } finally {
+      setConfirmando(false);
+    }
   };
 
   const totalCalculado = rows.reduce((sum, row) => sum + row.total, 0);
@@ -262,7 +339,7 @@ export default function NotaRevisaoModal({
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <p className="block text-xs font-medium text-gray-500 uppercase mb-1">
                   Cliente{" "}
@@ -293,6 +370,21 @@ export default function NotaRevisaoModal({
                   value={data}
                   onChange={(e) => setData(e.target.value)}
                   placeholder="dd/mm/aaaa"
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="revisao-data-compra"
+                  className="block text-xs font-medium text-gray-500 uppercase mb-1"
+                >
+                  Data da compra (usada ao lançar)
+                </label>
+                <input
+                  id="revisao-data-compra"
+                  type="date"
+                  value={purchaseDate}
+                  onChange={(e) => setPurchaseDate(e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
               </div>
@@ -420,18 +512,34 @@ export default function NotaRevisaoModal({
           </div>
         </div>
 
-        <div className="flex justify-between items-center p-4 border-t border-gray-300 shrink-0">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 p-4 border-t border-gray-300 shrink-0">
           <p className="text-xs text-gray-500">
-            Esta revisão ainda não cria a compra automaticamente — use-a pra
-            conferir os dados antes de lançar a compra manualmente.
+            {capturaId === undefined
+              ? "Revisão isolada de teste — não está ligada a nenhuma captura pendente."
+              : podeConfirmar
+                ? "Confira os itens e o cliente antes de lançar a compra."
+                : "Selecione um cliente do cadastro pra poder lançar a compra."}
           </p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-          >
-            Fechar
-          </button>
+          <div className="flex gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={confirmando}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
+            >
+              Fechar
+            </button>
+            {capturaId !== undefined && (
+              <button
+                type="button"
+                onClick={confirmarCompra}
+                disabled={!podeConfirmar || confirmando}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {confirmando ? "Lançando..." : "Confirmar e lançar compra"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

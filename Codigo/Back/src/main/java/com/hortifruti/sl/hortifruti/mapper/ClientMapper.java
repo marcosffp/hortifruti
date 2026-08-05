@@ -15,6 +15,7 @@ public interface ClientMapper {
   @Mapping(source = "stateIndicator", target = "stateIndicator")
   @Mapping(source = "cideCode", target = "cideCode")
   @Mapping(source = "onlyBillet", target = "onlyBillet")
+  @Mapping(source = "requiresPurchaseProof", target = "requiresPurchaseProof")
   Client toClient(ClientRequest clientRequest);
 
   @Mapping(source = "id", target = "id")
@@ -28,6 +29,7 @@ public interface ClientMapper {
   @Mapping(source = "stateRegistration", target = "stateRegistration")
   @Mapping(source = "stateIndicator", target = "stateIndicator")
   @Mapping(source = "onlyBillet", target = "onlyBillet")
+  @Mapping(source = "requiresPurchaseProof", target = "requiresPurchaseProof")
   @Mapping(source = "lastPurchaseDate", target = "lastPurchaseDate")
   // totalPurchaseValue não vem mais da entidade (contador mutável que dessincronizava) —
   // é preenchido em ClientService a partir da soma real das compras do cliente.

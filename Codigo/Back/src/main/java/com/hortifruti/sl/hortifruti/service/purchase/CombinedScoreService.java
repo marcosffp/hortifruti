@@ -4,6 +4,7 @@ import com.hortifruti.sl.hortifruti.dto.invoice.OpenInvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.PurchaseImageResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.WildcardBilletRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientLastGroupingResponse;
 import com.hortifruti.sl.hortifruti.exception.purchase.ClientException;
@@ -112,6 +113,11 @@ public class CombinedScoreService {
     groupedProducts.forEach(product -> product.setCombinedScore(savedCombinedScore));
 
     productGrouperRepository.saveAll(groupedProducts);
+
+    // Vincula as compras de origem ao agrupamento — sem isso não há como depois descobrir quais
+    // compras (e fotos de comprovante, se houver) compuseram este agrupamento específico.
+    purchases.forEach(purchase -> purchase.setCombinedScoreId(savedCombinedScore.getId()));
+    purchaseRepository.saveAll(purchases);
   }
 
   @Transactional
@@ -207,6 +213,16 @@ public class CombinedScoreService {
             cs ->
                 new ClientLastGroupingResponse(
                     cs.getClientId(), cs.getConfirmedAt(), cs.getTotalValue()))
+        .toList();
+  }
+
+  /** Compras deste agrupamento que têm foto de comprovante anexada — ver {@link Purchase}. */
+  @Transactional(readOnly = true)
+  public List<PurchaseImageResponse> listImagesByCombinedScoreId(Long combinedScoreId) {
+    return purchaseRepository
+        .findByCombinedScoreIdAndImagemR2KeyIsNotNull(combinedScoreId)
+        .stream()
+        .map(p -> new PurchaseImageResponse(p.getId(), p.getPurchaseDate(), p.getTotal()))
         .toList();
   }
 

@@ -15,5 +15,6 @@ public record ClientResponse(
     String stateIndicator,
     String cideCode,
     boolean onlyBillet,
+    boolean requiresPurchaseProof,
     LocalDate lastPurchaseDate,
     BigDecimal totalPurchaseValue) {}

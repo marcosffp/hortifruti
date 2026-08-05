@@ -41,3 +41,9 @@ export interface ClientLastGroupingType {
   confirmedAt: string | null;
   totalValue: number | null;
 }
+
+export interface PurchaseImageType {
+  purchaseId: number;
+  purchaseDate: string;
+  total: number;
+}

@@ -64,6 +64,7 @@ public class ClientService {
         response.stateIndicator(),
         response.cideCode(),
         response.onlyBillet(),
+        response.requiresPurchaseProof(),
         response.lastPurchaseDate(),
         total);
   }

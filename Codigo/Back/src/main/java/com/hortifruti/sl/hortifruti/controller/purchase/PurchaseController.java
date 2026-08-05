@@ -76,6 +76,15 @@ public class PurchaseController {
     return ResponseEntity.ok(products);
   }
 
+  /** Foto de comprovante da compra (ver {@code Client#requiresPurchaseProof}). */
+  @GetMapping("/{id}/imagem")
+  public ResponseEntity<byte[]> getImagem(@PathVariable Long id) {
+    PurchaseService.ImagemCompra imagem = purchaseService.buscarImagem(id);
+    return ResponseEntity.ok()
+        .contentType(MediaType.parseMediaType(imagem.contentType()))
+        .body(imagem.bytes());
+  }
+
   @PreAuthorize("hasRole('MANAGER')")
   @PostMapping(value = "/{id}/products", consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<InvoiceProductResponse> addInvoiceProduct(

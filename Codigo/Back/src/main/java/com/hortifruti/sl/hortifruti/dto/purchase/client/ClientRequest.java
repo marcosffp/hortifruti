@@ -14,4 +14,5 @@ public record ClientRequest(
     String stateRegistration,
     Integer stateIndicator,
     String cideCode,
-    boolean onlyBillet) {}
+    boolean onlyBillet,
+    boolean requiresPurchaseProof) {}

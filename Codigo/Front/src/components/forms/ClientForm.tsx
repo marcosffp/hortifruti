@@ -41,6 +41,7 @@ export interface ClientFormData {
   stateIndicator: string;
   cideCode: string;
   onlyBillet: string;
+  requiresPurchaseProof: string;
 }
 
 interface ClientFormProps {
@@ -77,6 +78,7 @@ export default function ClientForm({
     stateIndicator: "9", // Padrão: Não contribuinte
     cideCode: SANTA_LUZIA_CIDE_CODE,
     onlyBillet: "false",
+    requiresPurchaseProof: "false",
     ...initialData,
   });
 
@@ -865,6 +867,31 @@ export default function ClientForm({
                 <p className="text-xs text-gray-500 mt-1">
                   Selecione "Somente Boleto" se o cliente nunca deve receber
                   nota fiscal.
+                </p>
+              </div>
+              <div>
+                <label
+                  htmlFor="requiresPurchaseProof"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Exige Comprovante de Compra (Foto) *
+                </label>
+                <select
+                  id="requiresPurchaseProof"
+                  name="requiresPurchaseProof"
+                  value={formData.requiresPurchaseProof}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="false">Não precisa comprovar</option>
+                  <option value="true">Precisa anexar foto da nota</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Selecione "Precisa anexar foto da nota" para manter a foto da
+                  nota como comprovante quando a compra vier de uma captura por
+                  celular; caso contrário, só os dados extraídos são
+                  guardados e a foto é descartada.
                 </p>
               </div>
             </div>

@@ -15,6 +15,7 @@ import com.hortifruti.sl.hortifruti.repository.product.FiscalProductRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.InvoiceProductRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
+import com.hortifruti.sl.hortifruti.service.storage.R2StorageService;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -38,6 +39,7 @@ public class PurchaseService {
   private final InvoiceProductMapper invoiceProductMapper;
   private final InvoiceProductRepository invoiceProductRepository;
   private final FiscalProductRepository fiscalProductRepository;
+  private final R2StorageService r2StorageService;
 
   @Transactional
   public Purchase processPurchaseFile(MultipartFile file) throws IOException {
@@ -194,6 +196,29 @@ public class PurchaseService {
                     purchase.getTotal(),
                     purchase.getUpdatedAt()));
   }
+
+  /**
+   * Foto de comprovante anexada à compra (ver {@code CapturaNotaPendenteService#confirmarComoCompra}
+   * e {@code Client#requiresPurchaseProof}) — a extensão vem da própria chave R2 (gerada em {@code
+   * StorageKeyGenerator}), então não precisa de uma coluna própria de content-type.
+   */
+  @Transactional(readOnly = true)
+  public ImagemCompra buscarImagem(Long purchaseId) {
+    Purchase purchase =
+        purchaseRepository
+            .findById(purchaseId)
+            .orElseThrow(
+                () -> new PurchaseException("Compra não encontrada com o ID: " + purchaseId));
+
+    if (purchase.getImagemR2Key() == null) {
+      throw new PurchaseException("Esta compra não tem foto de comprovante anexada.");
+    }
+
+    String contentType = purchase.getImagemR2Key().endsWith(".png") ? "image/png" : "image/jpeg";
+    return new ImagemCompra(r2StorageService.download(purchase.getImagemR2Key()), contentType);
+  }
+
+  public record ImagemCompra(byte[] bytes, String contentType) {}
 
   @Transactional(readOnly = true)
   public List<InvoiceProductResponse> getInvoiceProductsByPurchaseId(Long purchaseId) {

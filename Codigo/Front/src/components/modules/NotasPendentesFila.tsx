@@ -210,9 +210,14 @@ export default function NotasPendentesFila() {
 
       {revisando?.captura.extracao && (
         <NotaRevisaoModal
+          capturaId={revisando.captura.id}
           imageUrl={revisando.imageUrl}
           extraction={revisando.captura.extracao}
           onClose={fecharRevisao}
+          onConfirmado={() => {
+            fecharRevisao();
+            carregarPendentes();
+          }}
         />
       )}
     </div>

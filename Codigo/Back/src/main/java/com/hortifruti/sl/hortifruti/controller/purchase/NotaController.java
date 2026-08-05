@@ -2,8 +2,10 @@ package com.hortifruti.sl.hortifruti.controller.purchase;
 
 import com.hortifruti.sl.hortifruti.dto.purchase.CapturaIniciadaResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.CapturaPendenteResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.ManualPurchaseRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.NotaExtracaoResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.NotaUploadResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.PurchaseResponse;
 import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.service.purchase.CapturaNotaPendenteService;
 import com.hortifruti.sl.hortifruti.service.purchase.GeminiExtractionService;
@@ -18,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -76,6 +79,18 @@ public class NotaController {
   public ResponseEntity<Void> descartar(@PathVariable Long id) {
     capturaNotaPendenteService.descartar(id, usuarioAutenticadoId());
     return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * Confirma a captura revisada como uma compra real — ver {@code
+   * CapturaNotaPendenteService#confirmarComoCompra} para a decisão de manter ou descartar a foto.
+   */
+  @PreAuthorize("hasAnyRole('MANAGER', 'EMPLOYEE')")
+  @PostMapping(value = "/pendentes/{id}/confirmar", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<PurchaseResponse> confirmarCaptura(
+      @PathVariable Long id, @RequestBody ManualPurchaseRequest request) {
+    return ResponseEntity.ok(
+        capturaNotaPendenteService.confirmarComoCompra(id, usuarioAutenticadoId(), request));
   }
 
   /** Foto original da captura, pra tela de revisão comparar lado a lado com a extração. */

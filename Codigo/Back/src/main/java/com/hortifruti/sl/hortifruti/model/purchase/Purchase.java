@@ -38,6 +38,23 @@ public class Purchase {
   @Column(name = "total", nullable = false)
   private BigDecimal total;
 
+  /**
+   * Chave no R2 da foto original da nota, só preenchida quando a compra veio de uma captura por
+   * celular E o cliente exige comprovante ({@code Client#requiresPurchaseProof}) — ver {@code
+   * CapturaNotaPendenteService#confirmarComoCompra}. {@code null} nos demais casos (upload de PDF,
+   * lançamento manual, ou cliente que não exige comprovante).
+   */
+  @Column(name = "imagem_r2_key")
+  private String imagemR2Key;
+
+  /**
+   * Preenchido quando esta compra passa a compor um agrupamento ({@link CombinedScore}) — ver
+   * {@code CombinedScoreService#createCombinedScore}. Permite depois listar as fotos ({@link
+   * #imagemR2Key}) de todas as compras de um agrupamento específico.
+   */
+  @Column(name = "combined_score_id")
+  private Long combinedScoreId;
+
   @Column(name = "update_at", nullable = false)
   private LocalDateTime updatedAt;
 

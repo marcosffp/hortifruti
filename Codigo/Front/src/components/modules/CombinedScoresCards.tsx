@@ -2,6 +2,7 @@
 
 import {
   Calendar,
+  Camera,
   CheckCircle,
   Eye,
   FileText,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import AdditionalDataModal from "@/components/modals/AdditionalDataModal";
+import CombinedScoreImagesModal from "@/components/modals/CombinedScoreImagesModal";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import GroupedProductsModal from "@/components/modals/GroupedProductsModal";
 import ShowBilletDataModal from "@/components/modals/ShowBilletDataModal";
@@ -75,6 +77,8 @@ export default function CombinedScoresCards({
   // o usuário abre "Ver Boleto" do 335) acabem sobrescrevendo uma à outra e abrindo o
   // modal errado com os dados do agrupamento errado quando a operação demorada resolver.
   const [productsModalScore, setProductsModalScore] =
+    useState<ScoreWithBilletInfo | null>(null);
+  const [imagesModalScore, setImagesModalScore] =
     useState<ScoreWithBilletInfo | null>(null);
   const [billetResultModal, setBilletResultModal] = useState<{
     score: ScoreWithBilletInfo;
@@ -733,6 +737,17 @@ export default function CombinedScoresCards({
                     Ver Produtos
                   </button>
 
+                  {/* Botão Ver Fotos — comprovantes de compras deste agrupamento que vieram de
+                      captura por celular de clientes que exigem foto (ver Client.requiresPurchaseProof) */}
+                  <button
+                    type="button"
+                    onClick={() => setImagesModalScore(score)}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 transition-colors text-sm cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4" />
+                    Ver Fotos
+                  </button>
+
                   {/* Botões de Boleto e Nota Fiscal */}
                   <div className="space-y-2">
                     {!client?.onlyBillet &&
@@ -875,6 +890,15 @@ export default function CombinedScoresCards({
           combinedScoreId={productsModalScore.id}
           scoreNumber={productsModalScore.number}
           onClose={() => setProductsModalScore(null)}
+        />
+      )}
+
+      {/* Modal de fotos (comprovantes) */}
+      {imagesModalScore && (
+        <CombinedScoreImagesModal
+          combinedScoreId={imagesModalScore.id}
+          scoreNumber={imagesModalScore.number}
+          onClose={() => setImagesModalScore(null)}
         />
       )}
 

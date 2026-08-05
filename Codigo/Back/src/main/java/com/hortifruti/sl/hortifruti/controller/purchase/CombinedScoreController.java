@@ -3,6 +3,7 @@ package com.hortifruti.sl.hortifruti.controller.purchase;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.PurchaseImageResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.WildcardBilletRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientLastGroupingResponse;
 import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreCancellationService;
@@ -79,6 +80,11 @@ public class CombinedScoreController {
   public ResponseEntity<?> cancelPayment(@PathVariable Long id) {
     combinedScoreService.cancelPayment(id);
     return ResponseEntity.ok("Pagamento cancelado com sucesso.");
+  }
+
+  @GetMapping("/{id}/imagens")
+  public ResponseEntity<List<PurchaseImageResponse>> listImages(@PathVariable Long id) {
+    return ResponseEntity.ok(combinedScoreService.listImagesByCombinedScoreId(id));
   }
 
   @GetMapping("/{id}/grouped-products")

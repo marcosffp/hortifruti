@@ -9,6 +9,7 @@ export interface ClientRequest {
   stateIndicator?: number | null;
   cideCode?: string | null;
   onlyBillet: boolean;
+  requiresPurchaseProof: boolean;
 }
 
 export interface ClientResponse {
@@ -23,6 +24,7 @@ export interface ClientResponse {
   stateIndicator: number | null;
   cideCode: string | null;
   onlyBillet: boolean;
+  requiresPurchaseProof: boolean;
   lastPurchaseDate: string | null;
   totalPurchaseValue: number | null;
 }

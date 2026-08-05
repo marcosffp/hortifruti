@@ -38,6 +38,7 @@ export default function NovoClientePage() {
           : null,
         cideCode: formData.cideCode || null,
         onlyBillet: formData.onlyBillet === "true",
+        requiresPurchaseProof: formData.requiresPurchaseProof === "true",
       };
 
       await clientService.createClient(clientData);

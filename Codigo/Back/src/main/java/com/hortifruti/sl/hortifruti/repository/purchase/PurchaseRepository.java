@@ -43,4 +43,6 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
       Pageable pageable);
 
   List<Purchase> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
+
+  List<Purchase> findByCombinedScoreIdAndImagemR2KeyIsNotNull(Long combinedScoreId);
 }

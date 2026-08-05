@@ -4,6 +4,7 @@ import type {
   CombinedScoreRequest,
   CombinedScoreResponse,
   GroupedProductType,
+  PurchaseImageType,
 } from "@/types/combinedScoreType";
 import { getAuthHeaders } from "@/utils/httpUtils";
 
@@ -105,6 +106,15 @@ export const combinedScoreService = {
       { headers: getAuthHeaders(), credentials: "include" },
     );
     if (!response.ok) throw new Error("Erro ao buscar produtos agrupados");
+    return await response.json();
+  },
+
+  async fetchImages(combinedScoreId: number): Promise<PurchaseImageType[]> {
+    const response = await fetch(
+      `${API_BASE_URL}/combined-scores/${combinedScoreId}/imagens`,
+      { headers: getAuthHeaders(), credentials: "include" },
+    );
+    if (!response.ok) throw new Error("Erro ao buscar fotos do agrupamento");
     return await response.json();
   },
 

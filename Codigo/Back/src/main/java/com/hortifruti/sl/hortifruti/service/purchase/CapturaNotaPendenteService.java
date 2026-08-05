@@ -4,11 +4,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortifruti.sl.hortifruti.dto.purchase.CapturaIniciadaResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.CapturaPendenteResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.ManualPurchaseRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.NotaExtracaoResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.PurchaseResponse;
 import com.hortifruti.sl.hortifruti.exception.purchase.CapturaNotaPendenteNaoEncontradaException;
 import com.hortifruti.sl.hortifruti.model.purchase.CapturaNotaPendente;
+import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
 import com.hortifruti.sl.hortifruti.model.purchase.StatusCaptura;
 import com.hortifruti.sl.hortifruti.repository.purchase.CapturaNotaPendenteRepository;
+import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
 import com.hortifruti.sl.hortifruti.service.storage.R2StorageService;
 import com.hortifruti.sl.hortifruti.service.storage.StorageKeyGenerator;
 import java.util.List;
@@ -45,6 +49,8 @@ public class CapturaNotaPendenteService {
   private final R2StorageService r2StorageService;
   private final CapturaExtracaoAsyncService capturaExtracaoAsyncService;
   private final ObjectMapper objectMapper;
+  private final PurchaseService purchaseService;
+  private final PurchaseRepository purchaseRepository;
 
   @Value("${r2.environment}")
   private String environment;
@@ -85,6 +91,38 @@ public class CapturaNotaPendenteService {
         .stream()
         .map(this::toResponse)
         .toList();
+  }
+
+  /**
+   * Transforma uma captura revisada numa compra real, reaproveitando {@link
+   * PurchaseService#createManualPurchase} (mesma criação usada pelo lançamento manual — os itens
+   * já vêm editados/conferidos pela tela de revisão). O destino da foto depende só do cliente
+   * escolhido: se ele exige comprovante ({@code Client#requiresPurchaseProof}), a chave R2 da
+   * captura é anexada à compra; senão, a foto é descartada do R2 (só os dados extraídos ficam).
+   */
+  @Transactional
+  public PurchaseResponse confirmarComoCompra(
+      Long capturaId, Long usuarioId, ManualPurchaseRequest request) {
+    CapturaNotaPendente captura =
+        capturaNotaPendenteRepository
+            .findByIdAndUsuarioId(capturaId, usuarioId)
+            .orElseThrow(
+                () -> new CapturaNotaPendenteNaoEncontradaException("Captura não encontrada."));
+
+    Purchase purchase = purchaseService.createManualPurchase(request);
+
+    if (purchase.getClient().isRequiresPurchaseProof()) {
+      purchase.setImagemR2Key(captura.getR2Key());
+      purchaseRepository.save(purchase);
+    } else {
+      r2StorageService.delete(captura.getR2Key());
+    }
+
+    captura.setStatus(StatusCaptura.CONFIRMADA);
+    capturaNotaPendenteRepository.save(captura);
+
+    return new PurchaseResponse(
+        purchase.getId(), purchase.getPurchaseDate(), purchase.getTotal(), purchase.getUpdatedAt());
   }
 
   @Transactional

@@ -55,6 +55,9 @@ export default function EditarClientePageContent({
           stateIndicator: clientData.stateIndicator?.toString() || "9",
           cideCode: clientData.cideCode || "",
           onlyBillet: clientData.onlyBillet ? "true" : "false",
+          requiresPurchaseProof: clientData.requiresPurchaseProof
+            ? "true"
+            : "false",
         });
       } catch (error) {
         console.error("Erro ao carregar dados do cliente:", error);
@@ -97,6 +100,7 @@ export default function EditarClientePageContent({
           : null,
         cideCode: formData.cideCode || null,
         onlyBillet: formData.onlyBillet === "true",
+        requiresPurchaseProof: formData.requiresPurchaseProof === "true",
       };
 
       await clientService.updateClient(clientId, clientData);
