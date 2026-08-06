@@ -109,6 +109,7 @@ public class ClientService {
     existingClient.setDocument(clientRequest.document());
     existingClient.setVariablePrice(clientRequest.variablePrice());
     existingClient.setOnlyBillet(clientRequest.onlyBillet());
+    existingClient.setRequiresPurchaseProof(clientRequest.requiresPurchaseProof());
     existingClient.setStateRegistration(clientRequest.stateRegistration());
     existingClient.setStateIndicator(clientRequest.stateIndicator());
 
