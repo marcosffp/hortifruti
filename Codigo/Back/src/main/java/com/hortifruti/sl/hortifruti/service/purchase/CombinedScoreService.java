@@ -50,6 +50,7 @@ public class CombinedScoreService {
   private final PurchaseRepository purchaseRepository;
   private final GroupedProductService productGrouper;
   private final GroupedProductRepository productGrouperRepository;
+  private final CombinedScorePhotoService combinedScorePhotoService;
 
   public Page<CombinedScoreResponse> listGroupings(Long clientId, Pageable pageable) {
     Page<CombinedScore> groupings;
@@ -118,6 +119,10 @@ public class CombinedScoreService {
     // compras (e fotos de comprovante, se houver) compuseram este agrupamento específico.
     purchases.forEach(purchase -> purchase.setCombinedScoreId(savedCombinedScore.getId()));
     purchaseRepository.saveAll(purchases);
+
+    // Junta as fotos de comprovante (se houver) num único PDF para download — ver
+    // CombinedScorePhotoService.
+    combinedScorePhotoService.generatePhotosPdfIfNeeded(savedCombinedScore.getId());
   }
 
   @Transactional

@@ -7,6 +7,7 @@ import com.hortifruti.sl.hortifruti.dto.purchase.PurchaseImageResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.WildcardBilletRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientLastGroupingResponse;
 import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreCancellationService;
+import com.hortifruti.sl.hortifruti.service.purchase.CombinedScorePhotoService;
 import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,6 +31,7 @@ public class CombinedScoreController {
 
   private final CombinedScoreService combinedScoreService;
   private final CombinedScoreCancellationService combinedScoreCancellationService;
+  private final CombinedScorePhotoService combinedScorePhotoService;
 
   @PostMapping("/create")
   public ResponseEntity<?> createCombinedScore(@Valid @RequestBody CombinedScoreRequest request) {
@@ -85,6 +87,12 @@ public class CombinedScoreController {
   @GetMapping("/{id}/imagens")
   public ResponseEntity<List<PurchaseImageResponse>> listImages(@PathVariable Long id) {
     return ResponseEntity.ok(combinedScoreService.listImagesByCombinedScoreId(id));
+  }
+
+  /** Baixa o PDF com as fotos de comprovante das compras deste agrupamento, uma por página. */
+  @GetMapping("/{id}/fotos/pdf")
+  public ResponseEntity<byte[]> downloadPhotosPdf(@PathVariable Long id) {
+    return combinedScorePhotoService.getStoredPhotosPdf(id);
   }
 
   @GetMapping("/{id}/grouped-products")

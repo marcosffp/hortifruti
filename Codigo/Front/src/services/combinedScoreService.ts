@@ -118,6 +118,16 @@ export const combinedScoreService = {
     return await response.json();
   },
 
+  async downloadPhotosPdf(combinedScoreId: number): Promise<Blob> {
+    const response = await fetch(
+      `${API_BASE_URL}/combined-scores/${combinedScoreId}/fotos/pdf`,
+      { headers: getAuthHeaders(), credentials: "include" },
+    );
+    if (!response.ok)
+      throw new Error("Erro ao baixar PDF de fotos do agrupamento");
+    return await response.blob();
+  },
+
   async fetchLastGroupingPerClient(): Promise<ClientLastGroupingType[]> {
     const response = await fetch(
       `${API_BASE_URL}/combined-scores/last-per-client`,
