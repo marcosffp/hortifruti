@@ -7,7 +7,7 @@ import com.hortifruti.sl.hortifruti.model.finance.Category;
 import com.hortifruti.sl.hortifruti.model.finance.Statement;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
-import com.hortifruti.sl.hortifruti.util.TransactionUtil;
+import com.hortifruti.sl.hortifruti.service.finance.transaction.TransactionCategoryClassifier;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -22,14 +22,15 @@ import org.springframework.stereotype.Service;
  * Converte as transações retornadas pela API de conta corrente do Sicoob (JSON estruturado) em
  * {@link Transaction}. O hash de deduplicação usa o {@code transactionId} que a própria API
  * retorna, o que torna reconsultas de um período que se sobrepõe (ex.: 1–20 hoje, 1–21 amanhã)
- * idempotentes: {@link TransactionUtil#filterNewTransactions} já descarta automaticamente qualquer
- * transação cujo hash já exista.
+ * idempotentes: {@link com.hortifruti.sl.hortifruti.util.TransactionUtil#filterNewTransactions} já
+ * descarta automaticamente qualquer transação cujo hash já exista.
  */
 @Service
 @RequiredArgsConstructor
 public class TransactionSicoobApiService {
 
   private final TransactionMapper transactionMapper;
+  private final TransactionCategoryClassifier transactionCategoryClassifier;
 
   public List<Transaction> buildTransactions(
       List<SicoobExtratoTransacao> transacoes, Statement statement) {
@@ -53,7 +54,7 @@ public class TransactionSicoobApiService {
     }
 
     Category category =
-        TransactionUtil.determineCategory(history.toLowerCase(), credito ? "C" : "D");
+        transactionCategoryClassifier.determineCategory(history.toLowerCase(), credito ? "C" : "D");
 
     Transaction transaction =
         transactionMapper.toTransaction(

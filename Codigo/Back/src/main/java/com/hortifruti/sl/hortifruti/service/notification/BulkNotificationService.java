@@ -16,10 +16,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BulkNotificationService {
@@ -81,6 +83,7 @@ public class BulkNotificationService {
       return BulkNotificationResponse.failure(
           "Erro ao processar arquivos: " + e.getMessage(), List.of());
     } catch (Exception e) {
+      log.error("Erro inesperado ao enviar notificações em lote", e);
       return BulkNotificationResponse.failure(
           "Erro ao enviar notificações: " + e.getMessage(), List.of());
     }
@@ -217,6 +220,7 @@ public class BulkNotificationService {
         }
         failedRecipients.add("Cliente ID: " + clientId + " (erro)");
       } catch (Exception e) {
+        log.error("Erro inesperado ao notificar cliente ID {}", clientId, e);
         failedRecipients.add("Cliente ID: " + clientId + " (erro)");
       }
     }

@@ -2,7 +2,7 @@ package com.hortifruti.sl.hortifruti.service.finance.sicoob;
 
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobExtratoLinha;
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobExtratoResponse;
-import com.hortifruti.sl.hortifruti.util.SicoobExtratoFormatUtil;
+import com.hortifruti.sl.hortifruti.service.finance.SicoobExtratoFormatUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -32,9 +32,9 @@ public class SicoobExtratoExcelGenerator {
 
   /**
    * Mesmo texto exibido por {@link SicoobExtratoFormatUtil#formatValorComSinal}, só que como
-   * formato de célula numérica (seção positiva/negativa do Excel) em vez de {@code String} —
-   * assim a coluna VALOR continua um número de verdade (soma/filtra no Excel), com o mesmo
-   * "R$ "/" C"/" D" exibido antes.
+   * formato de célula numérica (seção positiva/negativa do Excel) em vez de {@code String} — assim
+   * a coluna VALOR continua um número de verdade (soma/filtra no Excel), com o mesmo "R$ "/" C"/"
+   * D" exibido antes.
    */
   private static final String VALOR_FORMAT = "\"R$ \"#,##0.00\" C\";\"R$ \"#,##0.00\" D\"";
 

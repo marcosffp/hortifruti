@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Consulta de produtos fiscais cadastrados, usados para conciliação com notas fiscais. */
 @Service
 @AllArgsConstructor
 public class FiscalProductService {

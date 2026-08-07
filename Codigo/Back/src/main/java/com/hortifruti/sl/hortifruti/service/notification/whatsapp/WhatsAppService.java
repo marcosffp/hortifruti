@@ -3,6 +3,7 @@ package com.hortifruti.sl.hortifruti.service.notification.whatsapp;
 import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -18,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
  * Canal de envio (outbound) de mensagens e documentos via WhatsApp usando a API da UltraMsg. Não há
  * processamento de mensagens recebidas do cliente — apenas envio.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WhatsAppService {
@@ -96,6 +98,7 @@ public class WhatsAppService {
 
       return response.getStatusCode().is2xxSuccessful() && !hasError;
     } catch (Exception e) {
+      log.error("Erro ao enviar mensagem WhatsApp para {}", phoneNumber, e);
       throw new NotificationException(
           "Erro ao enviar mensagem WhatsApp para " + phoneNumber + ": " + e.getMessage());
     }
@@ -133,6 +136,7 @@ public class WhatsAppService {
 
       return response.getStatusCode().is2xxSuccessful() && !hasError;
     } catch (Exception e) {
+      log.error("Erro ao enviar documento WhatsApp para {}", phoneNumber, e);
       throw new NotificationException(
           "Erro ao enviar documento WhatsApp para " + phoneNumber + ": " + e.getMessage());
     }

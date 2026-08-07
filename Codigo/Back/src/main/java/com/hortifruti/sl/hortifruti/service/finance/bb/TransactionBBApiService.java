@@ -7,7 +7,7 @@ import com.hortifruti.sl.hortifruti.model.finance.Category;
 import com.hortifruti.sl.hortifruti.model.finance.Statement;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
-import com.hortifruti.sl.hortifruti.util.TransactionUtil;
+import com.hortifruti.sl.hortifruti.service.finance.transaction.TransactionCategoryClassifier;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -41,6 +41,7 @@ public class TransactionBBApiService {
   private static final Set<String> HISTORICOS_SALDO = Set.of("0", "999");
 
   private final TransactionMapper transactionMapper;
+  private final TransactionCategoryClassifier transactionCategoryClassifier;
 
   public List<Transaction> buildTransactions(List<JsonNode> lancamentos, Statement statement) {
     List<Transaction> transactions = new ArrayList<>();
@@ -59,7 +60,8 @@ public class TransactionBBApiService {
 
   private boolean isMarcadorDeSaldo(JsonNode lancamento) {
     String historico =
-        BBExtratoParsingUtil.normalizeCodigoHistorico(lancamento.path("codigoHistorico").asText(""));
+        BBExtratoParsingUtil.normalizeCodigoHistorico(
+            lancamento.path("codigoHistorico").asText(""));
     return HISTORICOS_SALDO.contains(historico);
   }
 
@@ -79,7 +81,7 @@ public class TransactionBBApiService {
     }
 
     Category category =
-        TransactionUtil.determineCategory(
+        transactionCategoryClassifier.determineCategory(
             history.toLowerCase(), transactionType == TransactionType.DEBITO ? "D" : "C");
 
     String documento = textOrNull(lancamento, "numeroDocumento");

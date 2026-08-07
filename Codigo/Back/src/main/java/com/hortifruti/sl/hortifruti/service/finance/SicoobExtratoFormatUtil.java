@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.util;
+package com.hortifruti.sl.hortifruti.service.finance;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

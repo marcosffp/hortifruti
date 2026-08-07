@@ -2,7 +2,7 @@ package com.hortifruti.sl.hortifruti.model.finance;
 
 /**
  * Categoria contábil atribuída automaticamente a uma {@link Transaction} bancária, por palavra-
- * chave no histórico do lançamento (ver {@code TransactionUtil.determineCategory}).
+ * chave no histórico do lançamento (ver {@code TransactionCategoryClassifier.determineCategory}).
  */
 public enum Category {
   VENDAS_CARTAO,
@@ -11,11 +11,11 @@ public enum Category {
   FORNECEDOR,
 
   /**
-   * Retiradas/repasses pessoais do(s) sócio(s)/família proprietária do negócio — distinto de
-   * {@link #FORNECEDOR} (pagamento a terceiro) e {@link #FUNCIONARIO} (folha) porque é dinheiro
-   * saindo da empresa para a própria família dona do negócio, não uma despesa operacional. É o
-   * único valor do enum com acento porque foi a única categoria adicionada fora do conjunto
-   * original (todo o resto é rótulo de domínio bancário/fiscal padrão).
+   * Retiradas/repasses pessoais do(s) sócio(s)/família proprietária do negócio — distinto de {@link
+   * #FORNECEDOR} (pagamento a terceiro) e {@link #FUNCIONARIO} (folha) porque é dinheiro saindo da
+   * empresa para a própria família dona do negócio, não uma despesa operacional. É o único valor do
+   * enum com acento porque foi a única categoria adicionada fora do conjunto original (todo o resto
+   * é rótulo de domínio bancário/fiscal padrão).
    */
   FAMÍLIA,
 

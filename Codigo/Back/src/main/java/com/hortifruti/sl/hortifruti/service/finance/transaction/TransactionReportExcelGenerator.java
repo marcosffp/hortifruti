@@ -2,13 +2,13 @@ package com.hortifruti.sl.hortifruti.service.finance.transaction;
 
 import com.hortifruti.sl.hortifruti.model.finance.Bank;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
-import com.hortifruti.sl.hortifruti.util.TransactionUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -27,7 +27,10 @@ import org.springframework.stereotype.Component;
  * Gera o relatório consolidado de transações (BB + Sicoob juntos, em ordem cronológica) em Excel.
  */
 @Component
+@RequiredArgsConstructor
 public class TransactionReportExcelGenerator {
+
+  private final TransactionCategoryClassifier transactionCategoryClassifier;
 
   private static final DateTimeFormatter DATA_CURTA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -70,7 +73,10 @@ public class TransactionReportExcelGenerator {
     createAndStyleCell(row, 0, transacao.getTransactionDate().format(DATA_CURTA), dataCellStyle);
     createAndStyleCell(row, 1, bankLabel(transacao), dataCellStyle);
     createAndStyleCell(
-        row, 2, TransactionUtil.categoryLabel(transacao.getCategory()), dataCellStyle);
+        row,
+        2,
+        transactionCategoryClassifier.categoryLabel(transacao.getCategory()),
+        dataCellStyle);
     createAndStyleCell(row, 3, transacao.getHistory(), dataCellStyle);
     setAmountCell(row, 4, transacao, workbook);
   }

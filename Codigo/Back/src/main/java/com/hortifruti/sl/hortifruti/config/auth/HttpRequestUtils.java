@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.util;
+package com.hortifruti.sl.hortifruti.config.auth;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -8,8 +8,8 @@ import jakarta.servlet.http.HttpServletRequest;
  * usuários dividirem o mesmo balde de rate limit / contador de lockout. X-Forwarded-For é enviado
  * pelo cliente e pode ser forjado à vontade; cada proxy confiável pelo qual a requisição passa
  * *acrescenta* o IP que enxergou ao final da cadeia, então só o último valor da lista foi escrito
- * por infraestrutura nossa (Railway) — os valores anteriores podem ser qualquer coisa que o
- * cliente tenha mandado. Pegamos por isso o último valor, nunca o primeiro.
+ * por infraestrutura nossa (Railway) — os valores anteriores podem ser qualquer coisa que o cliente
+ * tenha mandado. Pegamos por isso o último valor, nunca o primeiro.
  */
 public final class HttpRequestUtils {
 

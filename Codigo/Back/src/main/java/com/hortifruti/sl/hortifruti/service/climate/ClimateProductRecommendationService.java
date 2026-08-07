@@ -33,8 +33,10 @@ public class ClimateProductRecommendationService {
   private static final double PERFECT_CLIMATE_SCORE = 15.0;
 
   /**
-   * Gera recomendações baseadas na temperatura e mês atual lembrando que (mês atual) não é o mês
-   * todo, até porque a api só pega 5 dias, é o Mês atual tipo hoje é Março
+   * Gera recomendações baseadas na temperatura e no mês atual.
+   *
+   * @param currentMonth mês corrente (não o período restante do mês); a API de clima só cobre uma
+   *     janela de 5 dias, então não é possível considerar o mês inteiro
    */
   private List<ClimateProductRecommendationDTO> generateRecommendations(
       TemperatureCategory temperatureCategory, Month currentMonth) {

@@ -1,7 +1,6 @@
 package com.hortifruti.sl.hortifruti.util;
 
 import com.hortifruti.sl.hortifruti.exception.finance.TransactionException;
-import com.hortifruti.sl.hortifruti.model.finance.Category;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
 import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
@@ -11,71 +10,18 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.stereotype.Component;
 
-@Component
-public class TransactionUtil {
+/**
+ * Utilitários genéricos de parsing/dedupe de transações bancárias, sem regra de negócio embutida —
+ * a classificação por categoria (que depende de configuração e nomes de funcionários) vive em
+ * {@link com.hortifruti.sl.hortifruti.service.finance.transaction.TransactionCategoryClassifier}.
+ */
+public final class TransactionUtil {
   private TransactionUtil() {}
-
-  private static Map<String, Category> initCategoryKeywords() {
-    Map<String, Category> map = new HashMap<>();
-
-    map.put("pronampe", Category.SERVICOS_BANCARIOS);
-    map.put("emprestimo", Category.SERVICOS_BANCARIOS);
-    map.put("rende fácil", Category.SERVICOS_BANCARIOS);
-    map.put("tar. agrupadas", Category.SERVICOS_BANCARIOS);
-    map.put("cobrança referente", Category.SERVICOS_BANCARIOS);
-    map.put("empresarial visa", Category.SERVICOS_BANCARIOS);
-    map.put("tarifa", Category.SERVICOS_BANCARIOS);
-    map.put("débito pacote", Category.SERVICOS_BANCARIOS);
-    map.put("déb.empréstimo", Category.SERVICOS_BANCARIOS);
-    map.put("déb.tit", Category.SERVICOS_BANCARIOS);
-    map.put("créd.liquidação", Category.SERVICOS_BANCARIOS);
-    map.put("cessão créd liquid princ", Category.SERVICOS_BANCARIOS);
-    map.put("seg créd proteg", Category.SERVICOS_BANCARIOS);
-    map.put("seguro cred prot", Category.SERVICOS_BANCARIOS);
-    map.put("devolução", Category.SERVICOS_BANCARIOS);
-    map.put("devolucao", Category.SERVICOS_BANCARIOS);
-    map.put("estorno", Category.SERVICOS_BANCARIOS);
-
-    map.put("cielo", Category.VENDAS_CARTAO);
-    map.put("alelo", Category.VENDAS_CARTAO);
-    map.put("hortifruti", Category.VENDAS_CARTAO);
-    map.put("pluxee", Category.VENDAS_CARTAO);
-    map.put("ted-crédito", Category.VENDAS_CARTAO);
-    map.put("cr compras", Category.VENDAS_CARTAO);
-    map.put("cr anteci", Category.VENDAS_CARTAO);
-
-    map.put("alexandre c", Category.FUNCIONARIO);
-    map.put("marlucia natania vieira", Category.FUNCIONARIO);
-    map.put("amanda gabriele da silva", Category.FUNCIONARIO);
-    map.put("anderson cosme de souza", Category.FUNCIONARIO);
-    map.put("alexandre conceição dos sa", Category.FUNCIONARIO);
-
-    map.put("marcos", Category.FAMÍLIA);
-
-    map.put("claro", Category.SERVICOS_TELEFONICOS);
-    map.put("vivo", Category.SERVICOS_TELEFONICOS);
-
-    map.put("cemig", Category.CEMIG);
-
-    map.put("cia de saneamento de mg", Category.COPASA);
-
-    map.put("codigo de barras", Category.IMPOSTOS);
-    map.put("rfb-darf codigo de barras", Category.IMPOSTOS);
-    map.put("das - simples nacional", Category.IMPOSTOS);
-    map.put("cef matriz", Category.IMPOSTOS);
-
-    map.put("singular", Category.FISCAL);
-    map.put("next", Category.FISCAL);
-    return map;
-  }
 
   public static String generateTransactionHash(
       LocalDate date, String document, BigDecimal amount, String history) {
@@ -105,35 +51,6 @@ public class TransactionUtil {
     return transactions.stream()
         .filter(tx -> !existingHashes.contains(tx.getHash()))
         .collect(Collectors.toList());
-  }
-
-  public static Category determineCategory(String historyLower, String balanceType) {
-    if (historyLower.contains("recebimento fornecedor")) {
-      return Category.VENDAS_CARTAO;
-    }
-
-    return initCategoryKeywords().entrySet().stream()
-        .filter(entry -> historyLower.contains(entry.getKey()))
-        .map(Map.Entry::getValue)
-        .findFirst()
-        .orElseGet(
-            () -> "D".equalsIgnoreCase(balanceType) ? Category.FORNECEDOR : Category.VENDAS_PIX);
-  }
-
-  public static String categoryLabel(Category category) {
-    return switch (category) {
-      case VENDAS_CARTAO -> "Vendas Cartão";
-      case VENDAS_PIX -> "Vendas PIX";
-      case SERVICOS_BANCARIOS -> "Serviços Bancários";
-      case FORNECEDOR -> "Fornecedor";
-      case FAMÍLIA -> "Família";
-      case FUNCIONARIO -> "Funcionário";
-      case SERVICOS_TELEFONICOS -> "Serviços Telefônicos";
-      case CEMIG -> "Cemig";
-      case COPASA -> "Copasa";
-      case FISCAL -> "Fiscal";
-      case IMPOSTOS -> "Impostos";
-    };
   }
 
   public static BigDecimal parseAmount(String value, String type) {

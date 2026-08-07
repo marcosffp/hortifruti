@@ -5,6 +5,7 @@ Autenticação e autorização da API: login com JWT, proteção contra brute-fo
 | Arquivo | Tipo | Responsabilidade |
 | --- | --- | --- |
 | `Auth.java` | `@Component` | Orquestra o login: valida credenciais via `LoginProtectionService`/`PasswordEncoder`, gera o JWT em caso de sucesso e usa mensagem de erro genérica idêntica para usuário inexistente, senha incorreta e conta/IP bloqueados (evita enumeration attack). |
+| `HttpRequestUtils.java` | classe utilitária (final, construtor privado) | Resolve o IP real do cliente a partir do header `X-Forwarded-For` (a aplicação roda atrás de proxies — Railway e rewrite do Next.js — então `getRemoteAddr()` sempre retornaria o IP do proxy) e o `User-Agent` da requisição. Usado por `Auth`/`RateLimitingFilter` para rate limiting e lockout por IP; movida de `util/` por só ser usada neste pacote. |
 | `LoginProtectionService.java` | `@Component` | Brute-force protection: contadores independentes por conta e por IP, lockout progressivo (15min/1h/24h), reset automático após período limpo, e-mail de alerta com throttle, e auditoria de toda tentativa em `LoginAuditLog`/`LoginLockout` (persistido em MySQL, sem Redis). |
 | `RateLimitingFilter.java` | `@Component` (`OncePerRequestFilter`) | Limita requisições por combinação IP+endpoint usando Bucket4j (10 requisições/minuto por bucket), retornando HTTP 429 quando excedido. |
 | `RefreshTokenCleanupService.java` | `@Service` | Job agendado (`@Scheduled`, cron diário às 3h) que remove do banco os refresh tokens já expirados. |

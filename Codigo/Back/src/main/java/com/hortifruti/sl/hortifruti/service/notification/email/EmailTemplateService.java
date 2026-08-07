@@ -3,10 +3,12 @@ package com.hortifruti.sl.hortifruti.service.notification.email;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class EmailTemplateService {
 
@@ -21,6 +23,8 @@ public class EmailTemplateService {
       String template = loadTemplate(templateName);
       return replaceVariables(template, variables);
     } catch (IOException e) {
+      log.warn("Falha ao carregar template de e-mail '{}', usando mensagem de fallback",
+          templateName, e);
       return getFallbackMessage(templateName);
     }
   }

@@ -1,11 +1,12 @@
 # com.hortifruti.sl.hortifruti.util
 
-Utilitários estáticos sem estado, compartilhados entre múltiplos serviços (arquivos, requisições HTTP, PDF, formatação de extrato Sicoob e classificação de transações bancárias).
+Utilitários estáticos sem estado, genuinamente compartilhados entre domínios distintos (arquivos,
+PDF, parsing/dedupe de transações). Utilitários usados por um único módulo vivem no pacote desse
+módulo — `SicoobExtratoFormatUtil` está em `service.finance` e `HttpRequestUtils` em
+`config.auth`.
 
 | Arquivo | Tipo | Responsabilidade |
 | --- | --- | --- |
-| `FileZipUtils.java` | classe utilitária (construtor privado) | Salva bytes em arquivo criando diretórios pai (`saveFile`), compacta uma pasta inteira em `.zip` (`compressFolder`/`zipFolder`) e capitaliza a primeira letra de uma string. Usado pelos serviços de exportação. |
-| `HttpRequestUtils.java` | classe utilitária (final, construtor privado) | Resolve o IP real do cliente a partir do header `X-Forwarded-For` (a aplicação roda atrás de proxies — Railway e rewrite do Next.js — então `getRemoteAddr()` sempre retornaria o IP do proxy) e o `User-Agent` da requisição. Usado por `Auth`/`LoginProtectionService` para rate limiting e lockout por IP. |
-| `PdfUtil.java` | `@Component` (métodos estáticos) | Extrai texto de um PDF enviado via `MultipartFile` (Apache PDFBox) e busca o valor associado a uma palavra-chave em uma linha no formato `chave: valor`, lançando `PurchaseException` se não encontrar. Usado na leitura de notas/comprovantes de compra. |
-| `SicoobExtratoFormatUtil.java` | classe utilitária (final, construtor privado) | Formata valores monetários e datas no padrão do extrato do Sicoob (ex.: `"R$ 1.234,56 C"`), compartilhado entre geração de PDF e Excel do extrato. |
-| `TransactionUtil.java` | `@Component` (métodos estáticos) | Lógica de classificação de transações bancárias: mapa de palavras-chave → `Category` (ex.: "cielo" → Vendas Cartão, "cemig" → Cemig), geração de hash SHA-256 para deduplicação de transações (`generateTransactionHash`), filtro de transações já existentes no banco, parsing de valor/data/tipo (débito/crédito) do formato do extrato. |
+| `FileZipUtils.java` | classe utilitária (construtor privado) | Salva bytes em arquivo criando diretórios pai (`saveFile`), compacta uma pasta inteira em `.zip` (`compressFolder`/`zipFolder`) e capitaliza a primeira letra de uma string. Usado pelos serviços de exportação (finance e invoice/tax). |
+| `PdfUtil.java` | `@Component` (métodos estáticos) | Extrai texto de um PDF enviado via `MultipartFile` (Apache PDFBox) e busca o valor associado a uma palavra-chave em uma linha no formato `chave: valor`, lançando `PurchaseException` se não encontrar. Usado na leitura de notas/comprovantes de compra (purchase e finance/sicoob). |
+| `TransactionUtil.java` | classe utilitária (final, construtor privado) | Parsing/dedupe genérico de transações bancárias: geração de hash SHA-256 (`generateTransactionHash`), filtro de transações já existentes no banco, parsing de valor/data/tipo (débito/crédito) do formato do extrato. A classificação por categoria (que depende de configuração e nomes de funcionários) foi extraída para `service.finance.transaction.TransactionCategoryClassifier` — não é utilitário genérico, é regra de negócio. |

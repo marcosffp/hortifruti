@@ -37,14 +37,14 @@
 
 O código está organizado em uma arquitetura em camadas coerente (controller → service → repository) e, na maior parte do domínio fiscal/financeiro, usa `BigDecimal` corretamente e tem comentários que explicam o *porquê* das decisões — acima da média para um projeto deste tamanho. O problema não é falta de estrutura; é que **381 arquivos e ~15 integrações externas cresceram sem um segundo revisor consistente**, e isso deixou rachaduras específicas e localizadas, não uma bagunça generalizada.
 
-**Contagem de achados em aberto: ~98** (itens já resolvidos foram removidos deste documento), sendo:
+**Contagem de achados em aberto: ~94** (itens já resolvidos foram removidos deste documento), sendo:
 
 | Severidade | Qtde. em aberto | Onde estão os mais graves |
 |---|---|---|
 | 🔴 Crítico | **1** | Config/Build (schema sem migração versionada) |
 | 🟠 Alto | **10** | Mapper morto, parsing de endereço duplicado, N+1 residual em colunas `@Lob`, acoplamento cruzado remanescente, ausência de paginação |
-| 🟡 Médio | **40** | Duplicação de lógica entre integrações parecidas, god classes, tratamento de erro genérico, documentação desatualizada |
-| 🔵 Baixo | **47** | Nomenclatura inconsistente, código morto isolado, metadados de build |
+| 🟡 Médio | **39** | Duplicação de lógica entre integrações parecidas, god classes, tratamento de erro genérico, documentação desatualizada |
+| 🔵 Baixo | **44** | Nomenclatura inconsistente, código morto isolado, metadados de build |
 
 ### O achado crítico remanescente
 
@@ -134,24 +134,6 @@ Nenhum bloco relevante de código morto/comentado encontrado. Comentários de le
 - [ ] 🟡 **[C-A4] `CombinedScoreCancellationService` depende de `InvoiceService` e `BilletService` além do próprio `CombinedScoreService`**
   **Local:** `service/purchase/CombinedScoreCancellationService.java:41-47`. Bem documentado (evita dependência circular), mas o cancelamento de um agrupamento já conhece 3 domínios — cresce a cada novo domínio que precisar ser cancelado em cascata. *Revisado: mantido como está — o Javadoc da classe já explica que ela existe fora de `CombinedScoreService` justamente para evitar a dependência circular (`InvoiceService`/`BilletService` já dependem dele); não há correção de baixo risco disponível sem reintroduzir esse ciclo.*
 
-### C · Baixa coesão / pacotes "gaveta"
-
-- [ ] 🟡 **[C-B1] `util/TransactionUtil.java` mistura utilitário genérico com regra de negócio hardcoded (nomes de funcionários)**
-  **Local:** `util/TransactionUtil.java:26-78`
-  ```java
-  map.put("marlucia natania vieira", Category.FUNCIONARIO);
-  map.put("marcos", Category.FAMÍLIA);
-  ```
-  Nomes próprios de funcionários e do dono da empresa hardcoded como strings mapeadas para categoria contábil. Troca de funcionário exige código + deploy; dado de RH vaza para o código-fonte. Também recria o `HashMap` a cada chamada em vez de ser campo estático.
-
-- [ ] 🔵 **[C-B2] `TransactionUtil` é `@Component` com construtor privado e só métodos estáticos** — contradição de design (bean Spring vs. classe utilitária estática).
-
-- [ ] 🔵 **[C-B3] Pacote `util/` mistura domínios sem relação temática**
-  **Local:** `PdfUtil` (purchase), `HttpRequestUtils` (segurança/infra), `FileZipUtils` (export genérico), `SicoobExtratoFormatUtil` (finance), `TransactionUtil` (finance) — só compartilham o rótulo "utilitário".
-
-- [ ] 🔵 **[C-B4] `FileMetadataFactory.createFolderMetadata` é código morto/duplicado**
-  **Local:** `service/backup/folders/FileMetadataFactory.java:21-31` duplica exatamente `FolderManager.createFolderMetadata:75-85`, mas nunca é chamado — `FolderManager` usa sua própria cópia privada.
-
 ### C · Clareza / código confuso
 
 - [ ] 🟠 **[C-C1] Parsing de PDF de fornecedor por regex/split posicional sem tolerância a formato alternativo**
@@ -194,7 +176,7 @@ Nenhum bloco relevante de código morto/comentado encontrado. Comentários de le
 
 ### C · Tratamento de erro genérico / catch silencioso
 
-- [ ] 🟠 **[C-E1] `BulkNotificationService.sendBulkNotifications` engole exceção sem logar**
+- [x] 🟠 **[C-E1] `BulkNotificationService.sendBulkNotifications` engole exceção sem logar**
   **Local:** `service/notification/BulkNotificationService.java:83-86`
   ```java
   } catch (Exception e) {
@@ -203,18 +185,18 @@ Nenhum bloco relevante de código morto/comentado encontrado. Comentários de le
   ```
   Uma falha inesperada (ex.: `NullPointerException` por bug) desaparece sem rastro nos logs em produção. Mesmo padrão em `sendToClients:219-221`.
 
-- [ ] 🟡 **[C-E2] `WhatsAppService.sendTextMessage`/`sendDocument` capturam `Exception` amplo sem log antes de relançar**
+- [x] 🟡 **[C-E2] `WhatsAppService.sendTextMessage`/`sendDocument` capturam `Exception` amplo sem log antes de relançar**
   **Local:** `service/notification/whatsapp/WhatsAppService.java:98-101,135-138` — perde o tipo original do erro (timeout de rede vs. telefone inválido).
 
-- [ ] 🔵 **[C-E3] `EmailTemplateService.processTemplate` engole `IOException` e retorna HTML de fallback fixo, sem log**
+- [x] 🔵 **[C-E3] `EmailTemplateService.processTemplate` engole `IOException` e retorna HTML de fallback fixo, sem log**
   **Local:** `service/notification/email/EmailTemplateService.java:19-26` — template renomeado/ausente vira silenciosamente e-mail com conteúdo errado, sem alarme.
 
 ### C · Comentários / documentação
 
-- [ ] 🔵 **[C-F1] Comentário informal misturando explicação de regra de negócio sem estrutura de Javadoc**
+- [x] 🔵 **[C-F1] Comentário informal misturando explicação de regra de negócio sem estrutura de Javadoc**
   **Local:** `service/climate/ClimateProductRecommendationService.java:35-38`
 
-- [ ] 🔵 **[C-F2] `FiscalProductService`/`UserService` sem comentário de classe, inconsistente com o padrão do resto do domínio `purchase`/`storage`**
+- [x] 🔵 **[C-F2] `FiscalProductService`/`UserService` sem comentário de classe, inconsistente com o padrão do resto do domínio `purchase`/`storage`**
 
 Nenhum bloco relevante de código morto comentado foi encontrado.
 
@@ -438,7 +420,7 @@ Poucos achados — nenhum bloco de código comentado ou `TODO`/`FIXME` encontrad
 
 Sinalizados **independentemente** por duas frentes de análise diferentes — reforça que são pontos reais, não ruído de uma leitura isolada:
 
-- [ ] **`Category.FAMÍLIA` — enum financeiro com valor acentuado/semântica questionável** — reportado em B-B5 e E-J8, ambos observando o vínculo com `util/TransactionUtil.java:61` (nome pessoal "marcos" hardcoded → `FAMÍLIA`), que a frente de "Demais Services" também aponta em C-B1 como problema de dado de RH hardcoded no código-fonte.
+- [ ] **`Category.FAMÍLIA` — enum financeiro com valor acentuado/semântica questionável** — reportado em B-B5 e E-J8. *(O nome pessoal "marcos" hardcoded que ambos citavam como origem do vínculo com `FAMÍLIA` foi extraído para configuração — ver `service/finance/transaction/TransactionCategoryClassifier.java` — resta em aberto só a questão de nomenclatura/semântica do valor do enum em si.)*
 
 ---
 

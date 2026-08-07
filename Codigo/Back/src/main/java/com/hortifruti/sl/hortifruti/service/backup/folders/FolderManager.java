@@ -6,7 +6,6 @@ import com.google.api.services.drive.model.FileList;
 import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
 import com.hortifruti.sl.hortifruti.service.backup.auth.GoogleAuthService;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -17,6 +16,7 @@ public class FolderManager {
 
   private final GoogleAuthService googleAuthService;
   private final DriveQueryBuilder queryBuilder;
+  private final FileMetadataFactory fileMetadataFactory;
 
   protected String getFolderId(String folderName, String parentFolderId) {
     try {
@@ -47,7 +47,7 @@ public class FolderManager {
   protected String createFolder(String folderName, String parentFolderId) {
     try {
       Drive service = googleAuthService.getDriveService();
-      File fileMetadata = createFolderMetadata(folderName, parentFolderId);
+      File fileMetadata = fileMetadataFactory.createFolderMetadata(folderName, parentFolderId);
 
       File folder = service.files().create(fileMetadata).setFields("id").execute();
       return folder.getId();
@@ -70,17 +70,5 @@ public class FolderManager {
       return folderPath.substring(folderPath.lastIndexOf("/") + 1);
     }
     return folderPath;
-  }
-
-  private File createFolderMetadata(String folderName, String parentFolderId) {
-    File fileMetadata = new File();
-    fileMetadata.setName(folderName);
-    fileMetadata.setMimeType("application/vnd.google-apps.folder");
-
-    if (parentFolderId != null && !parentFolderId.isEmpty()) {
-      fileMetadata.setParents(Collections.singletonList(parentFolderId));
-    }
-
-    return fileMetadata;
   }
 }

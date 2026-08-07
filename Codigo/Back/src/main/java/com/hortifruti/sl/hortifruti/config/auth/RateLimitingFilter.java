@@ -1,6 +1,5 @@
 package com.hortifruti.sl.hortifruti.config.auth;
 
-import com.hortifruti.sl.hortifruti.util.HttpRequestUtils;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
@@ -67,7 +66,8 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     String endpoint = request.getRequestURI();
     String key = clientIp + ":" + endpoint;
 
-    BucketEntry entry = buckets.computeIfAbsent(key, k -> BucketEntry.of(createNewBucket(endpoint)));
+    BucketEntry entry =
+        buckets.computeIfAbsent(key, k -> BucketEntry.of(createNewBucket(endpoint)));
     entry.lastAccess().set(Instant.now());
 
     if (entry.bucket().tryConsume(1)) {

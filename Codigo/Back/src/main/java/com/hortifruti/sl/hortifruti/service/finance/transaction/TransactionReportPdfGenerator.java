@@ -3,8 +3,7 @@ package com.hortifruti.sl.hortifruti.service.finance.transaction;
 import com.hortifruti.sl.hortifruti.model.finance.Bank;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import com.hortifruti.sl.hortifruti.service.finance.AbstractPdfPageWriter;
-import com.hortifruti.sl.hortifruti.util.SicoobExtratoFormatUtil;
-import com.hortifruti.sl.hortifruti.util.TransactionUtil;
+import com.hortifruti.sl.hortifruti.service.finance.SicoobExtratoFormatUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -12,6 +11,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -23,7 +23,10 @@ import org.springframework.stereotype.Component;
  * compartilhado entre chamadas).
  */
 @Component
+@RequiredArgsConstructor
 public class TransactionReportPdfGenerator {
+
+  private final TransactionCategoryClassifier transactionCategoryClassifier;
 
   @Value("${company.name}")
   private String companyName;
@@ -137,7 +140,7 @@ public class TransactionReportPdfGenerator {
           size,
           MARGIN + COL_CATEGORIA_X,
           y,
-          truncate(TransactionUtil.categoryLabel(transacao.getCategory()), 18),
+          truncate(transactionCategoryClassifier.categoryLabel(transacao.getCategory()), 18),
           null);
 
       float histRightEdge = pageWidth - MARGIN - COL_VALOR_WIDTH;

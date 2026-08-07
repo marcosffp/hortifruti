@@ -5,6 +5,7 @@ exportação em ZIP e persistência compartilhada de transações importadas via
 
 | Arquivo | Tipo | Responsabilidade |
 |---|---|---|
+| `TransactionCategoryClassifier.java` | `@Component` | Classifica a categoria contábil de uma transação por palavra-chave no histórico (ex.: "cielo" → Vendas Cartão, "cemig" → Cemig); nomes de funcionários e da família proprietária vêm de configuração (`transaction.category.employee-names`/`-family-names`), não hardcoded — trocar um nome não exige deploy. Mapa construído uma única vez no bean, não a cada chamada. |
 | `TransactionExportService.java` | `@Service` | Monta um ZIP com o relatório consolidado (Excel + PDF) do mês anterior mais os extratos bancários originais (PDF salvo + Excel gerado sob demanda para extratos de origem API) de cada `Statement` referenciado pelas transações do período. |
 | `TransactionImportPersistenceService.java` | `@Service` | Persistência compartilhada pelos importadores de extrato (Sicoob, BB): filtra transações já existentes (por hash), salva em lote e, em caso de colisão de chave única, refaz a gravação uma a uma para isolar exatamente qual transação falhou. |
 | `TransactionProcessingService.java` | `@Service` | CRUD e consultas de transações: listagem paginada com filtro por busca/tipo/categoria (via `Specification`), atualização, exclusão, listagem de categorias e cálculo de receita/despesa/saldo total por período (default: mês corrente). |
