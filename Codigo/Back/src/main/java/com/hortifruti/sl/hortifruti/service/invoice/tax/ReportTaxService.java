@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -68,7 +69,10 @@ public class ReportTaxService {
 
   private record ReportSpec(String fileName, ReportGenerator generator) {}
 
-  /** Destino de cada relatório gerado — mapa em memória ({@link #generateMonthlyFiles}) ou arquivo em disco ({@link #generateAndSaveReports}). */
+  /**
+   * Destino de cada relatório gerado — mapa em memória ({@link #generateMonthlyFiles}) ou arquivo
+   * em disco ({@link #generateAndSaveReports}).
+   */
   @FunctionalInterface
   private interface ReportSink {
     void accept(String fileName, byte[] data) throws IOException;
@@ -76,8 +80,7 @@ public class ReportTaxService {
 
   private List<ReportSpec> coreReportSpecs() {
     return List.of(
-        new ReportSpec(
-            "Resumo_de_Vendas_por_Forma_de_Pagamento.pdf", this::generatePaymentReport),
+        new ReportSpec("Resumo_de_Vendas_por_Forma_de_Pagamento.pdf", this::generatePaymentReport),
         new ReportSpec("Registro_de_saida_nf.pdf", this::generateRegisterReport),
         new ReportSpec("Relacao_de_Vendas.pdf", this::generateSalesReport),
         new ReportSpec("Registro_Apuracao_ICMS.pdf", this::generateIcmsReport));
@@ -160,17 +163,30 @@ public class ReportTaxService {
     String folderName = createMonthlyFolder(startDate);
     Path folderPath = Path.of(folderName);
 
-    generateAndSaveReports(startDate, endDate, folderPath);
-    generateAndMoveNfSalesZip(startDate, endDate, folderPath);
+    try {
+      generateAndSaveReports(startDate, endDate, folderPath);
+      generateAndMoveNfSalesZip(startDate, endDate, folderPath);
 
-    Path zipFilePath = compressFolder(folderPath, folderName);
-
-    return zipFilePath.toString();
+      return compressFolder(folderPath, folderName).toString();
+    } finally {
+      deleteFolderRecursively(folderPath);
+    }
   }
 
+  /**
+   * Sufixo com UUID evita que duas exportações concorrentes do mesmo mês (dois usuários chamando
+   * {@link #generateMonthly} ao mesmo tempo) caiam na mesma pasta temporária e corrompam o
+   * resultado uma da outra — cada chamada agora tem sua própria pasta isolada, apagada ao final em
+   * {@link #generateMonthlyReports}.
+   */
   private String createMonthlyFolder(LocalDate startDate) throws IOException {
     String tempDir = System.getProperty("java.io.tmpdir");
-    String folderName = tempDir + "/MES_" + startDate.format(DateTimeFormatter.ofPattern("MM"));
+    String folderName =
+        tempDir
+            + "/MES_"
+            + startDate.format(DateTimeFormatter.ofPattern("MM"))
+            + "_"
+            + UUID.randomUUID();
     Path folderPath = Path.of(folderName);
 
     if (!Files.exists(folderPath)) {
@@ -180,9 +196,28 @@ public class ReportTaxService {
     return folderName;
   }
 
+  private void deleteFolderRecursively(Path folderPath) {
+    try {
+      Files.walk(folderPath)
+          .sorted((p1, p2) -> p2.getNameCount() - p1.getNameCount())
+          .forEach(
+              path -> {
+                try {
+                  Files.delete(path);
+                } catch (IOException e) {
+                  log.error("Erro ao deletar: {}", path, e);
+                }
+              });
+    } catch (IOException e) {
+      log.error("Erro ao deletar pasta: {}", folderPath, e);
+    }
+  }
+
   private void generateAndSaveReports(LocalDate startDate, LocalDate endDate, Path folderPath) {
     generateCoreReports(
-        startDate, endDate, (fileName, data) -> FileZipUtils.saveFile(folderPath.resolve(fileName), data));
+        startDate,
+        endDate,
+        (fileName, data) -> FileZipUtils.saveFile(folderPath.resolve(fileName), data));
   }
 
   private void generateAndMoveNfSalesZip(LocalDate startDate, LocalDate endDate, Path folderPath)

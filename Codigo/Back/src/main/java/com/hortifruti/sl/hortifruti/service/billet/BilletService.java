@@ -44,6 +44,29 @@ public class BilletService {
   private final SicoobOpenBilletReconciler sicoobOpenBilletReconciler;
   private final SicoobEnvironmentGuard sicoobEnvironmentGuard;
 
+  /**
+   * Ação Sicoob a ser executada se o ambiente não estiver bloqueado. Ver {@link #withSicoobGuard}.
+   */
+  @FunctionalInterface
+  private interface SicoobAction<T, E extends Exception> {
+    T execute() throws E;
+  }
+
+  /**
+   * Extrai o guard {@code if (sicoobEnvironmentGuard.isBlocked()) {...}} que se repetia quase
+   * idêntico em cada método público que fala com o Sicoob: se o ambiente está bloqueado (sem
+   * integração real, ex: dev/test), loga e retorna {@code blockedValue} sem executar {@code
+   * action}.
+   */
+  private <T, E extends Exception> T withSicoobGuard(
+      String methodName, T blockedValue, SicoobAction<T, E> action) throws E {
+    if (sicoobEnvironmentGuard.isBlocked()) {
+      log.info("[Sicoob] {} bloqueado (ambiente sem integração real).", methodName);
+      return blockedValue;
+    }
+    return action.execute();
+  }
+
   public List<CombinedScore> findAllPendingWithBilletByClient(Long clientId) {
     return combinedScoreService.findAllPendingWithBilletByClient(clientId);
   }
@@ -53,21 +76,17 @@ public class BilletService {
   }
 
   public List<BilletResponse> listBilletByPayer(long clientId) throws IOException {
-    if (sicoobEnvironmentGuard.isBlocked()) {
-      log.info("[Sicoob] listBilletByPayer bloqueado (ambiente sem integração real).");
-      return List.of();
-    }
-    return billetQuery.listBilletByPayer(clientId);
+    return withSicoobGuard(
+        "listBilletByPayer", List.of(), () -> billetQuery.listBilletByPayer(clientId));
   }
 
   public List<BilletResponse> listBilletByPayer(
       long clientId, Integer codigoSituacao, LocalDate dataInicio, LocalDate dataFim)
       throws IOException {
-    if (sicoobEnvironmentGuard.isBlocked()) {
-      log.info("[Sicoob] listBilletByPayer bloqueado (ambiente sem integração real).");
-      return List.of();
-    }
-    return billetQuery.listBilletByPayer(clientId, codigoSituacao, dataInicio, dataFim);
+    return withSicoobGuard(
+        "listBilletByPayer",
+        List.of(),
+        () -> billetQuery.listBilletByPayer(clientId, codigoSituacao, dataInicio, dataFim));
   }
 
   /**
@@ -81,57 +100,51 @@ public class BilletService {
    */
   @Transactional
   public List<OpenBilletResponse> listAllOpenBillets() {
-    if (sicoobEnvironmentGuard.isBlocked()) {
-      log.info("[Sicoob] listAllOpenBillets bloqueado (ambiente sem integração real).");
-      return List.of();
-    }
+    return withSicoobGuard(
+        "listAllOpenBillets",
+        List.of(),
+        () -> {
+          List<CombinedScore> openScores = combinedScoreService.findAllOpenBillets();
+          if (openScores.isEmpty()) {
+            return List.of();
+          }
 
-    List<CombinedScore> openScores = combinedScoreService.findAllOpenBillets();
-    if (openScores.isEmpty()) {
-      return List.of();
-    }
+          List<ReconciledScore> reconciledScores =
+              sicoobOpenBilletReconciler.reconcileOpenScores(openScores);
 
-    List<ReconciledScore> reconciledScores =
-        sicoobOpenBilletReconciler.reconcileOpenScores(openScores);
+          List<Long> clientIds =
+              reconciledScores.stream().map(rs -> rs.score().getClientId()).distinct().toList();
+          Map<Long, String> clientNamesById = clientService.getClientNamesByIds(clientIds);
 
-    List<Long> clientIds =
-        reconciledScores.stream().map(rs -> rs.score().getClientId()).distinct().toList();
-    Map<Long, String> clientNamesById = clientService.getClientNamesByIds(clientIds);
-
-    return reconciledScores.stream()
-        .map(
-            rs -> {
-              CombinedScore cs = rs.score();
-              return new OpenBilletResponse(
-                  cs.getId(),
-                  cs.getClientId(),
-                  clientNamesById.getOrDefault(cs.getClientId(), "Cliente não encontrado"),
-                  cs.getTotalValue(),
-                  cs.getDueDate(),
-                  cs.getYourNumber(),
-                  rs.confirmadoNoSicoob());
-            })
-        .sorted(
-            Comparator.comparing(
-                OpenBilletResponse::dueDate, Comparator.nullsLast(Comparator.naturalOrder())))
-        .toList();
+          return reconciledScores.stream()
+              .map(
+                  rs -> {
+                    CombinedScore cs = rs.score();
+                    return new OpenBilletResponse(
+                        cs.getId(),
+                        cs.getClientId(),
+                        clientNamesById.getOrDefault(cs.getClientId(), "Cliente não encontrado"),
+                        cs.getTotalValue(),
+                        cs.getDueDate(),
+                        cs.getYourNumber(),
+                        rs.confirmadoNoSicoob());
+                  })
+              .sorted(
+                  Comparator.comparing(
+                      OpenBilletResponse::dueDate, Comparator.nullsLast(Comparator.naturalOrder())))
+              .toList();
+        });
   }
 
   public ResponseEntity<byte[]> issueCopy(Long idCombinedScore) throws IOException {
-    if (sicoobEnvironmentGuard.isBlocked()) {
-      log.info("[Sicoob] issueCopy bloqueado (ambiente sem integração real).");
-      return emptyPdfResponse();
-    }
-    return billetIssue.issueCopy(idCombinedScore);
+    return withSicoobGuard(
+        "issueCopy", emptyPdfResponse(), () -> billetIssue.issueCopy(idCombinedScore));
   }
 
   public ResponseEntity<String> cancelBillet(Long idCombinedScore)
       throws IOException, BilletException {
-    if (sicoobEnvironmentGuard.isBlocked()) {
-      log.info("[Sicoob] cancelBillet bloqueado (ambiente sem integração real).");
-      return ResponseEntity.ok("");
-    }
-    return billetCancel.cancelBillet(idCombinedScore);
+    return withSicoobGuard(
+        "cancelBillet", ResponseEntity.ok(""), () -> billetCancel.cancelBillet(idCombinedScore));
   }
 
   /**
@@ -139,19 +152,17 @@ public class BilletService {
    * exigir um agrupamento (CombinedScore) local conhecido.
    */
   public ResponseEntity<String> cancelBilletByNumber(String nossoNumero) throws BilletException {
-    if (sicoobEnvironmentGuard.isBlocked()) {
-      log.info("[Sicoob] cancelBilletByNumber bloqueado (ambiente sem integração real).");
-      return ResponseEntity.ok("");
-    }
-    return billetCancel.cancelBilletByNumber(nossoNumero);
+    return withSicoobGuard(
+        "cancelBilletByNumber",
+        ResponseEntity.ok(""),
+        () -> billetCancel.cancelBilletByNumber(nossoNumero));
   }
 
   public BilletResponse getBilletByCombinedScore(long combinedScoreId) throws IOException {
-    if (sicoobEnvironmentGuard.isBlocked()) {
-      log.info("[Sicoob] getBilletByCombinedScore bloqueado (ambiente sem integração real).");
-      return new BilletResponse("", "", "", "", "", "", BigDecimal.ZERO, combinedScoreId);
-    }
-    return billetQuery.getBilletByCombinedScore(combinedScoreId);
+    return withSicoobGuard(
+        "getBilletByCombinedScore",
+        new BilletResponse("", "", "", "", "", "", BigDecimal.ZERO, combinedScoreId),
+        () -> billetQuery.getBilletByCombinedScore(combinedScoreId));
   }
 
   /**
@@ -200,43 +211,44 @@ public class BilletService {
   @Transactional
   public ResponseEntity<byte[]> generateBillet(Long combinedScoreId, String number, String dueDate)
       throws IOException {
-    if (sicoobEnvironmentGuard.isBlocked()) {
-      log.info("[Sicoob] generateBillet bloqueado (ambiente sem integração real).");
-      return emptyPdfResponse();
-    }
+    return withSicoobGuard(
+        "generateBillet",
+        emptyPdfResponse(),
+        () -> {
+          // Trava a linha do agrupamento (SELECT ... FOR UPDATE) para serializar requisições
+          // concorrentes: se duas chegarem juntas (ex: duplo clique), a segunda só prossegue
+          // depois que a primeira já commitou hasBillet=true, e cai no bloqueio de duplicidade
+          // abaixo.
+          CombinedScore combinedScore = combinedScoreService.findByIdForUpdate(combinedScoreId);
 
-    // Trava a linha do agrupamento (SELECT ... FOR UPDATE) para serializar requisições
-    // concorrentes: se duas chegarem juntas (ex: duplo clique), a segunda só prossegue depois que
-    // a primeira já commitou hasBillet=true, e cai no bloqueio de duplicidade abaixo.
-    CombinedScore combinedScore = combinedScoreService.findByIdForUpdate(combinedScoreId);
+          if (combinedScore.isHasBillet()) {
+            throw new CombinedScoreException(
+                "Boleto já foi gerado para este agrupamento (id " + combinedScoreId + ").");
+          }
 
-    if (combinedScore.isHasBillet()) {
-      throw new CombinedScoreException(
-          "Boleto já foi gerado para este agrupamento (id " + combinedScoreId + ").");
-    }
+          try {
+            Client client = billetInfoCombinedAndClient.findClientById(combinedScore.getClientId());
+            Pagador pagador = billetFactory.createPagadorFromClient(client);
 
-    try {
-      Client client = billetInfoCombinedAndClient.findClientById(combinedScore.getClientId());
-      Pagador pagador = billetFactory.createPagadorFromClient(client);
+            if (dueDate != null && !dueDate.trim().isEmpty()) {
+              LocalDate customDueDate = LocalDate.parse(dueDate);
+              if (!customDueDate.equals(combinedScore.getDueDate())) {
+                combinedScore.setDueDate(customDueDate);
+                combinedScoreService.save(combinedScore);
+              }
+            }
 
-      if (dueDate != null && !dueDate.trim().isEmpty()) {
-        LocalDate customDueDate = LocalDate.parse(dueDate);
-        if (!customDueDate.equals(combinedScore.getDueDate())) {
-          combinedScore.setDueDate(customDueDate);
-          combinedScoreService.save(combinedScore);
-        }
-      }
-
-      BilletRequestSimplified billetRequest =
-          billetFactory.createBilletRequest(combinedScore, combinedScoreId, pagador, number);
-      Map<String, Object> responseBody = issueBilletAndExtractResponse(billetRequest);
-      byte[] pdfBytes = (byte[]) responseBody.get("pdf");
-      billetFileStorageService.saveBilletFile(combinedScoreId, pdfBytes);
-      updateCombinedScoreWithBilletData(combinedScore, responseBody);
-      return buildPdfResponse(pdfBytes, combinedScore.getYourNumber());
-    } catch (Exception e) {
-      throw new CombinedScoreException("Erro ao gerar o boleto: " + e.getMessage(), e);
-    }
+            BilletRequestSimplified billetRequest =
+                billetFactory.createBilletRequest(combinedScore, combinedScoreId, pagador, number);
+            Map<String, Object> responseBody = issueBilletAndExtractResponse(billetRequest);
+            byte[] pdfBytes = (byte[]) responseBody.get("pdf");
+            billetFileStorageService.saveBilletFile(combinedScoreId, pdfBytes);
+            updateCombinedScoreWithBilletData(combinedScore, responseBody);
+            return buildPdfResponse(pdfBytes, combinedScore.getYourNumber());
+          } catch (Exception e) {
+            throw new CombinedScoreException("Erro ao gerar o boleto: " + e.getMessage(), e);
+          }
+        });
   }
 
   private Map<String, Object> issueBilletAndExtractResponse(BilletRequestSimplified billetRequest)

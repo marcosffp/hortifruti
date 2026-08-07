@@ -13,6 +13,7 @@ import java.time.format.TextStyle;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -89,10 +90,19 @@ public class MacroExportService {
     return zipFilePath.toString();
   }
 
+  /**
+   * Sufixo com UUID evita que duas exportações concorrentes do mesmo mês (dois usuários chamando
+   * {@link #exportMacroReports} ao mesmo tempo) caiam na mesma pasta temporária e corrompam o
+   * resultado uma da outra — cada chamada agora tem sua própria pasta isolada.
+   */
   private String createMacroFolder(LocalDate startDate) throws IOException {
     String tempDir = System.getProperty("java.io.tmpdir");
     String folderName =
-        tempDir + "/MACRO_RELATORIO_" + startDate.format(DateTimeFormatter.ofPattern("MM_yyyy"));
+        tempDir
+            + "/MACRO_RELATORIO_"
+            + startDate.format(DateTimeFormatter.ofPattern("MM_yyyy"))
+            + "_"
+            + UUID.randomUUID();
     Path folderPath = Path.of(folderName);
 
     if (!Files.exists(folderPath)) {

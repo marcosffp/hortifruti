@@ -5,7 +5,7 @@
 **Metodologia:** leitura completa (não apenas grep) de todo o código-fonte, dividida em 5 frentes paralelas por área do sistema. Nenhuma correção foi aplicada — este documento é só diagnóstico, para orientar um trabalho de refatoração subsequente.
 **Não avaliado:** frontend, testes automatizados (o projeto não tem pasta `src/test` com cobertura relevante — ver seção 7), infraestrutura de deploy além do que está em `Dockerfile`/`pom.xml`.
 
-> **Convenção:** cada achado tem uma checkbox `- [ ]` (para marcar como resolvido), severidade, localização exata (`arquivo:linha`) e uma explicação do impacto real — não é opinião de estilo, é "isso pode doer assim".
+> **Convenção:** cada achado tem uma checkbox `- [ ]` (para marcar como resolvido), severidade, localização exata (`arquivo:linha`) e uma explicação do impacto real — não é opinião de estilo, é "isso pode doer assim". Itens resolvidos são removidos deste documento (não apenas marcados), para o arquivo continuar refletindo só o trabalho pendente.
 
 ---
 
@@ -26,7 +26,7 @@
 
 ## 1. Como usar este documento
 
-- Cada achado é uma **checkbox independente** — marque `[x]` conforme for corrigindo, e este arquivo vira o tracker da refatoração.
+- Cada achado é uma **checkbox independente** — marque `[x]` e remova o item conforme for corrigindo, e este arquivo vira o tracker da refatoração.
 - Severidade: 🔴 **Crítico** (bug real / risco de perda de dado ou segurança ativa) · 🟠 **Alto** (defeito funcional/de design com impacto real) · 🟡 **Médio** (dívida técnica que vai doer em manutenção) · 🔵 **Baixo** (estilo/limpeza, baixo risco).
 - Dentro de cada área, os achados estão nas 5 categorias que vocês pediram: **Vulnerabilidades**, **Acoplamento excessivo**, **Baixa coesão**, **Clareza/código confuso**, **Comentários desnecessários** — mais uma seção "Outros" quando o achado é um bug funcional puro (não se encaixa nas 5 categorias, mas é grave demais pra omitir).
 - Comece pela seção 3 (plano de ataque) — ela já ordena os itens mais importantes por impacto real, não por ordem de leitura do código.
@@ -37,14 +37,14 @@
 
 O código está organizado em uma arquitetura em camadas coerente (controller → service → repository) e, na maior parte do domínio fiscal/financeiro, usa `BigDecimal` corretamente e tem comentários que explicam o *porquê* das decisões — acima da média para um projeto deste tamanho. O problema não é falta de estrutura; é que **381 arquivos e ~15 integrações externas cresceram sem um segundo revisor consistente**, e isso deixou rachaduras específicas e localizadas, não uma bagunça generalizada.
 
-**Contagem de achados em aberto: ~104** (itens já resolvidos foram removidos deste documento), sendo:
+**Contagem de achados em aberto: ~101** (itens já resolvidos foram removidos deste documento), sendo:
 
 | Severidade | Qtde. em aberto | Onde estão os mais graves |
 |---|---|---|
 | 🔴 Crítico | **1** | Config/Build (schema sem migração versionada) |
 | 🟠 Alto | **10** | Mapper morto, parsing de endereço duplicado, N+1 residual em colunas `@Lob`, acoplamento cruzado remanescente, ausência de paginação |
-| 🟡 Médio | **44** | Duplicação de lógica entre integrações parecidas, god classes, tratamento de erro genérico, documentação desatualizada |
-| 🔵 Baixo | **49** | Nomenclatura inconsistente, código morto isolado, metadados de build |
+| 🟡 Médio | **42** | Duplicação de lógica entre integrações parecidas, god classes, tratamento de erro genérico, documentação desatualizada |
+| 🔵 Baixo | **48** | Nomenclatura inconsistente, código morto isolado, metadados de build |
 
 ### O achado crítico remanescente
 
@@ -64,7 +64,7 @@ Ordem sugerida, misturando "baixo custo/alto impacto" primeiro com os itens que 
 - [ ] **E-C1** — Introduzir Flyway (ou Liquibase), congelar `ddl-auto=validate` em produção, versionar os `.sql` avulsos que já existem em `static/`. *(Não aplicado nesta rodada — exige acesso ao schema real de hml/prod para gerar uma baseline confiável; ver observação abaixo.)*
 
 ### Onda 4 — Débito técnico contínuo (backlog, sem urgência)
-Tudo marcado 🟡/🔵 nas seções abaixo: duplicação entre provedores de e-mail, parsing de endereço duplicado (NF-e vs. boleto), DTOs/mappers mortos, READMEs desatualizados, nomenclatura inconsistente.
+Tudo marcado 🟡/🔵 nas seções abaixo: duplicação entre provedores de e-mail, DTOs/mappers mortos, READMEs desatualizados, nomenclatura inconsistente.
 
 ---
 
@@ -76,75 +76,15 @@ Tudo marcado 🟡/🔵 nas seções abaixo: duplicação entre provedores de e-m
 
 ### A · Vulnerabilidades
 
-- [x] 🟠 **[A-V2] Mapa de buckets do rate limiter cresce sem limite (TTL/eviction ausente) — DoS de memória**
-  **Local:** `config/auth/RateLimitingFilter.java:35,45`
-  ```java
-  private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
-  Bucket bucket = buckets.computeIfAbsent(key, k -> createNewBucket(endpoint));
-  ```
-  Cada combinação `clientIp:endpoint` cria uma entrada permanente, nunca removida. Um atacante cresce esse mapa indefinidamente e esgota a heap — sem nem precisar estar autenticado, já que o filtro roda antes da autenticação (`SecurityConfig.java:111`).
-
-- [x] 🟠 **[A-V3] Política de senha fraca: mínimo de 4 caracteres, teto artificial de 20**
-  **Local:** `dto/user/UserRequest.java:11` e reimplementado manualmente em `service/user/UserService.java:39,67`
-  ```java
-  @Size(min = 4, max = 20, message = "A senha deve ter entre 4 e 20 caracteres")
-  ```
-  4 caracteres está muito abaixo de qualquer diretriz atual (NIST 800-63B recomenda mínimo 8, priorizando senhas longas). O teto de 20 impede passphrases fortes sem justificativa técnica (BCrypt suporta até 72 bytes). *(Ver também duplicação em [seção 9](#9-achados-duplicados-entre-áreas).)*
-
-- [x] 🟡 **[A-V4] Mensagens de exceção internas (paths, detalhes de SSL) expostas cruas ao cliente da API**
-  **Local:** `exception/GlobalExceptionHandler.java` (`handleBBApiException`, `handleBilletException`, `handleStorageException`, `handleBackupException`, entre outros) devolvem `ex.getMessage()` direto; origem em `config/ssl/MtlsRestTemplateFactory.java:100-104`.
-  Dependendo da exceção original, isso pode vazar caminhos de arquivo do servidor (`temp/cert/...`) ou detalhes de biblioteca TLS — informação útil para reconhecimento por um atacante.
-
-- [x] 🟡 **[A-V5] Senha de bootstrap do admin logada em texto plano**
-  **Local:** `config/UserInitializer.java:346-353`
-  ```java
-  log.warn("Nenhum usuário encontrado. Conta administrativa inicial criada — usuário: 'admin',"
-      + " senha temporária: '{}'. Faça login e troque a senha imediatamente.", password);
-  ```
-  Logs são frequentemente enviados a agregadores de terceiros e retidos por tempo indeterminado. Nada força a troca da senha após o primeiro login. Recomenda-se não persistir em log permanente e/ou forçar troca no primeiro acesso.
-
-- [x] 🟡 **[A-V6] Swagger/OpenAPI não é desabilitado no profile `hml`**
-  **Local:** `application-hml.properties` (ausência de `springdoc.*.enabled=false`, presente só em `application-prod.properties:30-31`); `SecurityConfig.java:87-88` libera `/swagger-ui/**` em todos os profiles.
-  Em homologação — que roda em infraestrutura pública (Railway) — o schema completo da API fica navegável sem autenticação, facilitando reconhecimento de superfície de ataque.
-
-- [x] 🔵 **[A-V7] Estado de segurança em memória, single-instance apenas**
-  **Local:** `config/auth/TokenBlocklist.java:9-11`, `RateLimitingFilter.java:35`, `DeviceTokenAuthFilter.java:58`
-  Os três usam `ConcurrentHashMap` local ao processo. Já documentado como limitação aceita, mas fica silenciosamente quebrado (logout não invalida em todas as instâncias, limites de rate viram por-instância) se o serviço for escalado horizontalmente no futuro.
-
-- [x] 🔵 **[A-V8] `bucket4j-core` usa coordenadas Maven descontinuadas** *(ver [seção 9](#9-achados-duplicados-entre-áreas))*
-  **Local:** `pom.xml` (`com.github.vladimir-bukhtoyarov:bucket4j-core`)
-
-- [x] 🔵 **[A-V9] `DataIntegrityViolationException` mapeado por substring de mensagem de driver MySQL**
-  **Local:** `exception/GlobalExceptionHandler.java:143-166` (`errorMessage.contains("Duplicate entry")` + `errorMessage.contains("users")`)
-  Dependência frágil de string específica do driver/idioma. Troca de driver ou versão do MySQL quebra silenciosamente esse tratamento. Prefira checar `ex.getCause()` por `SQLIntegrityConstraintViolationException` + nome da constraint.
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos.
 
 ### A · Acoplamento e baixa coesão
 
-- [x] 🟡 **[A-A1] Lógica de hashing de token duplicada entre `RefreshTokenService` e `DispositivoVinculadoService`**
-  **Local:** `config/auth/RefreshTokenService.java:83-107` vs. `config/auth/DispositivoVinculadoService.java:87-89,180-188`
-  Ambas implementam, de forma idêntica e independente: gerar 32 bytes via `SecureRandom` + Base64 URL-safe, e SHA-256 formatado em hex. Se o algoritmo precisar mudar (ex.: migrar para Argon2/PBKDF2), é preciso lembrar de atualizar dois lugares. Extrair para um `TokenHasher` compartilhado.
-
-- [x] 🔵 **[A-A2] `GlobalExceptionHandler` concentra ~25 handlers de domínios não relacionados**
-  **Local:** `exception/GlobalExceptionHandler.java` (369 linhas)
-  Padrão aceitável para `@RestControllerAdvice` central, mas a maioria dos handlers é boilerplate quase idêntico. Poderia usar uma interface `DomainException` carregando seu próprio `HttpStatus` + um handler genérico.
-
-- [x] 🔵 **[A-A3] Certificado mTLS compartilhado entre BB e Sicoob via propriedade de nome genérico**
-  **Local:** `config/ssl/MtlsRestTemplateFactory.java:39-40` (`@Value("${password.pfx}")`)
-  Intencional (mesmo certificado e-CNPJ), mas acopla duas integrações de negócio distintas a uma única propriedade sem namespace — rotação de certificado de uma impacta a outra silenciosamente.
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos.
 
 ### A · Clareza / código confuso
 
-- [x] 🔵 **[A-C1] Offset de fuso horário como string mágica (`"-03:00"`)**
-  **Local:** `config/auth/TokenConfiguration.java:75` — usa `ZoneOffset.of("-03:00")` em vez de `ZoneId.of("America/Sao_Paulo")` (já usado em `application.properties`). Armadilha silenciosa se o horário de verão for reinstituído no Brasil.
-
-- [x] 🔵 **[A-C2] Nome de arquivo do certificado PFX duplicado como literal em 2 métodos**
-  **Local:** `config/Base64FileDecoder.java:50,97` — mesmo literal `"HORTIFRUTISANTALUZIALTDA275409060001552025.pfx"` copiado. Extrair para constante.
-
-- [x] 🔵 **[A-C3] Validação de senha duplicada quase verbatim entre `updateUser` e `updateUserById`** *(ver [seção 9](#9-achados-duplicados-entre-áreas))*
-  **Local:** `service/user/UserService.java:37-43` vs. `:64-72`
-
-- [x] 🔵 **[A-C4] Variável local com nome enganoso (`user` para um DTO de contagem)**
-  **Local:** `service/user/UserService.java:96-103` — `UsersCountResponse user = ...`. Cosmético.
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos.
 
 ### A · Comentários desnecessários
 
@@ -158,64 +98,21 @@ Nenhum achado. Busca por `TODO|FIXME|XXX` e por blocos de código comentado não
 
 > A maior parte do código lido usa `BigDecimal` corretamente para dinheiro e tem comentários explicando regras da Sefaz/decisões de concorrência — acima da média para este domínio. O risco real está em bugs de cálculo silenciosos e duplicação de parsing frágil.
 
-### B · Clareza / código confuso (contém os achados mais graves desta área)
+### B · Clareza / código confuso
 
-- [x] 🟡 **[B-C5] Alíquota de ICMS por CFOP hardcoded, só 2 casos cobertos, fallback silencioso para zero**
-  **Local:** `service/invoice/tax/registerReport/RegisterCalculator.java:70-76`
-  ```java
-  case "5102" -> BigDecimal.valueOf(18.00);
-  case "5405" -> BigDecimal.ZERO;
-  default -> BigDecimal.ZERO;
-  ```
-  Sem constante nomeada nem comentário sobre a base legal. Qualquer CFOP fora desses dois cai silenciosamente em alíquota zero, sem log de CFOP não mapeado.
-
-- [x] 🟡 **[B-C6] Espera síncrona longa (`Thread.sleep`) dentro de requisição HTTP, fora do padrão assíncrono já usado no mesmo domínio**
-  **Local:** `service/invoice/IssueInvoiceWithBilletService.waitForInvoiceNumber:88-106` — até 12× `Thread.sleep(10_000)` (2 minutos), somado aos retries de `DanfeXmlService.downloadWithRetry:120-161` (~16s extras). Uma única requisição pode prender uma thread do servlet por minutos. O próprio módulo já resolve um problema parecido com `@Async` em `FiscalNoteXmlStorageService.triggerSaveAfterIssuance:95` — o padrão certo existe no código, só não foi reaplicado aqui.
-
-- [x] 🔵 **[B-C7] Tratamento de erro genérico (`catch Exception`) em orquestradores de alto nível**
-  **Local:** `service/invoice/tax/ReportTaxService.generateMonthly:34-61`, `service/finance/MacroExportService.exportMacroReports:28-68`
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos.
 
 ### B · Baixa coesão / duplicação de lógica
 
-- [x] 🟠 **[B-B1] Parsing de endereço em texto livre implementado de duas formas diferentes e frágeis, para o mesmo campo**
-  **Local:** `service/invoice/factory/Recipient.parseAddress:50-135` (regex + split por vírgula) vs. `service/billet/BilletFactory.createPagadorFromClient:65-159` (split posicional)
-  ```java
-  // BilletFactory.java:80-84
-  if (addressParts.length == 6) { complemento = addressParts[2].trim(); }
-  String bairro = addressParts[addressParts.length - 3].trim();
-  ```
-  Um mesmo cadastro de cliente pode aparecer com endereço correto na NF-e e errado no boleto (ou vice-versa) — as regras de corte diferem entre os dois parsers. Candidato a virar um `AddressParser` compartilhado, ou melhor, migrar o cadastro para campos estruturados.
-
-- [x] 🟡 **[B-B2] `ReportTaxService` duplica quase por completo a geração dos 4 relatórios fiscais entre o caminho "ZIP" e "mapa de arquivos"**
-  **Local:** `service/invoice/tax/ReportTaxService.java:68-128` (`generateMonthlyFiles`) vs. `:174-212` (`generateAndSaveReports`) — mesmos 4 relatórios, mesmo try/catch copiado 8 vezes ao todo.
-
-- [x] 🟡 **[B-B3] Normalização inconsistente do campo `codigoHistorico` da API do BB, em duas classes**
-  **Local:** `service/finance/bb/TransactionBBApiService.isMarcadorDeSaldo:60-63` remove zeros à esquerda antes de comparar; `service/finance/bb/BBSaldoService.consultarSaldo:75-76` compara **sem** essa normalização. Se a API realmente retorna `"000"` (como a primeira classe documenta), o `if` da segunda nunca casa — o endpoint de saldo bancário quebraria sempre. Extrair a normalização para `BBExtratoParsingUtil` e usar nos dois lugares.
-
-- [x] 🟡 **[B-B4] Representação de valores monetários inconsistente entre geradores de Excel do mesmo módulo**
-  **Local:** `service/finance/transaction/TransactionReportExcelGenerator.setAmountCell:94-104` grava número real; `BBExtratoExcelGenerator.java:88-97`/`SicoobExtratoExcelGenerator.java:74-85` gravam como string já formatada. Usuário não consegue somar/filtrar a coluna nas planilhas de extrato.
-
-- [x] 🔵 **[B-B5] `Category` (enum financeiro) mistura categorias de negócio com uma categoria pessoal, sem explicação** *(ver [seção 9](#9-achados-duplicados-entre-áreas))*
-  **Local:** `model/finance/Category.java:3-15` — `FAMÍLIA` é a única entrada acentuada, sem comentário sobre por que uma transação bancária da empresa cairia nessa categoria.
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos.
 
 ### B · Acoplamento excessivo
 
-- [ ] 🟡 **[B-A3] `FiscalNoteXmlStorageService` é uma classe com responsabilidades demais (candidato a "God class")**
-  **Local:** `service/invoice/FiscalNoteXmlStorageService.java` (474 linhas, 7 dependências injetadas). Acumula: locking em memória por ref, job assíncrono de polling, download HTTP direto, orquestração de upload/rollback no R2, callback pós-commit, e regra de negócio de reversão de `hasInvoice`. Mistura infra + regra de negócio fiscal no mesmo arquivo.
-
-- [ ] 🟡 **[B-A4] `BilletService` como fachada com 10 dependências injetadas e guard repetido 8 vezes**
-  **Local:** `service/billet/BilletService.java:36-45`. O padrão `if (sicoobEnvironmentGuard.isBlocked()) {...}` se repete quase idêntico em 8 métodos públicos. Decisão de design documentada e aceita (fachada única para `BilletController`), mas o guard duplicado é candidato barato para extrair.
-
-- [ ] 🔵 **[B-A5] Exports concorrentes batendo no mesmo diretório temporário fixo, sem lock**
-  **Local:** `service/invoice/tax/ReportTaxService.createMonthlyFolder:162-172`, `service/finance/MacroExportService.createMacroFolder:92-103` — nomes de pasta determinísticos sem UUID. Dois usuários exportando o mesmo mês simultaneamente podem corromper o resultado um do outro. O padrão para resolver isso (`ConcurrentHashMap<String, ReentrantLock>`) já existe em `FiscalNoteXmlStorageService.refLocks:68-78` — só não foi reaplicado.
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos.
 
 ### B · Outros (moeda, idempotência, retry/timeout)
 
-- [x] 🟡 **[B-O1] `double` usado para dinheiro na geração de Excel de transações**
-  **Local:** `service/finance/transaction/TransactionReportExcelGenerator.java:96` — limitação conhecida do Apache POI (sem overload `BigDecimal` para `Cell.setCellValue`), severidade moderada, mas é exatamente o padrão que gera diferenças de centavos em somas de planilha.
-
-- [x] 🔵 **[B-O2] Retry ausente na Focus NFe, inconsistente com o padrão já adotado para Sicoob/BB**
-  **Local:** `config/FocusNfeApiClient.java:39-53,55-69` sem retry, enquanto `config/billet/BilletHttpClient.executeWithRetry:85-111` e `config/bb/BBExtratoClient.getExtratoPage:55-62` já implementam retry de 401 com invalidação de token. A emissão de NF-e — operação mais sensível do sistema — não tem nenhuma segunda tentativa em falha de rede transitória.
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos.
 
 ### B · Comentários desnecessários
 
@@ -289,9 +186,6 @@ Nenhum bloco relevante de código morto/comentado encontrado. Comentários de le
 
 - [ ] 🔵 **[C-C8] `new RestTemplate()` sem timeout em `DistanceMatrixService.fetchApiResponse`, inconsistente com o resto do projeto**
   **Local:** `service/freight/DistanceMatrixService.java:80` — único ponto que cria `RestTemplate` "cru" a cada chamada, risco de travar a thread indefinidamente.
-
-- [x] 🔵 **[C-C9] Validação de senha duplicada (4-20 caracteres, magic numbers)** *(ver [seção 9](#9-achados-duplicados-entre-áreas))*
-  **Local:** `service/user/UserService.java:39,67`
 
 - [ ] 🔵 **[C-C10] `InvoiceProductService.deleteInvoiceProduct` faz `existsById` seguido de `findById(...).get()`**
   **Local:** `service/purchase/InvoiceProductService.java:37-43` — race condition teórica, uso desnecessário de `.get()`. Poderia ser um único `findById(...).orElseThrow(...)`.
@@ -544,9 +438,6 @@ Poucos achados — nenhum bloco de código comentado ou `TODO`/`FIXME` encontrad
 - [ ] 🟡 **[E-C3] `spring-boot-starter-web` e `spring-boot-starter-webflux` juntos no mesmo projeto**
   **Local:** `pom.xml:67-78` — duas pilhas HTTP concorrentes (Tomcat + Reactor Netty). Se o motivo é só `WebClient` reativo para chamar APIs externas, dá para obter isso com dependência mais enxuta, ou migrar para `RestClient` síncrono (Spring Framework 6.1+) e remover o starter reativo.
 
-- [x] 🔵 **[E-C4] Coordenada Maven desatualizada do Bucket4j** *(ver [seção 9](#9-achados-duplicados-entre-áreas))*
-  **Local:** `pom.xml:174-178` — `com.github.vladimir-bukhtoyarov:bucket4j-core`
-
 - [ ] 🔵 **[E-C5] Metadados de projeto vazios (boilerplate do Spring Initializr nunca preenchido)**
   **Local:** `pom.xml:18-31` — `<url/>`, `<licenses><license/></licenses>`, `<developers><developer/></developers>`, `<scm>...</scm>` vazios. Não bloqueia build, é ruído.
 
@@ -556,8 +447,6 @@ Poucos achados — nenhum bloco de código comentado ou `TODO`/`FIXME` encontrad
 
 Sinalizados **independentemente** por duas frentes de análise diferentes — reforça que são pontos reais, não ruído de uma leitura isolada:
 
-- [x] **Validação de senha (4-20 caracteres, magic numbers, duplicada em 2 métodos)** — reportado em A-V3/A-C3 e [C-C9](#área-c--demais-services), todos apontando para `service/user/UserService.java:39,67` e `dto/user/UserRequest.java:11`. Corrigido: extraído `encodeValidatedPassword(String)` em `UserService`, mínimo subiu para 8 caracteres e teto para 72 (limite de bytes considerado pelo BCrypt), em `UserRequest`/`UserService`.
-- [x] **`bucket4j-core` com `groupId` descontinuado** — reportado em A-V8 e [E-C4](#e-c1), ambos em `pom.xml`. Corrigido: `groupId` trocado de `com.github.vladimir-bukhtoyarov` para `com.bucket4j` (mesma versão 8.0.1 continua publicada lá).
 - [ ] **`Category.FAMÍLIA` — enum financeiro com valor acentuado/semântica questionável** — reportado em B-B5 e E-J8, ambos observando o vínculo com `util/TransactionUtil.java:61` (nome pessoal "marcos" hardcoded → `FAMÍLIA`), que a frente de "Demais Services" também aponta em C-B1 como problema de dado de RH hardcoded no código-fonte.
 
 ---
