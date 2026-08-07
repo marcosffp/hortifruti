@@ -35,7 +35,7 @@ public class R2StorageService {
       return key;
     } catch (S3Exception | software.amazon.awssdk.core.exception.SdkClientException e) {
       log.error("[R2Storage] upload key={} outcome=FAILURE message={}", key, e.getMessage());
-      throw new StorageException("Falha ao enviar arquivo para o R2: " + e.getMessage(), e);
+      throw new StorageException("Falha ao enviar arquivo para o R2.", e);
     }
   }
 
@@ -49,7 +49,7 @@ public class R2StorageService {
       r2Client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(key).build());
     } catch (S3Exception | software.amazon.awssdk.core.exception.SdkClientException e) {
       log.error("[R2Storage] delete key={} outcome=FAILURE message={}", key, e.getMessage());
-      throw new StorageException("Falha ao remover arquivo do R2: " + e.getMessage(), e);
+      throw new StorageException("Falha ao remover arquivo do R2.", e);
     }
   }
 
@@ -62,7 +62,7 @@ public class R2StorageService {
         | software.amazon.awssdk.core.exception.SdkClientException
         | java.io.IOException e) {
       log.error("[R2Storage] download key={} outcome=FAILURE message={}", key, e.getMessage());
-      throw new StorageException("Falha ao baixar arquivo do R2: " + e.getMessage(), e);
+      throw new StorageException("Falha ao baixar arquivo do R2.", e);
     }
   }
 
@@ -85,8 +85,7 @@ public class R2StorageService {
           sourceKey,
           destinationKey,
           e.getMessage());
-      throw new StorageException(
-          "Falha ao mover arquivo para cancelados no R2: " + e.getMessage(), e);
+      throw new StorageException("Falha ao mover arquivo para cancelados no R2.", e);
     }
 
     try {
@@ -100,7 +99,7 @@ public class R2StorageService {
           e.getMessage(),
           destinationKey);
       throw new StorageException(
-          "Falha ao remover arquivo original após mover para cancelados: " + e.getMessage(), e);
+          "Falha ao remover arquivo original após mover para cancelados.", e);
     }
   }
 }

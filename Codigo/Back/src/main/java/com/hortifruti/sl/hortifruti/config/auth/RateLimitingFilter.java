@@ -10,11 +10,17 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+@Slf4j
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
 
@@ -32,7 +38,20 @@ public class RateLimitingFilter extends OncePerRequestFilter {
           "/api/dispositivos/pareamento/confirmar",
           Bandwidth.classic(5, Refill.greedy(5, Duration.ofMinutes(1))));
 
-  private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+  /**
+   * TTL bem acima da maior janela de refill (1 min) — uma entrada só é descartada quando já está
+   * ociosa havia tempo suficiente para o bucket ter voltado a ficar cheio de qualquer forma, então
+   * recriá-la do zero na próxima requisição não relaxa o limite de ninguém.
+   */
+  private static final Duration BUCKET_TTL = Duration.ofMinutes(10);
+
+  private final Map<String, BucketEntry> buckets = new ConcurrentHashMap<>();
+
+  private record BucketEntry(Bucket bucket, AtomicReference<Instant> lastAccess) {
+    static BucketEntry of(Bucket bucket) {
+      return new BucketEntry(bucket, new AtomicReference<>(Instant.now()));
+    }
+  }
 
   @Override
   protected void doFilterInternal(
@@ -42,9 +61,10 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     String endpoint = request.getRequestURI();
     String key = clientIp + ":" + endpoint;
 
-    Bucket bucket = buckets.computeIfAbsent(key, k -> createNewBucket(endpoint));
+    BucketEntry entry = buckets.computeIfAbsent(key, k -> BucketEntry.of(createNewBucket(endpoint)));
+    entry.lastAccess().set(Instant.now());
 
-    if (bucket.tryConsume(1)) {
+    if (entry.bucket().tryConsume(1)) {
       filterChain.doFilter(request, response);
     } else {
       response.setStatus(429);
@@ -58,5 +78,16 @@ public class RateLimitingFilter extends OncePerRequestFilter {
   private Bucket createNewBucket(String endpoint) {
     Bandwidth limit = LIMITES_POR_ENDPOINT.getOrDefault(endpoint, LIMITE_PADRAO);
     return Bucket.builder().addLimit(limit).build();
+  }
+
+  @Scheduled(fixedRate = 5, timeUnit = TimeUnit.MINUTES)
+  void evictStaleBuckets() {
+    Instant cutoff = Instant.now().minus(BUCKET_TTL);
+    int before = buckets.size();
+    buckets.values().removeIf(entry -> entry.lastAccess().get().isBefore(cutoff));
+    int removed = before - buckets.size();
+    if (removed > 0) {
+      log.debug("Removidos {} buckets de rate limit ociosos por mais de {}", removed, BUCKET_TTL);
+    }
   }
 }

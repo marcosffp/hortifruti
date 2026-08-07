@@ -8,6 +8,7 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.config.RequestConfig.Builder;
 import org.apache.hc.client5.http.config.TlsConfig;
@@ -30,6 +31,7 @@ import org.springframework.web.client.RestTemplate;
  * config TLS 1.2/1.3 e o mesmo padrão de timeout — só o pool de conexões, os headers padrão e o
  * tipo de exceção lançada variam por integração.
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class MtlsRestTemplateFactory {
@@ -100,7 +102,13 @@ public class MtlsRestTemplateFactory {
     } catch (RuntimeException e) {
       throw e;
     } catch (Exception e) {
-      throw settings.wrapException(e.getMessage(), e);
+      // O detalhe original (caminho de arquivo, mensagem de biblioteca TLS) fica só no log do
+      // servidor — embuti-lo na mensagem da exceção de negócio a exporia crua ao cliente da API
+      // via GlobalExceptionHandler, que devolve ex.getMessage() diretamente.
+      log.error("Falha ao configurar conexão mTLS: {}", e.getMessage(), e);
+      throw settings.wrapException(
+          "Falha ao configurar a conexão segura (mTLS). Consulte os logs do servidor para detalhes.",
+          e);
     }
   }
 }

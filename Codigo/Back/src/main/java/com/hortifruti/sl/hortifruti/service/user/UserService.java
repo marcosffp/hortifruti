@@ -17,6 +17,10 @@ import org.springframework.stereotype.Service;
 @Service
 @AllArgsConstructor
 public class UserService {
+
+  private static final int PASSWORD_MIN_LENGTH = 8;
+  private static final int PASSWORD_MAX_LENGTH = 72;
+
   private final UserRepository userRepository;
   private final UserMapper userMapper;
   private final PasswordEncoder passwordEncoder;
@@ -35,11 +39,7 @@ public class UserService {
     }
 
     if (userRequest.password() != null && !userRequest.password().trim().isEmpty()) {
-      String password = userRequest.password().trim();
-      if (password.length() < 4 || password.length() > 20) {
-        throw new UserException("A senha deve ter entre 4 e 20 caracteres");
-      }
-      user.setPassword(passwordEncoder.encode(password));
+      user.setPassword(encodeValidatedPassword(userRequest.password()));
     }
 
     user.setRole(userRequest.role());
@@ -61,14 +61,8 @@ public class UserService {
       user.setUsername(userRequest.username());
     }
 
-    if (userRequest.password() != null) {
-      String trimmedPassword = userRequest.password().trim();
-      if (!trimmedPassword.isEmpty()) {
-        if (trimmedPassword.length() < 4 || trimmedPassword.length() > 20) {
-          throw new UserException("A senha deve ter entre 4 e 20 caracteres");
-        }
-        user.setPassword(passwordEncoder.encode(trimmedPassword));
-      }
+    if (userRequest.password() != null && !userRequest.password().trim().isEmpty()) {
+      user.setPassword(encodeValidatedPassword(userRequest.password()));
     }
 
     if (userRequest.role() != null) {
@@ -77,6 +71,24 @@ public class UserService {
 
     User updatedUser = userRepository.save(user);
     return userMapper.toUserResponse(updatedUser);
+  }
+
+  /**
+   * Trim + valida o tamanho (NIST 800-63B: mínimo 8; teto em 72 porque é o limite de bytes que o
+   * BCrypt considera) antes de codificar. Centralizado aqui porque {@code updateUser} e {@code
+   * updateUserById} precisam da mesma regra ao trocar senha.
+   */
+  private String encodeValidatedPassword(String rawPassword) {
+    String password = rawPassword.trim();
+    if (password.length() < PASSWORD_MIN_LENGTH || password.length() > PASSWORD_MAX_LENGTH) {
+      throw new UserException(
+          "A senha deve ter entre "
+              + PASSWORD_MIN_LENGTH
+              + " e "
+              + PASSWORD_MAX_LENGTH
+              + " caracteres");
+    }
+    return passwordEncoder.encode(password);
   }
 
   public void deleteUser(String username) {
