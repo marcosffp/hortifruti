@@ -3,7 +3,7 @@ package com.hortifruti.sl.hortifruti.service.backup;
 import com.hortifruti.sl.hortifruti.dto.backup.BackupResponse;
 import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
 import com.hortifruti.sl.hortifruti.service.backup.folders.GoogleFolderService;
-import com.hortifruti.sl.hortifruti.service.scheduler.DatabaseStorageService;
+import com.hortifruti.sl.hortifruti.service.scheduler.DatabaseStorageMonitorService;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -24,7 +24,7 @@ public class BackupService {
   private final CsvGeneratorService csvGeneratorService;
   private final BackupPathService backupPathService;
   private final EntityCleanupService entityCleanupService;
-  private final DatabaseStorageService databaseStorageService;
+  private final DatabaseStorageMonitorService databaseStorageMonitorService;
 
   public BackupResponse performBackupForPeriod(LocalDateTime startDate, LocalDateTime endDate) {
     try {
@@ -105,10 +105,10 @@ public class BackupService {
   }
 
   public BigDecimal getDatabaseSizeInMB() {
-    return databaseStorageService.getDatabaseSizeInMB();
+    return databaseStorageMonitorService.getDatabaseSizeInMB();
   }
 
   public BigDecimal getMaxDatabaseSizeInMB() {
-    return databaseStorageService.getMaxStorageInMB();
+    return databaseStorageMonitorService.getMaxStorageInMB();
   }
 }

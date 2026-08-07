@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.service.backup.auth;
+package com.hortifruti.sl.hortifruti.service.googleauth;
 
 import java.io.File;
 import lombok.experimental.UtilityClass;

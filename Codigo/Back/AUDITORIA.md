@@ -37,14 +37,14 @@
 
 O código está organizado em uma arquitetura em camadas coerente (controller → service → repository) e, na maior parte do domínio fiscal/financeiro, usa `BigDecimal` corretamente e tem comentários que explicam o *porquê* das decisões — acima da média para um projeto deste tamanho. O problema não é falta de estrutura; é que **381 arquivos e ~15 integrações externas cresceram sem um segundo revisor consistente**, e isso deixou rachaduras específicas e localizadas, não uma bagunça generalizada.
 
-**Contagem de achados em aberto: ~101** (itens já resolvidos foram removidos deste documento), sendo:
+**Contagem de achados em aberto: ~98** (itens já resolvidos foram removidos deste documento), sendo:
 
 | Severidade | Qtde. em aberto | Onde estão os mais graves |
 |---|---|---|
 | 🔴 Crítico | **1** | Config/Build (schema sem migração versionada) |
 | 🟠 Alto | **10** | Mapper morto, parsing de endereço duplicado, N+1 residual em colunas `@Lob`, acoplamento cruzado remanescente, ausência de paginação |
-| 🟡 Médio | **42** | Duplicação de lógica entre integrações parecidas, god classes, tratamento de erro genérico, documentação desatualizada |
-| 🔵 Baixo | **48** | Nomenclatura inconsistente, código morto isolado, metadados de build |
+| 🟡 Médio | **40** | Duplicação de lógica entre integrações parecidas, god classes, tratamento de erro genérico, documentação desatualizada |
+| 🔵 Baixo | **47** | Nomenclatura inconsistente, código morto isolado, metadados de build |
 
 ### O achado crítico remanescente
 
@@ -131,17 +131,8 @@ Nenhum bloco relevante de código morto/comentado encontrado. Comentários de le
 
 ### C · Acoplamento excessivo
 
-- [ ] 🟡 **[C-A3] `GmailApiEmailSender` (notification/email) depende de `CredentialManager` (backup/auth)**
-  **Local:** `service/notification/email/GmailApiEmailSender.java:13-14,45`. Decisão de design razoável (reaproveitar OAuth do backup), mas cria dependência cruzada entre domínios sem outra relação — mudança no fluxo OAuth do backup quebra silenciosamente o envio de e-mail.
-
 - [ ] 🟡 **[C-A4] `CombinedScoreCancellationService` depende de `InvoiceService` e `BilletService` além do próprio `CombinedScoreService`**
-  **Local:** `service/purchase/CombinedScoreCancellationService.java:41-47`. Bem documentado (evita dependência circular), mas o cancelamento de um agrupamento já conhece 3 domínios — cresce a cada novo domínio que precisar ser cancelado em cascata.
-
-- [ ] 🟡 **[C-A5] `StatementSelectionService` (lógica de extrato bancário/finance) vive no pacote `service.notification`**
-  **Local:** `service/notification/StatementSelectionService.java` — não manipula nada de notificação, está no pacote errado por conveniência histórica.
-
-- [ ] 🔵 **[C-A6] `DatabaseStorageService` (pacote scheduler) depende de `NotificationCoordinator`/`EmailTemplateService`**
-  **Local:** `service/scheduler/DatabaseStorageService.java:22-23`. Mistura monitorar tamanho do banco com montar/disparar e-mail.
+  **Local:** `service/purchase/CombinedScoreCancellationService.java:41-47`. Bem documentado (evita dependência circular), mas o cancelamento de um agrupamento já conhece 3 domínios — cresce a cada novo domínio que precisar ser cancelado em cascata. *Revisado: mantido como está — o Javadoc da classe já explica que ela existe fora de `CombinedScoreService` justamente para evitar a dependência circular (`InvoiceService`/`BilletService` já dependem dele); não há correção de baixo risco disponível sem reintroduzir esse ciclo.*
 
 ### C · Baixa coesão / pacotes "gaveta"
 
@@ -199,7 +190,7 @@ Nenhum bloco relevante de código morto/comentado encontrado. Comentários de le
   **Local:** `service/notification/email/SendGridEmailSender.java:98-119`, `GmailSmtpEmailSender.java:143-152`, `GmailApiEmailSender.java:171-180`. Correção de bug nessa lógica precisa ser replicada em 3 lugares.
 
 - [ ] 🔵 **[C-D2] Montagem de contexto de mensagem (`Map<String,String> variables`) repetida quase palavra-por-palavra em 3 services**
-  **Local:** `service/notification/NotificationService.java:222-237` vs. `BulkNotificationService.java:255-272` vs. `DatabaseStorageService`.
+  **Local:** `service/notification/NotificationService.java:222-237` vs. `BulkNotificationService.java:255-272` vs. `service/scheduler/DatabaseStorageAlertService.java`.
 
 ### C · Tratamento de erro genérico / catch silencioso
 

@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.service.backup.auth;
+package com.hortifruti.sl.hortifruti.service.googleauth;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;

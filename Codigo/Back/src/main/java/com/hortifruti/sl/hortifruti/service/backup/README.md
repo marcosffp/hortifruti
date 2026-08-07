@@ -1,6 +1,6 @@
 # com.hortifruti.sl.hortifruti.service.backup
 
-Orquestra o backup periódico dos dados transacionais (compras, produtos de nota, transações e extratos) para o Google Drive: gera CSVs, envia para uma estrutura de pastas por ano/mês/entidade e remove do banco os registros já salvos. Depende de `backup/folders` (upload/pastas no Drive) e `scheduler.DatabaseStorageService` (tamanho do banco).
+Orquestra o backup periódico dos dados transacionais (compras, produtos de nota, transações e extratos) para o Google Drive: gera CSVs, envia para uma estrutura de pastas por ano/mês/entidade e remove do banco os registros já salvos. Depende de `backup/folders` (upload/pastas no Drive) e `scheduler.DatabaseStorageMonitorService` (tamanho do banco).
 
 | Arquivo | Tipo | Responsabilidade |
 |---|---|---|
@@ -11,6 +11,6 @@ Orquestra o backup periódico dos dados transacionais (compras, produtos de nota
 
 ## Subpacotes
 
-- `auth/` — obtenção e validação/renovação de credenciais OAuth2 do Google (Drive), incluindo tratamento de token inválido/expirado (ver `auth/README.md`).
+- `auth/` — monta o cliente `Drive` autenticado (ver `auth/README.md`); o gerenciamento de credenciais OAuth2 do Google em si é compartilhado com `notification.email` e vive em `service.googleauth`.
 - `folders/` — operações de baixo nível no Google Drive: busca/criação de pastas e upload de arquivos (ver `folders/README.md`).
 - `oauth/` — fluxo de callback OAuth2 (troca de código de autorização por token) usado no primeiro login/autorização do Drive (ver `oauth/README.md`).

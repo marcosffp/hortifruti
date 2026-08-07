@@ -2,8 +2,6 @@ package com.hortifruti.sl.hortifruti.service.scheduler;
 
 import com.hortifruti.sl.hortifruti.service.notification.NotificationCoordinator;
 import com.hortifruti.sl.hortifruti.service.notification.email.EmailTemplateService;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,45 +10,21 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+/**
+ * Compõe e dispara o e-mail de alerta de armazenamento a partir do tamanho apurado por {@link
+ * DatabaseStorageMonitorService}.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class DatabaseStorageService {
+public class DatabaseStorageAlertService {
 
-  @PersistenceContext private EntityManager entityManager;
-
+  private final DatabaseStorageMonitorService databaseStorageMonitorService;
   private final NotificationCoordinator notificationCoordinator;
   private final EmailTemplateService emailTemplateService;
 
   @Value("${overdue.notification.emails}")
   private String overdueNotificationEmails;
-
-  private static final BigDecimal MAX_STORAGE_MB = new BigDecimal("1024");
-  private static final BigDecimal THRESHOLD_PERCENTAGE = new BigDecimal("80");
-
-  public BigDecimal getDatabaseSizeInMB() {
-    String query =
-        "SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_in_mb "
-            + "FROM information_schema.tables "
-            + "WHERE table_schema = DATABASE()";
-
-    var result = entityManager.createNativeQuery(query).getResultList();
-    if (!result.isEmpty() && result.get(0) != null) {
-      return new BigDecimal(result.get(0).toString());
-    }
-    return BigDecimal.ZERO;
-  }
-
-  public BigDecimal getMaxStorageInMB() {
-    return MAX_STORAGE_MB;
-  }
-
-  public boolean isDatabaseOverThreshold() {
-    BigDecimal currentSize = getDatabaseSizeInMB();
-    BigDecimal thresholdSize =
-        MAX_STORAGE_MB.multiply(THRESHOLD_PERCENTAGE).divide(new BigDecimal("100"));
-    return currentSize.compareTo(thresholdSize) >= 0;
-  }
 
   private void sendNotificationToManagement(BigDecimal currentSize) {
     if (overdueNotificationEmails == null || overdueNotificationEmails.trim().isEmpty()) {
@@ -61,15 +35,16 @@ public class DatabaseStorageService {
     String[] emails = overdueNotificationEmails.split(",");
     String subject = "Alerta: Armazenamento do Banco de Dados Excedido";
 
+    BigDecimal maxStorageMB = databaseStorageMonitorService.getMaxStorageInMB();
     BigDecimal storagePercentage =
         currentSize
             .multiply(new BigDecimal("100"))
-            .divide(MAX_STORAGE_MB, 1, java.math.RoundingMode.HALF_UP);
+            .divide(maxStorageMB, 1, java.math.RoundingMode.HALF_UP);
 
     Map<String, String> variables = new HashMap<>();
     variables.put("STORAGE_PERCENTAGE", storagePercentage.toString());
     variables.put("CURRENT_SIZE", currentSize.toString());
-    variables.put("MAX_SIZE", MAX_STORAGE_MB.toString());
+    variables.put("MAX_SIZE", maxStorageMB.toString());
 
     String emailBody = emailTemplateService.processTemplate("database-management", variables);
 
@@ -89,9 +64,8 @@ public class DatabaseStorageService {
   }
 
   public void checkDatabaseStorage() {
-    BigDecimal currentSize = getDatabaseSizeInMB();
-    BigDecimal thresholdSize =
-        MAX_STORAGE_MB.multiply(THRESHOLD_PERCENTAGE).divide(new BigDecimal("100"));
+    BigDecimal currentSize = databaseStorageMonitorService.getDatabaseSizeInMB();
+    BigDecimal thresholdSize = databaseStorageMonitorService.getThresholdSizeInMB();
 
     if (currentSize.compareTo(thresholdSize) >= 0) {
       log.warn(

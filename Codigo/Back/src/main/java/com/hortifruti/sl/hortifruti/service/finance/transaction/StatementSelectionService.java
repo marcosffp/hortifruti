@@ -1,4 +1,4 @@
-package com.hortifruti.sl.hortifruti.service.notification;
+package com.hortifruti.sl.hortifruti.service.finance.transaction;
 
 import com.hortifruti.sl.hortifruti.model.finance.Bank;
 import com.hortifruti.sl.hortifruti.model.finance.Statement;

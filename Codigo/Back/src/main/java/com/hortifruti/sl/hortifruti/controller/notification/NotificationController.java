@@ -4,7 +4,8 @@ import com.hortifruti.sl.hortifruti.dto.notification.*;
 import com.hortifruti.sl.hortifruti.model.notification.NotificationChannel;
 import com.hortifruti.sl.hortifruti.service.notification.BulkNotificationService;
 import com.hortifruti.sl.hortifruti.service.notification.NotificationService;
-import com.hortifruti.sl.hortifruti.service.scheduler.DatabaseStorageService;
+import com.hortifruti.sl.hortifruti.service.scheduler.DatabaseStorageAlertService;
+import com.hortifruti.sl.hortifruti.service.scheduler.DatabaseStorageMonitorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,7 +35,8 @@ public class NotificationController {
 
   private final NotificationService notificationService;
   private final BulkNotificationService bulkNotificationService;
-  private final DatabaseStorageService databaseStorageService;
+  private final DatabaseStorageMonitorService databaseStorageMonitorService;
+  private final DatabaseStorageAlertService databaseStorageAlertService;
 
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping("/accounting/recipients")
@@ -108,8 +110,8 @@ public class NotificationController {
       })
   public ResponseEntity<Map<String, Object>> testDatabaseStorageAlert() {
     try {
-      BigDecimal currentSizeMB = databaseStorageService.getDatabaseSizeInMB();
-      databaseStorageService.sendTestStorageNotification(currentSizeMB);
+      BigDecimal currentSizeMB = databaseStorageMonitorService.getDatabaseSizeInMB();
+      databaseStorageAlertService.sendTestStorageNotification(currentSizeMB);
 
       BigDecimal maxSize = new BigDecimal("5120"); // 5GB
       BigDecimal storagePercentage =
@@ -124,7 +126,7 @@ public class NotificationController {
       response.put("currentStoragePercentage", storagePercentage + "%");
       response.put("currentSize", currentSizeMB + " MB");
       response.put("maxSize", maxSize + " MB");
-      response.put("isOverThreshold", databaseStorageService.isDatabaseOverThreshold());
+      response.put("isOverThreshold", databaseStorageMonitorService.isDatabaseOverThreshold());
 
       return ResponseEntity.ok(response);
 
