@@ -30,7 +30,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.web.reactive.function.client.WebClient;
 
 @Service
 @RequiredArgsConstructor
@@ -39,14 +38,10 @@ public class FiscalNoteXmlStorageService {
 
   private final FiscalNoteXmlStorageRepository repository;
   private final FocusNfeApiClient focusNfeApiClient;
-  private final WebClient webClient;
   private final CombinedScoreService combinedScoreService;
   private final ClientService clientService;
   private final ObjectMapper objectMapper;
   private final R2StorageService r2StorageService;
-
-  @Value("${focus.nfe.api.url}")
-  private String focusNfeApiUrl;
 
   @Value("${r2.environment}")
   private String environment;
@@ -442,15 +437,7 @@ public class FiscalNoteXmlStorageService {
 
   private byte[] downloadFileBytes(String filePath, MediaType mediaType) {
     try {
-      String fullUrl = focusNfeApiUrl + filePath;
-      return webClient
-          .get()
-          .uri(fullUrl)
-          .accept(mediaType)
-          .retrieve()
-          .bodyToMono(byte[].class)
-          .timeout(java.time.Duration.ofSeconds(60))
-          .block();
+      return focusNfeApiClient.downloadFile(filePath, mediaType);
     } catch (Exception e) {
       log.error(
           "[FiscalNoteXmlStorage] Erro ao baixar arquivo ({}): {}", mediaType, e.getMessage());

@@ -2,7 +2,9 @@ package com.hortifruti.sl.hortifruti.config.auth;
 
 import com.hortifruti.sl.hortifruti.exception.auth.TokenException;
 import com.hortifruti.sl.hortifruti.model.RefreshToken;
+import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.repository.RefreshTokenRepository;
+import com.hortifruti.sl.hortifruti.repository.UserRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -26,6 +28,7 @@ public class RefreshTokenService {
   private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
   private final RefreshTokenRepository refreshTokenRepository;
+  private final UserRepository userRepository;
 
   @Value("${jwt.refresh-expiration-days:30}")
   private long diasExpiracao;
@@ -60,8 +63,17 @@ public class RefreshTokenService {
     existing.setRevokedAt(LocalDateTime.now());
     refreshTokenRepository.save(existing);
 
+    User user =
+        userRepository
+            .findById(existing.getUserId())
+            .orElseThrow(
+                () ->
+                    new TokenException(
+                        "O token de sessão é inválido ou expirou. Por favor, faça login"
+                            + " novamente."));
+
     String newRawToken = persistNewToken(existing.getUserId());
-    return new RotationResult(existing.getUserId(), newRawToken);
+    return new RotationResult(user, newRawToken);
   }
 
   public void revokeByRawToken(String rawToken) {
@@ -106,5 +118,5 @@ public class RefreshTokenService {
     }
   }
 
-  public record RotationResult(Long userId, String rawToken) {}
+  public record RotationResult(User user, String rawToken) {}
 }

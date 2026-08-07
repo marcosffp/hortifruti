@@ -3,6 +3,9 @@ package com.hortifruti.sl.hortifruti.service.freight;
 import com.hortifruti.sl.hortifruti.dto.freight.FreightCalculationRequest;
 import com.hortifruti.sl.hortifruti.dto.freight.FreightConfigDTO;
 import com.hortifruti.sl.hortifruti.exception.freight.FreightException;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -10,63 +13,74 @@ import org.springframework.stereotype.Service;
 @AllArgsConstructor
 public class FreightService {
 
+  private static final MathContext MATH_CONTEXT = new MathContext(10, RoundingMode.HALF_UP);
+  private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
+  private static final BigDecimal SIXTY = BigDecimal.valueOf(60);
+
   private final FreightPropertiesService freightPropertiesService;
 
-  public double calculateFreight(FreightCalculationRequest request) {
+  public BigDecimal calculateFreight(FreightCalculationRequest request) {
     FreightConfigDTO freightConfig = freightPropertiesService.getFreightConfig();
 
-    double operationalCostPerKm = calculateOperationalCostPerKm(freightConfig);
-    double costPerMinute = calculateCostPerMinute(freightConfig);
-    double totalVariableCost =
+    BigDecimal operationalCostPerKm = calculateOperationalCostPerKm(freightConfig);
+    BigDecimal costPerMinute = calculateCostPerMinute(freightConfig);
+    BigDecimal totalVariableCost =
         calculateTotalVariableCost(request, operationalCostPerKm, costPerMinute);
-    double finalFreight = applyMarginAndFixedFee(totalVariableCost, freightConfig);
+    BigDecimal finalFreight = applyMarginAndFixedFee(totalVariableCost, freightConfig);
 
-    return roundToTwoDecimalPlaces(finalFreight);
+    return finalFreight.setScale(2, RoundingMode.HALF_UP);
   }
 
-  private double calculateOperationalCostPerKm(FreightConfigDTO freightConfig) {
-    double fuelCostPerKm = freightConfig.fuelPrice() / freightConfig.kmPerLiterConsumption();
+  private BigDecimal calculateOperationalCostPerKm(FreightConfigDTO freightConfig) {
+    BigDecimal fuelCostPerKm =
+        freightConfig.fuelPrice().divide(freightConfig.kmPerLiterConsumption(), MATH_CONTEXT);
 
     return fuelCostPerKm
-        + freightConfig.maintenanceCostPerKm()
-        + freightConfig.tireCostPerKm()
-        + freightConfig.depreciationCostPerKm()
-        + freightConfig.insuranceCostPerKm();
+        .add(freightConfig.maintenanceCostPerKm())
+        .add(freightConfig.tireCostPerKm())
+        .add(freightConfig.depreciationCostPerKm())
+        .add(freightConfig.insuranceCostPerKm());
   }
 
-  private double calculateCostPerMinute(FreightConfigDTO freightConfig) {
-    double monthlyDeliveryPersonCost =
-        freightConfig.baseSalary() * (1 + freightConfig.chargesPercentage() / 100);
+  private BigDecimal calculateCostPerMinute(FreightConfigDTO freightConfig) {
+    BigDecimal chargesFactor =
+        BigDecimal.ONE.add(freightConfig.chargesPercentage().divide(ONE_HUNDRED, MATH_CONTEXT));
+    BigDecimal monthlyDeliveryPersonCost = freightConfig.baseSalary().multiply(chargesFactor);
 
-    double hourlyDeliveryPersonCost =
-        monthlyDeliveryPersonCost / freightConfig.monthlyHoursWorked();
+    BigDecimal hourlyDeliveryPersonCost =
+        monthlyDeliveryPersonCost.divide(freightConfig.monthlyHoursWorked(), MATH_CONTEXT);
 
-    double finalHourlyCost =
-        hourlyDeliveryPersonCost * (1 + freightConfig.administrativeCostsPercentage() / 100);
+    BigDecimal administrativeFactor =
+        BigDecimal.ONE.add(
+            freightConfig.administrativeCostsPercentage().divide(ONE_HUNDRED, MATH_CONTEXT));
+    BigDecimal finalHourlyCost = hourlyDeliveryPersonCost.multiply(administrativeFactor);
 
-    return finalHourlyCost / 60;
+    return finalHourlyCost.divide(SIXTY, MATH_CONTEXT);
   }
 
-  private double calculateTotalVariableCost(
-      FreightCalculationRequest request, double operationalCostPerKm, double costPerMinute) {
-    double distanceKm = parseDistance(request.distanceKm());
+  private BigDecimal calculateTotalVariableCost(
+      FreightCalculationRequest request,
+      BigDecimal operationalCostPerKm,
+      BigDecimal costPerMinute) {
+    BigDecimal distanceKm = parseDistance(request.distanceKm());
     int estimatedTimeMinutes = parseEstimatedTime(request.estimatedTimeMinutes());
 
-    return (operationalCostPerKm * distanceKm) + (costPerMinute * estimatedTimeMinutes);
+    return operationalCostPerKm
+        .multiply(distanceKm)
+        .add(costPerMinute.multiply(BigDecimal.valueOf(estimatedTimeMinutes)));
   }
 
-  private double applyMarginAndFixedFee(double totalVariableCost, FreightConfigDTO freightConfig) {
-    double margin = totalVariableCost * (freightConfig.marginPercentage() / 100);
-    return totalVariableCost + margin + freightConfig.fixedFee();
+  private BigDecimal applyMarginAndFixedFee(
+      BigDecimal totalVariableCost, FreightConfigDTO freightConfig) {
+    BigDecimal margin =
+        totalVariableCost.multiply(
+            freightConfig.marginPercentage().divide(ONE_HUNDRED, MATH_CONTEXT));
+    return totalVariableCost.add(margin).add(freightConfig.fixedFee());
   }
 
-  private double roundToTwoDecimalPlaces(double value) {
-    return Math.round(value * 100.0) / 100.0;
-  }
-
-  private double parseDistance(String distanceKm) {
+  private BigDecimal parseDistance(String distanceKm) {
     try {
-      return Double.parseDouble(distanceKm);
+      return new BigDecimal(distanceKm);
     } catch (NumberFormatException e) {
       throw new FreightException("Formato inválido para distância: " + distanceKm);
     }

@@ -16,10 +16,10 @@ import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -30,6 +30,7 @@ public class TransactionExportService {
   private final TransactionRepository transactionRepository;
   private final StatementService statementService;
 
+  @Transactional(readOnly = true)
   public Map<String, byte[]> exportTransactionsAsZip() throws IOException {
     LocalDate now = LocalDate.now();
     LocalDate periodStart = now.minusMonths(1).withDayOfMonth(1);
@@ -38,7 +39,7 @@ public class TransactionExportService {
     byte[] excelBytes = transactionReportService.generateExcel(periodStart, periodEnd);
     byte[] pdfBytes = transactionReportService.generatePdf(periodStart, periodEnd);
 
-    Pageable pageable = PageRequest.of(0, 10, Sort.by("transactionDate").descending());
+    Pageable pageable = Pageable.unpaged(Sort.by("transactionDate").descending());
     List<Transaction> bbTransactions =
         transactionRepository.findByTransactionDateBetweenAndStatementBank(
             periodStart, periodEnd, Bank.BANCO_DO_BRASIL, pageable);

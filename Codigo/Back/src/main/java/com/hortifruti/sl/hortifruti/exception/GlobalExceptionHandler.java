@@ -10,6 +10,7 @@ import com.hortifruti.sl.hortifruti.exception.bb.BBApiException;
 import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
 import com.hortifruti.sl.hortifruti.exception.climate.ProductException;
 import com.hortifruti.sl.hortifruti.exception.climate.RecommendationException;
+import com.hortifruti.sl.hortifruti.exception.climate.WeatherApiException;
 import com.hortifruti.sl.hortifruti.exception.finance.TransactionException;
 import com.hortifruti.sl.hortifruti.exception.freight.DistanceException;
 import com.hortifruti.sl.hortifruti.exception.freight.FreightException;
@@ -124,6 +125,13 @@ public class GlobalExceptionHandler {
     log.warn("Acesso negado em {}: {}", request.getRequestURI(), ex.getMessage());
     return errorResponse(
         HttpStatus.FORBIDDEN, "Acesso Negado", "Você não tem permissão para acessar este recurso.");
+  }
+
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<Map<String, String>> handleIllegalArgumentException(
+      IllegalArgumentException ex, HttpServletRequest request) {
+    log.warn("Argumento inválido em {}: {}", request.getRequestURI(), ex.getMessage());
+    return errorResponse(HttpStatus.BAD_REQUEST, "Erro de validação", ex.getMessage());
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -316,6 +324,19 @@ public class GlobalExceptionHandler {
         ex.getMessage());
     return errorResponse(
         HttpStatus.BAD_REQUEST, "Erro no Agrupamento de Pontuação Combinada", ex.getMessage());
+  }
+
+  /**
+   * A OpenWeather API está indisponível/instável — 503, não 500: o problema é do serviço externo,
+   * não da nossa aplicação (contrato já documentado em {@code
+   * WeatherForecastController#getFiveDayForecast}).
+   */
+  @ExceptionHandler(WeatherApiException.class)
+  public ResponseEntity<Map<String, String>> handleWeatherApiException(
+      WeatherApiException ex, HttpServletRequest request) {
+    log.error("Erro na API de clima em {}: {}", request.getRequestURI(), ex.getMessage());
+    return errorResponse(
+        HttpStatus.SERVICE_UNAVAILABLE, "Serviço de Previsão do Tempo Indisponível", ex.getMessage());
   }
 
   @ExceptionHandler(RecommendationException.class)

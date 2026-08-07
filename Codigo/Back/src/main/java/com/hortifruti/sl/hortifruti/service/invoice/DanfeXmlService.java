@@ -9,27 +9,21 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class DanfeXmlService {
 
-  private final WebClient webClient;
   private final FocusNfeApiClient focusNfeApiClient;
   private final FiscalNoteXmlStorageService fiscalNoteXmlStorageService;
   private final int COMPLETE = 1;
-
-  @Value("${focus.nfe.api.url}")
-  private String focusNfeApiUrl;
 
   private String getFilePathFromApi(String ref, String jsonPath) {
     try {
@@ -69,17 +63,7 @@ public class DanfeXmlService {
   private ResponseEntity<Resource> downloadFileStream(
       String ref, String fileUrl, MediaType mediaType, String filePrefix) {
     try {
-      String fullUrl = focusNfeApiUrl + fileUrl;
-
-      byte[] fileBytes =
-          webClient
-              .get()
-              .uri(fullUrl)
-              .accept(MediaType.ALL)
-              .retrieve()
-              .bodyToMono(byte[].class)
-              .timeout(java.time.Duration.ofSeconds(100))
-              .block();
+      byte[] fileBytes = focusNfeApiClient.downloadFile(fileUrl, MediaType.ALL);
 
       if (fileBytes == null || fileBytes.length == 0) {
         throw new InvoiceException(
@@ -88,7 +72,7 @@ public class DanfeXmlService {
 
       return buildFileResponse(fileBytes, ref, mediaType, filePrefix);
 
-    } catch (org.springframework.web.reactive.function.client.WebClientRequestException e) {
+    } catch (org.springframework.web.client.ResourceAccessException e) {
       throw new InvoiceException(
           "Erro de conexão ao baixar arquivo. A nota fiscal pode ainda estar sendo processada. Tente novamente em alguns instantes.",
           e);

@@ -52,12 +52,12 @@ public class PurchasePhotosPdfGenerator {
       return imageBytes;
     }
 
-    BufferedImage original = ImageIO.read(new ByteArrayInputStream(imageBytes));
-    if (original == null) {
-      return imageBytes;
-    }
-
     try {
+      BufferedImage original = ImageIO.read(new ByteArrayInputStream(imageBytes));
+      if (original == null) {
+        return imageBytes;
+      }
+
       BufferedImage rotated = rotate(original, orientation);
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       ImageIO.write(rotated, "jpg", out);

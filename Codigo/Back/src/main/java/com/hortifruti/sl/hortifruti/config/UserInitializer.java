@@ -9,6 +9,7 @@ import com.hortifruti.sl.hortifruti.model.climate.TemperatureCategory;
 import com.hortifruti.sl.hortifruti.repository.FreightConfigRepository;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
 import com.hortifruti.sl.hortifruti.repository.climate.ProductRepository;
+import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -383,18 +384,18 @@ public class UserInitializer implements CommandLineRunner {
 
   private FreightConfig createDefaultFreightConfig() {
     return FreightConfig.builder()
-        .kmPerLiterConsumption(10.0)
-        .fuelPrice(6.30)
-        .maintenanceCostPerKm(0.15)
-        .tireCostPerKm(0.04)
-        .depreciationCostPerKm(0.53)
-        .insuranceCostPerKm(0.14)
-        .baseSalary(1600.00)
-        .chargesPercentage(39.37)
-        .monthlyHoursWorked(192.0)
-        .administrativeCostsPercentage(15.0)
-        .marginPercentage(20.0)
-        .fixedFee(3.00)
+        .kmPerLiterConsumption(new BigDecimal("10.0"))
+        .fuelPrice(new BigDecimal("6.30"))
+        .maintenanceCostPerKm(new BigDecimal("0.15"))
+        .tireCostPerKm(new BigDecimal("0.04"))
+        .depreciationCostPerKm(new BigDecimal("0.53"))
+        .insuranceCostPerKm(new BigDecimal("0.14"))
+        .baseSalary(new BigDecimal("1600.00"))
+        .chargesPercentage(new BigDecimal("39.37"))
+        .monthlyHoursWorked(new BigDecimal("192.0"))
+        .administrativeCostsPercentage(new BigDecimal("15.0"))
+        .marginPercentage(new BigDecimal("20.0"))
+        .fixedFee(new BigDecimal("3.00"))
         .build();
   }
 }

@@ -5,10 +5,10 @@ import com.hortifruti.sl.hortifruti.model.finance.Statement;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import com.hortifruti.sl.hortifruti.model.purchase.InvoiceProduct;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
-import com.hortifruti.sl.hortifruti.repository.finance.StatementRepository;
-import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
-import com.hortifruti.sl.hortifruti.repository.purchase.InvoiceProductRepository;
-import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
+import com.hortifruti.sl.hortifruti.service.finance.StatementService;
+import com.hortifruti.sl.hortifruti.service.finance.transaction.TransactionProcessingService;
+import com.hortifruti.sl.hortifruti.service.purchase.InvoiceProductService;
+import com.hortifruti.sl.hortifruti.service.purchase.PurchaseService;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -20,16 +20,18 @@ import lombok.AllArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
 public class CsvGeneratorService {
 
-  private final PurchaseRepository purchaseRepository;
-  private final InvoiceProductRepository invoiceProductRepository;
-  private final TransactionRepository transactionRepository;
-  private final StatementRepository statementRepository;
+  private final PurchaseService purchaseService;
+  private final InvoiceProductService invoiceProductService;
+  private final TransactionProcessingService transactionProcessingService;
+  private final StatementService statementService;
 
+  @Transactional(readOnly = true)
   public List<String> generateCSVsForPeriod(LocalDateTime startDate, LocalDateTime endDate) {
     String tempDir = System.getProperty("java.io.tmpdir");
 
@@ -52,7 +54,7 @@ public class CsvGeneratorService {
         Paths.get(
             tempDir, "compras_" + startDate.toLocalDate() + "_a_" + endDate.toLocalDate() + ".csv");
 
-    List<Purchase> purchases = purchaseRepository.findByCreatedAtBetween(startDate, endDate);
+    List<Purchase> purchases = purchaseService.findByCreatedAtBetween(startDate, endDate);
 
     CSVFormat csvFormat =
         CSVFormat.DEFAULT
@@ -92,7 +94,7 @@ public class CsvGeneratorService {
                 + endDate.toLocalDate()
                 + ".csv");
 
-    List<InvoiceProduct> invoiceProducts = invoiceProductRepository.findAll();
+    List<InvoiceProduct> invoiceProducts = invoiceProductService.findAll();
 
     CSVFormat csvFormat =
         CSVFormat.DEFAULT
@@ -140,7 +142,7 @@ public class CsvGeneratorService {
             "transacoes_" + startDate.toLocalDate() + "_a_" + endDate.toLocalDate() + ".csv");
 
     List<Transaction> transactions =
-        transactionRepository.findTransactionsByCreatedAtBetween(startDate, endDate);
+        transactionProcessingService.findTransactionsByCreatedAtBetween(startDate, endDate);
 
     CSVFormat csvFormat =
         CSVFormat.DEFAULT
@@ -195,7 +197,7 @@ public class CsvGeneratorService {
             tempDir,
             "extratos_" + startDate.toLocalDate() + "_a_" + endDate.toLocalDate() + ".csv");
 
-    List<Statement> statements = statementRepository.findByCreatedAtBetween(startDate, endDate);
+    List<Statement> statements = statementService.findByCreatedAtBetween(startDate, endDate);
 
     CSVFormat csvFormat =
         CSVFormat.DEFAULT

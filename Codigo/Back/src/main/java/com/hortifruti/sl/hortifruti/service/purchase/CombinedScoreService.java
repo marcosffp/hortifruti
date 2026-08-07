@@ -353,6 +353,22 @@ public class CombinedScoreService {
   }
 
   /**
+   * Busca todos os agrupamentos cuja data de CONFIRMAÇÃO (confirmedAt) está dentro de {@code
+   * [startDate, endDate]}. Usado pelo dashboard para as consultas de fluxo de vendas baseadas em
+   * confirmação (em vez de vencimento/dueDate).
+   */
+  @Transactional(readOnly = true)
+  public List<CombinedScore> findAllConfirmedBetween(LocalDate startDate, LocalDate endDate) {
+    return combinedScoreRepository.findAllByOrderByIdDesc(Pageable.unpaged()).stream()
+        .filter(
+            cs ->
+                cs.getConfirmedAt() != null
+                    && !cs.getConfirmedAt().isBefore(startDate)
+                    && !cs.getConfirmedAt().isAfter(endDate))
+        .collect(Collectors.toList());
+  }
+
+  /**
    * Lista agrupamentos que só têm nota fiscal emitida (sem boleto), ainda pendentes de confirmação
    * manual de pagamento. Como não há boleto para confirmar o status junto ao Sicoob, o vencimento
    * exibido é sempre a data de emissão da NF acrescida de {@value #INVOICE_ONLY_DUE_DAYS} dias,

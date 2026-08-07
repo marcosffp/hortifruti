@@ -6,6 +6,7 @@ import com.hortifruti.sl.hortifruti.dto.purchase.ManualPurchaseRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.PurchaseResponse;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
 import com.hortifruti.sl.hortifruti.service.purchase.PurchaseService;
+import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -28,20 +29,16 @@ public class PurchaseController {
 
   @PreAuthorize("hasRole('MANAGER')")
   @PostMapping(value = "/process", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity<?> processPurchase(@RequestParam("file") MultipartFile file) {
-    try {
-      purchaseService.processPurchaseFile(file);
-      return ResponseEntity.ok(Map.of("message", "Compra processada com sucesso"));
-    } catch (IOException e) {
-      return ResponseEntity.status(500)
-          .body(Map.of("error", "Erro ao processar o arquivo: " + e.getMessage()));
-    }
+  public ResponseEntity<Map<String, String>> processPurchase(
+      @RequestParam("file") MultipartFile file) throws IOException {
+    purchaseService.processPurchaseFile(file);
+    return ResponseEntity.ok(Map.of("message", "Compra processada com sucesso"));
   }
 
   @PreAuthorize("hasRole('MANAGER')")
   @PostMapping(value = "/manual", consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<PurchaseResponse> createManualPurchase(
-      @RequestBody ManualPurchaseRequest request) {
+      @Valid @RequestBody ManualPurchaseRequest request) {
     Purchase purchase = purchaseService.createManualPurchase(request);
     return ResponseEntity.ok(
         new PurchaseResponse(
@@ -88,7 +85,7 @@ public class PurchaseController {
   @PreAuthorize("hasRole('MANAGER')")
   @PostMapping(value = "/{id}/products", consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<InvoiceProductResponse> addInvoiceProduct(
-      @PathVariable Long id, @RequestBody ManualPurchaseItemRequest item) {
+      @PathVariable Long id, @Valid @RequestBody ManualPurchaseItemRequest item) {
     InvoiceProductResponse created = purchaseService.addInvoiceProduct(id, item);
     return ResponseEntity.ok(created);
   }

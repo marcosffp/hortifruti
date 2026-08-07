@@ -10,6 +10,7 @@ import com.hortifruti.sl.hortifruti.service.finance.sicoob.SicoobStatementServic
 import com.hortifruti.sl.hortifruti.service.storage.R2StorageService;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -76,5 +77,14 @@ public class StatementService {
 
   public byte[] exportBBExtratoExcel(LocalDate dataInicio, LocalDate dataFim) throws IOException {
     return bbStatementService.exportBBExtratoExcel(dataInicio, dataFim);
+  }
+
+  public List<Statement> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate) {
+    return statementRepository.findByCreatedAtBetween(startDate, endDate);
+  }
+
+  public void deleteAllByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate) {
+    statementRepository.deleteAll(
+        statementRepository.findByCreatedAtBetweenWithTransactions(startDate, endDate));
   }
 }

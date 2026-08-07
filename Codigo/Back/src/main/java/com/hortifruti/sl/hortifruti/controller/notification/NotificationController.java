@@ -1,7 +1,6 @@
 package com.hortifruti.sl.hortifruti.controller.notification;
 
 import com.hortifruti.sl.hortifruti.dto.notification.*;
-import com.hortifruti.sl.hortifruti.exception.notification.NotificationException;
 import com.hortifruti.sl.hortifruti.model.notification.NotificationChannel;
 import com.hortifruti.sl.hortifruti.service.notification.BulkNotificationService;
 import com.hortifruti.sl.hortifruti.service.notification.NotificationService;
@@ -66,21 +65,12 @@ public class NotificationController {
           String cashValue,
       @Parameter(description = "Mensagem personalizada (opcional)") @RequestParam(required = false)
           String customMessage) {
-    try {
-      GenericFilesAccountingRequest request =
-          new GenericFilesAccountingRequest(
-              new BigDecimal(cardValue), new BigDecimal(cashValue), customMessage);
-      NotificationResponse response =
-          notificationService.sendGenericFilesToAccounting(files, request);
-      return ResponseEntity.ok(response);
-    } catch (NotificationException e) {
-      log.error("Erro ao enviar arquivos para contabilidade: {}", e.getMessage(), e);
-      return ResponseEntity.badRequest().body(new NotificationResponse(false, e.getMessage()));
-    } catch (Exception e) {
-      log.error("Erro ao enviar arquivos para contabilidade", e);
-      return ResponseEntity.badRequest()
-          .body(new NotificationResponse(false, "Erro ao enviar arquivos para contabilidade."));
-    }
+    GenericFilesAccountingRequest request =
+        new GenericFilesAccountingRequest(
+            new BigDecimal(cardValue), new BigDecimal(cashValue), customMessage);
+    NotificationResponse response =
+        notificationService.sendGenericFilesToAccounting(files, request);
+    return ResponseEntity.ok(response);
   }
 
   @Operation(
@@ -98,20 +88,11 @@ public class NotificationController {
           String channel,
       @Parameter(description = "Mensagem personalizada (opcional)") @RequestParam(required = false)
           String customMessage) {
-    try {
-      ClientDocumentsRequest request =
-          new ClientDocumentsRequest(
-              clientId, NotificationChannel.valueOf(channel.toUpperCase()), customMessage);
-      NotificationResponse response = notificationService.sendDocumentsToClient(files, request);
-      return ResponseEntity.ok(response);
-    } catch (NotificationException e) {
-      log.error("Erro ao enviar documentos para cliente {}: {}", clientId, e.getMessage(), e);
-      return ResponseEntity.badRequest().body(new NotificationResponse(false, e.getMessage()));
-    } catch (Exception e) {
-      log.error("Erro ao enviar documentos para cliente {}", clientId, e);
-      return ResponseEntity.badRequest()
-          .body(new NotificationResponse(false, "Erro ao enviar documentos para o cliente."));
-    }
+    ClientDocumentsRequest request =
+        new ClientDocumentsRequest(
+            clientId, NotificationChannel.valueOf(channel.toUpperCase()), customMessage);
+    NotificationResponse response = notificationService.sendDocumentsToClient(files, request);
+    return ResponseEntity.ok(response);
   }
 
   @PreAuthorize("hasRole('MANAGER')")
@@ -168,24 +149,9 @@ public class NotificationController {
       @RequestParam List<String> channels,
       @RequestParam String destinationType,
       @RequestParam(required = false) String customMessage) {
-    try {
-      BulkNotificationResponse response =
-          bulkNotificationService.sendBulkNotifications(
-              files, clientIds, channels, destinationType, customMessage);
-      return ResponseEntity.ok(response);
-
-    } catch (IllegalArgumentException e) {
-      log.warn("Parâmetros inválidos ao processar notificações em massa: {}", e.getMessage());
-      return ResponseEntity.badRequest()
-          .body(BulkNotificationResponse.failure(e.getMessage(), List.of()));
-    } catch (NotificationException e) {
-      log.error("Erro ao processar notificações em massa: {}", e.getMessage(), e);
-      return ResponseEntity.status(500)
-          .body(BulkNotificationResponse.failure(e.getMessage(), List.of()));
-    } catch (Exception e) {
-      log.error("Erro ao processar notificações em massa", e);
-      return ResponseEntity.status(500)
-          .body(BulkNotificationResponse.failure("Erro ao processar notificações.", List.of()));
-    }
+    BulkNotificationResponse response =
+        bulkNotificationService.sendBulkNotifications(
+            files, clientIds, channels, destinationType, customMessage);
+    return ResponseEntity.ok(response);
   }
 }

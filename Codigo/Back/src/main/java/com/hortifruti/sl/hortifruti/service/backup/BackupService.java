@@ -31,7 +31,7 @@ public class BackupService {
       List<String> csvFiles = csvGeneratorService.generateCSVsForPeriod(startDate, endDate);
 
       for (String filePath : csvFiles) {
-        String fileName = filePath.substring(filePath.lastIndexOf("\\") + 1);
+        String fileName = Paths.get(filePath).getFileName().toString();
 
         String folderId =
             backupPathService.getOrCreateBackupPath(

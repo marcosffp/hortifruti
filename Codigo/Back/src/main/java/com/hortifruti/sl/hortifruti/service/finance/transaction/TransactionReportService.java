@@ -8,6 +8,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Relatório consolidado de transações: junta BB e Sicoob (não importa a origem, PDF_UPLOAD ou API)
@@ -35,12 +36,14 @@ public class TransactionReportService {
         + extensao;
   }
 
+  @Transactional(readOnly = true)
   public byte[] generatePdf(LocalDate dataInicio, LocalDate dataFim) throws IOException {
     LocalDate[] periodo = resolvePeriodo(dataInicio, dataFim);
     List<Transaction> transacoes = buscarTransacoesOrdenadas(periodo[0], periodo[1]);
     return pdfGenerator.generate(periodo[0], periodo[1], transacoes);
   }
 
+  @Transactional(readOnly = true)
   public byte[] generateExcel(LocalDate dataInicio, LocalDate dataFim) throws IOException {
     LocalDate[] periodo = resolvePeriodo(dataInicio, dataFim);
     List<Transaction> transacoes = buscarTransacoesOrdenadas(periodo[0], periodo[1]);

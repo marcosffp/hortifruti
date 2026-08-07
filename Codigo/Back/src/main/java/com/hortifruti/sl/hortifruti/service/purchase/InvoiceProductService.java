@@ -7,8 +7,11 @@ import com.hortifruti.sl.hortifruti.mapper.InvoiceProductMapper;
 import com.hortifruti.sl.hortifruti.model.purchase.InvoiceProduct;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
 import com.hortifruti.sl.hortifruti.repository.purchase.InvoiceProductRepository;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
@@ -18,6 +21,7 @@ public class InvoiceProductService {
   private final InvoiceProductMapper mapper;
   private final PurchaseService purchaseService;
 
+  @Transactional
   public InvoiceProductResponse updateInvoiceProduct(Long id, UpdateInvoiceProduct dto) {
     InvoiceProduct invoiceProduct =
         repository.findById(id).orElseThrow(() -> new PurchaseException("Produto não encontrado"));
@@ -34,6 +38,7 @@ public class InvoiceProductService {
     return mapper.toResponse(updated);
   }
 
+  @Transactional
   public void deleteInvoiceProduct(Long id) {
     if (!repository.existsById(id)) {
       throw new PurchaseException("Produto não encontrado");
@@ -41,5 +46,15 @@ public class InvoiceProductService {
     Purchase purchase = repository.findById(id).get().getPurchase();
     repository.deleteById(id);
     purchaseService.recalculateTotal(purchase.getId());
+  }
+
+  @Transactional(readOnly = true)
+  public List<InvoiceProduct> findAll() {
+    return repository.findAll();
+  }
+
+  @Transactional
+  public void deleteAllByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate) {
+    repository.deleteByCreatedAtBetween(startDate, endDate);
   }
 }

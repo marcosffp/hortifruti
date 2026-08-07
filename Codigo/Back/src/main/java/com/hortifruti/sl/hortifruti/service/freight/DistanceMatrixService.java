@@ -5,6 +5,7 @@ import com.hortifruti.sl.hortifruti.dto.freight.DistanceResponse;
 import com.hortifruti.sl.hortifruti.dto.freight.FreightCalculationRequest;
 import com.hortifruti.sl.hortifruti.dto.freight.LocationRequest;
 import com.hortifruti.sl.hortifruti.exception.freight.DistanceException;
+import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,7 +28,7 @@ public class DistanceMatrixService {
     DistanceResponse distanceResponse = fetchDistanceAndDuration(locationRequest);
 
     FreightCalculationRequest freightRequest = createFreightRequest(distanceResponse);
-    double freight = freightService.calculateFreight(freightRequest);
+    BigDecimal freight = freightService.calculateFreight(freightRequest);
 
     return buildDistanceFreightResponse(distanceResponse, freight);
   }
@@ -49,7 +50,7 @@ public class DistanceMatrixService {
   }
 
   private DistanceFreightResponse buildDistanceFreightResponse(
-      DistanceResponse distanceResponse, double freight) {
+      DistanceResponse distanceResponse, BigDecimal freight) {
     return new DistanceFreightResponse(
         distanceResponse.distance(), distanceResponse.duration(), freight);
   }

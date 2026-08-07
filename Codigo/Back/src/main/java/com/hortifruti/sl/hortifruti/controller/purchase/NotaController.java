@@ -10,6 +10,7 @@ import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.service.purchase.CapturaNotaPendenteService;
 import com.hortifruti.sl.hortifruti.service.purchase.GeminiExtractionService;
 import com.hortifruti.sl.hortifruti.service.purchase.NotaUploadService;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -88,7 +89,7 @@ public class NotaController {
   @PreAuthorize("hasAnyRole('MANAGER', 'EMPLOYEE')")
   @PostMapping(value = "/pendentes/{id}/confirmar", consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<PurchaseResponse> confirmarCaptura(
-      @PathVariable Long id, @RequestBody ManualPurchaseRequest request) {
+      @PathVariable Long id, @Valid @RequestBody ManualPurchaseRequest request) {
     return ResponseEntity.ok(
         capturaNotaPendenteService.confirmarComoCompra(id, usuarioAutenticadoId(), request));
   }

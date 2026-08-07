@@ -1,14 +1,11 @@
 package com.hortifruti.sl.hortifruti.service.backup;
 
 import com.hortifruti.sl.hortifruti.exception.backup.BackupException;
-import com.hortifruti.sl.hortifruti.model.finance.Statement;
-import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
-import com.hortifruti.sl.hortifruti.repository.finance.StatementRepository;
-import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
-import com.hortifruti.sl.hortifruti.repository.purchase.InvoiceProductRepository;
-import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
+import com.hortifruti.sl.hortifruti.service.finance.StatementService;
+import com.hortifruti.sl.hortifruti.service.finance.transaction.TransactionProcessingService;
+import com.hortifruti.sl.hortifruti.service.purchase.InvoiceProductService;
+import com.hortifruti.sl.hortifruti.service.purchase.PurchaseService;
 import java.time.LocalDateTime;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,10 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 @AllArgsConstructor
 public class EntityCleanupService {
 
-  private final PurchaseRepository purchaseRepository;
-  private final InvoiceProductRepository invoiceProductRepository;
-  private final TransactionRepository transactionRepository;
-  private final StatementRepository statementRepository;
+  private final PurchaseService purchaseService;
+  private final InvoiceProductService invoiceProductService;
+  private final TransactionProcessingService transactionProcessingService;
+  private final StatementService statementService;
 
   @Transactional
   public void cleanupEntitiesForPeriod(LocalDateTime startDate, LocalDateTime endDate) {
@@ -41,8 +38,7 @@ public class EntityCleanupService {
 
   private void cleanupPurchases(LocalDateTime startDate, LocalDateTime endDate) {
     try {
-      List<Purchase> purchases = purchaseRepository.findByCreatedAtBetween(startDate, endDate);
-      purchaseRepository.deleteAll(purchases);
+      purchaseService.deleteAllByCreatedAtBetween(startDate, endDate);
     } catch (Exception e) {
       throw new BackupException("Erro ao remover compras.", e);
     }
@@ -50,8 +46,7 @@ public class EntityCleanupService {
 
   private void cleanupInvoiceProducts(LocalDateTime startDate, LocalDateTime endDate) {
     try {
-
-      invoiceProductRepository.deleteByCreatedAtBetween(startDate, endDate);
+      invoiceProductService.deleteAllByCreatedAtBetween(startDate, endDate);
     } catch (Exception e) {
       throw new BackupException("Erro ao remover produtos de fatura.", e);
     }
@@ -59,11 +54,7 @@ public class EntityCleanupService {
 
   private void cleanupTransactions(LocalDateTime startDate, LocalDateTime endDate) {
     try {
-      List<com.hortifruti.sl.hortifruti.model.finance.Transaction> transactions =
-          transactionRepository.findTransactionsByCreatedAtBetween(startDate, endDate);
-
-      transactionRepository.deleteAll(transactions);
-
+      transactionProcessingService.deleteAllByCreatedAtBetween(startDate, endDate);
     } catch (Exception e) {
       throw new BackupException("Erro ao remover transações.", e);
     }
@@ -71,10 +62,7 @@ public class EntityCleanupService {
 
   private void cleanupStatements(LocalDateTime startDate, LocalDateTime endDate) {
     try {
-      List<Statement> statements =
-          statementRepository.findByCreatedAtBetweenWithTransactions(startDate, endDate);
-
-      statementRepository.deleteAll(statements);
+      statementService.deleteAllByCreatedAtBetween(startDate, endDate);
     } catch (Exception e) {
       throw new BackupException("Erro ao remover extratos.", e);
     }

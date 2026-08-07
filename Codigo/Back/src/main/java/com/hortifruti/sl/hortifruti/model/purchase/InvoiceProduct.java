@@ -44,7 +44,7 @@ public class InvoiceProduct {
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "purchase_id", nullable = false)
   @JsonIgnore
   private Purchase purchase;

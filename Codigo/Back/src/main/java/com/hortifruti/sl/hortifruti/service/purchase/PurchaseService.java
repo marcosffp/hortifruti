@@ -172,6 +172,16 @@ public class PurchaseService {
     return invoiceProductMapper.toResponse(invoiceProduct);
   }
 
+  @Transactional(readOnly = true)
+  public List<Purchase> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate) {
+    return purchaseRepository.findByCreatedAtBetween(startDate, endDate);
+  }
+
+  @Transactional
+  public void deleteAllByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate) {
+    purchaseRepository.deleteAll(purchaseRepository.findByCreatedAtBetween(startDate, endDate));
+  }
+
   public void deletePurchaseById(Long id) {
     Purchase purchase =
         purchaseRepository

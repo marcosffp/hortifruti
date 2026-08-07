@@ -7,6 +7,7 @@ import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -33,7 +35,7 @@ public class FocusNfeApiClient {
 
   private static final String URL_BASE_POST = "/v2/nfe?ref=";
 
-  @Qualifier("genericRestTemplate")
+  @Qualifier("focusNfeRestTemplate")
   private final RestTemplate restTemplate;
 
   public String sendRequest(String ref, String payload) {
@@ -102,6 +104,24 @@ public class FocusNfeApiClient {
     } catch (Exception e) {
       throw new InvoiceException("Erro ao cancelar a NF-e com referência: " + ref, e);
     }
+  }
+
+  /**
+   * Download de arquivo binário (XML/DANFE) já emitido, pelo path relativo retornado pela Focus
+   * NFe na consulta da nota (ex: {@code caminho_xml_nota_fiscal}/{@code caminho_danfe}). Usado por
+   * {@code FiscalNoteXmlStorageService}/{@code DanfeXmlService} — não trata exceção aqui, cada
+   * chamador decide como reagir a uma falha de download (melhor esforço vs. erro fatal).
+   */
+  public byte[] downloadFile(String filePath, MediaType mediaType) {
+    String url = focusNfeApiUrl + filePath;
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.setAccept(List.of(mediaType, MediaType.ALL));
+
+    ResponseEntity<byte[]> response =
+        restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), byte[].class);
+
+    return response.getBody();
   }
 
   /**

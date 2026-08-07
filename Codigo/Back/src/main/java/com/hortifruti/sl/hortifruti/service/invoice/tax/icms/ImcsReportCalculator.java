@@ -25,53 +25,29 @@ public class ImcsReportCalculator {
   public IcmsSalesReport generateIcmsSalesReport(LocalDate startDate, LocalDate endDate) {
     List<CombinedScore> combinedScores = fetchCombinedScores(startDate, endDate);
 
-    BigDecimal totalContabil = BigDecimal.ZERO;
-    BigDecimal totalBaseCalculo = BigDecimal.ZERO;
-    BigDecimal totalImpostoDebitado = BigDecimal.ZERO;
-    BigDecimal totalIsentasOuNaoTributadas = BigDecimal.ZERO;
-    BigDecimal totalOutras = BigDecimal.ZERO;
-
+    Totals totals = new Totals();
     Map<String, BigDecimal> valoresPorCfop = new HashMap<>();
 
     for (CombinedScore combinedScore : combinedScores) {
-      processCombinedScore(
-          combinedScore,
-          valoresPorCfop,
-          totalContabil,
-          totalBaseCalculo,
-          totalImpostoDebitado,
-          totalIsentasOuNaoTributadas,
-          totalOutras);
+      processCombinedScore(combinedScore, valoresPorCfop, totals);
     }
 
     return buildIcmsSalesReport(
-        totalContabil,
-        totalBaseCalculo,
-        totalImpostoDebitado,
-        totalIsentasOuNaoTributadas,
-        totalOutras,
+        totals.contabil,
+        totals.baseCalculo,
+        totals.impostoDebitado,
+        totals.isentasOuNaoTributadas,
+        totals.outras,
         valoresPorCfop);
   }
 
   private void processCombinedScore(
-      CombinedScore combinedScore,
-      Map<String, BigDecimal> valoresPorCfop,
-      BigDecimal totalContabil,
-      BigDecimal totalBaseCalculo,
-      BigDecimal totalImpostoDebitado,
-      BigDecimal totalIsentasOuNaoTributadas,
-      BigDecimal totalOutras) {
+      CombinedScore combinedScore, Map<String, BigDecimal> valoresPorCfop, Totals totals) {
     try {
       InvoiceTaxDetails taxDetails =
           invoiceQuery.extractInvoiceTaxDetails(combinedScore.getInvoiceRef());
 
-      updateTotals(
-          taxDetails,
-          totalContabil,
-          totalBaseCalculo,
-          totalImpostoDebitado,
-          totalIsentasOuNaoTributadas,
-          totalOutras);
+      updateTotals(taxDetails, totals);
 
       groupValuesByCfop(taxDetails, valoresPorCfop);
     } catch (Exception e) {
@@ -79,18 +55,20 @@ public class ImcsReportCalculator {
     }
   }
 
-  private void updateTotals(
-      InvoiceTaxDetails taxDetails,
-      BigDecimal totalContabil,
-      BigDecimal totalBaseCalculo,
-      BigDecimal totalImpostoDebitado,
-      BigDecimal totalIsentasOuNaoTributadas,
-      BigDecimal totalOutras) {
-    totalContabil = totalContabil.add(taxDetails.valorTotal());
-    totalBaseCalculo = totalBaseCalculo.add(taxDetails.icmsBaseCalculo());
-    totalImpostoDebitado = totalImpostoDebitado.add(taxDetails.icmsValorTotal());
-    totalIsentasOuNaoTributadas = totalIsentasOuNaoTributadas.add(BigDecimal.ZERO);
-    totalOutras = totalOutras.add(taxDetails.valorProdutos());
+  private void updateTotals(InvoiceTaxDetails taxDetails, Totals totals) {
+    totals.contabil = totals.contabil.add(taxDetails.valorTotal());
+    totals.baseCalculo = totals.baseCalculo.add(taxDetails.icmsBaseCalculo());
+    totals.impostoDebitado = totals.impostoDebitado.add(taxDetails.icmsValorTotal());
+    totals.isentasOuNaoTributadas = totals.isentasOuNaoTributadas.add(BigDecimal.ZERO);
+    totals.outras = totals.outras.add(taxDetails.valorProdutos());
+  }
+
+  private static final class Totals {
+    private BigDecimal contabil = BigDecimal.ZERO;
+    private BigDecimal baseCalculo = BigDecimal.ZERO;
+    private BigDecimal impostoDebitado = BigDecimal.ZERO;
+    private BigDecimal isentasOuNaoTributadas = BigDecimal.ZERO;
+    private BigDecimal outras = BigDecimal.ZERO;
   }
 
   private void groupValuesByCfop(

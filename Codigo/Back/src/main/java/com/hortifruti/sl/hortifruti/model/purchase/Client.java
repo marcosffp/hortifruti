@@ -78,7 +78,7 @@ public class Client {
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @OneToMany(mappedBy = "client", cascade = CascadeType.ALL)
+  @OneToMany(mappedBy = "client", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
   @JsonIgnore
   private List<Purchase> purchases;
 

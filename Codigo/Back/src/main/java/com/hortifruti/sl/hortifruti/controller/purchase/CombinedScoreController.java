@@ -13,14 +13,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Slf4j
 @RestController
 @AllArgsConstructor
 @RequestMapping("/combined-scores")
@@ -98,13 +96,6 @@ public class CombinedScoreController {
   @GetMapping("/{id}/grouped-products")
   public ResponseEntity<List<GroupedProductResponse>> getGroupedProductsByCombinedScoreId(
       @PathVariable Long id) {
-    try {
-      List<GroupedProductResponse> groupedProducts =
-          combinedScoreService.getGroupedProductsByCombinedScoreId(id);
-      return ResponseEntity.ok(groupedProducts);
-    } catch (Exception e) {
-      log.error("Erro ao buscar produtos agrupados do CombinedScore: ", e);
-      return ResponseEntity.status(500).body(null);
-    }
+    return ResponseEntity.ok(combinedScoreService.getGroupedProductsByCombinedScoreId(id));
   }
 }

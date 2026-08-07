@@ -5,8 +5,8 @@ import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
 import com.hortifruti.sl.hortifruti.model.purchase.GroupedProduct;
-import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
-import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
+import com.hortifruti.sl.hortifruti.service.finance.transaction.TransactionProcessingService;
+import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
@@ -14,7 +14,6 @@ import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,8 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 @AllArgsConstructor
 public class DashboardService {
 
-  private final TransactionRepository transactionRepository;
-  private final CombinedScoreRepository combinedScoreRepository;
+  private final TransactionProcessingService transactionProcessingService;
+  private final CombinedScoreService combinedScoreService;
 
   @Transactional(readOnly = true)
   public Map<String, Object> getDashboardData(
@@ -58,7 +57,7 @@ public class DashboardService {
 
   private BigDecimal calculateTotalByFilter(
       LocalDate startDate, LocalDate endDate, TransactionType type, Category category) {
-    return transactionRepository.findTransactionsByDateRange(startDate, endDate).stream()
+    return transactionProcessingService.findTransactionsByDateRange(startDate, endDate).stream()
         .filter(
             transaction ->
                 (type == null || transaction.getTransactionType() == type)
@@ -108,7 +107,7 @@ public class DashboardService {
   private Map<Month, Map<String, BigDecimal>> getCashFlowData(
       LocalDate startDate, LocalDate endDate) {
     List<Transaction> transactions =
-        transactionRepository.findTransactionsByDateRange(startDate, endDate);
+        transactionProcessingService.findTransactionsByDateRange(startDate, endDate);
 
     return transactions.stream()
         .collect(
@@ -126,7 +125,7 @@ public class DashboardService {
   private Map<Category, Map<String, BigDecimal>> getCategoryPercentageData(
       LocalDate startDate, LocalDate endDate) {
     List<Transaction> transactions =
-        transactionRepository.findTransactionsByDateRange(startDate, endDate);
+        transactionProcessingService.findTransactionsByDateRange(startDate, endDate);
 
     Map<Category, BigDecimal> categoryTotals =
         transactions.stream()
@@ -172,7 +171,7 @@ public class DashboardService {
             Category.IMPOSTOS);
 
     Map<Category, BigDecimal> categoryCosts =
-        transactionRepository.findTransactionsByDateRange(startDate, endDate).stream()
+        transactionProcessingService.findTransactionsByDateRange(startDate, endDate).stream()
             .filter(transaction -> expenseCategories.contains(transaction.getCategory()))
             .collect(
                 Collectors.groupingBy(
@@ -209,7 +208,7 @@ public class DashboardService {
   public Map<String, Object> getCombinedScoreData(LocalDate startDate, LocalDate endDate) {
     Map<String, Object> combinedScoreData = new HashMap<>();
 
-    List<CombinedScore> combinedScores = findCombinedScoresConfirmedBetween(startDate, endDate);
+    List<CombinedScore> combinedScores = combinedScoreService.findAllConfirmedBetween(startDate, endDate);
 
     Map<Integer, BigDecimal> weeklyScores =
         combinedScores.stream()
@@ -232,7 +231,7 @@ public class DashboardService {
    * CONFIRMAÇÃO (confirmedAt) ao invés de vencimento (dueDate).
    */
   public List<Map<String, Object>> getTopSellingProducts(LocalDate startDate, LocalDate endDate) {
-    List<CombinedScore> combinedScores = findCombinedScoresConfirmedBetween(startDate, endDate);
+    List<CombinedScore> combinedScores = combinedScoreService.findAllConfirmedBetween(startDate, endDate);
 
     List<GroupedProduct> groupedProducts =
         combinedScores.stream()
@@ -283,7 +282,7 @@ public class DashboardService {
    */
   public List<Map<String, Object>> getTopProductsByQuantity(
       LocalDate startDate, LocalDate endDate) {
-    List<CombinedScore> combinedScores = findCombinedScoresConfirmedBetween(startDate, endDate);
+    List<CombinedScore> combinedScores = combinedScoreService.findAllConfirmedBetween(startDate, endDate);
 
     List<GroupedProduct> groupedProducts =
         combinedScores.stream()
@@ -315,21 +314,5 @@ public class DashboardService {
                 .compareTo((BigDecimal) p1.get("QuantidadeTotal")));
 
     return ranking.stream().limit(10).collect(Collectors.toList());
-  }
-
-  /**
-   * Busca todos os {@link CombinedScore} cuja data de CONFIRMAÇÃO (confirmedAt) está dentro de
-   * {@code [startDate, endDate]}. Filtro compartilhado por todas as consultas de fluxo de vendas do
-   * dashboard baseadas em confirmação (em vez de vencimento/dueDate).
-   */
-  private List<CombinedScore> findCombinedScoresConfirmedBetween(
-      LocalDate startDate, LocalDate endDate) {
-    return combinedScoreRepository.findAllByOrderByIdDesc(Pageable.unpaged()).stream()
-        .filter(
-            cs ->
-                cs.getConfirmedAt() != null
-                    && !cs.getConfirmedAt().isBefore(startDate)
-                    && !cs.getConfirmedAt().isAfter(endDate))
-        .collect(Collectors.toList());
   }
 }

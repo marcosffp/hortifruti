@@ -10,6 +10,7 @@ import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
 import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -101,6 +102,20 @@ public class TransactionProcessingService {
 
   public List<String> getAllCategories() {
     return transactionRepository.findAllCategories();
+  }
+
+  public List<Transaction> findTransactionsByDateRange(LocalDate startDate, LocalDate endDate) {
+    return transactionRepository.findTransactionsByDateRange(startDate, endDate);
+  }
+
+  public List<Transaction> findTransactionsByCreatedAtBetween(
+      LocalDateTime startDate, LocalDateTime endDate) {
+    return transactionRepository.findTransactionsByCreatedAtBetween(startDate, endDate);
+  }
+
+  public void deleteAllByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate) {
+    transactionRepository.deleteAll(
+        transactionRepository.findTransactionsByCreatedAtBetween(startDate, endDate));
   }
 
   public BigDecimal getTotalRevenue(TransactionRequestDate request) {

@@ -27,14 +27,7 @@ public class WeatherForecastController {
             responseCode = "503",
             description = "Serviço de previsão do tempo indisponível")
       })
-  public ResponseEntity<WeatherForecastDTO> getFiveDayForecast() {
-    try {
-      WeatherForecastDTO forecast = weatherForecastService.getFiveDayForecast();
-      return ResponseEntity.ok(forecast);
-    } catch (WeatherApiException e) {
-      return ResponseEntity.internalServerError().build();
-    } catch (Exception e) {
-      return ResponseEntity.internalServerError().build();
-    }
+  public ResponseEntity<WeatherForecastDTO> getFiveDayForecast() throws WeatherApiException {
+    return ResponseEntity.ok(weatherForecastService.getFiveDayForecast());
   }
 }

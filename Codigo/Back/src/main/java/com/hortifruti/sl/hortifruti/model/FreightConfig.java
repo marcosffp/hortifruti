@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.model;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,18 +21,39 @@ public class FreightConfig {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  private double kmPerLiterConsumption;
-  private double fuelPrice;
-  private double maintenanceCostPerKm;
-  private double tireCostPerKm;
-  private double depreciationCostPerKm;
-  private double insuranceCostPerKm;
+  @Column(nullable = false, precision = 12, scale = 4)
+  private BigDecimal kmPerLiterConsumption;
 
-  private double baseSalary;
-  private double chargesPercentage;
-  private double monthlyHoursWorked;
-  private double administrativeCostsPercentage;
+  @Column(nullable = false, precision = 12, scale = 4)
+  private BigDecimal fuelPrice;
 
-  private double marginPercentage;
-  private double fixedFee;
+  @Column(nullable = false, precision = 12, scale = 4)
+  private BigDecimal maintenanceCostPerKm;
+
+  @Column(nullable = false, precision = 12, scale = 4)
+  private BigDecimal tireCostPerKm;
+
+  @Column(nullable = false, precision = 12, scale = 4)
+  private BigDecimal depreciationCostPerKm;
+
+  @Column(nullable = false, precision = 12, scale = 4)
+  private BigDecimal insuranceCostPerKm;
+
+  @Column(nullable = false, precision = 12, scale = 4)
+  private BigDecimal baseSalary;
+
+  @Column(nullable = false, precision = 12, scale = 4)
+  private BigDecimal chargesPercentage;
+
+  @Column(nullable = false, precision = 12, scale = 4)
+  private BigDecimal monthlyHoursWorked;
+
+  @Column(nullable = false, precision = 12, scale = 4)
+  private BigDecimal administrativeCostsPercentage;
+
+  @Column(nullable = false, precision = 12, scale = 4)
+  private BigDecimal marginPercentage;
+
+  @Column(nullable = false, precision = 12, scale = 4)
+  private BigDecimal fixedFee;
 }

@@ -22,5 +22,6 @@ public class TokenCleaner {
         }
       }
     }
+    directory.delete();
   }
 }

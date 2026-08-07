@@ -32,7 +32,7 @@ public class GroupedProduct {
   @Column(name = "total_value", nullable = false, precision = 12, scale = 4)
   private BigDecimal totalValue;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "combined_score_id", nullable = false)
   private CombinedScore combinedScore;
 }

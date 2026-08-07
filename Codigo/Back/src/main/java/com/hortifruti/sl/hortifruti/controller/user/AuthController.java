@@ -9,7 +9,6 @@ import com.hortifruti.sl.hortifruti.dto.user.AuthRequest;
 import com.hortifruti.sl.hortifruti.dto.user.AuthUserResponse;
 import com.hortifruti.sl.hortifruti.exception.auth.TokenException;
 import com.hortifruti.sl.hortifruti.model.User;
-import com.hortifruti.sl.hortifruti.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -38,7 +37,6 @@ public class AuthController {
   private final Auth auth;
   private final TokenConfiguration tokenConfiguration;
   private final RefreshTokenService refreshTokenService;
-  private final UserRepository userRepository;
   private final Environment environment;
 
   @Value("${auth.cookie.secure:false}")
@@ -89,10 +87,7 @@ public class AuthController {
       return clearedCookiesResponse();
     }
 
-    User user = userRepository.findById(rotation.userId()).orElse(null);
-    if (user == null) {
-      return clearedCookiesResponse();
-    }
+    User user = rotation.user();
 
     String accessToken =
         tokenConfiguration.generateToken(user.getId(), user.getUsername(), user.getRole());
