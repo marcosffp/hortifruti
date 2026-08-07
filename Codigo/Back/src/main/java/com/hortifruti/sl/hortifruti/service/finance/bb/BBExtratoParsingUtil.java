@@ -52,4 +52,19 @@ public final class BBExtratoParsingUtil {
     BigDecimal absoluto = parseValorAbsoluto(valorLancamento);
     return "D".equals(indicadorSinalLancamento) ? absoluto.negate() : absoluto;
   }
+
+  /**
+   * "codigoHistorico" identifica os lançamentos de saldo ("000" = saldo anterior, "999" = saldo
+   * final) com zeros à esquerda, mas o padding não é garantido em toda resposta da API — remove os
+   * zeros à esquerda antes de comparar (ex.: "000" e "0" viram ambos "0"). Centralizado aqui porque
+   * {@code TransactionBBApiService} e {@code BBSaldoService} precisam da mesma normalização para
+   * reconhecer os mesmos lançamentos de saldo.
+   */
+  public static String normalizeCodigoHistorico(String codigoHistorico) {
+    if (codigoHistorico == null) {
+      return "0";
+    }
+    String semZerosAEsquerda = codigoHistorico.trim().replaceFirst("^0+", "");
+    return semZerosAEsquerda.isEmpty() ? "0" : semZerosAEsquerda;
+  }
 }

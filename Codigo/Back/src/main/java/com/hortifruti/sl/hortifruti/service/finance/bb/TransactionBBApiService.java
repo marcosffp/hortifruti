@@ -58,8 +58,9 @@ public class TransactionBBApiService {
   }
 
   private boolean isMarcadorDeSaldo(JsonNode lancamento) {
-    String historico = lancamento.path("codigoHistorico").asText("").replaceFirst("^0+", "");
-    return HISTORICOS_SALDO.contains(historico.isEmpty() ? "0" : historico);
+    String historico =
+        BBExtratoParsingUtil.normalizeCodigoHistorico(lancamento.path("codigoHistorico").asText(""));
+    return HISTORICOS_SALDO.contains(historico);
   }
 
   private Transaction buildTransaction(JsonNode lancamento, Statement statement) {

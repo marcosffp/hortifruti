@@ -7,10 +7,12 @@ import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import com.hortifruti.sl.hortifruti.service.billet.BilletService;
 import java.io.IOException;
 import java.util.Base64;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
@@ -30,6 +32,25 @@ public class IssueInvoiceWithBilletService {
 
   private static final int MAX_NUMBER_POLL_ATTEMPTS = 12;
   private static final long NUMBER_POLL_INTERVAL_MS = 10_000;
+
+  /**
+   * Wrapper {@code @Async} de {@link #issueInvoiceAndBillet} — {@link #waitForInvoiceNumber} pode
+   * bloquear por até ~2min em {@code Thread.sleep}, e sem isso essa espera prendia uma thread do
+   * servlet (pool limitado do Tomcat) por todo esse tempo. Rodar num executor dedicado libera a
+   * thread do servlet para atender outras requisições enquanto esta aguarda; o controller usa
+   * {@code CompletableFuture} como tipo de retorno para o Spring MVC manter a requisição HTTP
+   * original aberta sem bloquear nada (ver {@code spring.mvc.async.request-timeout}).
+   */
+  @Async
+  public CompletableFuture<InvoiceWithBilletResponse> issueInvoiceAndBilletAsync(
+      Long combinedScoreId, String dadosAdicionais, String dueDate) {
+    try {
+      return CompletableFuture.completedFuture(
+          issueInvoiceAndBillet(combinedScoreId, dadosAdicionais, dueDate));
+    } catch (RuntimeException e) {
+      return CompletableFuture.failedFuture(e);
+    }
+  }
 
   public InvoiceWithBilletResponse issueInvoiceAndBillet(
       Long combinedScoreId, String dadosAdicionais, String dueDate) {

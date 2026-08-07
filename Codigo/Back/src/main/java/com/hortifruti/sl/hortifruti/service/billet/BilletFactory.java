@@ -6,12 +6,17 @@ import com.hortifruti.sl.hortifruti.dto.billet.Pagador;
 import com.hortifruti.sl.hortifruti.exception.billet.BilletException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
+import com.hortifruti.sl.hortifruti.service.purchase.ClientAddressParser;
+import com.hortifruti.sl.hortifruti.service.purchase.ClientAddressParser.ParsedAddress;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class BilletFactory {
 
+  private final ClientAddressParser clientAddressParser;
   @Value("${sicoob.num.cliente}")
   private Integer clientNumber;
 
@@ -66,36 +71,15 @@ public class BilletFactory {
     String address = client.getAddress();
 
     try {
-      String[] addressParts = address.split(",");
-      if (addressParts.length < 5) {
-        throw new BilletException(
-            "O endereço do cliente está incompleto. Formato esperado: 'Rua, Numero, Complemento"
-                + " (opcional), Bairro, Cidade - UF, CEP: XXXXX-XXX'");
-      }
+      ParsedAddress parsedAddress = clientAddressParser.parse(address);
 
-      String rua = addressParts[0].trim();
-      String numero = addressParts[1].trim();
-      String complemento = "";
-
-      if (addressParts.length == 6) {
-        complemento = addressParts[2].trim();
-      }
-
-      String bairro = addressParts[addressParts.length - 3].trim();
-      String cidadeUf = addressParts[addressParts.length - 2].trim();
-      String cep = addressParts[addressParts.length - 1].trim();
-
-      String cidade = cidadeUf;
-      String uf = "";
-      if (cidadeUf.contains("-")) {
-        String[] cidadeUfParts = cidadeUf.split("-");
-        cidade = cidadeUfParts[0].trim();
-        uf = cidadeUfParts[1].trim();
-      }
-
-      if (cep.startsWith("CEP:")) {
-        cep = cep.replace("CEP:", "").trim().replaceAll("[^0-9]", "");
-      }
+      String rua = parsedAddress.street();
+      String numero = parsedAddress.number();
+      String complemento = parsedAddress.complement();
+      String bairro = parsedAddress.neighborhood();
+      String cidade = parsedAddress.city();
+      String uf = parsedAddress.state();
+      String cep = parsedAddress.zipCode();
 
       if (rua.isEmpty()) {
         throw new BilletException("Rua não pode estar vazia no endereço do cliente.");

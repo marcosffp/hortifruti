@@ -10,6 +10,7 @@ import com.hortifruti.sl.hortifruti.service.invoice.InvoiceService;
 import com.hortifruti.sl.hortifruti.service.invoice.IssueInvoiceWithBilletService;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
@@ -43,17 +44,21 @@ public class InvoiceController {
    * Emite a NF e, em seguida, o boleto vinculado a ela (usando o número da NF como identificador do
    * boleto). Se qualquer etapa após a emissão da NF falhar, a NF é cancelada automaticamente.
    * Retorna a NF (DANFE + XML) e o boleto, todos em base64.
+   *
+   * <p>Retorno {@code CompletableFuture}: o serviço aguarda até ~2min pela autorização da NF-e
+   * antes de gerar o boleto (ver {@code IssueInvoiceWithBilletService#waitForInvoiceNumber}) — sem
+   * processamento assíncrono do Spring MVC aqui, essa espera prenderia uma thread do servlet
+   * inteira nesse tempo.
    */
   @PostMapping("/issue-with-billet/{combinedScoreId}")
-  public ResponseEntity<InvoiceWithBilletResponse> issueInvoiceWithBillet(
+  public CompletableFuture<ResponseEntity<InvoiceWithBilletResponse>> issueInvoiceWithBillet(
       @PathVariable Long combinedScoreId,
       @RequestParam(value = "dadosAdicionais", required = false, defaultValue = "")
           String dadosAdicionais,
       @RequestParam(required = false) String dueDate) {
-    InvoiceWithBilletResponse response =
-        issueInvoiceWithBilletService.issueInvoiceAndBillet(
-            combinedScoreId, dadosAdicionais, dueDate);
-    return ResponseEntity.ok(response);
+    return issueInvoiceWithBilletService
+        .issueInvoiceAndBilletAsync(combinedScoreId, dadosAdicionais, dueDate)
+        .thenApply(ResponseEntity::ok);
   }
 
   /**

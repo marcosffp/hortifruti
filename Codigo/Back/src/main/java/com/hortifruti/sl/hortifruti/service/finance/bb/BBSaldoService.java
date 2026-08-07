@@ -72,7 +72,8 @@ public class BBSaldoService {
     while (pagina <= MAX_PAGINAS) {
       JsonNode body = bbExtratoClient.getExtratoPage(pagina, hoje, hoje);
       for (JsonNode lanc : body.path("listaLancamento")) {
-        String historico = lanc.path("codigoHistorico").asText();
+        String historico =
+            BBExtratoParsingUtil.normalizeCodigoHistorico(lanc.path("codigoHistorico").asText());
         if (!HISTORICOS_SALDO.contains(historico)) {
           continue;
         }

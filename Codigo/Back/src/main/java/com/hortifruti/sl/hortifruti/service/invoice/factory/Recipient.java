@@ -5,8 +5,8 @@ import com.hortifruti.sl.hortifruti.dto.invoice.RecipientRequest;
 import com.hortifruti.sl.hortifruti.exception.invoice.InvoiceException;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.hortifruti.sl.hortifruti.service.purchase.ClientAddressParser;
+import com.hortifruti.sl.hortifruti.service.purchase.ClientAddressParser.ParsedAddress;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class Recipient {
   private final ClientRepository clientRepository;
+  private final ClientAddressParser clientAddressParser;
 
   private final String COUNTRY_CODE = "1058";
   private final String COUNTRY_NAME = "Brazil";
@@ -54,7 +55,7 @@ public class Recipient {
     String neighborhood = "Bairro não informado";
     String city = "Cidade não informada";
     String state;
-    String zipCode = "";
+    String zipCode;
     String cideCode = client.getCideCode().trim();
 
     try {
@@ -62,48 +63,26 @@ public class Recipient {
         throw new RuntimeException("Código IBGE inválido: " + cideCode);
       }
 
-      String cleanAddress = address.replaceAll("\\r?\\n", " ").replaceAll("\\s+", " ").trim();
+      ParsedAddress parsed = clientAddressParser.parse(address);
+      zipCode = parsed.zipCode();
 
-      String[] addressAndZip = cleanAddress.split(",?\\s*CEP:\\s*");
-      String addressWithoutZip = addressAndZip[0].trim();
-
-      if (addressAndZip.length > 1) {
-        zipCode = addressAndZip[1].replaceAll("\\D", "");
+      if (!parsed.street().isBlank()) {
+        street = truncateIfNeeded(parsed.street(), 60);
+      }
+      if (!parsed.number().isBlank()) {
+        number = parsed.number();
+      }
+      if (!parsed.neighborhood().isBlank()) {
+        neighborhood = parsed.neighborhood();
+      }
+      if (!parsed.city().isBlank()) {
+        city = parsed.city();
       }
 
-      String[] parts = addressWithoutZip.split("\\s*,\\s*");
-      parts =
-          java.util.Arrays.stream(parts)
-              .map(String::trim)
-              .filter(p -> !p.isEmpty())
-              .toArray(String[]::new);
-
-      if (parts.length >= 1) {
-        street = truncateIfNeeded(parts[0], 60);
-      }
-
-      if (parts.length >= 2 && !parts[1].isBlank()) {
-        number = parts[1];
-      }
-
-      Pattern ufPattern = Pattern.compile("-\\s*([A-Z]{2})(?:\\s*,|$)");
-      Matcher ufMatcher = ufPattern.matcher(addressWithoutZip);
-
-      if (ufMatcher.find()) {
-        state = ufMatcher.group(1).toUpperCase();
-      } else {
+      if (parsed.state().isBlank()) {
         throw new InvoiceException("UF não encontrada no endereço: " + address);
       }
-
-      Pattern cityPattern = Pattern.compile("([^,]+)\\s*-\\s*" + state);
-      Matcher cityMatcher = cityPattern.matcher(addressWithoutZip);
-
-      if (cityMatcher.find()) {
-        city = cityMatcher.group(1).trim();
-      }
-      if (parts.length >= 3) {
-        neighborhood = parts[parts.length - 3];
-      }
+      state = parsed.state();
 
       // Regra especial: cliente APTA sempre é faturado como SP, independente do endereço cadastrado
       String firstName = client.getClientName().split("\\s+")[0].toUpperCase();

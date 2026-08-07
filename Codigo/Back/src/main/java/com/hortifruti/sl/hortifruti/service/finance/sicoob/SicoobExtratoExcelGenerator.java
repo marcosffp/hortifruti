@@ -5,6 +5,8 @@ import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobExtratoResponse;
 import com.hortifruti.sl.hortifruti.util.SicoobExtratoFormatUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Cell;
@@ -28,6 +30,14 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SicoobExtratoExcelGenerator {
 
+  /**
+   * Mesmo texto exibido por {@link SicoobExtratoFormatUtil#formatValorComSinal}, só que como
+   * formato de célula numérica (seção positiva/negativa do Excel) em vez de {@code String} —
+   * assim a coluna VALOR continua um número de verdade (soma/filtra no Excel), com o mesmo
+   * "R$ "/" C"/" D" exibido antes.
+   */
+  private static final String VALOR_FORMAT = "\"R$ \"#,##0.00\" C\";\"R$ \"#,##0.00\" D\"";
+
   private final SicoobExtratoLayoutService layoutService;
 
   public byte[] generate(SicoobExtratoResponse extrato) throws IOException {
@@ -46,6 +56,10 @@ public class SicoobExtratoExcelGenerator {
       CellStyle bold = dataStyle(workbook, true, false);
       CellStyle normalRed = dataStyle(workbook, false, true);
       CellStyle boldRed = dataStyle(workbook, true, true);
+      CellStyle normalAmount = amountStyle(workbook, false, false);
+      CellStyle boldAmount = amountStyle(workbook, true, false);
+      CellStyle normalRedAmount = amountStyle(workbook, false, true);
+      CellStyle boldRedAmount = amountStyle(workbook, true, true);
 
       int rowIdx = 0;
       Row titleRow = sheet.createRow(rowIdx++);
@@ -70,6 +84,10 @@ public class SicoobExtratoExcelGenerator {
         boolean debito = linha.valor() != null && linha.valor().signum() < 0;
         CellStyle style =
             linha.destaque() ? (debito ? boldRed : bold) : (debito ? normalRed : normal);
+        CellStyle amountCellStyle =
+            linha.destaque()
+                ? (debito ? boldRedAmount : boldAmount)
+                : (debito ? normalRedAmount : normalAmount);
 
         setCell(
             row,
@@ -78,11 +96,7 @@ public class SicoobExtratoExcelGenerator {
             style);
         setCell(row, 1, linha.documento() != null ? linha.documento() : "", style);
         setCell(row, 2, linha.historico(), style);
-        setCell(
-            row,
-            3,
-            linha.valor() != null ? SicoobExtratoFormatUtil.formatValorComSinal(linha.valor()) : "",
-            style);
+        setAmountCell(row, 3, linha.valor(), amountCellStyle);
       }
 
       workbook.write(out);
@@ -94,6 +108,14 @@ public class SicoobExtratoExcelGenerator {
     Cell cell = row.createCell(column);
     cell.setCellValue(value);
     cell.setCellStyle(style);
+  }
+
+  private void setAmountCell(Row row, int column, BigDecimal valor, CellStyle style) {
+    Cell cell = row.createCell(column);
+    cell.setCellStyle(style);
+    if (valor != null) {
+      cell.setCellValue(valor.setScale(2, RoundingMode.HALF_UP).doubleValue());
+    }
   }
 
   private CellStyle titleStyle(Workbook workbook) {
@@ -124,6 +146,12 @@ public class SicoobExtratoExcelGenerator {
     }
     style.setFont(font);
     style.setAlignment(HorizontalAlignment.LEFT);
+    return style;
+  }
+
+  private CellStyle amountStyle(Workbook workbook, boolean bold, boolean red) {
+    CellStyle style = dataStyle(workbook, bold, red);
+    style.setDataFormat(workbook.createDataFormat().getFormat(VALOR_FORMAT));
     return style;
   }
 }

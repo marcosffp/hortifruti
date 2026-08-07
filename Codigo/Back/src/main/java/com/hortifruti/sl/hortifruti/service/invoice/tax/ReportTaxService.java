@@ -46,7 +46,7 @@ public class ReportTaxService {
     } catch (IOException e) {
       log.error("Erro de I/O durante geração de relatórios", e);
       throw new RuntimeException("Erro ao processar arquivos", e);
-    } catch (Exception e) {
+    } catch (RuntimeException e) {
       log.error("Erro geral durante geração de relatórios", e);
       throw new RuntimeException("Erro interno durante geração de relatórios", e);
     } finally {
@@ -60,6 +60,49 @@ public class ReportTaxService {
     }
   }
 
+  /** Nome do arquivo final de cada um dos 4 relatórios fiscais "core" + como gerá-lo. */
+  @FunctionalInterface
+  private interface ReportGenerator {
+    byte[] generate(LocalDate startDate, LocalDate endDate) throws IOException;
+  }
+
+  private record ReportSpec(String fileName, ReportGenerator generator) {}
+
+  /** Destino de cada relatório gerado — mapa em memória ({@link #generateMonthlyFiles}) ou arquivo em disco ({@link #generateAndSaveReports}). */
+  @FunctionalInterface
+  private interface ReportSink {
+    void accept(String fileName, byte[] data) throws IOException;
+  }
+
+  private List<ReportSpec> coreReportSpecs() {
+    return List.of(
+        new ReportSpec(
+            "Resumo_de_Vendas_por_Forma_de_Pagamento.pdf", this::generatePaymentReport),
+        new ReportSpec("Registro_de_saida_nf.pdf", this::generateRegisterReport),
+        new ReportSpec("Relacao_de_Vendas.pdf", this::generateSalesReport),
+        new ReportSpec("Registro_Apuracao_ICMS.pdf", this::generateIcmsReport));
+  }
+
+  /**
+   * Gera os 4 relatórios fiscais "core" (pagamento, registro de saída, vendas, apuração de ICMS) e
+   * entrega cada um ao {@code sink} — usado tanto para juntar tudo num {@code Map} em memória
+   * quanto para salvar cada um como arquivo em disco (ver {@link #generateMonthlyFiles} e {@link
+   * #generateAndSaveReports}). Falha em um relatório individual não interrompe os demais — só é
+   * logada, o relatório final sai sem aquele item.
+   */
+  private void generateCoreReports(LocalDate startDate, LocalDate endDate, ReportSink sink) {
+    for (ReportSpec spec : coreReportSpecs()) {
+      try {
+        byte[] data = spec.generator().generate(startDate, endDate);
+        if (data != null && data.length > 0) {
+          sink.accept(spec.fileName(), data);
+        }
+      } catch (Exception e) {
+        log.error("Erro ao gerar relatório '{}' - continuando sem ele", spec.fileName(), e);
+      }
+    }
+  }
+
   /**
    * Igual ao gerado por {@link #generateMonthly}, mas retorna os arquivos soltos (PDFs + XMLs de
    * NF-e) em vez de um ZIP único, para que possam ser salvos como uma pasta comum dentro do
@@ -68,41 +111,7 @@ public class ReportTaxService {
   public Map<String, byte[]> generateMonthlyFiles(LocalDate startDate, LocalDate endDate) {
     Map<String, byte[]> files = new HashMap<>();
 
-    try {
-      byte[] paymentData = generatePaymentReport(startDate, endDate);
-      if (paymentData != null && paymentData.length > 0) {
-        files.put("Resumo_de_Vendas_por_Forma_de_Pagamento.pdf", paymentData);
-      }
-    } catch (Exception e) {
-      log.error("Erro ao gerar relatório de pagamento - continuando sem ele", e);
-    }
-
-    try {
-      byte[] registerData = generateRegisterReport(startDate, endDate);
-      if (registerData != null && registerData.length > 0) {
-        files.put("Registro_de_saida_nf.pdf", registerData);
-      }
-    } catch (Exception e) {
-      log.error("Erro ao gerar relatório de registro de saída - continuando sem ele", e);
-    }
-
-    try {
-      byte[] salesData = generateSalesReport(startDate, endDate);
-      if (salesData != null && salesData.length > 0) {
-        files.put("Relacao_de_Vendas.pdf", salesData);
-      }
-    } catch (Exception e) {
-      log.error("Erro ao gerar relatório de vendas - continuando sem ele", e);
-    }
-
-    try {
-      byte[] icmsData = generateIcmsReport(startDate, endDate);
-      if (icmsData != null && icmsData.length > 0) {
-        files.put("Registro_Apuracao_ICMS.pdf", icmsData);
-      }
-    } catch (Exception e) {
-      log.error("Erro ao gerar relatório de apuração de ICMS - continuando sem ele", e);
-    }
+    generateCoreReports(startDate, endDate, files::put);
 
     try {
       String monthName =
@@ -171,44 +180,9 @@ public class ReportTaxService {
     return folderName;
   }
 
-  private void generateAndSaveReports(LocalDate startDate, LocalDate endDate, Path folderPath)
-      throws IOException {
-    try {
-      byte[] paymentData = generatePaymentReport(startDate, endDate);
-      if (paymentData != null && paymentData.length > 0) {
-        FileZipUtils.saveFile(
-            folderPath.resolve("Resumo_de_Vendas_por_Forma_de_Pagamento.pdf"), paymentData);
-      }
-    } catch (Exception e) {
-      log.error("Erro ao gerar relatório de pagamento - continuando sem ele", e);
-    }
-
-    try {
-      byte[] registerData = generateRegisterReport(startDate, endDate);
-      if (registerData != null && registerData.length > 0) {
-        FileZipUtils.saveFile(folderPath.resolve("Registro_de_saida_nf.pdf"), registerData);
-      }
-    } catch (Exception e) {
-      log.error("Erro ao gerar relatório de registro de saída - continuando sem ele", e);
-    }
-
-    try {
-      byte[] salesData = generateSalesReport(startDate, endDate);
-      if (salesData != null && salesData.length > 0) {
-        FileZipUtils.saveFile(folderPath.resolve("Relacao_de_Vendas.pdf"), salesData);
-      }
-    } catch (Exception e) {
-      log.error("Erro ao gerar relatório de vendas - continuando sem ele", e);
-    }
-
-    try {
-      byte[] icmsData = generateIcmsReport(startDate, endDate);
-      if (icmsData != null && icmsData.length > 0) {
-        FileZipUtils.saveFile(folderPath.resolve("Registro_Apuracao_ICMS.pdf"), icmsData);
-      }
-    } catch (Exception e) {
-      log.error("Erro ao gerar relatório de apuração de ICMS - continuando sem ele", e);
-    }
+  private void generateAndSaveReports(LocalDate startDate, LocalDate endDate, Path folderPath) {
+    generateCoreReports(
+        startDate, endDate, (fileName, data) -> FileZipUtils.saveFile(folderPath.resolve(fileName), data));
   }
 
   private void generateAndMoveNfSalesZip(LocalDate startDate, LocalDate endDate, Path folderPath)

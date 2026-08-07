@@ -53,7 +53,7 @@ public class MacroExportService {
     } catch (IOException e) {
       log.error("Erro de I/O durante geração de relatórios macro", e);
       throw new RuntimeException("Erro ao processar arquivos macro", e);
-    } catch (Exception e) {
+    } catch (RuntimeException e) {
       log.error("Erro geral durante geração de relatórios macro", e);
       throw new RuntimeException("Erro interno durante geração de relatórios macro", e);
     } finally {

@@ -160,7 +160,7 @@ Nenhum achado. Busca por `TODO|FIXME|XXX` e por blocos de código comentado não
 
 ### B · Clareza / código confuso (contém os achados mais graves desta área)
 
-- [ ] 🟡 **[B-C5] Alíquota de ICMS por CFOP hardcoded, só 2 casos cobertos, fallback silencioso para zero**
+- [x] 🟡 **[B-C5] Alíquota de ICMS por CFOP hardcoded, só 2 casos cobertos, fallback silencioso para zero**
   **Local:** `service/invoice/tax/registerReport/RegisterCalculator.java:70-76`
   ```java
   case "5102" -> BigDecimal.valueOf(18.00);
@@ -169,15 +169,15 @@ Nenhum achado. Busca por `TODO|FIXME|XXX` e por blocos de código comentado não
   ```
   Sem constante nomeada nem comentário sobre a base legal. Qualquer CFOP fora desses dois cai silenciosamente em alíquota zero, sem log de CFOP não mapeado.
 
-- [ ] 🟡 **[B-C6] Espera síncrona longa (`Thread.sleep`) dentro de requisição HTTP, fora do padrão assíncrono já usado no mesmo domínio**
+- [x] 🟡 **[B-C6] Espera síncrona longa (`Thread.sleep`) dentro de requisição HTTP, fora do padrão assíncrono já usado no mesmo domínio**
   **Local:** `service/invoice/IssueInvoiceWithBilletService.waitForInvoiceNumber:88-106` — até 12× `Thread.sleep(10_000)` (2 minutos), somado aos retries de `DanfeXmlService.downloadWithRetry:120-161` (~16s extras). Uma única requisição pode prender uma thread do servlet por minutos. O próprio módulo já resolve um problema parecido com `@Async` em `FiscalNoteXmlStorageService.triggerSaveAfterIssuance:95` — o padrão certo existe no código, só não foi reaplicado aqui.
 
-- [ ] 🔵 **[B-C7] Tratamento de erro genérico (`catch Exception`) em orquestradores de alto nível**
+- [x] 🔵 **[B-C7] Tratamento de erro genérico (`catch Exception`) em orquestradores de alto nível**
   **Local:** `service/invoice/tax/ReportTaxService.generateMonthly:34-61`, `service/finance/MacroExportService.exportMacroReports:28-68`
 
 ### B · Baixa coesão / duplicação de lógica
 
-- [ ] 🟠 **[B-B1] Parsing de endereço em texto livre implementado de duas formas diferentes e frágeis, para o mesmo campo**
+- [x] 🟠 **[B-B1] Parsing de endereço em texto livre implementado de duas formas diferentes e frágeis, para o mesmo campo**
   **Local:** `service/invoice/factory/Recipient.parseAddress:50-135` (regex + split por vírgula) vs. `service/billet/BilletFactory.createPagadorFromClient:65-159` (split posicional)
   ```java
   // BilletFactory.java:80-84
@@ -186,16 +186,16 @@ Nenhum achado. Busca por `TODO|FIXME|XXX` e por blocos de código comentado não
   ```
   Um mesmo cadastro de cliente pode aparecer com endereço correto na NF-e e errado no boleto (ou vice-versa) — as regras de corte diferem entre os dois parsers. Candidato a virar um `AddressParser` compartilhado, ou melhor, migrar o cadastro para campos estruturados.
 
-- [ ] 🟡 **[B-B2] `ReportTaxService` duplica quase por completo a geração dos 4 relatórios fiscais entre o caminho "ZIP" e "mapa de arquivos"**
+- [x] 🟡 **[B-B2] `ReportTaxService` duplica quase por completo a geração dos 4 relatórios fiscais entre o caminho "ZIP" e "mapa de arquivos"**
   **Local:** `service/invoice/tax/ReportTaxService.java:68-128` (`generateMonthlyFiles`) vs. `:174-212` (`generateAndSaveReports`) — mesmos 4 relatórios, mesmo try/catch copiado 8 vezes ao todo.
 
-- [ ] 🟡 **[B-B3] Normalização inconsistente do campo `codigoHistorico` da API do BB, em duas classes**
+- [x] 🟡 **[B-B3] Normalização inconsistente do campo `codigoHistorico` da API do BB, em duas classes**
   **Local:** `service/finance/bb/TransactionBBApiService.isMarcadorDeSaldo:60-63` remove zeros à esquerda antes de comparar; `service/finance/bb/BBSaldoService.consultarSaldo:75-76` compara **sem** essa normalização. Se a API realmente retorna `"000"` (como a primeira classe documenta), o `if` da segunda nunca casa — o endpoint de saldo bancário quebraria sempre. Extrair a normalização para `BBExtratoParsingUtil` e usar nos dois lugares.
 
-- [ ] 🟡 **[B-B4] Representação de valores monetários inconsistente entre geradores de Excel do mesmo módulo**
+- [x] 🟡 **[B-B4] Representação de valores monetários inconsistente entre geradores de Excel do mesmo módulo**
   **Local:** `service/finance/transaction/TransactionReportExcelGenerator.setAmountCell:94-104` grava número real; `BBExtratoExcelGenerator.java:88-97`/`SicoobExtratoExcelGenerator.java:74-85` gravam como string já formatada. Usuário não consegue somar/filtrar a coluna nas planilhas de extrato.
 
-- [ ] 🔵 **[B-B5] `Category` (enum financeiro) mistura categorias de negócio com uma categoria pessoal, sem explicação** *(ver [seção 9](#9-achados-duplicados-entre-áreas))*
+- [x] 🔵 **[B-B5] `Category` (enum financeiro) mistura categorias de negócio com uma categoria pessoal, sem explicação** *(ver [seção 9](#9-achados-duplicados-entre-áreas))*
   **Local:** `model/finance/Category.java:3-15` — `FAMÍLIA` é a única entrada acentuada, sem comentário sobre por que uma transação bancária da empresa cairia nessa categoria.
 
 ### B · Acoplamento excessivo
