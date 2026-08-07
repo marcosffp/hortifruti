@@ -15,5 +15,6 @@ Repositórios Spring Data JPA de entidades transversais (frete, autenticação/u
 - `billet/` — repositório de arquivos de boleto armazenados (ver billet/README.md).
 - `climate/` — repositório de produtos por categoria de temperatura (ver climate/README.md).
 - `finance/` — repositórios de extratos e transações bancárias (ver finance/README.md).
+- `googleauth/` — repositório de credenciais OAuth2 do Google persistidas no banco (ver googleauth/README.md).
 - `invoice/` — repositório de XML de notas fiscais armazenadas (ver invoice/README.md).
 - `purchase/` — repositórios de clientes, compras, agrupamentos e produtos de nota (ver purchase/README.md).

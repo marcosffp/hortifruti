@@ -8,7 +8,6 @@ import lombok.Getter;
 @Builder
 public class CredentialConfig {
   private final String applicationName;
-  private final String tokensDirectoryPath;
   private final String redirectUri;
   private final File credentialsFile;
 

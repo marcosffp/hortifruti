@@ -22,6 +22,7 @@ Pacote raiz das entidades JPA e enums de domínio. Contém entidades transversai
 - `billet/` — arquivo de boleto (`BilletFile`) armazenado no Cloudflare R2.
 - `climate/` — produto climático, categorias de temperatura e recomendação sazonal.
 - `finance/` — extrato bancário, transação e enums de conciliação financeira.
+- `googleauth/` — credencial OAuth2 do Google (Drive/Gmail) persistida no banco, criptografada em repouso.
 - `invoice/` — armazenamento de XML/DANFE de nota fiscal.
 - `notification/` — enums de canal, tipo e destinatário de notificações.
 - `purchase/` — cliente, compra, produtos de nota fiscal e agrupamento de pontuação combinada (boleto + nota fiscal).

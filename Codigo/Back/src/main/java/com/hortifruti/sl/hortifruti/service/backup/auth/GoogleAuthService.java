@@ -18,21 +18,32 @@ import org.springframework.stereotype.Service;
 public class GoogleAuthService {
 
   private static final String APPLICATION_NAME = "Hortifruti SL Backup";
+
+  /**
+   * Mesma margem usada por {@code TokenValidator} para considerar um access token "perto de
+   * expirar" — evita reconstruir o cliente Drive (com handshake OAuth) a cada chamada dentro da
+   * mesma operação de backup, que faz várias chamadas em sequência.
+   */
+  private static final long MIN_VALID_SECONDS = 60;
+
   private final Base64FileDecoder base64FileDecoder;
   private final CredentialManager credentialManager;
 
   @Value("${google.redirect.uri}")
   private String redirectUri;
 
-  @Value("${google.tokens.directory}")
-  private String tokensDirectoryPath;
+  private volatile Credential cachedCredential;
+  private volatile Drive cachedDrive;
 
-  public Drive getDriveService() {
+  public synchronized Drive getDriveService() {
+    if (cachedDrive != null && isStillValid(cachedCredential)) {
+      return cachedDrive;
+    }
+
     try {
       CredentialConfig config =
           CredentialConfig.builder()
               .applicationName(APPLICATION_NAME)
-              .tokensDirectoryPath(tokensDirectoryPath)
               .redirectUri(redirectUri)
               .credentialsFile(base64FileDecoder.getGoogleDriveCredentialsFile())
               .authOrigin("backup")
@@ -52,11 +63,20 @@ public class GoogleAuthService {
               .setApplicationName(APPLICATION_NAME)
               .build();
 
+      cachedCredential = credential;
+      cachedDrive = drive;
+
       return drive;
     } catch (BackupException e) {
       throw e;
     } catch (Exception e) {
       throw new BackupException("Erro ao criar o cliente do Google Drive.", e);
     }
+  }
+
+  private boolean isStillValid(Credential credential) {
+    return credential != null
+        && credential.getExpiresInSeconds() != null
+        && credential.getExpiresInSeconds() > MIN_VALID_SECONDS;
   }
 }

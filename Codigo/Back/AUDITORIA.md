@@ -202,13 +202,13 @@ Nenhum bloco relevante de código morto comentado foi encontrado.
 
 ### C · Outros (infra/operação)
 
-- [ ] 🟠 **[C-G1] Tokens OAuth do Google Drive/Gmail persistidos em disco local, não em banco/secret store**
+- [x] 🟠 **[C-G1] Tokens OAuth do Google Drive/Gmail persistidos em disco local, não em banco/secret store**
   **Local:** `service/backup/auth/CredentialManager.java:44-45`, `service/backup/oauth/AuthorizationFlowFactory.java:55`. Em ambientes com filesystem efêmero (containers, redeploys), tokens são perdidos a cada reinício, forçando reautenticação manual — sem criptografia em repouso.
 
-- [ ] 🟡 **[C-G2] `AuthorizationHandler` usa fluxo OAuth desenhado para app desktop (`LocalServerReceiver` na porta 8888) dentro de um backend servidor**
+- [x] 🟡 **[C-G2] `AuthorizationHandler` usa fluxo OAuth desenhado para app desktop (`LocalServerReceiver` na porta 8888) dentro de um backend servidor**
   **Local:** `service/backup/auth/AuthorizationHandler.java:15-30`. Possível código legado morto — o fluxo real em produção parece ser via `oauth/GoogleOAuthService`. Vale confirmar se ainda é chamado; se morto, a porta 8888 hardcoded é superfície de risco/confusão desnecessária.
 
-- [ ] 🔵 **[C-G3] `GoogleAuthService.getDriveService()` reconstrói o cliente Drive (com handshake OAuth completo) a cada chamada, sem cache**
+- [x] 🔵 **[C-G3] `GoogleAuthService.getDriveService()` reconstrói o cliente Drive (com handshake OAuth completo) a cada chamada, sem cache**
   **Local:** `service/backup/auth/GoogleAuthService.java:28-59` — chamado N vezes na mesma operação lógica de backup.
 
 ---
