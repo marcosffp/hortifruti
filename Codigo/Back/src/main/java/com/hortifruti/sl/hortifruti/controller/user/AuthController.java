@@ -179,7 +179,8 @@ public class AuthController {
         user.getUsername(),
         user.getUsername(),
         List.of(user.getRole().name()),
-        activeEnvironment());
+        activeEnvironment(),
+        user.isMustChangePassword());
   }
 
   /**

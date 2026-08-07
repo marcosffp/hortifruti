@@ -55,6 +55,12 @@ public class DeviceTokenAuthFilter extends OncePerRequestFilter {
 
   private final DispositivoVinculadoService dispositivoVinculadoService;
   private final UserRepository userRepository;
+
+  /**
+   * {@link ConcurrentHashMap} local ao processo — mesma limitação aceita de deploy single-instance
+   * do {@code RateLimitingFilter}: em múltiplas instâncias a cota por dispositivo vale por
+   * instância, não globalmente.
+   */
   private final Map<Long, Bucket> bucketsPorDispositivo = new ConcurrentHashMap<>();
 
   @Override

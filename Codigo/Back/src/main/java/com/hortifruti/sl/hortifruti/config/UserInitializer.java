@@ -346,11 +346,22 @@ public class UserInitializer implements CommandLineRunner {
 
   private void createBootstrapManager() {
     String password = generateSecurePassword();
-    createUser("admin", password, Role.MANAGER, "Administrador");
+    createUser("admin", password, Role.MANAGER, "Administrador", true);
+    // A senha só existe neste escopo local — não é logada, evitando que fique retida
+    // indefinidamente em agregadores de log de terceiros. É entregue apenas via console, e a conta
+    // fica com mustChangePassword=true: SecurityFilter bloqueia qualquer rota fora de /auth/** e
+    // PUT /users/update até a senha ser trocada.
+    System.out.println(
+        "======================================================================");
+    System.out.println("Nenhum usuário encontrado. Conta administrativa inicial criada.");
+    System.out.println("  usuário: admin");
+    System.out.println("  senha temporária (troca obrigatória no primeiro login): " + password);
+    System.out.println(
+        "======================================================================");
     log.warn(
-        "Nenhum usuário encontrado. Conta administrativa inicial criada — usuário: 'admin',"
-            + " senha temporária: '{}'. Faça login e troque a senha imediatamente.",
-        password);
+        "Nenhum usuário encontrado. Conta administrativa inicial 'admin' criada com senha"
+            + " temporária — veja a saída do console. Troca de senha obrigatória no primeiro"
+            + " login.");
   }
 
   private String generateSecurePassword() {
@@ -364,12 +375,18 @@ public class UserInitializer implements CommandLineRunner {
   }
 
   private void createUser(String username, String password, Role role, String position) {
+    createUser(username, password, role, position, false);
+  }
+
+  private void createUser(
+      String username, String password, Role role, String position, boolean mustChangePassword) {
     User user =
         User.builder()
             .username(username)
             .password(passwordEncoder.encode(password))
             .role(role)
             .position(position)
+            .mustChangePassword(mustChangePassword)
             .build();
     userRepository.save(user);
   }

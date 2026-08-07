@@ -95,7 +95,7 @@ Tudo marcado 🟡/🔵 nas seções abaixo: duplicação entre provedores de e-m
   **Local:** `exception/GlobalExceptionHandler.java` (`handleBBApiException`, `handleBilletException`, `handleStorageException`, `handleBackupException`, entre outros) devolvem `ex.getMessage()` direto; origem em `config/ssl/MtlsRestTemplateFactory.java:100-104`.
   Dependendo da exceção original, isso pode vazar caminhos de arquivo do servidor (`temp/cert/...`) ou detalhes de biblioteca TLS — informação útil para reconhecimento por um atacante.
 
-- [ ] 🟡 **[A-V5] Senha de bootstrap do admin logada em texto plano**
+- [x] 🟡 **[A-V5] Senha de bootstrap do admin logada em texto plano**
   **Local:** `config/UserInitializer.java:346-353`
   ```java
   log.warn("Nenhum usuário encontrado. Conta administrativa inicial criada — usuário: 'admin',"
@@ -103,47 +103,47 @@ Tudo marcado 🟡/🔵 nas seções abaixo: duplicação entre provedores de e-m
   ```
   Logs são frequentemente enviados a agregadores de terceiros e retidos por tempo indeterminado. Nada força a troca da senha após o primeiro login. Recomenda-se não persistir em log permanente e/ou forçar troca no primeiro acesso.
 
-- [ ] 🟡 **[A-V6] Swagger/OpenAPI não é desabilitado no profile `hml`**
+- [x] 🟡 **[A-V6] Swagger/OpenAPI não é desabilitado no profile `hml`**
   **Local:** `application-hml.properties` (ausência de `springdoc.*.enabled=false`, presente só em `application-prod.properties:30-31`); `SecurityConfig.java:87-88` libera `/swagger-ui/**` em todos os profiles.
   Em homologação — que roda em infraestrutura pública (Railway) — o schema completo da API fica navegável sem autenticação, facilitando reconhecimento de superfície de ataque.
 
-- [ ] 🔵 **[A-V7] Estado de segurança em memória, single-instance apenas**
+- [x] 🔵 **[A-V7] Estado de segurança em memória, single-instance apenas**
   **Local:** `config/auth/TokenBlocklist.java:9-11`, `RateLimitingFilter.java:35`, `DeviceTokenAuthFilter.java:58`
   Os três usam `ConcurrentHashMap` local ao processo. Já documentado como limitação aceita, mas fica silenciosamente quebrado (logout não invalida em todas as instâncias, limites de rate viram por-instância) se o serviço for escalado horizontalmente no futuro.
 
-- [ ] 🔵 **[A-V8] `bucket4j-core` usa coordenadas Maven descontinuadas** *(ver [seção 9](#9-achados-duplicados-entre-áreas))*
+- [x] 🔵 **[A-V8] `bucket4j-core` usa coordenadas Maven descontinuadas** *(ver [seção 9](#9-achados-duplicados-entre-áreas))*
   **Local:** `pom.xml` (`com.github.vladimir-bukhtoyarov:bucket4j-core`)
 
-- [ ] 🔵 **[A-V9] `DataIntegrityViolationException` mapeado por substring de mensagem de driver MySQL**
+- [x] 🔵 **[A-V9] `DataIntegrityViolationException` mapeado por substring de mensagem de driver MySQL**
   **Local:** `exception/GlobalExceptionHandler.java:143-166` (`errorMessage.contains("Duplicate entry")` + `errorMessage.contains("users")`)
   Dependência frágil de string específica do driver/idioma. Troca de driver ou versão do MySQL quebra silenciosamente esse tratamento. Prefira checar `ex.getCause()` por `SQLIntegrityConstraintViolationException` + nome da constraint.
 
 ### A · Acoplamento e baixa coesão
 
-- [ ] 🟡 **[A-A1] Lógica de hashing de token duplicada entre `RefreshTokenService` e `DispositivoVinculadoService`**
+- [x] 🟡 **[A-A1] Lógica de hashing de token duplicada entre `RefreshTokenService` e `DispositivoVinculadoService`**
   **Local:** `config/auth/RefreshTokenService.java:83-107` vs. `config/auth/DispositivoVinculadoService.java:87-89,180-188`
   Ambas implementam, de forma idêntica e independente: gerar 32 bytes via `SecureRandom` + Base64 URL-safe, e SHA-256 formatado em hex. Se o algoritmo precisar mudar (ex.: migrar para Argon2/PBKDF2), é preciso lembrar de atualizar dois lugares. Extrair para um `TokenHasher` compartilhado.
 
-- [ ] 🔵 **[A-A2] `GlobalExceptionHandler` concentra ~25 handlers de domínios não relacionados**
+- [x] 🔵 **[A-A2] `GlobalExceptionHandler` concentra ~25 handlers de domínios não relacionados**
   **Local:** `exception/GlobalExceptionHandler.java` (369 linhas)
   Padrão aceitável para `@RestControllerAdvice` central, mas a maioria dos handlers é boilerplate quase idêntico. Poderia usar uma interface `DomainException` carregando seu próprio `HttpStatus` + um handler genérico.
 
-- [ ] 🔵 **[A-A3] Certificado mTLS compartilhado entre BB e Sicoob via propriedade de nome genérico**
+- [x] 🔵 **[A-A3] Certificado mTLS compartilhado entre BB e Sicoob via propriedade de nome genérico**
   **Local:** `config/ssl/MtlsRestTemplateFactory.java:39-40` (`@Value("${password.pfx}")`)
   Intencional (mesmo certificado e-CNPJ), mas acopla duas integrações de negócio distintas a uma única propriedade sem namespace — rotação de certificado de uma impacta a outra silenciosamente.
 
 ### A · Clareza / código confuso
 
-- [ ] 🔵 **[A-C1] Offset de fuso horário como string mágica (`"-03:00"`)**
+- [x] 🔵 **[A-C1] Offset de fuso horário como string mágica (`"-03:00"`)**
   **Local:** `config/auth/TokenConfiguration.java:75` — usa `ZoneOffset.of("-03:00")` em vez de `ZoneId.of("America/Sao_Paulo")` (já usado em `application.properties`). Armadilha silenciosa se o horário de verão for reinstituído no Brasil.
 
-- [ ] 🔵 **[A-C2] Nome de arquivo do certificado PFX duplicado como literal em 2 métodos**
+- [x] 🔵 **[A-C2] Nome de arquivo do certificado PFX duplicado como literal em 2 métodos**
   **Local:** `config/Base64FileDecoder.java:50,97` — mesmo literal `"HORTIFRUTISANTALUZIALTDA275409060001552025.pfx"` copiado. Extrair para constante.
 
 - [x] 🔵 **[A-C3] Validação de senha duplicada quase verbatim entre `updateUser` e `updateUserById`** *(ver [seção 9](#9-achados-duplicados-entre-áreas))*
   **Local:** `service/user/UserService.java:37-43` vs. `:64-72`
 
-- [ ] 🔵 **[A-C4] Variável local com nome enganoso (`user` para um DTO de contagem)**
+- [x] 🔵 **[A-C4] Variável local com nome enganoso (`user` para um DTO de contagem)**
   **Local:** `service/user/UserService.java:96-103` — `UsersCountResponse user = ...`. Cosmético.
 
 ### A · Comentários desnecessários
@@ -211,10 +211,10 @@ Nenhum achado. Busca por `TODO|FIXME|XXX` e por blocos de código comentado não
 
 ### B · Outros (moeda, idempotência, retry/timeout)
 
-- [ ] 🟡 **[B-O1] `double` usado para dinheiro na geração de Excel de transações**
+- [x] 🟡 **[B-O1] `double` usado para dinheiro na geração de Excel de transações**
   **Local:** `service/finance/transaction/TransactionReportExcelGenerator.java:96` — limitação conhecida do Apache POI (sem overload `BigDecimal` para `Cell.setCellValue`), severidade moderada, mas é exatamente o padrão que gera diferenças de centavos em somas de planilha.
 
-- [ ] 🔵 **[B-O2] Retry ausente na Focus NFe, inconsistente com o padrão já adotado para Sicoob/BB**
+- [x] 🔵 **[B-O2] Retry ausente na Focus NFe, inconsistente com o padrão já adotado para Sicoob/BB**
   **Local:** `config/FocusNfeApiClient.java:39-53,55-69` sem retry, enquanto `config/billet/BilletHttpClient.executeWithRetry:85-111` e `config/bb/BBExtratoClient.getExtratoPage:55-62` já implementam retry de 401 com invalidação de token. A emissão de NF-e — operação mais sensível do sistema — não tem nenhuma segunda tentativa em falha de rede transitória.
 
 ### B · Comentários desnecessários
@@ -544,7 +544,7 @@ Poucos achados — nenhum bloco de código comentado ou `TODO`/`FIXME` encontrad
 - [ ] 🟡 **[E-C3] `spring-boot-starter-web` e `spring-boot-starter-webflux` juntos no mesmo projeto**
   **Local:** `pom.xml:67-78` — duas pilhas HTTP concorrentes (Tomcat + Reactor Netty). Se o motivo é só `WebClient` reativo para chamar APIs externas, dá para obter isso com dependência mais enxuta, ou migrar para `RestClient` síncrono (Spring Framework 6.1+) e remover o starter reativo.
 
-- [ ] 🔵 **[E-C4] Coordenada Maven desatualizada do Bucket4j** *(ver [seção 9](#9-achados-duplicados-entre-áreas))*
+- [x] 🔵 **[E-C4] Coordenada Maven desatualizada do Bucket4j** *(ver [seção 9](#9-achados-duplicados-entre-áreas))*
   **Local:** `pom.xml:174-178` — `com.github.vladimir-bukhtoyarov:bucket4j-core`
 
 - [ ] 🔵 **[E-C5] Metadados de projeto vazios (boilerplate do Spring Initializr nunca preenchido)**
@@ -557,7 +557,7 @@ Poucos achados — nenhum bloco de código comentado ou `TODO`/`FIXME` encontrad
 Sinalizados **independentemente** por duas frentes de análise diferentes — reforça que são pontos reais, não ruído de uma leitura isolada:
 
 - [x] **Validação de senha (4-20 caracteres, magic numbers, duplicada em 2 métodos)** — reportado em A-V3/A-C3 e [C-C9](#área-c--demais-services), todos apontando para `service/user/UserService.java:39,67` e `dto/user/UserRequest.java:11`. Corrigido: extraído `encodeValidatedPassword(String)` em `UserService`, mínimo subiu para 8 caracteres e teto para 72 (limite de bytes considerado pelo BCrypt), em `UserRequest`/`UserService`.
-- [ ] **`bucket4j-core` com `groupId` descontinuado** — reportado em A-V8 e [E-C4](#e-c1), ambos em `pom.xml`.
+- [x] **`bucket4j-core` com `groupId` descontinuado** — reportado em A-V8 e [E-C4](#e-c1), ambos em `pom.xml`. Corrigido: `groupId` trocado de `com.github.vladimir-bukhtoyarov` para `com.bucket4j` (mesma versão 8.0.1 continua publicada lá).
 - [ ] **`Category.FAMÍLIA` — enum financeiro com valor acentuado/semântica questionável** — reportado em B-B5 e E-J8, ambos observando o vínculo com `util/TransactionUtil.java:61` (nome pessoal "marcos" hardcoded → `FAMÍLIA`), que a frente de "Demais Services" também aponta em C-B1 como problema de dado de RH hardcoded no código-fonte.
 
 ---

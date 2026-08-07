@@ -5,6 +5,8 @@ import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import com.hortifruti.sl.hortifruti.util.TransactionUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.apache.poi.ss.usermodel.BorderStyle;
@@ -91,9 +93,17 @@ public class TransactionReportExcelGenerator {
     cell.setCellStyle(style);
   }
 
+  /**
+   * O Apache POI não tem overload de {@code Cell.setCellValue} para {@link BigDecimal} — só {@code
+   * double}. Arredondar para escala 2 (mesma do banco, ver {@code Transaction.amount}) *antes* da
+   * conversão garante que o double gravado seja exatamente o valor mostrado na célula (formato
+   * "#,##0.00"), evitando que o SUM do Excel some restos de ponto flutuante que não aparecem no
+   * arredondamento visual de cada célula — a causa raiz das diferenças de centavos em somas.
+   */
   private void setAmountCell(Row row, int column, Transaction transacao, Workbook workbook) {
     Cell cell = row.createCell(column);
-    double amountValue = transacao.getAmount().doubleValue();
+    BigDecimal amount = transacao.getAmount().setScale(2, RoundingMode.HALF_UP);
+    double amountValue = amount.doubleValue();
 
     if (amountValue < 0) {
       cell.setCellValue(-amountValue);

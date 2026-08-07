@@ -14,13 +14,15 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class Base64FileDecoder {
 
+  private static final String PFX_FILE_NAME = "HORTIFRUTISANTALUZIALTDA275409060001552025.pfx";
+
   @Value("${google.drive.credentials}")
   private String googleDriveCredentials;
 
-  @Value("${document.pfx}")
+  @Value("${mtls.shared-certificate.pfx-base64}")
   private String pfx;
 
-  @Value("${document.pem}")
+  @Value("${mtls.shared-certificate.pem-base64}")
   private String pem;
 
   @Value("${pfx.temp.directory}")
@@ -45,9 +47,10 @@ public class Base64FileDecoder {
 
   public File decodePfx() throws IOException {
     if (pfx == null || pfx.isEmpty()) {
-      throw new BilletException("A propriedade 'document.pfx' está vazia ou não foi configurada.");
+      throw new BilletException(
+          "A propriedade 'mtls.shared-certificate.pfx-base64' está vazia ou não foi configurada.");
     }
-    String outputPath = pfxTempDirectory + "/HORTIFRUTISANTALUZIALTDA275409060001552025.pfx";
+    String outputPath = pfxTempDirectory + "/" + PFX_FILE_NAME;
     File decodedFile = decodeBase64ToFile(pfx, outputPath);
     if (decodedFile == null || !decodedFile.exists()) {
       throw new BilletException("Falha ao decodificar o arquivo PFX.");
@@ -57,7 +60,8 @@ public class Base64FileDecoder {
 
   public File decodePem() throws IOException {
     if (pem == null || pem.isEmpty()) {
-      throw new BilletException("A propriedade 'document.pem' está vazia ou não foi configurada.");
+      throw new BilletException(
+          "A propriedade 'mtls.shared-certificate.pem-base64' está vazia ou não foi configurada.");
     }
 
     File tempDir = new File(pemTempDirectory);
@@ -94,7 +98,7 @@ public class Base64FileDecoder {
   }
 
   public File getPfxFile() {
-    File file = new File(pfxTempDirectory + "/HORTIFRUTISANTALUZIALTDA275409060001552025.pfx");
+    File file = new File(pfxTempDirectory + "/" + PFX_FILE_NAME);
     return file.exists() ? file : null;
   }
 

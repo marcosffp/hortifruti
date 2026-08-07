@@ -20,6 +20,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+/**
+ * Estado do rate limit vive em {@link ConcurrentHashMap} local ao processo — limitação aceita de
+ * deploy single-instance. Se o serviço vier a ser escalado horizontalmente, o limite passa a valer
+ * por instância (um cliente distribuído entre N instâncias efetivamente ganha N× a cota), não
+ * globalmente; corrigir isso exigiria um backend compartilhado (ex.: Redis).
+ */
 @Slf4j
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {

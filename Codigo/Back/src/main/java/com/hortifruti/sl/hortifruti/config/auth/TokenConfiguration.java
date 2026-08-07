@@ -7,8 +7,8 @@ import com.hortifruti.sl.hortifruti.exception.auth.TokenException;
 import com.hortifruti.sl.hortifruti.model.Role;
 import jakarta.annotation.PostConstruct;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -16,6 +16,14 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class TokenConfiguration {
+
+  /**
+   * Mesmo fuso já usado em {@code spring.jackson.time-zone} (application.properties) — {@link
+   * ZoneId}, não um offset fixo como {@code "-03:00"}, para não quebrar silenciosamente se o
+   * horário de verão for reinstituído no Brasil.
+   */
+  private static final ZoneId TIMEZONE = ZoneId.of("America/Sao_Paulo");
+
   private final TokenBlocklist tokenBlocklist;
 
   @Value("${jwt.secret}")
@@ -72,7 +80,7 @@ public class TokenConfiguration {
   }
 
   private Instant generateExpirationDate() {
-    return LocalDateTime.now().plusMinutes(minutosExpiracao).toInstant(ZoneOffset.of("-03:00"));
+    return ZonedDateTime.now(TIMEZONE).plusMinutes(minutosExpiracao).toInstant();
   }
 
   public long getExpirationSeconds() {

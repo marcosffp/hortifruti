@@ -5,13 +5,7 @@ import com.hortifruti.sl.hortifruti.model.RefreshToken;
 import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.repository.RefreshTokenRepository;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Base64;
-import java.util.HexFormat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -25,10 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 public class RefreshTokenService {
-  private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
   private final RefreshTokenRepository refreshTokenRepository;
   private final UserRepository userRepository;
+  private final TokenHasher tokenHasher;
 
   @Value("${jwt.refresh-expiration-days:30}")
   private long diasExpiracao;
@@ -39,7 +33,7 @@ public class RefreshTokenService {
 
   @Transactional
   public RotationResult rotate(String rawToken) {
-    String hash = hash(rawToken);
+    String hash = tokenHasher.hash(rawToken);
     RefreshToken existing =
         refreshTokenRepository
             .findByTokenHash(hash)
@@ -78,7 +72,7 @@ public class RefreshTokenService {
 
   public void revokeByRawToken(String rawToken) {
     refreshTokenRepository
-        .findByTokenHash(hash(rawToken))
+        .findByTokenHash(tokenHasher.hash(rawToken))
         .ifPresent(
             token -> {
               if (token.getRevokedAt() == null) {
@@ -93,29 +87,17 @@ public class RefreshTokenService {
   }
 
   private String persistNewToken(Long userId) {
-    byte[] randomBytes = new byte[32];
-    SECURE_RANDOM.nextBytes(randomBytes);
-    String rawToken = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+    String rawToken = tokenHasher.generateOpaqueToken();
 
     RefreshToken token =
         RefreshToken.builder()
-            .tokenHash(hash(rawToken))
+            .tokenHash(tokenHasher.hash(rawToken))
             .userId(userId)
             .expiresAt(LocalDateTime.now().plusDays(diasExpiracao))
             .build();
     refreshTokenRepository.save(token);
 
     return rawToken;
-  }
-
-  private String hash(String rawToken) {
-    try {
-      MessageDigest digest = MessageDigest.getInstance("SHA-256");
-      byte[] hashBytes = digest.digest(rawToken.getBytes(StandardCharsets.UTF_8));
-      return HexFormat.of().formatHex(hashBytes);
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalStateException("SHA-256 não disponível na JVM.", e);
-    }
   }
 
   public record RotationResult(User user, String rawToken) {}

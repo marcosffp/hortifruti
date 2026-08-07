@@ -19,6 +19,22 @@ import org.springframework.stereotype.Service;
 @Service
 @AllArgsConstructor
 public class RegisterCalculator {
+
+  /** Venda de mercadoria adquirida ou recebida de terceiros — ICMS interno MG (18%). */
+  private static final String CFOP_VENDA_MERCADORIA_TERCEIROS = "5102";
+
+  private static final BigDecimal ALIQUOTA_ICMS_VENDA_MERCADORIA_TERCEIROS =
+      BigDecimal.valueOf(18.00);
+
+  /**
+   * Venda de mercadoria sujeita a substituição tributária, na condição de contribuinte
+   * substituído — o ICMS próprio já foi retido antes na cadeia, então a alíquota aqui é 0 por
+   * desenho, não um caso não mapeado.
+   */
+  private static final String CFOP_SUBSTITUICAO_TRIBUTARIA = "5405";
+
+  private static final BigDecimal ALIQUOTA_ICMS_SUBSTITUICAO_TRIBUTARIA = BigDecimal.ZERO;
+
   private final InvoiceQuery invoiceQuery;
   private final CombinedScoreService combinedScoreService;
 
@@ -69,9 +85,15 @@ public class RegisterCalculator {
 
   private BigDecimal determineAliquota(String cfop) {
     return switch (cfop) {
-      case "5102" -> BigDecimal.valueOf(18.00);
-      case "5405" -> BigDecimal.ZERO;
-      default -> BigDecimal.ZERO;
+      case CFOP_VENDA_MERCADORIA_TERCEIROS -> ALIQUOTA_ICMS_VENDA_MERCADORIA_TERCEIROS;
+      case CFOP_SUBSTITUICAO_TRIBUTARIA -> ALIQUOTA_ICMS_SUBSTITUICAO_TRIBUTARIA;
+      default -> {
+        log.warn(
+            "CFOP '{}' não mapeado em RegisterCalculator.determineAliquota — usando 0 como"
+                + " fallback. Verifique se é um CFOP novo que precisa de alíquota própria.",
+            cfop);
+        yield BigDecimal.ZERO;
+      }
     };
   }
 

@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.config.auth;
 
+import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -72,6 +73,18 @@ public class SecurityFilter extends OncePerRequestFilter {
               new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
 
           SecurityContextHolder.getContext().setAuthentication(authentication);
+
+          if (user instanceof User appUser
+              && appUser.isMustChangePassword()
+              && !isPasswordChangeAllowedPath(request)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response
+                .getWriter()
+                .write(
+                    "{\"erro\": \"PASSWORD_CHANGE_REQUIRED\", \"mensagem\": \"Troque sua senha"
+                        + " temporária antes de continuar.\"}");
+            return;
+          }
         }
       }
     } catch (Exception e) {
@@ -82,6 +95,19 @@ public class SecurityFilter extends OncePerRequestFilter {
     }
 
     filterChain.doFilter(request, response);
+  }
+
+  /**
+   * Enquanto {@code mustChangePassword} for {@code true}, só {@code GET /auth/me} (para o front
+   * saber que precisa redirecionar) e {@code PUT /users/update} (a própria troca de senha) ficam
+   * acessíveis — qualquer outra rota autenticada é bloqueada até a senha temporária ser trocada.
+   */
+  private boolean isPasswordChangeAllowedPath(HttpServletRequest request) {
+    String uri = request.getRequestURI();
+    if ("/auth/me".equals(uri)) {
+      return true;
+    }
+    return "/users/update".equals(uri) && HttpMethod.PUT.matches(request.getMethod());
   }
 
   /**

@@ -9,7 +9,9 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -19,8 +21,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class FocusNfeApiClient {
@@ -46,7 +50,9 @@ public class FocusNfeApiClient {
       HttpEntity<String> entity = new HttpEntity<>(payload, headers);
 
       ResponseEntity<String> response =
-          restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+          executeWithNetworkRetry(
+              "POST " + url,
+              () -> restTemplate.exchange(url, HttpMethod.POST, entity, String.class));
 
       return response.getBody();
     } catch (Exception e) {
@@ -62,7 +68,8 @@ public class FocusNfeApiClient {
       HttpEntity<String> entity = new HttpEntity<>(headers);
 
       ResponseEntity<String> response =
-          restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+          executeWithNetworkRetry(
+              "GET " + url, () -> restTemplate.exchange(url, HttpMethod.GET, entity, String.class));
 
       return response.getBody();
     } catch (Exception e) {
@@ -88,7 +95,9 @@ public class FocusNfeApiClient {
       HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
 
       ResponseEntity<String> response =
-          restTemplate.exchange(url, HttpMethod.DELETE, entity, String.class);
+          executeWithNetworkRetry(
+              "DELETE " + url,
+              () -> restTemplate.exchange(url, HttpMethod.DELETE, entity, String.class));
 
       return response.getBody();
     } catch (IllegalArgumentException e) {
@@ -163,6 +172,27 @@ public class FocusNfeApiClient {
       // corpo não é JSON válido
     }
     return null;
+  }
+
+  /**
+   * A Focus NFe usa um token estático (Basic Auth), sem OAuth para invalidar/renovar como
+   * BB/Sicoob — não faz sentido replicar o retry-em-401 deles aqui. O que falta é o mais básico:
+   * uma segunda tentativa em falha de rede transitória ({@link ResourceAccessException}, ex.:
+   * timeout, reset de conexão) antes de desistir. Erros HTTP retornados pela própria Focus NFe
+   * (4xx/5xx, {@link HttpStatusCodeException}) não são retentados — não são transitórios, e
+   * repetir poderia duplicar o efeito de uma emissão de NF-e.
+   */
+  private <T> ResponseEntity<T> executeWithNetworkRetry(
+      String operation, Supplier<ResponseEntity<T>> call) {
+    try {
+      return call.get();
+    } catch (ResourceAccessException ex) {
+      log.warn(
+          "[FocusNFe] Falha de rede em {}, tentando novamente uma vez: {}",
+          operation,
+          ex.getMessage());
+      return call.get();
+    }
   }
 
   private HttpHeaders createHeaders() {

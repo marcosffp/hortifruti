@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 public class UserService {
 
   private static final int PASSWORD_MIN_LENGTH = 8;
-  private static final int PASSWORD_MAX_LENGTH = 72;
+  private static final int PASSWORD_MAX_LENGTH = 20;
 
   private final UserRepository userRepository;
   private final UserMapper userMapper;
@@ -39,7 +39,7 @@ public class UserService {
     }
 
     if (userRequest.password() != null && !userRequest.password().trim().isEmpty()) {
-      user.setPassword(encodeValidatedPassword(userRequest.password()));
+      changePassword(user, userRequest.password());
     }
 
     user.setRole(userRequest.role());
@@ -62,7 +62,7 @@ public class UserService {
     }
 
     if (userRequest.password() != null && !userRequest.password().trim().isEmpty()) {
-      user.setPassword(encodeValidatedPassword(userRequest.password()));
+      changePassword(user, userRequest.password());
     }
 
     if (userRequest.role() != null) {
@@ -74,11 +74,12 @@ public class UserService {
   }
 
   /**
-   * Trim + valida o tamanho (NIST 800-63B: mínimo 8; teto em 72 porque é o limite de bytes que o
-   * BCrypt considera) antes de codificar. Centralizado aqui porque {@code updateUser} e {@code
-   * updateUserById} precisam da mesma regra ao trocar senha.
+   * Trim + valida o tamanho (mesmo intervalo de {@link UserRequest#password()}), codifica e limpa
+   * {@code mustChangePassword} — troca de senha bem-sucedida é exatamente a condição que satisfaz
+   * essa flag (ver {@code UserInitializer#createBootstrapManager}). Centralizado aqui porque
+   * {@code updateUser} e {@code updateUserById} precisam da mesma regra.
    */
-  private String encodeValidatedPassword(String rawPassword) {
+  private void changePassword(User user, String rawPassword) {
     String password = rawPassword.trim();
     if (password.length() < PASSWORD_MIN_LENGTH || password.length() > PASSWORD_MAX_LENGTH) {
       throw new UserException(
@@ -88,7 +89,8 @@ public class UserService {
               + PASSWORD_MAX_LENGTH
               + " caracteres");
     }
-    return passwordEncoder.encode(password);
+    user.setPassword(passwordEncoder.encode(password));
+    user.setMustChangePassword(false);
   }
 
   public void deleteUser(String username) {
@@ -106,11 +108,9 @@ public class UserService {
   }
 
   public UsersCountResponse getUsersCountResponse() {
-    UsersCountResponse user =
-        new UsersCountResponse(
-            userRepository.getUsersCount(),
-            userRepository.getUsersCountByRole(Role.MANAGER),
-            userRepository.getUsersCountByRole(Role.EMPLOYEE));
-    return user;
+    return new UsersCountResponse(
+        userRepository.getUsersCount(),
+        userRepository.getUsersCountByRole(Role.MANAGER),
+        userRepository.getUsersCountByRole(Role.EMPLOYEE));
   }
 }

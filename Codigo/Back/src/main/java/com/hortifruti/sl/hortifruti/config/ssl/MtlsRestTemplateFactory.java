@@ -27,9 +27,11 @@ import org.springframework.web.client.RestTemplate;
 
 /**
  * Base compartilhada para os clientes HTTP mTLS do BB e do Sicoob/Billet: ambos reaproveitam o
- * mesmo certificado e-CNPJ (DOCUMENT_PFX/PASSWORD_PFX, ver {@link Base64FileDecoder}), a mesma
- * config TLS 1.2/1.3 e o mesmo padrão de timeout — só o pool de conexões, os headers padrão e o
- * tipo de exceção lançada variam por integração.
+ * mesmo certificado e-CNPJ (env vars DOCUMENT_PFX/PASSWORD_PFX, propriedades {@code
+ * mtls.shared-certificate.*}, ver {@link Base64FileDecoder}), a mesma config TLS 1.2/1.3 e o mesmo
+ * padrão de timeout — só o pool de conexões, os headers padrão e o tipo de exceção lançada variam
+ * por integração. O namespace {@code mtls.shared-certificate} é deliberado: torna explícito que
+ * rotacionar esse certificado para uma integração (ex.: BB) afeta a outra (Sicoob/Billet) também.
  */
 @Slf4j
 @Component
@@ -38,7 +40,7 @@ public class MtlsRestTemplateFactory {
 
   private final Base64FileDecoder base64FileDecoder;
 
-  @Value("${password.pfx}")
+  @Value("${mtls.shared-certificate.pfx-password}")
   private String pfxPassword;
 
   public RestTemplate create(MtlsConnectionSettings settings) {
