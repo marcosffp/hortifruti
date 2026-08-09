@@ -35,8 +35,11 @@ public class GoogleOAuthToken {
   @Column(name = "store_key", length = 255)
   private String storeKey;
 
+  // columnDefinition explícito porque o ddl-auto=update do Hibernate não redimensiona colunas BLOB
+  // já existentes: o driver MySQL reporta TINYBLOB/BLOB/LONGBLOB sob o mesmo tipo JDBC genérico, então
+  // a comparação de schema do Hibernate não detecta a diferença de tamanho e nunca emite um ALTER.
   @Lob
-  @Column(name = "encrypted_value", nullable = false)
+  @Column(name = "encrypted_value", nullable = false, columnDefinition = "LONGBLOB")
   private byte[] encryptedValue;
 
   @Column(name = "updated_at", nullable = false)
