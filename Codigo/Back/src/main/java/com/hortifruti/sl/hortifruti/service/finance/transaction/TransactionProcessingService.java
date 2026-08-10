@@ -21,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -29,12 +30,14 @@ public class TransactionProcessingService {
   private final TransactionRepository transactionRepository;
   private final TransactionMapper transactionMapper;
 
+  @Transactional(readOnly = true)
   public List<TransactionResponse> getAllTransactions() {
     return transactionRepository.findAll().stream()
         .map(transactionMapper::toResponse)
         .collect(Collectors.toList());
   }
 
+  @Transactional
   public TransactionResponse updateTransaction(Long id, TransactionRequest transactionRequest) {
     Transaction existingTransaction =
         transactionRepository
@@ -56,6 +59,7 @@ public class TransactionProcessingService {
     transactionRepository.deleteById(id);
   }
 
+  @Transactional(readOnly = true)
   public Page<TransactionResponse> getAllTransactions(
       String search, String type, String category, int page, int size) {
 
