@@ -5,6 +5,7 @@ import com.hortifruti.sl.hortifruti.dto.finance.TransactionRequestDate;
 import com.hortifruti.sl.hortifruti.dto.finance.TransactionResponse;
 import com.hortifruti.sl.hortifruti.exception.finance.TransactionException;
 import com.hortifruti.sl.hortifruti.mapper.TransactionMapper;
+import com.hortifruti.sl.hortifruti.model.finance.Category;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
 import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
@@ -71,7 +72,8 @@ public class TransactionProcessingService {
                       criteriaBuilder.like(
                           criteriaBuilder.lower(root.get("history")), searchPattern),
                       criteriaBuilder.like(
-                          criteriaBuilder.lower(root.get("category")), searchPattern)));
+                          criteriaBuilder.lower(root.get("category").as(String.class)),
+                          searchPattern)));
     }
 
     if (type != null && !type.isEmpty()) {
@@ -88,11 +90,15 @@ public class TransactionProcessingService {
     }
 
     if (category != null && !category.isEmpty()) {
-      spec =
-          spec.and(
-              (root, query, criteriaBuilder) ->
-                  criteriaBuilder.equal(
-                      criteriaBuilder.lower(root.get("category")), category.toLowerCase()));
+      try {
+        Category categoryEnum = Category.valueOf(category.toUpperCase());
+        spec =
+            spec.and(
+                (root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("category"), categoryEnum));
+      } catch (IllegalArgumentException e) {
+        throw new TransactionException("Categoria inválida: " + category, e);
+      }
     }
 
     Page<Transaction> transactionsPage = transactionRepository.findAll(spec, pageable);
