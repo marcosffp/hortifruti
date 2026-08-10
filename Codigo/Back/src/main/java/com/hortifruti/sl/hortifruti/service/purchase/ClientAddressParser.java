@@ -60,11 +60,13 @@ public class ClientAddressParser {
       }
     }
 
+    // Sem filtrar strings vazias: um campo em branco (ex.: número não informado) ainda ocupa sua
+    // posição na lista como elemento "" — descartá-lo (como uma versão anterior fazia via
+    // .filter(p -> !p.isEmpty())) desalinha todos os campos seguintes um passo à esquerda (ex.: o
+    // bairro passa a ser lido como número), corrompendo o endereço inteiro em vez de só deixar o
+    // campo em branco vazio.
     String[] parts =
-        Arrays.stream(withoutState.split("\\s*,\\s*"))
-            .map(String::trim)
-            .filter(p -> !p.isEmpty())
-            .toArray(String[]::new);
+        Arrays.stream(withoutState.split("\\s*,\\s*")).map(String::trim).toArray(String[]::new);
 
     // Layout de "parts" (CEP e UF já removidos): [rua, numero, (complemento,) bairro, cidade].
     // "cidade" e "bairro" são contados a partir do FIM (últimos 2 elementos) porque o complemento

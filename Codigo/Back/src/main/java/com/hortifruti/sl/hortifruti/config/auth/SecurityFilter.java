@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.config.auth;
 
+import com.hortifruti.sl.hortifruti.exception.auth.TokenException;
 import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
 import jakarta.servlet.FilterChain;
@@ -87,10 +88,26 @@ public class SecurityFilter extends OncePerRequestFilter {
           }
         }
       }
-    } catch (Exception e) {
+    } catch (TokenException e) {
       log.warn("Erro no filtro de segurança para {}: {}", request.getRequestURI(), e.getMessage());
       response.setStatus(HttpServletResponse.SC_FORBIDDEN);
       response.getWriter().write("{\"erro\": \"Acesso negado: Token inválido ou expirado\"}");
+      return;
+    } catch (Exception e) {
+      // Diferente de TokenException acima: aqui o problema não é o token em si, e sim algo que
+      // impediu validá-lo (ex.: instabilidade momentânea de conexão com o banco ao consultar o
+      // usuário/blocklist). Devolver 403 nesse caso faria o front tratar como sessão expirada e
+      // mandar o usuário pra tela de login — quando na verdade é só tentar de novo em instantes.
+      log.error(
+          "Falha inesperada no filtro de segurança para {} — não é problema de token",
+          request.getRequestURI(),
+          e);
+      response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+      response
+          .getWriter()
+          .write(
+              "{\"erro\": \"Erro temporário ao validar sua sessão. Tente novamente em"
+                  + " instantes.\"}");
       return;
     }
 
