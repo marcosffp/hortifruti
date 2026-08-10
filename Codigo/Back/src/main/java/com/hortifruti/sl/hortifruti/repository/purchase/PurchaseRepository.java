@@ -45,4 +45,6 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
   List<Purchase> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 
   List<Purchase> findByCombinedScoreIdAndImagemR2KeyIsNotNull(Long combinedScoreId);
+
+  boolean existsByImagemR2Key(String imagemR2Key);
 }

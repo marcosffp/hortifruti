@@ -76,6 +76,12 @@ export default function CapturaNotaCamera({
         />
       )}
 
+      <p className="text-xs text-gray-500 text-center">
+        Dá pra fotografar várias notas juntas na mesma foto (ex.: várias
+        notinhas lado a lado na mesa) — cada uma cai como um item separado na
+        fila de revisão. Só capriche na legibilidade e evite sobrepor as notas.
+      </p>
+
       <label
         htmlFor={inputId}
         className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-white border-2 border-green-600 text-green-700 font-semibold hover:bg-green-50 transition-colors cursor-pointer"

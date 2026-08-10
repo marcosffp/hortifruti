@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.purchase;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -37,10 +38,15 @@ public class GeminiExtractionService {
 
   private static final String PROMPT =
       """
-      Você está lendo uma nota manuscrita de compra de hortifrúti (fornecedor → cliente).
-      Extraia cada linha de item com: nome do produto, quantidade, unidade (kg/un/cx quando aplicável),
-      preço unitário e valor total da linha. Também extraia o nome do cliente/destinatário (se houver)
-      e o total geral da nota.
+      Você está lendo uma foto de nota(s) manuscrita(s) de compra de hortifrúti (fornecedor → cliente).
+      A imagem pode conter UMA ÚNICA nota ou VÁRIAS notas distintas fotografadas juntas (ex.: vários
+      pedaços de papel separados, lado a lado ou empilhados, cada um com seu próprio cabeçalho de
+      cliente/data/itens/total). Identifique cada nota como um documento distinto e devolva um item de
+      lista para cada uma, na ordem em que aparecem na imagem (ex.: da esquerda pra direita, de cima
+      pra baixo). NUNCA misture itens de notas diferentes dentro da mesma entrada da lista.
+      Para cada nota, extraia cada linha de item com: nome do produto, quantidade, unidade (kg/un/cx
+      quando aplicável), preço unitário e valor total da linha. Também extraia o nome do
+      cliente/destinatário (se houver) e o total geral daquela nota.
       Se um campo estiver ilegível, retorne null nesse campo em vez de inventar um valor.
       Preserve o nome do produto como está escrito, sem corrigir ortografia.
       """;
@@ -73,9 +79,24 @@ public class GeminiExtractionService {
    * Mesmo caminho de {@link #extrair}, mas pra quando os bytes já foram validados antes (ex.: a
    * captura assíncrona por dispositivo vinculado, que baixa o arquivo de volta do R2 em vez de
    * receber um {@link MultipartFile} fresco na requisição atual — ver {@code
-   * CapturaExtracaoAsyncService}).
+   * CapturaExtracaoAsyncService}). Retorna só a primeira nota reconhecida na foto — usado onde só
+   * faz sentido uma nota por vez (ex.: {@code /extrair}, endpoint de teste da tela de dev).
    */
   public NotaExtracaoResponse extrairDeArquivoValidado(NotaUploadService.ValidatedFile validated) {
+    List<NotaExtracaoResponse> notas = extrairMultiplasDeArquivoValidado(validated);
+    if (notas.isEmpty()) {
+      throw new GeminiExtractionException("Nenhuma nota reconhecida na foto.");
+    }
+    return notas.get(0);
+  }
+
+  /**
+   * Caminho principal do fluxo real de captura ({@code CapturaExtracaoAsyncService}): a foto pode
+   * conter uma ou várias notas manuscritas distintas fotografadas juntas — ver o {@link #PROMPT} e
+   * {@link #buildResponseSchema()}, que pedem/forçam uma lista em vez de um único objeto.
+   */
+  public List<NotaExtracaoResponse> extrairMultiplasDeArquivoValidado(
+      NotaUploadService.ValidatedFile validated) {
     if (apiKey == null || apiKey.isBlank()) {
       throw new GeminiExtractionException(
           "Extração automática indisponível no momento (chave da API não configurada).");
@@ -102,11 +123,13 @@ public class GeminiExtractionService {
       String responseJson = geminiRestTemplate.postForObject(url, entity, String.class);
       JsonNode responseBody = responseJson == null ? null : objectMapper.readTree(responseJson);
 
-      NotaExtracaoResponse extraction = enriquecer(parseResponse(responseBody));
+      List<NotaExtracaoResponse> extraction = enriquecer(parseResponse(responseBody));
       log.info(
-          "Extração Gemini concluída: tamanhoBytes={}, tempoMs={}, sucesso=true",
+          "Extração Gemini concluída: tamanhoBytes={}, tempoMs={}, notasEncontradas={},"
+              + " sucesso=true",
           validated.bytes().length,
-          System.currentTimeMillis() - start);
+          System.currentTimeMillis() - start,
+          extraction.size());
       return extraction;
     } catch (RestClientException | JsonProcessingException e) {
       log.warn(
@@ -138,7 +161,18 @@ public class GeminiExtractionService {
     return root;
   }
 
+  /**
+   * Raiz {@code ARRAY} — uma entrada por nota reconhecida na foto (uma única entrada no caso comum
+   * de uma nota só). {@code items} é o schema de uma nota individual, ver {@link #buildNotaSchema()}.
+   */
   private ObjectNode buildResponseSchema() {
+    ObjectNode schema = objectMapper.createObjectNode();
+    schema.put("type", "ARRAY");
+    schema.set("items", buildNotaSchema());
+    return schema;
+  }
+
+  private ObjectNode buildNotaSchema() {
     ObjectNode schema = objectMapper.createObjectNode();
     schema.put("type", "OBJECT");
 
@@ -169,7 +203,7 @@ public class GeminiExtractionService {
     field.put("nullable", true);
   }
 
-  private NotaExtracaoResponse parseResponse(JsonNode body) {
+  private List<NotaExtracaoResponse> parseResponse(JsonNode body) {
     if (body == null) {
       throw new GeminiExtractionException("Resposta vazia da API do Gemini.");
     }
@@ -186,11 +220,15 @@ public class GeminiExtractionService {
     }
 
     try {
-      return objectMapper.readValue(text, NotaExtracaoResponse.class);
+      return objectMapper.readValue(text, new TypeReference<List<NotaExtracaoResponse>>() {});
     } catch (Exception e) {
       throw new GeminiExtractionException(
           "Não foi possível interpretar a resposta da API do Gemini.", e);
     }
+  }
+
+  private List<NotaExtracaoResponse> enriquecer(List<NotaExtracaoResponse> notas) {
+    return notas.stream().map(this::enriquecerNota).toList();
   }
 
   /**
@@ -200,7 +238,7 @@ public class GeminiExtractionService {
    * identificado certo. No nível da nota, sinaliza se a soma dos itens bate com o total geral lido
    * e aponta os itens de maior valor pra conferir primeiro quando não bate.
    */
-  private NotaExtracaoResponse enriquecer(NotaExtracaoResponse raw) {
+  private NotaExtracaoResponse enriquecerNota(NotaExtracaoResponse raw) {
     List<ItemNotaExtraido> itensEnriquecidos =
         raw.itens().stream().map(this::enriquecerItem).toList();
 

@@ -98,7 +98,11 @@ public class CapturaNotaPendenteService {
    * PurchaseService#createManualPurchase} (mesma criação usada pelo lançamento manual — os itens
    * já vêm editados/conferidos pela tela de revisão). O destino da foto depende só do cliente
    * escolhido: se ele exige comprovante ({@code Client#requiresPurchaseProof}), a chave R2 da
-   * captura é anexada à compra; senão, a foto é descartada do R2 (só os dados extraídos ficam).
+   * captura é anexada à compra; senão, a foto é descartada do R2 (só os dados extraídos ficam) —
+   * MAS só quando nenhuma outra captura ainda usa essa mesma foto (ver {@link
+   * #podeApagarFotoDoR2}): uma foto com várias notas gera várias {@code CapturaNotaPendente} com o
+   * mesmo {@code r2Key} (ver {@code CapturaExtracaoAsyncService}), e apagar cedo demais quebraria a
+   * revisão/comprovante de uma nota-irmã ainda não finalizada.
    */
   @Transactional
   public PurchaseResponse confirmarComoCompra(
@@ -114,7 +118,7 @@ public class CapturaNotaPendenteService {
     if (purchase.getClient().isRequiresPurchaseProof()) {
       purchase.setImagemR2Key(captura.getR2Key());
       purchaseRepository.save(purchase);
-    } else {
+    } else if (podeApagarFotoDoR2(captura)) {
       r2StorageService.delete(captura.getR2Key());
     }
 
@@ -123,6 +127,25 @@ public class CapturaNotaPendenteService {
 
     return new PurchaseResponse(
         purchase.getId(), purchase.getPurchaseDate(), purchase.getTotal(), purchase.getUpdatedAt());
+  }
+
+  /**
+   * Conservador de propósito: numa corrida entre confirmações simultâneas de notas-irmãs (mesma
+   * foto), o pior caso é a foto ficar órfã no R2 em vez de ser apagada antes da hora — não há hoje
+   * nenhuma rotina de limpeza de órfãos pra esse fluxo, então isso não é uma regressão.
+   */
+  private boolean podeApagarFotoDoR2(CapturaNotaPendente captura) {
+    boolean irmaAindaPendente =
+        capturaNotaPendenteRepository.findByR2Key(captura.getR2Key()).stream()
+            .anyMatch(
+                outra ->
+                    !outra.getId().equals(captura.getId())
+                        && outra.getStatus() != StatusCaptura.CONFIRMADA
+                        && outra.getStatus() != StatusCaptura.DESCARTADA);
+    if (irmaAindaPendente) {
+      return false;
+    }
+    return !purchaseRepository.existsByImagemR2Key(captura.getR2Key());
   }
 
   @Transactional

@@ -44,7 +44,8 @@ export default function CapturarNotaPage() {
             Capturar Nota
           </h1>
           <p className="text-gray-600 text-sm mt-1">
-            Tire a foto da nota de compra — ela cai na fila de{" "}
+            Tire a foto da nota de compra (pode ter mais de uma nota na mesma
+            foto) — cada uma cai separada na fila de{" "}
             <span className="font-medium">Gerenciamento de Compras</span> pra
             revisão em tempo real.
           </p>
