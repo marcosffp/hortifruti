@@ -105,6 +105,21 @@ public class GlobalExceptionHandler {
     return errorResponse(HttpStatus.BAD_REQUEST, "Erro de validação", ex.getMessage());
   }
 
+  /**
+   * Cobre {@code LocalDate.parse}/{@code Month.of} chamados direto em controllers sem
+   * try/catch (ex.: {@code DashboardController#getDashboardData}) — data mal formatada ou mês fora
+   * do intervalo 1-12 lançam {@link java.time.DateTimeException} (ou sua subclasse {@link
+   * java.time.format.DateTimeParseException}), que sem este handler caía no genérico e virava 500
+   * para um erro que é, na verdade, entrada inválida do cliente.
+   */
+  @ExceptionHandler(java.time.DateTimeException.class)
+  public ResponseEntity<Map<String, String>> handleDateTimeException(
+      java.time.DateTimeException ex, HttpServletRequest request) {
+    log.warn("Data ou período inválido em {}: {}", request.getRequestURI(), ex.getMessage());
+    return errorResponse(
+        HttpStatus.BAD_REQUEST, "Erro de validação", "Data ou período inválido: " + ex.getMessage());
+  }
+
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<Map<String, String>> handleValidationException(
       MethodArgumentNotValidException ex, HttpServletRequest request) {

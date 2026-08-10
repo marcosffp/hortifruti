@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.finance.sicoob;
 
+import com.hortifruti.sl.hortifruti.dto.finance.NewTransactionData;
 import com.hortifruti.sl.hortifruti.dto.sicoob.SicoobExtratoTransacao;
 import com.hortifruti.sl.hortifruti.exception.sicoob.SicoobExtratoException;
 import com.hortifruti.sl.hortifruti.mapper.TransactionMapper;
@@ -58,16 +59,17 @@ public class TransactionSicoobApiService {
 
     Transaction transaction =
         transactionMapper.toTransaction(
-            statement,
-            "",
-            history,
-            amount,
-            category,
-            transactionType,
-            transacao.numeroDocumento(),
-            "",
-            "",
-            date.toString());
+            new NewTransactionData(
+                statement,
+                "",
+                history,
+                amount,
+                category,
+                transactionType,
+                transacao.numeroDocumento(),
+                "",
+                "",
+                date));
 
     transaction.setHash(
         generateApiTransactionHash(transacao.transactionId(), date, amount, history));

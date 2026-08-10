@@ -247,13 +247,13 @@ O README documenta 3 regras: *"Controllers nunca acessam repository diretamente"
 
 **Falta de validação de entrada (Bean Validation):**
 
-- [ ] 🟡 **[D-A3] `ClientRequest.variablePrice` é `@NotNull` sobre um `boolean` primitivo — validação inócua, nunca dispara**
+- [x] 🟡 **[D-A3] `ClientRequest.variablePrice` é `@NotNull` sobre um `boolean` primitivo — validação inócua, nunca dispara**
   **Local:** `dto/purchase/client/ClientRequest.java:9` — Jackson sempre desserializa `boolean` ausente como `false`; a anotação nunca barra nada.
 
-- [ ] 🟡 **[D-A4] `UserUpdateRequest` sem nenhuma anotação de validação, apesar do controller usar `@Valid`**
+- [x] 🟡 **[D-A4] `UserUpdateRequest` sem nenhuma anotação de validação, apesar do controller usar `@Valid`**
   **Local:** `dto/user/UserUpdateRequest.java:6-7`; `controller/user/UserController.java:43-44,50-51`. `PUT /users/update` com `username`/`password` vazios passa sem erro.
 
-- [ ] 🔵 **[D-A5] `DashboardController.getDashboardData` faz `LocalDate.parse`/`Month.of` sem tratamento — request malformada estoura exceção não controlada**
+- [x] 🔵 **[D-A5] `DashboardController.getDashboardData` faz `LocalDate.parse`/`Month.of` sem tratamento — request malformada estoura exceção não controlada**
   **Local:** `controller/dashboard/DashboardController.java:27-29`
 
 **Inconsistência de padrão REST:**
@@ -296,19 +296,19 @@ O README documenta 3 regras: *"Controllers nunca acessam repository diretamente"
 
 ### D · Acoplamento e baixa coesão em DTOs/Mappers
 
-- [ ] 🔵 **[D-morto] DTOs mortos — declarados mas nunca referenciados (confirmado via busca no projeto), sobrevivem só na documentação**
+- [x] 🔵 **[D-morto] DTOs mortos — declarados mas nunca referenciados (confirmado via busca no projeto), sobrevivem só na documentação**
   **Local:** `dto/notification/BulkNotificationRequest.java` (endpoint real usa `@RequestParam` soltos), `AccountingNotificationRequest.java`, `ClientNotificationRequest.java`, `MonthlyStatementsRequest.java`, `dto/purchase/UpdateGroupedProduct.java`. Indica refactor anterior que não removeu os DTOs nem atualizou `dto/notification/README.md`.
 
-- [ ] 🟡 **[D-D1] `TransactionMapper.toTransaction` recebe 9 parâmetros posicionais, 6 do mesmo tipo `String` intercalados**
+- [x] 🟡 **[D-D1] `TransactionMapper.toTransaction` recebe 9 parâmetros posicionais, 6 do mesmo tipo `String` intercalados**
   **Local:** `mapper/TransactionMapper.java:34-44` — risco real de troca de argumentos que o compilador não pega. Usado em `TransactionBBApiService.java:89` e `TransactionSicoobApiService.java:59`. Melhor receber um DTO/record de entrada.
 
-- [ ] 🔵 **[D-D2] `@Mapping(source="x", target="x")` redundante em várias interfaces MapStruct (ruído sem benefício)**
+- [x] 🔵 **[D-D2] `@Mapping(source="x", target="x")` redundante em várias interfaces MapStruct (ruído sem benefício)**
   **Local:** `mapper/ClientMapper.java:14-18,22-33`, `CombinedScoreMapper.java:19-27`, `GroupedProductMapper.java:12-16`, `InvoiceProductMapper.java:11-16`, `PurchaseMapper.java:12-15`, `UserMapper.java:16-19`
 
-- [ ] 🔵 **[D-D3] Lógica de formatação de apresentação embutida no DTO de resposta em vez do mapper**
+- [x] 🔵 **[D-D3] Lógica de formatação de apresentação embutida no DTO de resposta em vez do mapper**
   **Local:** `dto/climate/ProductResponse.java:34-42` — `formatMonthsList` calcula string de exibição dentro do próprio DTO.
 
-- [ ] 🔵 **[D-D4] `BulkNotificationRequest.dueDate` é `BigDecimal`, não `LocalDate` — nome sugere data, tipo sugere valor monetário**
+- [x] 🔵 **[D-D4] `BulkNotificationRequest.dueDate` é `BigDecimal`, não `LocalDate` — nome sugere data, tipo sugere valor monetário**
   **Local:** `dto/notification/BulkNotificationRequest.java:12` (DTO morto, mas risco se reaproveitado)
 
 ### D · Clareza / código confuso

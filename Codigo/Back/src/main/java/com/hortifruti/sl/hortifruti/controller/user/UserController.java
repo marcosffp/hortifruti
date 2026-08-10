@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.controller.user;
 
+import com.hortifruti.sl.hortifruti.dto.user.ChangeOwnPasswordRequest;
 import com.hortifruti.sl.hortifruti.dto.user.UserRequest;
 import com.hortifruti.sl.hortifruti.dto.user.UserResponse;
 import com.hortifruti.sl.hortifruti.dto.user.UserUpdateRequest;
@@ -41,8 +42,8 @@ public class UserController {
   @PreAuthorize("hasRole('MANAGER')")
   @PutMapping
   public ResponseEntity<UserResponse> updateUser(
-      @Valid @RequestBody UserUpdateRequest userRequest) {
-    return ResponseEntity.ok(userService.updateUser(userRequest));
+      @Valid @RequestBody ChangeOwnPasswordRequest request) {
+    return ResponseEntity.ok(userService.updateUser(request));
   }
 
   @PreAuthorize("hasRole('MANAGER')")

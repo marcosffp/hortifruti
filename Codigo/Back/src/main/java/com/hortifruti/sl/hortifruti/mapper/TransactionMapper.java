@@ -1,12 +1,9 @@
 package com.hortifruti.sl.hortifruti.mapper;
 
+import com.hortifruti.sl.hortifruti.dto.finance.NewTransactionData;
 import com.hortifruti.sl.hortifruti.dto.finance.TransactionRequest;
 import com.hortifruti.sl.hortifruti.dto.finance.TransactionResponse;
-import com.hortifruti.sl.hortifruti.model.finance.Category;
-import com.hortifruti.sl.hortifruti.model.finance.Statement;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
-import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
-import java.math.BigDecimal;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -31,15 +28,5 @@ public interface TransactionMapper {
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
   @Mapping(target = "hash", ignore = true)
-  Transaction toTransaction(
-      Statement statement,
-      String codHistory,
-      String history,
-      BigDecimal amount,
-      Category category,
-      TransactionType transactionType,
-      String document,
-      String sourceAgency,
-      String batch,
-      String transactionDate);
+  Transaction toTransaction(NewTransactionData data);
 }

@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.user;
 
+import com.hortifruti.sl.hortifruti.dto.user.ChangeOwnPasswordRequest;
 import com.hortifruti.sl.hortifruti.dto.user.UserRequest;
 import com.hortifruti.sl.hortifruti.dto.user.UserResponse;
 import com.hortifruti.sl.hortifruti.dto.user.UserUpdateRequest;
@@ -33,17 +34,13 @@ public class UserService {
     return userMapper.toUserResponse(savedUser);
   }
 
-  public UserResponse updateUser(UserUpdateRequest userRequest) {
-    User user = userRepository.findByUsername(userRequest.username());
+  public UserResponse updateUser(ChangeOwnPasswordRequest request) {
+    User user = userRepository.findByUsername(request.username());
     if (user == null) {
       throw new UserException("Usuário não encontrado");
     }
 
-    if (userRequest.password() != null && !userRequest.password().trim().isEmpty()) {
-      changePassword(user, userRequest.password());
-    }
-
-    user.setRole(userRequest.role());
+    changePassword(user, request.password());
     User updatedUser = userRepository.save(user);
     return userMapper.toUserResponse(updatedUser);
   }

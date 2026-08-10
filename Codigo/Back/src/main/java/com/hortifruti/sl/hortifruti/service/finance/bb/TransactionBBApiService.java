@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.finance.bb;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.hortifruti.sl.hortifruti.dto.finance.NewTransactionData;
 import com.hortifruti.sl.hortifruti.exception.bb.BBApiException;
 import com.hortifruti.sl.hortifruti.mapper.TransactionMapper;
 import com.hortifruti.sl.hortifruti.model.finance.Category;
@@ -90,16 +91,17 @@ public class TransactionBBApiService {
 
     Transaction transaction =
         transactionMapper.toTransaction(
-            statement,
-            lancamento.path("codigoHistorico").asText(""),
-            history,
-            amount,
-            category,
-            transactionType,
-            documento,
-            agenciaOrigem,
-            lote,
-            date.toString());
+            new NewTransactionData(
+                statement,
+                lancamento.path("codigoHistorico").asText(""),
+                history,
+                amount,
+                category,
+                transactionType,
+                documento,
+                agenciaOrigem,
+                lote,
+                date));
 
     transaction.setHash(generateHash(lancamento, date, amount, history));
     return transaction;
