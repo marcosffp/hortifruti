@@ -4,6 +4,7 @@ import com.hortifruti.sl.hortifruti.dto.purchase.ItemNotaExtraido;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Checagem de consistência aritmética da nota extraída (Etapa 4 da spec) — não depende de mais IA,
@@ -42,18 +43,32 @@ public final class NotaConsistenciaChecker {
   }
 
   /**
-   * Itens de maior valor primeiro — são os que mais pesam na diferença, então os primeiros a
-   * conferir.
+   * Prioriza itens cuja própria conta interna (quantidade × preço) já prova estar errada — é uma
+   * causa concreta da diferença, não um palpite — e só completa a lista com os de maior valor
+   * (palpite: são os que mais pesam na diferença, então os primeiros a conferir) quando sobra
+   * espaço.
    */
-  public static List<String> itensParaConferir(List<ItemNotaExtraido> itens) {
-    return itens.stream()
-        .sorted(
-            Comparator.comparing(
-                    (ItemNotaExtraido item) ->
-                        item.total() == null ? BigDecimal.ZERO : item.total())
-                .reversed())
+  public static List<String> itensParaConferir(List<ItemNotaExtraido> itens, BigDecimal margem) {
+    List<String> inconsistentes =
+        itens.stream()
+            .filter(item -> !itemConsistente(item, margem))
+            .map(ItemNotaExtraido::produtoLido)
+            .toList();
+
+    List<String> porValor =
+        itens.stream()
+            .filter(item -> itemConsistente(item, margem))
+            .sorted(
+                Comparator.comparing(
+                        (ItemNotaExtraido item) ->
+                            item.total() == null ? BigDecimal.ZERO : item.total())
+                    .reversed())
+            .map(ItemNotaExtraido::produtoLido)
+            .toList();
+
+    return Stream.concat(inconsistentes.stream(), porValor.stream())
+        .distinct()
         .limit(ITENS_PARA_CONFERIR_LIMITE)
-        .map(ItemNotaExtraido::produtoLido)
         .toList();
   }
 }

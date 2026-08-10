@@ -56,6 +56,7 @@ public class GeminiExtractionService {
 
   private final NotaUploadService notaUploadService;
   private final ProdutoMatchingService produtoMatchingService;
+  private final ClienteMatchingService clienteMatchingService;
   private final ObjectMapper objectMapper;
 
   @Qualifier("geminiRestTemplate")
@@ -232,11 +233,12 @@ public class GeminiExtractionService {
   }
 
   /**
-   * Etapas 3 (matching de produto) e 4 (checagem de consistência) da spec: pra cada item, sugere o
-   * produto do catálogo mais parecido e marca a confiança; a confiança cai pra "baixa" se a conta
-   * interna da linha (quantidade × preço) não bater com o total, mesmo que o produto tenha sido
-   * identificado certo. No nível da nota, sinaliza se a soma dos itens bate com o total geral lido
-   * e aponta os itens de maior valor pra conferir primeiro quando não bate.
+   * Etapas 3 (matching de produto/cliente) e 4 (checagem de consistência) da spec: pra cada item,
+   * sugere o produto do catálogo mais parecido e marca a confiança; a confiança cai pra "baixa" se
+   * a conta interna da linha (quantidade × preço) não bater com o total, mesmo que o produto tenha
+   * sido identificado certo. No nível da nota, sugere o cliente do cadastro mais parecido com o
+   * nome lido, sinaliza se a soma dos itens bate com o total geral lido, e aponta os itens de maior
+   * valor pra conferir primeiro quando não bate.
    */
   private NotaExtracaoResponse enriquecerNota(NotaExtracaoResponse raw) {
     List<ItemNotaExtraido> itensEnriquecidos =
@@ -250,8 +252,11 @@ public class GeminiExtractionService {
                 totalCalculado, raw.totalGeral(), margemConsistencia);
     List<String> itensParaConferir =
         Boolean.FALSE.equals(consistente)
-            ? NotaConsistenciaChecker.itensParaConferir(itensEnriquecidos)
+            ? NotaConsistenciaChecker.itensParaConferir(itensEnriquecidos, margemConsistencia)
             : List.of();
+
+    ClienteMatchingService.Resultado clienteResultado =
+        clienteMatchingService.buscarMelhorCandidato(raw.cliente());
 
     return new NotaExtracaoResponse(
         raw.cliente(),
@@ -259,7 +264,9 @@ public class GeminiExtractionService {
         itensEnriquecidos,
         raw.totalGeral(),
         consistente,
-        itensParaConferir);
+        itensParaConferir,
+        clienteResultado.clienteSugerido(),
+        clienteResultado.confianca());
   }
 
   private ItemNotaExtraido enriquecerItem(ItemNotaExtraido item) {

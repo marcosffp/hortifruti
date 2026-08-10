@@ -38,6 +38,12 @@ export type ProdutoSugerido = {
   score: number;
 };
 
+export type ClienteSugerido = {
+  id: number;
+  nome: string;
+  score: number;
+};
+
 export type ItemNotaExtraido = {
   produtoLido: string;
   quantidade: number | null;
@@ -55,6 +61,8 @@ export type NotaExtracaoResponse = {
   totalGeral: number | null;
   consistente: boolean | null;
   itensParaConferir: string[];
+  clienteSugerido: ClienteSugerido | null;
+  clienteConfianca: "alta" | "media" | "baixa" | null;
 };
 
 type NumericField = "quantity" | "price" | "total";
@@ -161,9 +169,15 @@ export default function NotaRevisaoModal({
   const [products, setProducts] = useState<FiscalProductType[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [clients, setClients] = useState<ClientSelectionInfo[]>([]);
-  const [clienteId, setClienteId] = useState<number | null>(null);
-  const [clienteNome, setClienteNome] = useState(extraction.cliente ?? "");
-  const [data, setData] = useState(extraction.data ?? "");
+  // Pré-seleciona direto do cliente sugerido pelo ClienteMatchingService (mesmo padrão do
+  // produtoSugerido por item) — não espera a lista de clientes carregar, o id já vem confiável do
+  // backend.
+  const [clienteId, setClienteId] = useState<number | null>(
+    extraction.clienteSugerido?.id ?? null,
+  );
+  const [clienteNome, setClienteNome] = useState(
+    extraction.clienteSugerido?.nome ?? extraction.cliente ?? "",
+  );
   const [purchaseDate, setPurchaseDate] = useState(
     () => parseDataLidaParaIso(extraction.data) ?? todaySaoPaulo(),
   );
@@ -181,8 +195,9 @@ export default function NotaRevisaoModal({
       .finally(() => setLoadingProducts(false));
   }, []);
 
-  // O nome lido pela OCR raramente bate exatamente com o cadastro (abreviações, acentos, etc.) —
-  // por isso só usa pra pré-preencher a busca, nunca resolve sozinho pra um cliente selecionado.
+  // Carrega o cadastro completo pro autocomplete poder resolver o clienteId já pré-selecionado
+  // (extraction.clienteSugerido) pro nome exato do cadastro, e pra sugerir o resto conforme o
+  // usuário digita se precisar trocar.
   useEffect(() => {
     clientService
       .getAllClientsForSelection()
@@ -333,45 +348,42 @@ export default function NotaRevisaoModal({
                     <span className="font-medium">
                       {extraction.itensParaConferir.join(", ")}
                     </span>{" "}
-                    (maior valor, mais impacto na diferença).
+                    — a linha desse(s) item(ns) foi marcada abaixo com{" "}
+                    <span className="font-medium">⚠ qtd × preço ≠ total</span>{" "}
+                    ou é a de maior valor, mais impacto na diferença.
                   </p>
                 )}
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <p className="block text-xs font-medium text-gray-500 uppercase mb-1">
-                  Cliente{" "}
-                  {extraction.cliente ? `(lido: "${extraction.cliente}")` : ""}
+                <p className="flex items-center gap-2 text-xs font-medium text-gray-500 uppercase mb-1">
+                  <span>
+                    Cliente{" "}
+                    {extraction.cliente
+                      ? `(lido: "${extraction.cliente}")`
+                      : ""}
+                  </span>
+                  {extraction.clienteConfianca && (
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase ${CONFIANCA_BADGE[extraction.clienteConfianca]}`}
+                    >
+                      {extraction.clienteConfianca}
+                    </span>
+                  )}
                 </p>
                 <ClientAutocompleteField
                   clients={clients}
                   value={clienteId}
                   onSelect={selecionarCliente}
-                  initialQuery={extraction.cliente ?? ""}
+                  initialQuery={clienteNome}
                 />
                 {!clienteId && clienteNome.trim() !== "" && (
                   <p className="text-xs text-amber-600 mt-1">
                     Nenhum cliente do cadastro selecionado ainda.
                   </p>
                 )}
-              </div>
-              <div>
-                <label
-                  htmlFor="revisao-data"
-                  className="block text-xs font-medium text-gray-500 uppercase mb-1"
-                >
-                  Data lida
-                </label>
-                <input
-                  id="revisao-data"
-                  type="text"
-                  value={data}
-                  onChange={(e) => setData(e.target.value)}
-                  placeholder="dd/mm/aaaa"
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500"
-                />
               </div>
               <div>
                 <label

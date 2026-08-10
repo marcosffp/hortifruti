@@ -209,7 +209,8 @@ export default function NotificacoesPage() {
   }>({ email: true, whatsapp: false });
   const [tipoDestinatario, setTipoDestinatario] =
     useState<TipoDestinatario>("clientes");
-  const [tipoReferencia, setTipoReferencia] = useState<TipoReferencia>("mes");
+  const [tipoReferencia, setTipoReferencia] =
+    useState<TipoReferencia>("periodo");
   const [mesReferencia, setMesReferencia] = useState(
     () => getMesAnoAnteriorPadrao().mes,
   );
@@ -247,7 +248,7 @@ export default function NotificacoesPage() {
       setCardValue(draft.cardValue);
       setCashValue(draft.cashValue);
       // "?? padrão" cobre rascunhos salvos antes desses campos existirem.
-      setTipoReferencia(draft.tipoReferencia ?? "mes");
+      setTipoReferencia(draft.tipoReferencia ?? "periodo");
       setMesReferencia(draft.mesReferencia ?? getMesAnoAnteriorPadrao().mes);
       setAnoReferencia(draft.anoReferencia ?? getMesAnoAnteriorPadrao().ano);
       setDataInicialReferencia(
@@ -557,7 +558,7 @@ export default function NotificacoesPage() {
 
         const mesAnoPadrao = getMesAnoAnteriorPadrao();
         const periodoPadrao = getPeriodoPadrao();
-        setTipoReferencia("mes");
+        setTipoReferencia("periodo");
         setMesReferencia(mesAnoPadrao.mes);
         setAnoReferencia(mesAnoPadrao.ano);
         setDataInicialReferencia(periodoPadrao.dataInicial);
@@ -565,7 +566,7 @@ export default function NotificacoesPage() {
         setTextoEditadoManualmente(false);
         setMensagemPersonalizada(
           gerarTextoReferencia(
-            "mes",
+            "periodo",
             mesAnoPadrao.mes,
             mesAnoPadrao.ano,
             periodoPadrao.dataInicial,
