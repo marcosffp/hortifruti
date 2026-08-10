@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.controller.purchase;
 
+import com.hortifruti.sl.hortifruti.dto.common.MessageResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.InvoiceProductResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.ManualPurchaseItemRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.ManualPurchaseRequest;
@@ -9,7 +10,6 @@ import com.hortifruti.sl.hortifruti.service.purchase.PurchaseService;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,10 +29,10 @@ public class PurchaseController {
 
   @PreAuthorize("hasRole('MANAGER')")
   @PostMapping(value = "/process", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity<Map<String, String>> processPurchase(
+  public ResponseEntity<MessageResponse> processPurchase(
       @RequestParam("file") MultipartFile file) throws IOException {
     purchaseService.processPurchaseFile(file);
-    return ResponseEntity.ok(Map.of("message", "Compra processada com sucesso"));
+    return ResponseEntity.ok(new MessageResponse("Compra processada com sucesso"));
   }
 
   @PreAuthorize("hasRole('MANAGER')")
@@ -50,9 +50,9 @@ public class PurchaseController {
 
   @PreAuthorize("hasRole('MANAGER')")
   @DeleteMapping("/{id}")
-  public ResponseEntity<?> deletePurchase(@PathVariable Long id) {
+  public ResponseEntity<MessageResponse> deletePurchase(@PathVariable Long id) {
     purchaseService.deletePurchaseById(id);
-    return ResponseEntity.ok(Map.of("message", "Compra deletada com sucesso"));
+    return ResponseEntity.ok(new MessageResponse("Compra deletada com sucesso"));
   }
 
   @GetMapping("/client/{clientId}/ordered")

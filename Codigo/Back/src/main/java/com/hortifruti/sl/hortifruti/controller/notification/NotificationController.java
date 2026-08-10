@@ -17,14 +17,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
@@ -109,36 +107,25 @@ public class NotificationController {
         @ApiResponse(responseCode = "403", description = "Acesso negado - apenas administradores")
       })
   public ResponseEntity<Map<String, Object>> testDatabaseStorageAlert() {
-    try {
-      BigDecimal currentSizeMB = databaseStorageMonitorService.getDatabaseSizeInMB();
-      databaseStorageAlertService.sendTestStorageNotification(currentSizeMB);
+    BigDecimal currentSizeMB = databaseStorageMonitorService.getDatabaseSizeInMB();
+    databaseStorageAlertService.sendTestStorageNotification(currentSizeMB);
 
-      BigDecimal maxSize = new BigDecimal("5120"); // 5GB
-      BigDecimal storagePercentage =
-          currentSizeMB
-              .multiply(new BigDecimal("100"))
-              .divide(maxSize, 1, java.math.RoundingMode.HALF_UP);
+    BigDecimal maxSize = new BigDecimal("5120"); // 5GB
+    BigDecimal storagePercentage =
+        currentSizeMB
+            .multiply(new BigDecimal("100"))
+            .divide(maxSize, 1, java.math.RoundingMode.HALF_UP);
 
-      Map<String, Object> response = new HashMap<>();
-      response.put("success", true);
-      response.put("message", "Email de teste de alerta de armazenamento enviado com sucesso");
-      response.put("timestamp", LocalDateTime.now());
-      response.put("currentStoragePercentage", storagePercentage + "%");
-      response.put("currentSize", currentSizeMB + " MB");
-      response.put("maxSize", maxSize + " MB");
-      response.put("isOverThreshold", databaseStorageMonitorService.isDatabaseOverThreshold());
+    Map<String, Object> response = new HashMap<>();
+    response.put("success", true);
+    response.put("message", "Email de teste de alerta de armazenamento enviado com sucesso");
+    response.put("timestamp", LocalDateTime.now());
+    response.put("currentStoragePercentage", storagePercentage + "%");
+    response.put("currentSize", currentSizeMB + " MB");
+    response.put("maxSize", maxSize + " MB");
+    response.put("isOverThreshold", databaseStorageMonitorService.isDatabaseOverThreshold());
 
-      return ResponseEntity.ok(response);
-
-    } catch (Exception e) {
-      log.error("Erro ao enviar email de teste de armazenamento", e);
-      Map<String, Object> errorResponse = new HashMap<>();
-      errorResponse.put("success", false);
-      errorResponse.put("message", "Erro ao enviar email de teste.");
-      errorResponse.put("timestamp", LocalDateTime.now());
-
-      return ResponseEntity.internalServerError().body(errorResponse);
-    }
+    return ResponseEntity.ok(response);
   }
 
   @PostMapping(value = "/send-bulk", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

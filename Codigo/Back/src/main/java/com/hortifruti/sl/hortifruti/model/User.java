@@ -60,7 +60,7 @@ public class User implements UserDetails {
   /**
    * Marca contas cuja senha foi definida por outra pessoa (ex.: admin de bootstrap criado pelo
    * {@code UserInitializer}) e ainda não foi trocada pelo próprio usuário — {@code SecurityFilter}
-   * bloqueia qualquer rota fora de {@code /auth/**}/{@code PUT /users/update} enquanto esta flag
+   * bloqueia qualquer rota fora de {@code /auth/**}/{@code PUT /users} enquanto esta flag
    * for {@code true}.
    */
   @Builder.Default

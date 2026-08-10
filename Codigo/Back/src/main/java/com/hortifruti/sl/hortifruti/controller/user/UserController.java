@@ -39,14 +39,14 @@ public class UserController {
   }
 
   @PreAuthorize("hasRole('MANAGER')")
-  @PutMapping("/update")
+  @PutMapping
   public ResponseEntity<UserResponse> updateUser(
       @Valid @RequestBody UserUpdateRequest userRequest) {
     return ResponseEntity.ok(userService.updateUser(userRequest));
   }
 
   @PreAuthorize("hasRole('MANAGER')")
-  @PutMapping("/update/{id}")
+  @PutMapping("/{id}")
   public ResponseEntity<UserResponse> updateUserById(
       @PathVariable Long id, @Valid @RequestBody UserUpdateRequest userRequest) {
     return ResponseEntity.ok(userService.updateUserById(id, userRequest));
@@ -59,7 +59,7 @@ public class UserController {
   }
 
   @PreAuthorize("hasRole('MANAGER')")
-  @DeleteMapping("/delete/{username}")
+  @DeleteMapping("/{username}")
   public ResponseEntity<Void> deleteUser(@PathVariable String username) {
     userService.deleteUser(username);
     return ResponseEntity.noContent().build();

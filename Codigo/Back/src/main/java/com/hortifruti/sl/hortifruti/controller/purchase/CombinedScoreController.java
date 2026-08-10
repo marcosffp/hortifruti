@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.controller.purchase;
 
+import com.hortifruti.sl.hortifruti.dto.common.MessageResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.CombinedScoreResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.GroupedProductResponse;
@@ -32,9 +33,10 @@ public class CombinedScoreController {
   private final CombinedScorePhotoService combinedScorePhotoService;
 
   @PostMapping("/create")
-  public ResponseEntity<?> createCombinedScore(@Valid @RequestBody CombinedScoreRequest request) {
+  public ResponseEntity<MessageResponse> createCombinedScore(
+      @Valid @RequestBody CombinedScoreRequest request) {
     combinedScoreService.createCombinedScore(request);
-    return ResponseEntity.ok("Agrupamento criado com sucesso.");
+    return ResponseEntity.ok(new MessageResponse("Agrupamento criado com sucesso."));
   }
 
   /**
@@ -65,21 +67,21 @@ public class CombinedScoreController {
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity<?> cancelGrouping(@PathVariable Long id) {
+  public ResponseEntity<MessageResponse> cancelGrouping(@PathVariable Long id) {
     combinedScoreCancellationService.cancelGrouping(id);
-    return ResponseEntity.ok("Agrupamento cancelado com sucesso.");
+    return ResponseEntity.ok(new MessageResponse("Agrupamento cancelado com sucesso."));
   }
 
   @PatchMapping("/confirm-payment/{id}")
-  public ResponseEntity<?> confirmPayment(@PathVariable Long id) {
+  public ResponseEntity<MessageResponse> confirmPayment(@PathVariable Long id) {
     combinedScoreService.confirmPayment(id);
-    return ResponseEntity.ok("Pagamento confirmado com sucesso.");
+    return ResponseEntity.ok(new MessageResponse("Pagamento confirmado com sucesso."));
   }
 
   @PatchMapping("/cancel-payment/{id}")
-  public ResponseEntity<?> cancelPayment(@PathVariable Long id) {
+  public ResponseEntity<MessageResponse> cancelPayment(@PathVariable Long id) {
     combinedScoreService.cancelPayment(id);
-    return ResponseEntity.ok("Pagamento cancelado com sucesso.");
+    return ResponseEntity.ok(new MessageResponse("Pagamento cancelado com sucesso."));
   }
 
   @GetMapping("/{id}/imagens")

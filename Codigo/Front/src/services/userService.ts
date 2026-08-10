@@ -76,7 +76,7 @@ class UserService {
 
   async updateUser(userData: UserRequest): Promise<UserResponse> {
     try {
-      const response = await fetch(`${this.baseURL}/users/update`, {
+      const response = await fetch(`${this.baseURL}/users`, {
         method: "PUT",
         headers: getAuthHeaders(),
         credentials: "include",
@@ -99,7 +99,7 @@ class UserService {
     userData: UserRequest,
   ): Promise<UserResponse> {
     try {
-      const response = await fetch(`${this.baseURL}/users/update/${id}`, {
+      const response = await fetch(`${this.baseURL}/users/${id}`, {
         method: "PUT",
         headers: getAuthHeaders(),
         credentials: "include",
@@ -120,7 +120,7 @@ class UserService {
   async deleteUser(username: string): Promise<void> {
     try {
       const response = await fetch(
-        `${this.baseURL}/users/delete/${encodeURIComponent(username)}`,
+        `${this.baseURL}/users/${encodeURIComponent(username)}`,
         {
           method: "DELETE",
           headers: getAuthHeaders(),

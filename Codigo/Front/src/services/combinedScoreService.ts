@@ -59,7 +59,8 @@ export const combinedScoreService = {
         errorData?.message || errorData?.error || "Erro ao criar agrupamento",
       );
     }
-    return await response.text();
+    const data = await response.json();
+    return data.message;
   },
 
   async cancelGrouping(id: number): Promise<string> {
@@ -69,7 +70,8 @@ export const combinedScoreService = {
       credentials: "include",
     });
     if (!response.ok) throw new Error("Erro ao deletar agrupamento");
-    return await response.text();
+    const data = await response.json();
+    return data.message;
   },
 
   async confirmPayment(id: number): Promise<string> {
@@ -82,7 +84,8 @@ export const combinedScoreService = {
       },
     );
     if (!response.ok) throw new Error("Erro ao confirmar pagamento");
-    return await response.text();
+    const data = await response.json();
+    return data.message;
   },
 
   async cancelPayment(id: number): Promise<string> {
@@ -95,7 +98,8 @@ export const combinedScoreService = {
       },
     );
     if (!response.ok) throw new Error("Erro ao cancelar pagamento");
-    return await response.text();
+    const data = await response.json();
+    return data.message;
   },
 
   async fetchGroupedProducts(

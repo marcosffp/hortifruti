@@ -12,7 +12,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -22,7 +21,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-@Slf4j
 @RestController
 @RequestMapping("/invoices")
 @RequiredArgsConstructor
@@ -113,15 +111,9 @@ public class InvoiceController {
    */
   @DeleteMapping("/{ref}/cancel")
   public ResponseEntity<String> cancelInvoice(@PathVariable String ref) {
-    try {
-      String response =
-          invoiceService.cancelInvoice(ref, InvoiceCancelService.MANUAL_CANCEL_JUSTIFICATIVA, true);
-      return ResponseEntity.ok(response);
-    } catch (Exception e) {
-      log.error("Erro ao cancelar a NF-e para ref {}", ref, e);
-      return ResponseEntity.internalServerError()
-          .body(e.getMessage() != null ? e.getMessage() : "Erro ao cancelar a NF-e.");
-    }
+    String response =
+        invoiceService.cancelInvoice(ref, InvoiceCancelService.MANUAL_CANCEL_JUSTIFICATIVA, true);
+    return ResponseEntity.ok(response);
   }
 
   @PreAuthorize("hasRole('MANAGER')")

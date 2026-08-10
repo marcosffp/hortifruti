@@ -233,16 +233,16 @@ O README documenta 3 regras: *"Controllers nunca acessam repository diretamente"
 
 **Tratamento de exceção duplicado** (ignora o `GlobalExceptionHandler` já existente, 369 linhas, cobre praticamente toda exceção de domínio):
 
-- [ ] 🟡 **[D-C2] `NotificationController` — 3 métodos com try/catch manual duplicando exceções já cobertas pelo handler central**
+- [x] 🟡 **[D-C2] `NotificationController` — 3 métodos com try/catch manual duplicando exceções já cobertas pelo handler central**
   **Local:** `controller/notification/NotificationController.java:69-84,101-115,171-190`
 
-- [ ] 🟡 **[D-C3] `WeatherForecastController` — dois blocos `catch` idênticos, devolvem 500 vazio (mascara a causa real)**
+- [x] 🟡 **[D-C3] `WeatherForecastController` — dois blocos `catch` idênticos, devolvem 500 vazio (mascara a causa real)**
   **Local:** `controller/climate/WeatherForecastController.java:31-38`
 
-- [ ] 🟡 **[D-C4] `ReportTaxController` — captura `Exception` genérica e devolve a mensagem crua no corpo, potencial vazamento de detalhe interno**
+- [x] 🟡 **[D-C4] `ReportTaxController` — captura `Exception` genérica e devolve a mensagem crua no corpo, potencial vazamento de detalhe interno**
   **Local:** `controller/invoice/ReportTaxController.java:25-41`
 
-- [ ] 🟡 **[D-C5] Mesmo padrão de try/catch manual redundante em outros 3 pontos**
+- [x] 🟡 **[D-C5] Mesmo padrão de try/catch manual redundante em outros 3 pontos**
   **Local:** `controller/invoice/InvoiceController.java:111-120`; `controller/purchase/PurchaseController.java:32-39`; `controller/purchase/CombinedScoreController.java:101-108` (retorna 500 com corpo `null` em vez de deixar a exceção subir).
 
 **Falta de validação de entrada (Bean Validation):**
@@ -258,16 +258,16 @@ O README documenta 3 regras: *"Controllers nunca acessam repository diretamente"
 
 **Inconsistência de padrão REST:**
 
-- [ ] 🟡 **[D-R1] Nomenclatura de path variable inconsistente dentro do mesmo controller (`combinedScoreId` vs. `idCombinedScore`)**
+- [x] 🟡 **[D-R1] Nomenclatura de path variable inconsistente dentro do mesmo controller (`combinedScoreId` vs. `idCombinedScore`)**
   **Local:** `controller/billet/BilletController.java` — linhas 28,98,158,173 vs. 83,102 (mesmo `Long`, dois nomes diferentes no mesmo arquivo).
 
-- [ ] 🔵 **[D-R2] Verbo no path (`/users/update`, `/users/delete/{username}`) destoa do resto da API (REST puro)**
+- [x] 🔵 **[D-R2] Verbo no path (`/users/update`, `/users/delete/{username}`) destoa do resto da API (REST puro)**
   **Local:** `controller/user/UserController.java:42,49,62`
 
-- [ ] 🔵 **[D-R3] Rota do `ReportTaxController` não bate com a documentada no README**
+- [x] 🔵 **[D-R3] Rota do `ReportTaxController` não bate com a documentada no README**
   **Local:** `controller/invoice/ReportTaxController.java:14-16,21` — sem `@RequestMapping` de classe, rota real é `/icms-report/monthly/{start}/{end}`; README (linha 241) documenta `/dashboard/icms-report/monthly/{start}/{end}`.
 
-- [ ] 🔵 **[D-R4] `ResponseEntity<?>` (wildcard) em múltiplos endpoints, com `String` hardcoded em vez de DTO tipado**
+- [x] 🔵 **[D-R4] `ResponseEntity<?>` (wildcard) em múltiplos endpoints, com `String` hardcoded em vez de DTO tipado**
   **Local:** `controller/purchase/CombinedScoreController.java:37,70,76,82`; `controller/purchase/PurchaseController.java:31,56`
 
 **Falta de paginação:**

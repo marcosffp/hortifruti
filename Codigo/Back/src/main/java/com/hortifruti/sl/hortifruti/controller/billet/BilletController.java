@@ -58,9 +58,9 @@ public class BilletController {
     return ResponseEntity.ok(billetService.listAllOpenBillets());
   }
 
-  @GetMapping("/issue-copy/{idCombinedScore}")
-  public ResponseEntity<byte[]> issueCopy(@PathVariable Long idCombinedScore) throws IOException {
-    return billetService.issueCopy(idCombinedScore);
+  @GetMapping("/issue-copy/{combinedScoreId}")
+  public ResponseEntity<byte[]> issueCopy(@PathVariable Long combinedScoreId) throws IOException {
+    return billetService.issueCopy(combinedScoreId);
   }
 
   /**
@@ -72,10 +72,10 @@ public class BilletController {
     return billetService.getStoredBilletFile(combinedScoreId);
   }
 
-  @PostMapping("/cancel/{idCombinedScore}")
-  public ResponseEntity<String> cancelBillet(@PathVariable Long idCombinedScore)
+  @PostMapping("/cancel/{combinedScoreId}")
+  public ResponseEntity<String> cancelBillet(@PathVariable Long combinedScoreId)
       throws IOException {
-    ResponseEntity<String> response = billetService.cancelBillet(idCombinedScore);
+    ResponseEntity<String> response = billetService.cancelBillet(combinedScoreId);
     return ResponseEntity.status(response.getStatusCode()).body("Boleto cancelado com sucesso");
   }
 

@@ -138,7 +138,7 @@ public class SecurityFilter extends OncePerRequestFilter {
 
   /**
    * Enquanto {@code mustChangePassword} for {@code true}, só {@code GET /auth/me} (para o front
-   * saber que precisa redirecionar) e {@code PUT /users/update} (a própria troca de senha) ficam
+   * saber que precisa redirecionar) e {@code PUT /users} (a própria troca de senha) ficam
    * acessíveis — qualquer outra rota autenticada é bloqueada até a senha temporária ser trocada.
    */
   private boolean isPasswordChangeAllowedPath(HttpServletRequest request) {
@@ -146,7 +146,7 @@ public class SecurityFilter extends OncePerRequestFilter {
     if ("/auth/me".equals(uri)) {
       return true;
     }
-    return "/users/update".equals(uri) && HttpMethod.PUT.matches(request.getMethod());
+    return "/users".equals(uri) && HttpMethod.PUT.matches(request.getMethod());
   }
 
   /**

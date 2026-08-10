@@ -6,7 +6,7 @@ export const reportService = {
     const sDate = startDate;
     const eDate = endDate;
     const response = await fetch(
-      `${API_BASE_URL}/icms-report/monthly/${sDate}/${eDate}`,
+      `${API_BASE_URL}/dashboard/icms-report/monthly/${sDate}/${eDate}`,
       { headers: getAuthHeaders(), credentials: "include" },
     );
     if (!response.ok) {
