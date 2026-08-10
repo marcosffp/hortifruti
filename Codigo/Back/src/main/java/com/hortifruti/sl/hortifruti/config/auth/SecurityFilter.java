@@ -15,8 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -34,6 +37,22 @@ public class SecurityFilter extends OncePerRequestFilter {
 
   private static final Set<String> PUBLIC_AUTH_PATHS =
       Set.of("/auth", "/auth/logout", "/auth/refresh");
+
+  /**
+   * {@link SecurityContextHolder#getContext()} sozinho só vale para a thread/dispatch atual. Em
+   * endpoints assíncronos ({@code CompletableFuture}, ex.: {@code POST
+   * /invoices/issue-with-billet/{id}}, que espera até ~2min pela NF-e antes de responder), o Spring
+   * reentra na cadeia de filtros num REDISPATCH separado quando o resultado fica pronto — e o
+   * {@code SecurityContextHolderFilter} do Spring Security (diferente deste filtro, que é {@code
+   * OncePerRequestFilter} e por isso pula os redispatches) roda de novo nesse redispatch e recarrega
+   * o contexto do zero a partir de um {@link SecurityContextRepository}. Sem salvar aqui, esse
+   * redispatch encontra um contexto vazio (mesmo com o JWT válido) e a requisição é tratada como
+   * anônima → 403 só nesse endpoint, só depois da espera longa. Salvar explicitamente no mesmo
+   * repositório padrão do Spring Security ({@link RequestAttributeSecurityContextRepository}, que
+   * guarda como atributo do {@code HttpServletRequest} em vez de ThreadLocal) resolve isso.
+   */
+  private final SecurityContextRepository securityContextRepository =
+      new RequestAttributeSecurityContextRepository();
 
   private final TokenConfiguration tokenConfiguration;
   private final UserRepository userRepository;
@@ -73,7 +92,10 @@ public class SecurityFilter extends OncePerRequestFilter {
           UsernamePasswordAuthenticationToken authentication =
               new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
 
-          SecurityContextHolder.getContext().setAuthentication(authentication);
+          SecurityContext context = SecurityContextHolder.createEmptyContext();
+          context.setAuthentication(authentication);
+          SecurityContextHolder.setContext(context);
+          securityContextRepository.saveContext(context, request, response);
 
           if (user instanceof User appUser
               && appUser.isMustChangePassword()
