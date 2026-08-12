@@ -37,14 +37,14 @@
 
 O código está organizado em uma arquitetura em camadas coerente (controller → service → repository) e, na maior parte do domínio fiscal/financeiro, usa `BigDecimal` corretamente e tem comentários que explicam o *porquê* das decisões — acima da média para um projeto deste tamanho. O problema não é falta de estrutura; é que **381 arquivos e ~15 integrações externas cresceram sem um segundo revisor consistente**, e isso deixou rachaduras específicas e localizadas, não uma bagunça generalizada.
 
-**Contagem de achados em aberto: ~39** (itens já resolvidos foram removidos deste documento), sendo:
+**Contagem de achados em aberto: ~35** (itens já resolvidos foram removidos deste documento), sendo:
 
 | Severidade | Qtde. em aberto | Onde estão os mais graves |
 |---|---|---|
 | 🔴 Crítico | **1** | Config/Build (schema sem migração versionada) |
 | 🟠 Alto | **7** | Mapper morto, parsing de endereço duplicado, acoplamento cruzado remanescente |
-| 🟡 Médio | **14** | Duplicação de lógica entre integrações parecidas, god classes, paginação de telas com UX dependente da lista completa |
-| 🔵 Baixo | **17** | Nomenclatura inconsistente, código morto isolado, metadados de build |
+| 🟡 Médio | **12** | Duplicação de lógica entre integrações parecidas, god classes, paginação de telas com UX dependente da lista completa |
+| 🔵 Baixo | **15** | Nomenclatura inconsistente, código morto isolado, metadados de build |
 
 ### O achado crítico remanescente
 
@@ -141,11 +141,7 @@ Nenhum bloco relevante de código morto/comentado encontrado. Comentários de le
 
 ### C · Duplicação de código
 
-- [ ] 🟡 **[C-D1] Três provedores de e-mail duplicam o método `addInlineLogo` quase identicamente**
-  **Local:** `service/notification/email/SendGridEmailSender.java:98-119`, `GmailSmtpEmailSender.java:143-152`, `GmailApiEmailSender.java:171-180`. Correção de bug nessa lógica precisa ser replicada em 3 lugares.
-
-- [ ] 🔵 **[C-D2] Montagem de contexto de mensagem (`Map<String,String> variables`) repetida quase palavra-por-palavra em 3 services**
-  **Local:** `service/notification/NotificationService.java:222-237` vs. `BulkNotificationService.java:255-272` vs. `service/scheduler/DatabaseStorageAlertService.java`.
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos.
 
 ### C · Tratamento de erro genérico / catch silencioso
 
@@ -248,12 +244,6 @@ Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos 
 <a id="e-c1"></a>
 - [ ] 🔴 **[E-C1] `ddl-auto=update` em produção, sem Flyway/Liquibase**
   **Local:** `application-local.properties:9`, `application-hml.properties:11`, `application-prod.properties:12` (os 3 ambientes) — `spring.jpa.hibernate.ddl-auto=update`. `pom.xml` não tem Flyway nem Liquibase. O Hibernate altera o schema de produção automaticamente a cada deploy, por inferência das entidades — sem histórico de migração versionado, sem plano de rollback. Reforçado por scripts SQL manuais em `static/*.sql` (`billet_files_migration.sql`, `fiscal_note_xml_storage_migration.sql`, etc.) que existem no repositório mas não são aplicados automaticamente por nenhuma ferramenta — dependem de alguém lembrar de rodá-los manualmente, facilmente divergindo entre `hml` e `prod`.
-
-- [ ] 🟡 **[E-C3] `spring-boot-starter-web` e `spring-boot-starter-webflux` juntos no mesmo projeto**
-  **Local:** `pom.xml:67-78` — duas pilhas HTTP concorrentes (Tomcat + Reactor Netty). Se o motivo é só `WebClient` reativo para chamar APIs externas, dá para obter isso com dependência mais enxuta, ou migrar para `RestClient` síncrono (Spring Framework 6.1+) e remover o starter reativo.
-
-- [ ] 🔵 **[E-C5] Metadados de projeto vazios (boilerplate do Spring Initializr nunca preenchido)**
-  **Local:** `pom.xml:18-31` — `<url/>`, `<licenses><license/></licenses>`, `<developers><developer/></developers>`, `<scm>...</scm>` vazios. Não bloqueia build, é ruído.
 
 ---
 

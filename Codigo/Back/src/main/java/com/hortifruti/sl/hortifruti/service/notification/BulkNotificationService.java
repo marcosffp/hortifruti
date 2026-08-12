@@ -7,7 +7,7 @@ import com.hortifruti.sl.hortifruti.exception.notification.NotificationException
 import com.hortifruti.sl.hortifruti.model.notification.NotificationChannel;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
-import com.hortifruti.sl.hortifruti.service.notification.email.EmailGreetingUtil;
+import com.hortifruti.sl.hortifruti.service.notification.email.EmailMessageVariables;
 import com.hortifruti.sl.hortifruti.service.notification.email.EmailTemplateService;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,10 +27,6 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @RequiredArgsConstructor
 public class BulkNotificationService {
-
-  private static final String CUSTOM_MESSAGE = "CUSTOM_MESSAGE";
-  private static final String DEFAULT_MESSAGE = "DEFAULT_MESSAGE";
-  private static final String EMPTY_STRING = "";
 
   private final NotificationCoordinator notificationCoordinator;
   private final ClientRepository clientRepository;
@@ -266,33 +262,16 @@ public class BulkNotificationService {
   private String buildAccountingMessage(int filesCount, String customMessage) {
     Map<String, String> variables = new HashMap<>();
     variables.put("FILES_COUNT", String.valueOf(filesCount));
-
-    if (customMessage != null && !customMessage.isEmpty()) {
-      variables.put(CUSTOM_MESSAGE, customMessage);
-      variables.put(DEFAULT_MESSAGE, EMPTY_STRING);
-    } else {
-      variables.put(CUSTOM_MESSAGE, EMPTY_STRING);
-      variables.put(DEFAULT_MESSAGE, "true");
-    }
+    EmailMessageVariables.putCustomOrDefaultToggle(variables, customMessage);
 
     return emailTemplateService.processTemplate("accounting-documents", variables);
   }
 
   private String buildClientMessage(Client client, int filesCount, String customMessage) {
     Map<String, String> variables = new HashMap<>();
-    variables.put("CLIENT_NAME", client.getClientName());
+    EmailMessageVariables.putClientGreetingVariables(
+        variables, client.getClientName(), senderName, customMessage);
     variables.put("FILES_COUNT", String.valueOf(filesCount));
-
-    java.time.LocalDate today = EmailGreetingUtil.today();
-    java.time.format.DateTimeFormatter formatter =
-        java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    variables.put("CURRENT_DATE", today.format(formatter));
-    variables.put("GREETING", EmailGreetingUtil.timeOfDayGreeting());
-    variables.put("PERIOD_RANGE", EmailGreetingUtil.weekPeriodLabel(today));
-    variables.put("SENDER_NAME", senderName);
-
-    variables.put(DEFAULT_MESSAGE, "true");
-    variables.put(CUSTOM_MESSAGE, customMessage != null ? customMessage : EMPTY_STRING);
 
     return emailTemplateService.processTemplate("client-documents", variables);
   }

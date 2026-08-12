@@ -6,12 +6,10 @@ import com.hortifruti.sl.hortifruti.exception.notification.NotificationException
 import com.hortifruti.sl.hortifruti.model.notification.NotificationChannel;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
-import com.hortifruti.sl.hortifruti.service.notification.email.EmailGreetingUtil;
+import com.hortifruti.sl.hortifruti.service.notification.email.EmailMessageVariables;
 import com.hortifruti.sl.hortifruti.service.notification.email.EmailTemplateService;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -208,30 +206,15 @@ public class NotificationService {
     variables.put("NO_FILES", hasFiles ? "" : "true");
     variables.put("FILES_COUNT", String.valueOf(filesCount));
 
-    if (request.customMessage() != null && !request.customMessage().isEmpty()) {
-      variables.put("CUSTOM_MESSAGE", request.customMessage());
-      variables.put("DEFAULT_MESSAGE", "");
-    } else {
-      variables.put("CUSTOM_MESSAGE", "");
-      variables.put("DEFAULT_MESSAGE", "true");
-    }
+    EmailMessageVariables.putCustomOrDefaultToggle(variables, request.customMessage());
 
     return emailTemplateService.processTemplate("generic-files", variables);
   }
 
   private String buildClientMessage(ClientDocumentsRequest request, Client client) {
-
     Map<String, String> variables = new HashMap<>();
-    variables.put("CLIENT_NAME", client.getClientName());
-
-    LocalDate today = EmailGreetingUtil.today();
-    variables.put("CURRENT_DATE", today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-    variables.put("GREETING", EmailGreetingUtil.timeOfDayGreeting());
-    variables.put("PERIOD_RANGE", EmailGreetingUtil.weekPeriodLabel(today));
-    variables.put("SENDER_NAME", senderName);
-
-    variables.put("DEFAULT_MESSAGE", "true");
-    variables.put("CUSTOM_MESSAGE", request.customMessage() != null ? request.customMessage() : "");
+    EmailMessageVariables.putClientGreetingVariables(
+        variables, client.getClientName(), senderName, request.customMessage());
 
     return emailTemplateService.processTemplate("client-documents", variables);
   }

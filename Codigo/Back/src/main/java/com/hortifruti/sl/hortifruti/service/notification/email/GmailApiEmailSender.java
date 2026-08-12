@@ -24,7 +24,6 @@ import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
@@ -153,7 +152,7 @@ public class GmailApiEmailSender implements EmailSender {
     helper.setSubject(subject);
     helper.setText(text, true);
 
-    addInlineLogo(helper);
+    InlineLogoAttacher.attachInline(helper);
 
     if (attachments != null && fileNames != null) {
       for (int i = 0; i < attachments.size() && i < fileNames.size(); i++) {
@@ -162,17 +161,6 @@ public class GmailApiEmailSender implements EmailSender {
     }
 
     return mimeMessage;
-  }
-
-  private void addInlineLogo(MimeMessageHelper helper) {
-    try {
-      ClassPathResource logoResource = new ClassPathResource("static/images/logo.png");
-      if (logoResource.exists()) {
-        helper.addInline("logo", logoResource);
-      }
-    } catch (MessagingException e) {
-      log.warn("Não foi possível anexar o logo inline ao email: {}", e.getMessage());
-    }
   }
 
   private Message toGmailMessage(MimeMessage mimeMessage) throws MessagingException, IOException {

@@ -8,7 +8,6 @@ import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.MailAuthenticationException;
 import org.springframework.mail.MailException;
 import org.springframework.mail.MailSendException;
@@ -110,7 +109,7 @@ public class GmailSmtpEmailSender implements EmailSender {
       helper.setSubject(subject);
       helper.setText(text, true);
 
-      addInlineLogo(helper);
+      InlineLogoAttacher.attachInline(helper);
 
       if (attachments != null && fileNames != null) {
         for (int i = 0; i < attachments.size() && i < fileNames.size(); i++) {
@@ -137,17 +136,6 @@ public class GmailSmtpEmailSender implements EmailSender {
       log.error("Erro ao montar mensagem MIME para {}: {}", to, e.getMessage());
       throw new NotificationException(
           "Falha ao montar email para Gmail SMTP: " + e.getMessage(), e);
-    }
-  }
-
-  private void addInlineLogo(MimeMessageHelper helper) {
-    try {
-      ClassPathResource logoResource = new ClassPathResource("static/images/logo.png");
-      if (logoResource.exists()) {
-        helper.addInline("logo", logoResource);
-      }
-    } catch (MessagingException e) {
-      log.warn("Não foi possível anexar o logo inline ao email: {}", e.getMessage());
     }
   }
 }

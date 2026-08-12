@@ -11,7 +11,6 @@ import java.util.Base64;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 /** Envio de email via SendGrid API. Ativado quando {@code email.provider=sendgrid}. */
@@ -96,25 +95,17 @@ public class SendGridEmailSender implements EmailSender {
   }
 
   private void addInlineLogo(Mail mail) {
-    try {
-      ClassPathResource logoResource = new ClassPathResource("static/images/logo.png");
+    InlineLogoAttacher.readLogoBytes()
+        .ifPresent(
+            logoBytes -> {
+              Attachments logo = new Attachments();
+              logo.setContent(Base64.getEncoder().encodeToString(logoBytes));
+              logo.setType("image/png");
+              logo.setFilename("logo.png");
+              logo.setDisposition("inline");
+              logo.setContentId(InlineLogoAttacher.CONTENT_ID);
 
-      if (logoResource.exists()) {
-        byte[] logoBytes = logoResource.getInputStream().readAllBytes();
-        String encodedLogo = Base64.getEncoder().encodeToString(logoBytes);
-
-        Attachments logo = new Attachments();
-        logo.setContent(encodedLogo);
-        logo.setType("image/png");
-        logo.setFilename("logo.png");
-        logo.setDisposition("inline");
-        logo.setContentId("logo");
-
-        mail.addAttachments(logo);
-      }
-
-    } catch (IOException e) {
-      log.warn("Não foi possível anexar o logo inline ao email: {}", e.getMessage());
-    }
+              mail.addAttachments(logo);
+            });
   }
 }
