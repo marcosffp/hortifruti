@@ -8,6 +8,7 @@ import com.hortifruti.sl.hortifruti.exception.freight.DistanceException;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -23,6 +24,9 @@ public class DistanceMatrixService {
   private static final String API_URL = "https://maps.googleapis.com/maps/api/distancematrix/json";
 
   private final FreightService freightService;
+
+  @Qualifier("genericRestTemplate")
+  private final RestTemplate restTemplate;
 
   public DistanceFreightResponse calculateDistanceAndFreight(LocationRequest locationRequest) {
     DistanceResponse distanceResponse = fetchDistanceAndDuration(locationRequest);
@@ -78,7 +82,6 @@ public class DistanceMatrixService {
   }
 
   private String fetchApiResponse(String url) {
-    RestTemplate restTemplate = new RestTemplate();
     return restTemplate.getForObject(url, String.class);
   }
 

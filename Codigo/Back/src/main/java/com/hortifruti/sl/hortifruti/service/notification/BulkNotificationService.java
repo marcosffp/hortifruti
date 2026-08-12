@@ -15,9 +15,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,6 +42,26 @@ public class BulkNotificationService {
 
   @Value("${notification.sender-name:}")
   private String senderName;
+
+  /**
+   * Wrapper {@code @Async} de {@link #sendBulkNotifications} — o envio de WhatsApp em massa
+   * intercala {@code Thread.sleep(2000)} entre documentos ({@link
+   * com.hortifruti.sl.hortifruti.service.notification.whatsapp.WhatsAppService#sendMultipleDocuments}),
+   * então N clientes × M documentos pode prender uma thread do servlet (pool limitado do Tomcat)
+   * por dezenas de segundos. Rodar num executor dedicado libera a thread do servlet; o controller
+   * usa {@code CompletableFuture} como tipo de retorno para o Spring MVC manter a requisição HTTP
+   * original aberta sem bloquear nada.
+   */
+  @Async
+  public CompletableFuture<BulkNotificationResponse> sendBulkNotificationsAsync(
+      List<MultipartFile> files,
+      List<Long> clientIds,
+      List<String> channels,
+      String destinationType,
+      String customMessage) {
+    return CompletableFuture.completedFuture(
+        sendBulkNotifications(files, clientIds, channels, destinationType, customMessage));
+  }
 
   public BulkNotificationResponse sendBulkNotifications(
       List<MultipartFile> files,

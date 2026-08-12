@@ -24,6 +24,11 @@ import org.springframework.web.client.RestTemplate;
 @RequiredArgsConstructor
 public class WhatsAppService {
 
+  // DDD usado quando o número não traz nenhum indício de localidade (9 ou 8 dígitos, sem o
+  // prefixo do país). Escolhido por ser o DDD da sede da empresa em BH — não é um padrão do
+  // WhatsApp/UltraMsg, é só o fallback mais provável pro nosso cadastro de clientes.
+  private static final String DEFAULT_DDD = "31";
+
   @Value("${ultramsg.token}")
   private String ultraMsgToken;
 
@@ -64,14 +69,14 @@ public class WhatsAppService {
       return "+55" + ddd + "9" + numero;
     }
 
-    // Se tem 9 dígitos (sem DDD), assume DDD 31 (Belo Horizonte)
+    // Se tem 9 dígitos (sem DDD), assume DEFAULT_DDD (Belo Horizonte)
     if (cleanNumber.length() == 9) {
-      return "+5531" + cleanNumber;
+      return "+55" + DEFAULT_DDD + cleanNumber;
     }
 
-    // Se tem 8 dígitos (sem DDD e sem 9), adiciona 9 e assume DDD 31
+    // Se tem 8 dígitos (sem DDD e sem 9), adiciona 9 e assume DEFAULT_DDD
     if (cleanNumber.length() == 8) {
-      return "+55319" + cleanNumber;
+      return "+55" + DEFAULT_DDD + "9" + cleanNumber;
     }
 
     throw new IllegalArgumentException(

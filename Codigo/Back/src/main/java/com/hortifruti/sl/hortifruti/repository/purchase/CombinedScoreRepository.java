@@ -81,6 +81,8 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
   List<CombinedScore> findByHasInvoiceTrueAndConfirmedAtBetween(
       @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
+  List<CombinedScore> findByConfirmedAtBetween(LocalDate startDate, LocalDate endDate);
+
   /**
    * Busca agrupamentos que só têm nota fiscal emitida (sem boleto), ainda pendentes de confirmação
    * manual de pagamento.

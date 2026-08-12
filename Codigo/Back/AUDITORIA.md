@@ -37,14 +37,14 @@
 
 O código está organizado em uma arquitetura em camadas coerente (controller → service → repository) e, na maior parte do domínio fiscal/financeiro, usa `BigDecimal` corretamente e tem comentários que explicam o *porquê* das decisões — acima da média para um projeto deste tamanho. O problema não é falta de estrutura; é que **381 arquivos e ~15 integrações externas cresceram sem um segundo revisor consistente**, e isso deixou rachaduras específicas e localizadas, não uma bagunça generalizada.
 
-**Contagem de achados em aberto: ~48** (itens já resolvidos foram removidos deste documento), sendo:
+**Contagem de achados em aberto: ~39** (itens já resolvidos foram removidos deste documento), sendo:
 
 | Severidade | Qtde. em aberto | Onde estão os mais graves |
 |---|---|---|
 | 🔴 Crítico | **1** | Config/Build (schema sem migração versionada) |
 | 🟠 Alto | **7** | Mapper morto, parsing de endereço duplicado, acoplamento cruzado remanescente |
-| 🟡 Médio | **20** | Duplicação de lógica entre integrações parecidas, god classes, paginação de telas com UX dependente da lista completa |
-| 🔵 Baixo | **20** | Nomenclatura inconsistente, código morto isolado, metadados de build |
+| 🟡 Médio | **14** | Duplicação de lógica entre integrações parecidas, god classes, paginação de telas com UX dependente da lista completa |
+| 🔵 Baixo | **17** | Nomenclatura inconsistente, código morto isolado, metadados de build |
 
 ### O achado crítico remanescente
 
@@ -138,33 +138,6 @@ Nenhum bloco relevante de código morto/comentado encontrado. Comentários de le
 
 - [ ] 🟠 **[C-C1] Parsing de PDF de fornecedor por regex/split posicional sem tolerância a formato alternativo**
   **Local:** `service/purchase/PurchaseProcessingService.extractProducts/parseProductLine:123-234`. Assume layout fixo de colunas; qualquer mudança no PDF do fornecedor quebra a extração de forma imprevisível. `catch (Exception e)` em `:97-98` embrulha qualquer erro (incluindo bugs do próprio parser) na mesma mensagem genérica.
-
-- [ ] 🟡 **[C-C2] `ClientService.findMatchingClient` carrega todos os clientes em memória e usa heurística de nome frágil**
-  **Local:** `service/purchase/ClientService.java:143-174`. `findAll()` sem paginação; heurística remove a letra "L" de ambos os lados para comparar (`clientFirstName.replace("L", "")`) sem explicação — pode casar nomes que não deveriam colidir.
-
-- [ ] 🟡 **[C-C3] `WhatsAppService.formatPhoneNumber` assume DDD 31 (BH) como fallback, magic prefix sem constante**
-  **Local:** `service/notification/whatsapp/WhatsAppService.java:65-73` — `return "+5531" + cleanNumber;`
-
-- [ ] 🟡 **[C-C4] `WhatsAppService.sendMultipleDocuments` bloqueia a thread da requisição com `Thread.sleep(2000)` por documento**
-  **Local:** `service/notification/whatsapp/WhatsAppService.java:171-177`. Em envio em massa (10 clientes × 3 documentos × 2s = 60s de thread bloqueada por request), risco real de esgotamento do pool.
-
-- [ ] 🟡 **[C-C5] `WeatherForecastService` faz parsing manual de `Map<String,Object>` com casts em cascata não verificados**
-  **Local:** `service/climate/WeatherForecastService.java:28-154` — `@SuppressWarnings("unchecked")` espalhado em 3 métodos; campo ausente na resposta da OpenWeather gera `NullPointerException`/`ClassCastException` não tratado → 500 genérico.
-
-- [ ] 🟡 **[C-C6] `DashboardService.getDashboardData` retorna `Map<String,Object>` com chaves inconsistentes (`"TotalReceita"` vs. `"Fluxo de Vendas"` com espaço)**
-  **Local:** `service/dashboard/DashboardService.java:29-57`. Sem contrato tipado — erro de digitação no frontend não é pego em compilação.
-
-- [ ] 🟡 **[C-C7] `DashboardService` recarrega toda a tabela de `CombinedScore` e repete a mesma query de `Transaction` 6 vezes por chamada**
-  **Local:** `service/dashboard/DashboardService.java:325-334` — `findAllByOrderByIdDesc(Pageable.unpaged())` sem filtro de data, filtra em memória; chamado por 3 métodos diferentes. `findTransactionsByDateRange` repetido 6× para o mesmo intervalo sem cache/reuso. Piora proporcionalmente conforme a base cresce.
-
-- [ ] 🔵 **[C-C8] `new RestTemplate()` sem timeout em `DistanceMatrixService.fetchApiResponse`, inconsistente com o resto do projeto**
-  **Local:** `service/freight/DistanceMatrixService.java:80` — único ponto que cria `RestTemplate` "cru" a cada chamada, risco de travar a thread indefinidamente.
-
-- [ ] 🔵 **[C-C10] `InvoiceProductService.deleteInvoiceProduct` faz `existsById` seguido de `findById(...).get()`**
-  **Local:** `service/purchase/InvoiceProductService.java:37-43` — race condition teórica, uso desnecessário de `.get()`. Poderia ser um único `findById(...).orElseThrow(...)`.
-
-- [ ] 🔵 **[C-C11] `GroupedProductService` usa `catch (Exception e)` genérico ao redor de agrupamento em memória de listas já validadas**
-  **Local:** `service/purchase/GroupedProductService.java:33-45,53-65` — embolsa qualquer `RuntimeException` (incluindo bugs) e reembrulha como `PurchaseException`, perdendo o stacktrace real.
 
 ### C · Duplicação de código
 

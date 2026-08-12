@@ -30,19 +30,15 @@ public class GroupedProductService {
       return new ArrayList<>();
     }
 
-    try {
-      return new ArrayList<>(
-          purchases.stream()
-              .flatMap(purchase -> purchase.getInvoiceProducts().stream())
-              .collect(
-                  Collectors.groupingBy(
-                      product -> product.getCode() + "-" + product.getName(),
-                      Collectors.collectingAndThen(
-                          Collectors.toList(), this::createGroupedProductForFixedPrice)))
-              .values());
-    } catch (Exception e) {
-      throw new PurchaseException("Erro ao agrupar produtos com preço fixo: " + e.getMessage(), e);
-    }
+    return new ArrayList<>(
+        purchases.stream()
+            .flatMap(purchase -> purchase.getInvoiceProducts().stream())
+            .collect(
+                Collectors.groupingBy(
+                    product -> product.getCode() + "-" + product.getName(),
+                    Collectors.collectingAndThen(
+                        Collectors.toList(), this::createGroupedProductForFixedPrice)))
+            .values());
   }
 
   private List<GroupedProduct> groupProductsWithVariablePrice(List<Purchase> purchases) {
@@ -50,27 +46,18 @@ public class GroupedProductService {
       return new ArrayList<>();
     }
 
-    try {
-      Map<String, List<InvoiceProduct>> groupedByCodeAndName =
-          purchases.stream()
-              .flatMap(purchase -> purchase.getInvoiceProducts().stream())
-              .collect(Collectors.groupingBy(product -> extractProductKey(product)));
+    Map<String, List<InvoiceProduct>> groupedByCodeAndName =
+        purchases.stream()
+            .flatMap(purchase -> purchase.getInvoiceProducts().stream())
+            .collect(Collectors.groupingBy(this::extractProductKey));
 
-      return groupedByCodeAndName.entrySet().stream()
-          .map(entry -> createGroupedProductForVariablePrice(entry.getKey(), entry.getValue()))
-          .collect(Collectors.toList());
-    } catch (Exception e) {
-      throw new PurchaseException(
-          "Erro ao agrupar produtos com preço variável: " + e.getMessage(), e);
-    }
+    return groupedByCodeAndName.entrySet().stream()
+        .map(entry -> createGroupedProductForVariablePrice(entry.getKey(), entry.getValue()))
+        .collect(Collectors.toList());
   }
 
   private String extractProductKey(InvoiceProduct product) {
-    try {
-      return product.getCode() + "-" + product.getName();
-    } catch (Exception e) {
-      throw new PurchaseException("Formato de código de produto inválido: " + product.getCode(), e);
-    }
+    return product.getCode() + "-" + product.getName();
   }
 
   private GroupedProduct createGroupedProductForFixedPrice(List<InvoiceProduct> productList) {

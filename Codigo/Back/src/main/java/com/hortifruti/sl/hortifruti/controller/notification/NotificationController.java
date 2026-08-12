@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -133,16 +134,15 @@ public class NotificationController {
   @Operation(
       summary = "Enviar notificações em massa",
       description = "Envia múltiplos arquivos para múltiplos clientes via e-mail e/ou WhatsApp")
-  public ResponseEntity<BulkNotificationResponse> sendBulkNotifications(
+  public CompletableFuture<ResponseEntity<BulkNotificationResponse>> sendBulkNotifications(
       @RequestParam List<MultipartFile> files,
       @RequestParam List<Long> clientIds,
       @RequestParam List<String> channels,
       @RequestParam String destinationType,
       @RequestParam(required = false) String customMessage) {
-    BulkNotificationResponse response =
-        bulkNotificationService.sendBulkNotifications(
-            files, clientIds, channels, destinationType, customMessage);
-    return ResponseEntity.ok(response);
+    return bulkNotificationService
+        .sendBulkNotificationsAsync(files, clientIds, channels, destinationType, customMessage)
+        .thenApply(ResponseEntity::ok);
   }
 
   /**

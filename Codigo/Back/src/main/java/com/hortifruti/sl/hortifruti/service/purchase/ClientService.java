@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.service.purchase;
 
+import com.hortifruti.sl.hortifruti.dto.purchase.ClienteSugerido;
 import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.client.ClientSelectionInfo;
@@ -31,6 +32,7 @@ public class ClientService {
   private final ClientRepository clientRepository;
   private final ClientMapper clientMapper;
   private final PurchaseRepository purchaseRepository;
+  private final ClienteMatchingService clienteMatchingService;
 
   public Map<String, ClientResponse> saveClient(ClientRequest clientRequest) {
     Client client = clientMapper.toClient(clientRequest);
@@ -142,37 +144,24 @@ public class ClientService {
     clientRepository.deleteById(id);
   }
 
+  // Match exato evita carregar o cadastro inteiro em memória no caminho comum (nome extraído do
+  // PDF do fornecedor idêntico ao cadastrado). Só cai no fuzzy matching de ClienteMatchingService
+  // (mesma lógica de normalização de acento/Levenshtein usada pra sugerir cliente na tela de
+  // captura de nota) quando não há match exato — nesse caso o cadastro inteiro é varrido, mas é
+  // um caminho raro, não o comum.
   public Client findMatchingClient(String clientName) {
-    String cleanInputName = clientName.toUpperCase().trim();
-    String inputFirstName = cleanInputName.split("\\s+")[0];
-
-    List<Client> clients = clientRepository.findAll();
-
-    Optional<Client> exactMatch =
-        clients.stream()
-            .filter(client -> client.getClientName().toUpperCase().trim().equals(cleanInputName))
-            .findFirst();
-
+    Optional<Client> exactMatch = clientRepository.findByClientNameIgnoreCase(clientName.trim());
     if (exactMatch.isPresent()) {
       return exactMatch.get();
     }
 
-    Optional<Client> firstNameMatch =
-        clients.stream()
-            .filter(
-                client -> {
-                  String clientFirstName =
-                      client.getClientName().split("\\s+")[0].toUpperCase().trim();
-                  return clientFirstName.equals(inputFirstName)
-                      || clientFirstName.replace("L", "").equals(inputFirstName.replace("L", ""));
-                })
-            .findFirst();
-
-    if (firstNameMatch.isEmpty()) {
+    ClienteSugerido sugestao =
+        clienteMatchingService.buscarMelhorCandidato(clientName).clienteSugerido();
+    if (sugestao == null) {
       throw new PurchaseException("Cliente não encontrado: " + clientName);
     }
 
-    return firstNameMatch.get();
+    return findById(sugestao.id());
   }
 
   /**

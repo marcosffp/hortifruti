@@ -40,10 +40,9 @@ public class InvoiceProductService {
 
   @Transactional
   public void deleteInvoiceProduct(Long id) {
-    if (!repository.existsById(id)) {
-      throw new PurchaseException("Produto não encontrado");
-    }
-    Purchase purchase = repository.findById(id).get().getPurchase();
+    InvoiceProduct invoiceProduct =
+        repository.findById(id).orElseThrow(() -> new PurchaseException("Produto não encontrado"));
+    Purchase purchase = invoiceProduct.getPurchase();
     repository.deleteById(id);
     purchaseService.recalculateTotal(purchase.getId());
   }

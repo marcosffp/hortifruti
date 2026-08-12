@@ -357,13 +357,7 @@ public class CombinedScoreService {
    */
   @Transactional(readOnly = true)
   public List<CombinedScore> findAllConfirmedBetween(LocalDate startDate, LocalDate endDate) {
-    return combinedScoreRepository.findAllByOrderByIdDesc(Pageable.unpaged()).stream()
-        .filter(
-            cs ->
-                cs.getConfirmedAt() != null
-                    && !cs.getConfirmedAt().isBefore(startDate)
-                    && !cs.getConfirmedAt().isAfter(endDate))
-        .collect(Collectors.toList());
+    return combinedScoreRepository.findByConfirmedAtBetween(startDate, endDate);
   }
 
   /**
