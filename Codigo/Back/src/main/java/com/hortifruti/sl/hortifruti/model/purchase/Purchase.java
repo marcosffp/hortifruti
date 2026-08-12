@@ -59,7 +59,7 @@ public class Purchase {
   @Column(name = "combined_score_id")
   private Long combinedScoreId;
 
-  @Column(name = "update_at", nullable = false)
+  @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
   @Column(name = "created_at", nullable = false)

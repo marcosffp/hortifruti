@@ -50,7 +50,7 @@ public class FiscalProduct {
   @Column(name = "unidade_tributavel", nullable = false)
   private String unidadeTributavel;
 
-  @Column(name = "update_at", nullable = false)
+  @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
   @Column(name = "created_at", nullable = false)

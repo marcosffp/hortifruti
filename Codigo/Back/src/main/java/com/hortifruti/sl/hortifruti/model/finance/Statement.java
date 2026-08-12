@@ -72,7 +72,7 @@ public class Statement {
   @Column(name = "period_end")
   private LocalDate periodEnd;
 
-  @Column(name = "update_at", nullable = false)
+  @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
   @Column(name = "created_at", nullable = false)

@@ -19,7 +19,10 @@ public class BilletController {
   private final BilletService billetService;
 
   /**
-   * @param number Número identificador do cliente
+   * @param combinedScoreId ID do CombinedScore
+   * @param number Número identificador do boleto
+   * @param dueDate Data de vencimento opcional (formato yyyy-MM-dd) — se null, usa a data padrão do
+   *     CombinedScore
    */
   @GetMapping("/generate/{combinedScoreId}")
   public ResponseEntity<byte[]> generateBillet(

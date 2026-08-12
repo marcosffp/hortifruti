@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,11 +20,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/products")
 @RequiredArgsConstructor
+@Validated
 @Tag(
     name = "Product Management",
     description = "Endpoints para gerenciamento de produtos (apenas MANAGER)")
@@ -33,21 +36,6 @@ public class ProductController {
 
   @GetMapping
   @PreAuthorize("hasRole('MANAGER')")
-  @Operation(
-      summary = "Listar todos os produtos",
-      description = "Lista todos os produtos cadastrados")
-  @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "Lista de produtos retornada com sucesso"),
-    @ApiResponse(responseCode = "400", description = "Erro de produto"),
-    @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER")
-  })
-  public ResponseEntity<List<ProductResponse>> getAllProducts() {
-    List<ProductResponse> products = productService.getAllProducts();
-    return ResponseEntity.ok(products);
-  }
-
-  @GetMapping("/paginated")
-  @PreAuthorize("hasRole('MANAGER')")
   @Operation(summary = "Listar produtos com paginação")
   @ApiResponses({
     @ApiResponse(
@@ -56,7 +44,7 @@ public class ProductController {
     @ApiResponse(responseCode = "400", description = "Erro de produto"),
     @ApiResponse(responseCode = "403", description = "Acesso negado - apenas MANAGER")
   })
-  public ResponseEntity<Page<ProductResponse>> getProductsPaginated(
+  public ResponseEntity<Page<ProductResponse>> getAllProducts(
       @Parameter(description = "Número da página (inicia em 0)") @RequestParam(defaultValue = "0")
           int page,
       @Parameter(description = "Tamanho da página") @RequestParam(defaultValue = "10") int size,
@@ -91,11 +79,7 @@ public class ProductController {
     @ApiResponse(responseCode = "404", description = "Produto não encontrado")
   })
   public ResponseEntity<ProductResponse> getProductById(
-      @Parameter(description = "ID do produto") @PathVariable Long id) {
-
-    if (id == null || id <= 0) {
-      throw new ProductException("ID do produto deve ser um número positivo válido.");
-    }
+      @Parameter(description = "ID do produto") @PathVariable @Positive Long id) {
 
     ProductResponse product = productService.getProductById(id);
     return ResponseEntity.ok(product);
@@ -151,13 +135,9 @@ public class ProductController {
     @ApiResponse(responseCode = "404", description = "Produto não encontrado")
   })
   public ResponseEntity<ProductResponse> updateProduct(
-      @Parameter(description = "ID do produto a ser atualizado") @PathVariable Long id,
+      @Parameter(description = "ID do produto a ser atualizado") @PathVariable @Positive Long id,
       @Parameter(description = "Novos dados do produto") @Valid @RequestBody
           ProductRequest productRequest) {
-
-    if (id == null || id <= 0) {
-      throw new ProductException("ID do produto deve ser um número positivo válido.");
-    }
 
     ProductResponse updatedProduct = productService.updateProduct(id, productRequest);
     return ResponseEntity.ok(updatedProduct);
@@ -173,11 +153,7 @@ public class ProductController {
     @ApiResponse(responseCode = "404", description = "Produto não encontrado")
   })
   public ResponseEntity<Void> deleteProduct(
-      @Parameter(description = "ID do produto a ser removido") @PathVariable Long id) {
-
-    if (id == null || id <= 0) {
-      throw new ProductException("ID do produto deve ser um número positivo válido.");
-    }
+      @Parameter(description = "ID do produto a ser removido") @PathVariable @Positive Long id) {
 
     productService.deleteProduct(id);
     return ResponseEntity.noContent().build();

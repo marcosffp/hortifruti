@@ -45,7 +45,7 @@ public class InvoiceProduct {
   @Column(nullable = false, precision = 10, scale = 4)
   private BigDecimal quantity;
 
-  @Column(name = "update_at", nullable = false)
+  @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
   @Column(name = "created_at", nullable = false)

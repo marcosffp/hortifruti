@@ -12,8 +12,9 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 /**
@@ -31,13 +32,13 @@ public class StatementService {
   private final SicoobStatementService sicoobStatementService;
   private final BBStatementService bbStatementService;
 
-  public List<StatementResponse> listAll() {
-    return statementRepository.findAll().stream()
+  public Page<StatementResponse> listAll(Pageable pageable) {
+    return statementRepository
+        .findAll(pageable)
         .map(
             s ->
                 new StatementResponse(
-                    s.getId(), s.getName(), s.getBank(), s.getOrigin(), s.getCreatedAt()))
-        .collect(Collectors.toList());
+                    s.getId(), s.getName(), s.getBank(), s.getOrigin(), s.getCreatedAt()));
   }
 
   /**

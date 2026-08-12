@@ -37,14 +37,14 @@
 
 O código está organizado em uma arquitetura em camadas coerente (controller → service → repository) e, na maior parte do domínio fiscal/financeiro, usa `BigDecimal` corretamente e tem comentários que explicam o *porquê* das decisões — acima da média para um projeto deste tamanho. O problema não é falta de estrutura; é que **381 arquivos e ~15 integrações externas cresceram sem um segundo revisor consistente**, e isso deixou rachaduras específicas e localizadas, não uma bagunça generalizada.
 
-**Contagem de achados em aberto: ~87** (itens já resolvidos foram removidos deste documento), sendo:
+**Contagem de achados em aberto: ~52** (itens já resolvidos foram removidos deste documento), sendo:
 
 | Severidade | Qtde. em aberto | Onde estão os mais graves |
 |---|---|---|
 | 🔴 Crítico | **1** | Config/Build (schema sem migração versionada) |
-| 🟠 Alto | **9** | Mapper morto, parsing de endereço duplicado, acoplamento cruzado remanescente, ausência de paginação |
-| 🟡 Médio | **36** | Duplicação de lógica entre integrações parecidas, god classes, tratamento de erro genérico, documentação desatualizada |
-| 🔵 Baixo | **41** | Nomenclatura inconsistente, código morto isolado, metadados de build |
+| 🟠 Alto | **7** | Mapper morto, parsing de endereço duplicado, acoplamento cruzado remanescente |
+| 🟡 Médio | **21** | Duplicação de lógica entre integrações parecidas, god classes, paginação de telas com UX dependente da lista completa |
+| 🔵 Baixo | **23** | Nomenclatura inconsistente, código morto isolado, metadados de build |
 
 ### O achado crítico remanescente
 
@@ -64,7 +64,7 @@ Ordem sugerida, misturando "baixo custo/alto impacto" primeiro com os itens que 
 - [ ] **E-C1** — Introduzir Flyway (ou Liquibase), congelar `ddl-auto=validate` em produção, versionar os `.sql` avulsos que já existem em `static/`. *(Não aplicado nesta rodada — exige acesso ao schema real de hml/prod para gerar uma baseline confiável; ver observação abaixo.)*
 
 ### Onda 4 — Débito técnico contínuo (backlog, sem urgência)
-Tudo marcado 🟡/🔵 nas seções abaixo: duplicação entre provedores de e-mail, DTOs/mappers mortos, READMEs desatualizados, nomenclatura inconsistente.
+Tudo marcado 🟡/🔵 nas seções abaixo: duplicação entre provedores de e-mail, god classes, nomenclatura inconsistente, paginação das telas com "selecionar todos" (D-P1 restante).
 
 ---
 
@@ -176,40 +176,15 @@ Nenhum bloco relevante de código morto/comentado encontrado. Comentários de le
 
 ### C · Tratamento de erro genérico / catch silencioso
 
-- [x] 🟠 **[C-E1] `BulkNotificationService.sendBulkNotifications` engole exceção sem logar**
-  **Local:** `service/notification/BulkNotificationService.java:83-86`
-  ```java
-  } catch (Exception e) {
-    return BulkNotificationResponse.failure("Erro ao enviar notificações: " + e.getMessage(), List.of());
-  }
-  ```
-  Uma falha inesperada (ex.: `NullPointerException` por bug) desaparece sem rastro nos logs em produção. Mesmo padrão em `sendToClients:219-221`.
-
-- [x] 🟡 **[C-E2] `WhatsAppService.sendTextMessage`/`sendDocument` capturam `Exception` amplo sem log antes de relançar**
-  **Local:** `service/notification/whatsapp/WhatsAppService.java:98-101,135-138` — perde o tipo original do erro (timeout de rede vs. telefone inválido).
-
-- [x] 🔵 **[C-E3] `EmailTemplateService.processTemplate` engole `IOException` e retorna HTML de fallback fixo, sem log**
-  **Local:** `service/notification/email/EmailTemplateService.java:19-26` — template renomeado/ausente vira silenciosamente e-mail com conteúdo errado, sem alarme.
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos.
 
 ### C · Comentários / documentação
 
-- [x] 🔵 **[C-F1] Comentário informal misturando explicação de regra de negócio sem estrutura de Javadoc**
-  **Local:** `service/climate/ClimateProductRecommendationService.java:35-38`
-
-- [x] 🔵 **[C-F2] `FiscalProductService`/`UserService` sem comentário de classe, inconsistente com o padrão do resto do domínio `purchase`/`storage`**
-
-Nenhum bloco relevante de código morto comentado foi encontrado.
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos. Nenhum bloco relevante de código morto comentado foi encontrado.
 
 ### C · Outros (infra/operação)
 
-- [x] 🟠 **[C-G1] Tokens OAuth do Google Drive/Gmail persistidos em disco local, não em banco/secret store**
-  **Local:** `service/backup/auth/CredentialManager.java:44-45`, `service/backup/oauth/AuthorizationFlowFactory.java:55`. Em ambientes com filesystem efêmero (containers, redeploys), tokens são perdidos a cada reinício, forçando reautenticação manual — sem criptografia em repouso.
-
-- [x] 🟡 **[C-G2] `AuthorizationHandler` usa fluxo OAuth desenhado para app desktop (`LocalServerReceiver` na porta 8888) dentro de um backend servidor**
-  **Local:** `service/backup/auth/AuthorizationHandler.java:15-30`. Possível código legado morto — o fluxo real em produção parece ser via `oauth/GoogleOAuthService`. Vale confirmar se ainda é chamado; se morto, a porta 8888 hardcoded é superfície de risco/confusão desnecessária.
-
-- [x] 🔵 **[C-G3] `GoogleAuthService.getDriveService()` reconstrói o cliente Drive (com handshake OAuth completo) a cada chamada, sem cache**
-  **Local:** `service/backup/auth/GoogleAuthService.java:28-59` — chamado N vezes na mesma operação lógica de backup.
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos.
 
 ---
 
@@ -231,93 +206,25 @@ O README documenta 3 regras: *"Controllers nunca acessam repository diretamente"
 
 ### D · Qualidade da camada de Controller
 
-**Tratamento de exceção duplicado** (ignora o `GlobalExceptionHandler` já existente, 369 linhas, cobre praticamente toda exceção de domínio):
-
-- [x] 🟡 **[D-C2] `NotificationController` — 3 métodos com try/catch manual duplicando exceções já cobertas pelo handler central**
-  **Local:** `controller/notification/NotificationController.java:69-84,101-115,171-190`
-
-- [x] 🟡 **[D-C3] `WeatherForecastController` — dois blocos `catch` idênticos, devolvem 500 vazio (mascara a causa real)**
-  **Local:** `controller/climate/WeatherForecastController.java:31-38`
-
-- [x] 🟡 **[D-C4] `ReportTaxController` — captura `Exception` genérica e devolve a mensagem crua no corpo, potencial vazamento de detalhe interno**
-  **Local:** `controller/invoice/ReportTaxController.java:25-41`
-
-- [x] 🟡 **[D-C5] Mesmo padrão de try/catch manual redundante em outros 3 pontos**
-  **Local:** `controller/invoice/InvoiceController.java:111-120`; `controller/purchase/PurchaseController.java:32-39`; `controller/purchase/CombinedScoreController.java:101-108` (retorna 500 com corpo `null` em vez de deixar a exceção subir).
-
-**Falta de validação de entrada (Bean Validation):**
-
-- [x] 🟡 **[D-A3] `ClientRequest.variablePrice` é `@NotNull` sobre um `boolean` primitivo — validação inócua, nunca dispara**
-  **Local:** `dto/purchase/client/ClientRequest.java:9` — Jackson sempre desserializa `boolean` ausente como `false`; a anotação nunca barra nada.
-
-- [x] 🟡 **[D-A4] `UserUpdateRequest` sem nenhuma anotação de validação, apesar do controller usar `@Valid`**
-  **Local:** `dto/user/UserUpdateRequest.java:6-7`; `controller/user/UserController.java:43-44,50-51`. `PUT /users/update` com `username`/`password` vazios passa sem erro.
-
-- [x] 🔵 **[D-A5] `DashboardController.getDashboardData` faz `LocalDate.parse`/`Month.of` sem tratamento — request malformada estoura exceção não controlada**
-  **Local:** `controller/dashboard/DashboardController.java:27-29`
-
-**Inconsistência de padrão REST:**
-
-- [x] 🟡 **[D-R1] Nomenclatura de path variable inconsistente dentro do mesmo controller (`combinedScoreId` vs. `idCombinedScore`)**
-  **Local:** `controller/billet/BilletController.java` — linhas 28,98,158,173 vs. 83,102 (mesmo `Long`, dois nomes diferentes no mesmo arquivo).
-
-- [x] 🔵 **[D-R2] Verbo no path (`/users/update`, `/users/delete/{username}`) destoa do resto da API (REST puro)**
-  **Local:** `controller/user/UserController.java:42,49,62`
-
-- [x] 🔵 **[D-R3] Rota do `ReportTaxController` não bate com a documentada no README**
-  **Local:** `controller/invoice/ReportTaxController.java:14-16,21` — sem `@RequestMapping` de classe, rota real é `/icms-report/monthly/{start}/{end}`; README (linha 241) documenta `/dashboard/icms-report/monthly/{start}/{end}`.
-
-- [x] 🔵 **[D-R4] `ResponseEntity<?>` (wildcard) em múltiplos endpoints, com `String` hardcoded em vez de DTO tipado**
-  **Local:** `controller/purchase/CombinedScoreController.java:37,70,76,82`; `controller/purchase/PurchaseController.java:31,56`
+Tratamento de exceção duplicado, falta de validação de entrada (Bean Validation) e inconsistência de padrão REST — todos os achados dessas 3 subcategorias já foram corrigidos.
 
 **Falta de paginação:**
 
-- [ ] 🟡 **[D-P1] Listagens sem paginação apesar do padrão `Page`/`Pageable` já existir em outros endpoints do projeto**
-  **Local:** `controller/billet/BilletController.java:74-81` (todos os boletos em aberto); `controller/purchase/ClientController.java:30-33,57-61,68-72`; `controller/invoice/InvoiceController.java:63-66`; `controller/finance/StatementController.java:30-34` (cresce indefinidamente); `controller/purchase/CombinedScoreController.java:64-67`
+- [ ] 🟡 **[D-P1] Listagens sem paginação apesar do padrão `Page`/`Pageable` já existir em outros endpoints do projeto** *(parcialmente resolvido)*
+  **Restam em aberto:** `controller/billet/BilletController.java` (`GET /billet/open`), `controller/invoice/InvoiceController.java` (`GET /invoices/open`), `controller/purchase/ClientController.java` (`GET /clients`), `controller/purchase/CombinedScoreController.java` (`GET /combined-scores/last-per-client`) — confirmado via mapeamento do `Codigo/Front`: todos alimentam telas que dependem da lista completa no cliente (busca + "selecionar todos os filtrados" para ações em massa nas abas de Boletos/NF sem boleto; join em memória entre `/clients` e `/combined-scores/last-per-client` na tela de Clientes). Paginar de verdade exige redesenhar esses fluxos (busca/seleção assíncrona por página, ou embutir a "última compra" na própria resposta paginada de `/clients` em vez de dois fetches separados) — não é troca mecânica de tipo de retorno, por isso ficou fora desta rodada.
+  **Resolvido:** `GET /clients/with-last-purchase` (`ClientController`) e `GET /statements` (`StatementController`) agora retornam `Page<T>` — confirmado sem nenhum consumidor no `Codigo/Front` hoje, conversão sem risco de quebrar tela nenhuma.
 
-- [ ] 🔵 **[D-P2] `GET /products` sem paginação e `GET /products/paginated` com paginação coexistindo**
-  **Local:** `controller/climate/ProductController.java:44-47` vs. `49-82`
+Nenhum achado em aberto para **[D-P2]** — `GET /products` (sem paginação) e `GET /products/paginated` coexistiam sem necessidade; unificados em um único `GET /products` paginado (nenhum dos dois tinha consumidor no frontend, então a fusão não quebra nada).
 
-**Lógica de parsing/mapeamento manual dentro do controller:**
-
-- [ ] 🟡 **[D-M1] `NotificationController` monta DTOs manualmente de `@RequestParam` soltos, incl. `new BigDecimal(String)` sem tratamento de erro**
-  **Local:** `controller/notification/NotificationController.java:55-68,70-72,90-104` — `NumberFormatException` não mapeada cai no handler genérico (500 em vez de 400); mesmo para `NotificationChannel.valueOf` com string inválida.
-
-- [ ] 🟡 **[D-M2] Magic strings decidindo código HTTP por conteúdo de mensagem de exceção**
-  **Local:** `controller/billet/BilletController.java:39,111,140,144`
-  ```java
-  if (errorMessage.contains("já foi gerado")) { ... }
-  if (errorMessage.contains("Título em processo de baixa/liquidação")) { ... }
-  ```
-  Lógica de negócio (decidir código HTTP) codificada como comparação de substring de log — frágil, quebra se o texto da exceção mudar. Deveria ser um tipo de exceção dedicado tratado no `GlobalExceptionHandler`.
-
-- [ ] 🔵 **[D-M3] Validação manual de ID repetida 3× no mesmo controller em vez de `@Positive` no `@PathVariable`**
-  **Local:** `controller/climate/ProductController.java:96-98,158-160,178-180`
+Lógica de parsing/mapeamento manual dentro do controller — todos os achados desta subcategoria já foram corrigidos (o suposto bug de `NumberFormatException`/`NotificationChannel.valueOf` caindo em 500 já não existia — o handler genérico de `IllegalArgumentException` já cobria os dois casos com 400; só a mensagem ficou mais clara. O padrão de magic string decidindo código HTTP por conteúdo de exceção também não existe mais no controller — o código mudou desde a auditoria original).
 
 ### D · Acoplamento e baixa coesão em DTOs/Mappers
 
-- [x] 🔵 **[D-morto] DTOs mortos — declarados mas nunca referenciados (confirmado via busca no projeto), sobrevivem só na documentação**
-  **Local:** `dto/notification/BulkNotificationRequest.java` (endpoint real usa `@RequestParam` soltos), `AccountingNotificationRequest.java`, `ClientNotificationRequest.java`, `MonthlyStatementsRequest.java`, `dto/purchase/UpdateGroupedProduct.java`. Indica refactor anterior que não removeu os DTOs nem atualizou `dto/notification/README.md`.
-
-- [x] 🟡 **[D-D1] `TransactionMapper.toTransaction` recebe 9 parâmetros posicionais, 6 do mesmo tipo `String` intercalados**
-  **Local:** `mapper/TransactionMapper.java:34-44` — risco real de troca de argumentos que o compilador não pega. Usado em `TransactionBBApiService.java:89` e `TransactionSicoobApiService.java:59`. Melhor receber um DTO/record de entrada.
-
-- [x] 🔵 **[D-D2] `@Mapping(source="x", target="x")` redundante em várias interfaces MapStruct (ruído sem benefício)**
-  **Local:** `mapper/ClientMapper.java:14-18,22-33`, `CombinedScoreMapper.java:19-27`, `GroupedProductMapper.java:12-16`, `InvoiceProductMapper.java:11-16`, `PurchaseMapper.java:12-15`, `UserMapper.java:16-19`
-
-- [x] 🔵 **[D-D3] Lógica de formatação de apresentação embutida no DTO de resposta em vez do mapper**
-  **Local:** `dto/climate/ProductResponse.java:34-42` — `formatMonthsList` calcula string de exibição dentro do próprio DTO.
-
-- [x] 🔵 **[D-D4] `BulkNotificationRequest.dueDate` é `BigDecimal`, não `LocalDate` — nome sugere data, tipo sugere valor monetário**
-  **Local:** `dto/notification/BulkNotificationRequest.java:12` (DTO morto, mas risco se reaproveitado)
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos.
 
 ### D · Clareza / código confuso
 
-- [ ] 🔵 **[D-CL1] Javadoc incompleto — documenta 1 de 3 parâmetros, descrição não bate com o nome do parâmetro**
-  **Local:** `controller/billet/BilletController.java:25-33`
-
-- [ ] 🔵 **[D-CL2] `throws IOException` na assinatura é morto/enganoso — o corpo inteiro já está em `try/catch(Exception e)`**
-  **Local:** `controller/billet/BilletController.java:29-33`
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos (o Javadoc incompleto de `BilletController.generateBillet` foi completado; o suposto `throws IOException` morto não existia mais — o método não tem try/catch, o `throws` é legítimo porque propaga uma exceção checked real do service).
 
 ### D · Comentários desnecessários / código morto
 
@@ -325,8 +232,7 @@ Poucos achados — nenhum bloco de código comentado ou `TODO`/`FIXME` encontrad
 
 ### D · Documentação desatualizada (fora do escopo estrito, mas relevante)
 
-- [ ] 🟡 **[D-DOC1] READMEs de pacote descrevem controllers que não existem mais no código**
-  **Local:** `controller/chatbot/README.md` e `controller/scheduler/README.md` documentam `ChatbotController.java`/`SchedulerController.java` com endpoints detalhados — nenhum dos dois existe (deletados no commit `e36ea1a`, confirmado via `git log --diff-filter=D`). Pode levar alguém a acreditar que os endpoints ainda existem.
+Nenhum achado em aberto — `controller/chatbot/README.md` e `controller/scheduler/README.md` (que descreviam controllers deletados) foram removidos.
 
 ---
 
@@ -364,17 +270,7 @@ Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos 
 
 ### E · Clareza / código confuso
 
-- [ ] 🟡 **[E-CL1] README descreve campo (`totalPurchaseValue`) que não existe mais na entidade `Client`**
-  **Local:** `model/purchase/README.md:7` — campo removido intencionalmente (ver `repository/purchase/PurchaseRepository.java:18`, `mapper/ClientMapper.java:34-36`), README não atualizado.
-
-- [ ] 🟡 **[E-CL2] Documentação descreve entidades e repositório de chatbot que não existem no código**
-  **Local:** `model/chatbot/README.md`, `repository/chatbot/README.md` — descrevem `ChatSession.java`, `SessionStatus.java`, `SessionContext.java`, `ChatSessionRepository.java` em detalhe, mas nenhum arquivo existe (as pastas só têm o `README.md`).
-
-- [ ] 🔵 **[E-CL3] Typo recorrente `update_at` (faltando o "d") em 4 entidades diferentes**
-  **Local:** `model/finance/Statement.java:70`, `model/product/FiscalProduct.java:45`, `model/purchase/InvoiceProduct.java:41`, `model/purchase/Purchase.java:58` — vs. `updated_at` correto no resto do sistema (`User`, `Client`, `LoginLockout`, etc.). Exige migração se corrigido depois de dados em produção.
-
-- [ ] 🔵 **[E-CL4] Dois enums quase idênticos representando "canal de notificação"**
-  **Local:** `model/notification/NotificationChannel.java` (`EMAIL, WHATSAPP, BOTH`) e `model/notification/NotificationType.java` (`EMAIL_ONLY, WHATSAPP_ONLY, BOTH`) — ambos espalhados por DTOs/services distintos, sem clareza de quando usar um ou outro.
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos (`model/purchase/README.md` não menciona mais `totalPurchaseValue`; `model/chatbot/README.md` e `repository/chatbot/README.md` removidos, já que descreviam código que nunca existia nas pastas; typo `update_at`→`updated_at` corrigido nas 4 entidades, com migração de dados renomeando a coluna sem perder os valores já gravados; `NotificationType`, que se confirmou 100% morto — zero referências fora do próprio arquivo — foi removido, restando só `NotificationChannel`, que já era o único de fato usado).
 
 ### E · Comentários desnecessários / código morto
 

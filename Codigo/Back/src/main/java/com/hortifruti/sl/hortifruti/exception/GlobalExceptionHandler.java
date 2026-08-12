@@ -16,6 +16,7 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 @Slf4j
 @RestControllerAdvice
@@ -120,6 +121,26 @@ public class GlobalExceptionHandler {
         HttpStatus.BAD_REQUEST,
         "Erro de validação",
         "Data ou período inválido: " + ex.getMessage());
+  }
+
+  /**
+   * Cobre violações de {@code @Positive}/{@code @NotBlank}/etc. aplicadas direto em
+   * {@code @PathVariable}/{@code @RequestParam} (exige {@code @Validated} na classe do controller,
+   * diferente de {@code @Valid} no corpo, que já cai em {@link MethodArgumentNotValidException}
+   * abaixo). Sem este handler, essa validação de parâmetro (Spring 6.1+/Boot 3.2+) caía no genérico
+   * e virava 500 em vez de 400.
+   */
+  @ExceptionHandler(HandlerMethodValidationException.class)
+  public ResponseEntity<Map<String, String>> handleHandlerMethodValidationException(
+      HandlerMethodValidationException ex, HttpServletRequest request) {
+    String message =
+        ex.getParameterValidationResults().stream()
+            .flatMap(result -> result.getResolvableErrors().stream())
+            .findFirst()
+            .map(error -> error.getDefaultMessage())
+            .orElse("Parâmetro inválido.");
+    log.warn("Parâmetro inválido em {}: {}", request.getRequestURI(), message);
+    return errorResponse(HttpStatus.BAD_REQUEST, "Erro de validação", message);
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)

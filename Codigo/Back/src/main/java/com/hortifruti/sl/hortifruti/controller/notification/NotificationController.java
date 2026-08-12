@@ -67,7 +67,9 @@ public class NotificationController {
           String customMessage) {
     GenericFilesAccountingRequest request =
         new GenericFilesAccountingRequest(
-            new BigDecimal(cardValue), new BigDecimal(cashValue), customMessage);
+            parseMoneyParam("cardValue", cardValue),
+            parseMoneyParam("cashValue", cashValue),
+            customMessage);
     NotificationResponse response =
         notificationService.sendGenericFilesToAccounting(files, request);
     return ResponseEntity.ok(response);
@@ -89,8 +91,7 @@ public class NotificationController {
       @Parameter(description = "Mensagem personalizada (opcional)") @RequestParam(required = false)
           String customMessage) {
     ClientDocumentsRequest request =
-        new ClientDocumentsRequest(
-            clientId, NotificationChannel.valueOf(channel.toUpperCase()), customMessage);
+        new ClientDocumentsRequest(clientId, parseChannel(channel), customMessage);
     NotificationResponse response = notificationService.sendDocumentsToClient(files, request);
     return ResponseEntity.ok(response);
   }
@@ -142,5 +143,34 @@ public class NotificationController {
         bulkNotificationService.sendBulkNotifications(
             files, clientIds, channels, destinationType, customMessage);
     return ResponseEntity.ok(response);
+  }
+
+  /**
+   * {@code new BigDecimal(String)} lança {@link NumberFormatException} (subclasse de {@link
+   * IllegalArgumentException}, já tratada com 400 pelo {@code GlobalExceptionHandler}) para um
+   * valor mal formatado — só envolve pra trocar a mensagem crua do parser por uma que identifica
+   * qual parâmetro falhou.
+   */
+  private BigDecimal parseMoneyParam(String paramName, String value) {
+    try {
+      return new BigDecimal(value);
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException(
+          "Valor inválido para \"" + paramName + "\": \"" + value + "\".");
+    }
+  }
+
+  /**
+   * {@code NotificationChannel.valueOf} lança {@link IllegalArgumentException} (já tratada com 400
+   * pelo {@code GlobalExceptionHandler}) para um canal desconhecido — só envolve pra listar os
+   * valores aceitos na mensagem, em vez do texto padrão de {@code Enum.valueOf}.
+   */
+  private NotificationChannel parseChannel(String channel) {
+    try {
+      return NotificationChannel.valueOf(channel.toUpperCase());
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException(
+          "Canal inválido: \"" + channel + "\". Valores aceitos: EMAIL, WHATSAPP, BOTH.");
+    }
   }
 }

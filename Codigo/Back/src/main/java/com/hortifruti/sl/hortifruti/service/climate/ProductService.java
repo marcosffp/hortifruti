@@ -22,13 +22,6 @@ public class ProductService {
   private final ProductRepository productRepository;
   private final ProductMapper productMapper;
 
-  public List<ProductResponse> getAllProducts() {
-
-    return productRepository.findAll().stream()
-        .map(productMapper::toProductResponse)
-        .collect(Collectors.toList());
-  }
-
   public Page<ProductResponse> getAllProducts(Pageable pageable) {
 
     return productRepository.findAll(pageable).map(productMapper::toProductResponse);

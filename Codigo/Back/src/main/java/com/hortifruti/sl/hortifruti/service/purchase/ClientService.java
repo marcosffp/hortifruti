@@ -19,6 +19,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -173,20 +176,30 @@ public class ClientService {
     return firstNameMatch.get();
   }
 
-  public List<ClientWithLastPurchaseResponse> getClientsWithLastPurchase() {
-    return clientRepository.findAll().stream()
-        .map(
-            client -> {
-              Optional<Purchase> lastPurchase =
-                  purchaseRepository.findTopByClientIdOrderByPurchaseDateDesc(client.getId());
-              return new ClientWithLastPurchaseResponse(
-                  client.getId(),
-                  client.getClientName(),
-                  lastPurchase.map(Purchase::getPurchaseDate).orElse(null),
-                  lastPurchase.map(Purchase::getTotal).orElse(null));
-            })
-        .filter(response -> response.lastPurchaseDate() != null)
-        .toList();
+  /**
+   * O filtro "só clientes com compra" acontece depois da paginação (não dá pra expressar isso como
+   * parte da query de {@code findAll(Pageable)} sem uma query dedicada) — por isso o conteúdo de
+   * uma página pode vir com menos itens que {@code pageable.getPageSize()}, mas {@code
+   * totalElements}/{@code totalPages} refletem o total de clientes cadastrados, não só os com
+   * compra.
+   */
+  public Page<ClientWithLastPurchaseResponse> getClientsWithLastPurchase(Pageable pageable) {
+    Page<Client> clientPage = clientRepository.findAll(pageable);
+    List<ClientWithLastPurchaseResponse> content =
+        clientPage.getContent().stream()
+            .map(
+                client -> {
+                  Optional<Purchase> lastPurchase =
+                      purchaseRepository.findTopByClientIdOrderByPurchaseDateDesc(client.getId());
+                  return new ClientWithLastPurchaseResponse(
+                      client.getId(),
+                      client.getClientName(),
+                      lastPurchase.map(Purchase::getPurchaseDate).orElse(null),
+                      lastPurchase.map(Purchase::getTotal).orElse(null));
+                })
+            .filter(response -> response.lastPurchaseDate() != null)
+            .toList();
+    return new PageImpl<>(content, pageable, clientPage.getTotalElements());
   }
 
   @Transactional(readOnly = true)

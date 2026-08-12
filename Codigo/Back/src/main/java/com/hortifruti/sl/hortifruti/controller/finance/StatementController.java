@@ -8,8 +8,10 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -29,8 +31,10 @@ public class StatementController {
 
   @PreAuthorize("hasRole('MANAGER')")
   @GetMapping
-  public ResponseEntity<List<StatementResponse>> list() {
-    return ResponseEntity.ok(statementService.listAll());
+  public ResponseEntity<Page<StatementResponse>> list(
+      @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+    Pageable pageable = PageRequest.of(page, size);
+    return ResponseEntity.ok(statementService.listAll(pageable));
   }
 
   /**

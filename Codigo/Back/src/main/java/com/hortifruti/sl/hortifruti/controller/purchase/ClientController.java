@@ -10,6 +10,9 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -57,9 +60,10 @@ public class ClientController {
   }
 
   @GetMapping("/with-last-purchase")
-  public ResponseEntity<List<ClientWithLastPurchaseResponse>> getClientsWithLastPurchase() {
-    List<ClientWithLastPurchaseResponse> clients = clientService.getClientsWithLastPurchase();
-    return ResponseEntity.ok(clients);
+  public ResponseEntity<Page<ClientWithLastPurchaseResponse>> getClientsWithLastPurchase(
+      @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+    Pageable pageable = PageRequest.of(page, size);
+    return ResponseEntity.ok(clientService.getClientsWithLastPurchase(pageable));
   }
 
   @GetMapping("/{id}/summary")
