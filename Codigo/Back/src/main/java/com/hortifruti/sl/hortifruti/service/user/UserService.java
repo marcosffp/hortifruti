@@ -74,8 +74,8 @@ public class UserService {
   /**
    * Trim + valida o tamanho (mesmo intervalo de {@link UserRequest#password()}), codifica e limpa
    * {@code mustChangePassword} — troca de senha bem-sucedida é exatamente a condição que satisfaz
-   * essa flag (ver {@code UserInitializer#createBootstrapManager}). Centralizado aqui porque
-   * {@code updateUser} e {@code updateUserById} precisam da mesma regra.
+   * essa flag (ver {@code UserInitializer#createBootstrapManager}). Centralizado aqui porque {@code
+   * updateUser} e {@code updateUserById} precisam da mesma regra.
    */
   private void changePassword(User user, String rawPassword) {
     String password = rawPassword.trim();

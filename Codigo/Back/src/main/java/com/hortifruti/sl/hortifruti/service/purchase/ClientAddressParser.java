@@ -6,17 +6,17 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
 /**
- * Parser único do endereço em texto livre do cadastro de cliente ({@code Client.address}),
- * formato documentado: {@code "Rua, Numero, Complemento (opcional), Bairro, Cidade - UF, CEP:
- * XXXXX-XXX"}. Compartilhado entre a emissão de NF-e ({@code
+ * Parser único do endereço em texto livre do cadastro de cliente ({@code Client.address}), formato
+ * documentado: {@code "Rua, Numero, Complemento (opcional), Bairro, Cidade - UF, CEP: XXXXX-XXX"}.
+ * Compartilhado entre a emissão de NF-e ({@code
  * com.hortifruti.sl.hortifruti.service.invoice.factory.Recipient}) e a geração de boleto ({@code
- * BilletFactory}) — antes cada um reimplementava a própria lógica de corte, com regras
- * ligeiramente diferentes (posições fixas vs. regex), então o mesmo cadastro podia sair com
- * endereço correto num fluxo e errado no outro.
+ * BilletFactory}) — antes cada um reimplementava a própria lógica de corte, com regras ligeiramente
+ * diferentes (posições fixas vs. regex), então o mesmo cadastro podia sair com endereço correto num
+ * fluxo e errado no outro.
  *
- * <p>Este parser só extrai o que consegue identificar pela posição/marcadores do texto — não
- * valida obrigatoriedade de campo nem aplica limite de tamanho. Cada chamador decide como reagir a
- * um campo ausente (usar um valor padrão vs. lançar erro) e qual limite de tamanho aplicar, porque
+ * <p>Este parser só extrai o que consegue identificar pela posição/marcadores do texto — não valida
+ * obrigatoriedade de campo nem aplica limite de tamanho. Cada chamador decide como reagir a um
+ * campo ausente (usar um valor padrão vs. lançar erro) e qual limite de tamanho aplicar, porque
  * essas regras são específicas do destino (NF-e vs. boleto), não do parsing em si.
  */
 @Component

@@ -44,10 +44,10 @@ public class SecurityFilter extends OncePerRequestFilter {
    * /invoices/issue-with-billet/{id}}, que espera até ~2min pela NF-e antes de responder), o Spring
    * reentra na cadeia de filtros num REDISPATCH separado quando o resultado fica pronto — e o
    * {@code SecurityContextHolderFilter} do Spring Security (diferente deste filtro, que é {@code
-   * OncePerRequestFilter} e por isso pula os redispatches) roda de novo nesse redispatch e recarrega
-   * o contexto do zero a partir de um {@link SecurityContextRepository}. Sem salvar aqui, esse
-   * redispatch encontra um contexto vazio (mesmo com o JWT válido) e a requisição é tratada como
-   * anônima → 403 só nesse endpoint, só depois da espera longa. Salvar explicitamente no mesmo
+   * OncePerRequestFilter} e por isso pula os redispatches) roda de novo nesse redispatch e
+   * recarrega o contexto do zero a partir de um {@link SecurityContextRepository}. Sem salvar aqui,
+   * esse redispatch encontra um contexto vazio (mesmo com o JWT válido) e a requisição é tratada
+   * como anônima → 403 só nesse endpoint, só depois da espera longa. Salvar explicitamente no mesmo
    * repositório padrão do Spring Security ({@link RequestAttributeSecurityContextRepository}, que
    * guarda como atributo do {@code HttpServletRequest} em vez de ThreadLocal) resolve isso.
    */

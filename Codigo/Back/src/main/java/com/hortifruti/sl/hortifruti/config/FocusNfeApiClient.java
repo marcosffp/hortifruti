@@ -116,8 +116,8 @@ public class FocusNfeApiClient {
   }
 
   /**
-   * Download de arquivo binário (XML/DANFE) já emitido, pelo path relativo retornado pela Focus
-   * NFe na consulta da nota (ex: {@code caminho_xml_nota_fiscal}/{@code caminho_danfe}). Usado por
+   * Download de arquivo binário (XML/DANFE) já emitido, pelo path relativo retornado pela Focus NFe
+   * na consulta da nota (ex: {@code caminho_xml_nota_fiscal}/{@code caminho_danfe}). Usado por
    * {@code FiscalNoteXmlStorageService}/{@code DanfeXmlService} — não trata exceção aqui, cada
    * chamador decide como reagir a uma falha de download (melhor esforço vs. erro fatal).
    */
@@ -175,12 +175,12 @@ public class FocusNfeApiClient {
   }
 
   /**
-   * A Focus NFe usa um token estático (Basic Auth), sem OAuth para invalidar/renovar como
-   * BB/Sicoob — não faz sentido replicar o retry-em-401 deles aqui. O que falta é o mais básico:
-   * uma segunda tentativa em falha de rede transitória ({@link ResourceAccessException}, ex.:
-   * timeout, reset de conexão) antes de desistir. Erros HTTP retornados pela própria Focus NFe
-   * (4xx/5xx, {@link HttpStatusCodeException}) não são retentados — não são transitórios, e
-   * repetir poderia duplicar o efeito de uma emissão de NF-e.
+   * A Focus NFe usa um token estático (Basic Auth), sem OAuth para invalidar/renovar como BB/Sicoob
+   * — não faz sentido replicar o retry-em-401 deles aqui. O que falta é o mais básico: uma segunda
+   * tentativa em falha de rede transitória ({@link ResourceAccessException}, ex.: timeout, reset de
+   * conexão) antes de desistir. Erros HTTP retornados pela própria Focus NFe (4xx/5xx, {@link
+   * HttpStatusCodeException}) não são retentados — não são transitórios, e repetir poderia duplicar
+   * o efeito de uma emissão de NF-e.
    */
   private <T> ResponseEntity<T> executeWithNetworkRetry(
       String operation, Supplier<ResponseEntity<T>> call) {

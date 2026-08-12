@@ -95,8 +95,8 @@ public class CapturaNotaPendenteService {
 
   /**
    * Transforma uma captura revisada numa compra real, reaproveitando {@link
-   * PurchaseService#createManualPurchase} (mesma criação usada pelo lançamento manual — os itens
-   * já vêm editados/conferidos pela tela de revisão). O destino da foto depende só do cliente
+   * PurchaseService#createManualPurchase} (mesma criação usada pelo lançamento manual — os itens já
+   * vêm editados/conferidos pela tela de revisão). O destino da foto depende só do cliente
    * escolhido: se ele exige comprovante ({@code Client#requiresPurchaseProof}), a chave R2 da
    * captura é anexada à compra; senão, a foto é descartada do R2 (só os dados extraídos ficam) —
    * MAS só quando nenhuma outra captura ainda usa essa mesma foto (ver {@link

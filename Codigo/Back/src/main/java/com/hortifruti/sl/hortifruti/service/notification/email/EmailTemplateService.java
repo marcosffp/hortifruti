@@ -23,8 +23,10 @@ public class EmailTemplateService {
       String template = loadTemplate(templateName);
       return replaceVariables(template, variables);
     } catch (IOException e) {
-      log.warn("Falha ao carregar template de e-mail '{}', usando mensagem de fallback",
-          templateName, e);
+      log.warn(
+          "Falha ao carregar template de e-mail '{}', usando mensagem de fallback",
+          templateName,
+          e);
       return getFallbackMessage(templateName);
     }
   }

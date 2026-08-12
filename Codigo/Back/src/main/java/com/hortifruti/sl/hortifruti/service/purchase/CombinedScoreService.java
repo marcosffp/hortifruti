@@ -224,9 +224,7 @@ public class CombinedScoreService {
   /** Compras deste agrupamento que têm foto de comprovante anexada — ver {@link Purchase}. */
   @Transactional(readOnly = true)
   public List<PurchaseImageResponse> listImagesByCombinedScoreId(Long combinedScoreId) {
-    return purchaseRepository
-        .findByCombinedScoreIdAndImagemR2KeyIsNotNull(combinedScoreId)
-        .stream()
+    return purchaseRepository.findByCombinedScoreIdAndImagemR2KeyIsNotNull(combinedScoreId).stream()
         .map(p -> new PurchaseImageResponse(p.getId(), p.getPurchaseDate(), p.getTotal()))
         .toList();
   }

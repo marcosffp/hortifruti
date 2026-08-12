@@ -11,6 +11,8 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,10 +43,12 @@ public class LoginLockout {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @NotNull
   @Enumerated(EnumType.STRING)
   @Column(name = "identifier_type", nullable = false, length = 16)
   private IdentifierType identifierType;
 
+  @NotBlank
   @Column(name = "identifier", nullable = false, length = 255)
   private String identifier;
 

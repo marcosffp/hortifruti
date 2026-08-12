@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.model.purchase;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,10 +25,12 @@ public class Purchase {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @NotNull
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "client_id", nullable = false)
   private Client client;
 
+  @NotNull
   @Column(name = "purchase_date", nullable = false)
   private LocalDateTime purchaseDate;
 
@@ -35,7 +38,8 @@ public class Purchase {
   @JsonIgnore
   private List<InvoiceProduct> invoiceProducts;
 
-  @Column(name = "total", nullable = false)
+  @NotNull
+  @Column(name = "total", nullable = false, precision = 15, scale = 2)
   private BigDecimal total;
 
   /**

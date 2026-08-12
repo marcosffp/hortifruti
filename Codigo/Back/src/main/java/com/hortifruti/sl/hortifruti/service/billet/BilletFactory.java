@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 public class BilletFactory {
 
   private final ClientAddressParser clientAddressParser;
+
   @Value("${sicoob.num.cliente}")
   private Integer clientNumber;
 

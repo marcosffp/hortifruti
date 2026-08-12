@@ -351,13 +351,11 @@ public class UserInitializer implements CommandLineRunner {
     // indefinidamente em agregadores de log de terceiros. É entregue apenas via console, e a conta
     // fica com mustChangePassword=true: SecurityFilter bloqueia qualquer rota fora de /auth/** e
     // PUT /users até a senha ser trocada.
-    System.out.println(
-        "======================================================================");
+    System.out.println("======================================================================");
     System.out.println("Nenhum usuário encontrado. Conta administrativa inicial criada.");
     System.out.println("  usuário: admin");
     System.out.println("  senha temporária (troca obrigatória no primeiro login): " + password);
-    System.out.println(
-        "======================================================================");
+    System.out.println("======================================================================");
     log.warn(
         "Nenhum usuário encontrado. Conta administrativa inicial 'admin' criada com senha"
             + " temporária — veja a saída do console. Troca de senha obrigatória no primeiro"

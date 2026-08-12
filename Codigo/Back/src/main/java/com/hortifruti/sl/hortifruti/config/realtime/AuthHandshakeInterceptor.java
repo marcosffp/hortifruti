@@ -16,9 +16,9 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
  * O handshake de {@code /ws/realtime} não pode reaproveitar o cookie {@code auth_token} da forma
  * como outros endpoints fazem (ver {@code SecurityFilter}): o cookie é emitido para o domínio do
  * front (login passa pelo rewrite same-origin do Next), enquanto o WebSocket conecta direto no
- * domínio do backend — domínios diferentes nunca compartilham cookie, então a autenticação aqui
- * usa um ticket de uso único trocado antes pelo front numa chamada autenticada por cookie (ver
- * {@link RealtimeTicketService} e {@code RealtimeTicketController}).
+ * domínio do backend — domínios diferentes nunca compartilham cookie, então a autenticação aqui usa
+ * um ticket de uso único trocado antes pelo front numa chamada autenticada por cookie (ver {@link
+ * RealtimeTicketService} e {@code RealtimeTicketController}).
  */
 @Slf4j
 @Component

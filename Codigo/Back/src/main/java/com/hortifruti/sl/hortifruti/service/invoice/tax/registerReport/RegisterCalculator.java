@@ -27,9 +27,9 @@ public class RegisterCalculator {
       BigDecimal.valueOf(18.00);
 
   /**
-   * Venda de mercadoria sujeita a substituição tributária, na condição de contribuinte
-   * substituído — o ICMS próprio já foi retido antes na cadeia, então a alíquota aqui é 0 por
-   * desenho, não um caso não mapeado.
+   * Venda de mercadoria sujeita a substituição tributária, na condição de contribuinte substituído
+   * — o ICMS próprio já foi retido antes na cadeia, então a alíquota aqui é 0 por desenho, não um
+   * caso não mapeado.
    */
   private static final String CFOP_SUBSTITUICAO_TRIBUTARIA = "5405";
 

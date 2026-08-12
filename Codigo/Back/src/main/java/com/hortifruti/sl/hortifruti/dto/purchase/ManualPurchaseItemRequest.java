@@ -7,7 +7,8 @@ import java.math.BigDecimal;
 
 public record ManualPurchaseItemRequest(
     @NotBlank(message = "Código do produto é obrigatório") String code,
-    @NotNull(message = "Quantidade é obrigatória") @Positive(message = "Quantidade deve ser positiva")
+    @NotNull(message = "Quantidade é obrigatória")
+        @Positive(message = "Quantidade deve ser positiva")
         BigDecimal quantity,
     @NotNull(message = "Preço é obrigatório") @Positive(message = "Preço deve ser positivo")
         BigDecimal price) {}

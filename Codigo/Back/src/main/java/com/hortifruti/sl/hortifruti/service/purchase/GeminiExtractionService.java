@@ -164,7 +164,8 @@ public class GeminiExtractionService {
 
   /**
    * Raiz {@code ARRAY} — uma entrada por nota reconhecida na foto (uma única entrada no caso comum
-   * de uma nota só). {@code items} é o schema de uma nota individual, ver {@link #buildNotaSchema()}.
+   * de uma nota só). {@code items} é o schema de uma nota individual, ver {@link
+   * #buildNotaSchema()}.
    */
   private ObjectNode buildResponseSchema() {
     ObjectNode schema = objectMapper.createObjectNode();

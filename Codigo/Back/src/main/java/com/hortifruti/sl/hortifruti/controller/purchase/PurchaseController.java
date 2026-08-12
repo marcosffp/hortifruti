@@ -29,8 +29,8 @@ public class PurchaseController {
 
   @PreAuthorize("hasRole('MANAGER')")
   @PostMapping(value = "/process", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity<MessageResponse> processPurchase(
-      @RequestParam("file") MultipartFile file) throws IOException {
+  public ResponseEntity<MessageResponse> processPurchase(@RequestParam("file") MultipartFile file)
+      throws IOException {
     purchaseService.processPurchaseFile(file);
     return ResponseEntity.ok(new MessageResponse("Compra processada com sucesso"));
   }

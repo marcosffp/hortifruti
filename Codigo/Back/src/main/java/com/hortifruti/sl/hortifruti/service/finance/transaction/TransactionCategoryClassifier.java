@@ -56,7 +56,7 @@ public class TransactionCategoryClassifier {
     map.put("cr anteci", Category.VENDAS_CARTAO);
 
     putNames(map, employeeNames, Category.FUNCIONARIO);
-    putNames(map, familyNames, Category.FAMÍLIA);
+    putNames(map, familyNames, Category.FAMILIA);
 
     map.put("claro", Category.SERVICOS_TELEFONICOS);
     map.put("vivo", Category.SERVICOS_TELEFONICOS);
@@ -103,7 +103,7 @@ public class TransactionCategoryClassifier {
       case VENDAS_PIX -> "Vendas PIX";
       case SERVICOS_BANCARIOS -> "Serviços Bancários";
       case FORNECEDOR -> "Fornecedor";
-      case FAMÍLIA -> "Família";
+      case FAMILIA -> "Família";
       case FUNCIONARIO -> "Funcionário";
       case SERVICOS_TELEFONICOS -> "Serviços Telefônicos";
       case CEMIG -> "Cemig";

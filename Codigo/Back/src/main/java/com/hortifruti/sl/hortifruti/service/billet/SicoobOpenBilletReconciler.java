@@ -98,7 +98,7 @@ public class SicoobOpenBilletReconciler {
    * por pagador confirmou que ele não está mais aberto.
    */
   private void tryUpdateClosedStatus(CombinedScore cs) {
-    String ourNumber = cs.getOurNumber_sicoob();
+    String ourNumber = cs.getOurNumberSicoob();
     if (ourNumber == null || ourNumber.isBlank()) {
       return;
     }

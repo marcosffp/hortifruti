@@ -11,6 +11,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,9 +35,11 @@ public class BilletFile {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @NotNull
   @Column(name = "combined_score_id", nullable = false)
   private Long combinedScoreId;
 
+  @NotBlank
   @Column(name = "object_key", nullable = false, unique = true, length = 500)
   private String objectKey;
 

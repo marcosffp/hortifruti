@@ -51,7 +51,7 @@ public class BilletIssue {
     CombinedScore combinedScore =
         billetInfoCombinedAndClient.findCombinedScoreById(idCombinedScore);
     billetValidation.validateHasBillet(combinedScore);
-    String nossoNumero = combinedScore.getOurNumber_sicoob();
+    String nossoNumero = combinedScore.getOurNumberSicoob();
     String endpoint = buildEndpointIssueCopy(nossoNumero);
 
     try {

@@ -84,7 +84,7 @@ public class BilletQuery {
         billetInfoCombinedAndClient.findCombinedScoreById(combinedScoreId);
     billetValidation.validateHasBillet(combinedScore);
 
-    return getBilletByOurNumber(combinedScore.getOurNumber_sicoob());
+    return getBilletByOurNumber(combinedScore.getOurNumberSicoob());
   }
 
   /**

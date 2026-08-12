@@ -37,14 +37,14 @@
 
 O código está organizado em uma arquitetura em camadas coerente (controller → service → repository) e, na maior parte do domínio fiscal/financeiro, usa `BigDecimal` corretamente e tem comentários que explicam o *porquê* das decisões — acima da média para um projeto deste tamanho. O problema não é falta de estrutura; é que **381 arquivos e ~15 integrações externas cresceram sem um segundo revisor consistente**, e isso deixou rachaduras específicas e localizadas, não uma bagunça generalizada.
 
-**Contagem de achados em aberto: ~94** (itens já resolvidos foram removidos deste documento), sendo:
+**Contagem de achados em aberto: ~87** (itens já resolvidos foram removidos deste documento), sendo:
 
 | Severidade | Qtde. em aberto | Onde estão os mais graves |
 |---|---|---|
 | 🔴 Crítico | **1** | Config/Build (schema sem migração versionada) |
-| 🟠 Alto | **10** | Mapper morto, parsing de endereço duplicado, N+1 residual em colunas `@Lob`, acoplamento cruzado remanescente, ausência de paginação |
-| 🟡 Médio | **39** | Duplicação de lógica entre integrações parecidas, god classes, tratamento de erro genérico, documentação desatualizada |
-| 🔵 Baixo | **44** | Nomenclatura inconsistente, código morto isolado, metadados de build |
+| 🟠 Alto | **9** | Mapper morto, parsing de endereço duplicado, acoplamento cruzado remanescente, ausência de paginação |
+| 🟡 Médio | **36** | Duplicação de lógica entre integrações parecidas, god classes, tratamento de erro genérico, documentação desatualizada |
+| 🔵 Baixo | **41** | Nomenclatura inconsistente, código morto isolado, metadados de build |
 
 ### O achado crítico remanescente
 
@@ -336,26 +336,7 @@ Poucos achados — nenhum bloco de código comentado ou `TODO`/`FIXME` encontrad
 
 ### E · Design de Entidades JPA
 
-- [ ] 🟠 **[E-J2] Colunas `@Lob` legadas sem `@Basic(fetch = FetchType.LAZY)`**
-  **Local:** `model/finance/Statement.java:38-40` (`filePath`, LONGBLOB), `model/invoice/FiscalNoteXmlStorage.java:39-41` (`xmlContent`, LONGTEXT). O próprio Javadoc diz que são campos "legados" (registros novos usam `objectKey`/R2) — para linhas antigas, um blob de vários MB é carregado inteiro sempre que a entidade é buscada, mesmo em telas de listagem que só precisam de metadados.
-
-- [ ] 🟡 **[E-J3] `@Data` do Lombok em entidade JPA, inconsistente com o resto do projeto**
-  **Local:** `model/climate/ClimateProduct.java:11` — todas as outras ~20 entidades usam `@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder` explícitos. `@Data` gera `equals`/`hashCode` sobre todos os campos mutáveis, quebrando identidade estável em `Set`/`HashMap` se a entidade for mutada após inserida — padrão desaconselhado para entidades JPA.
-
-- [ ] 🟡 **[E-J4] `precision`/`scale` ausentes em colunas monetárias, inconsistente com o padrão do domínio**
-  **Local:** `model/purchase/CombinedScore.java:31-32` (`totalValue`), `model/purchase/Purchase.java:38-39` (`total`) — sem `precision`/`scale` explícitos, diferente de `GroupedProduct` (`precision=10/12, scale=4`), `Transaction.amount` (`precision=15, scale=2`). Risco de truncamento/arredondamento inconsistente entre `Purchase.total` somado e `CombinedScore.totalValue`.
-
-- [ ] 🟡 **[E-J5] Ausência quase total de Bean Validation nas entidades**
-  **Local:** todo `model/**` — único uso é `Client.java:39` (`@Email`). O projeto declara `spring-boot-starter-validation` mas campos obrigatórios só têm `@Column(nullable=false)`, verificado apenas no INSERT/UPDATE (exceção de banco pouco amigável), não na camada de aplicação.
-
-- [ ] 🔵 **[E-J6] Nome de campo misturando `camelCase` e `snake_case`**
-  **Local:** `model/purchase/CombinedScore.java:45` — `private String ourNumber_sicoob;` (único campo com underscore no meio do identificador).
-
-- [ ] 🔵 **[E-J7] `GroupedProduct` e `CombinedScore` sem timestamps de auditoria**
-  **Local:** arquivos inteiros — diferente de praticamente todas as outras entidades. `CombinedScore` representa um agrupamento de cobrança (boleto/NF); a ausência de `createdAt`/`updatedAt` dificulta auditoria.
-
-- [ ] 🔵 **[E-J8] Enum `Category` com valor acentuado inconsistente e semântica questionável** *(ver [seção 9](#9-achados-duplicados-entre-áreas))*
-  **Local:** `model/finance/Category.java:8` — `FAMÍLIA` é o único valor acentuado.
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos (`@Basic(LAZY)` nos `@Lob` legados, `@Data`→`@Getter/@Setter/@Builder` em `ClimateProduct`, `precision`/`scale` em `CombinedScore.totalValue`/`Purchase.total`, Bean Validation adicionada em todo `model/**`, `ourNumber_sicoob`→`ourNumberSicoob`, timestamps de auditoria em `GroupedProduct`/`CombinedScore`, `Category.FAMÍLIA`→`FAMILIA`).
 
 ### E · Acoplamento excessivo
 
@@ -418,9 +399,7 @@ Poucos achados — nenhum bloco de código comentado ou `TODO`/`FIXME` encontrad
 
 ## 9. Achados duplicados entre áreas
 
-Sinalizados **independentemente** por duas frentes de análise diferentes — reforça que são pontos reais, não ruído de uma leitura isolada:
-
-- [ ] **`Category.FAMÍLIA` — enum financeiro com valor acentuado/semântica questionável** — reportado em B-B5 e E-J8. *(O nome pessoal "marcos" hardcoded que ambos citavam como origem do vínculo com `FAMÍLIA` foi extraído para configuração — ver `service/finance/transaction/TransactionCategoryClassifier.java` — resta em aberto só a questão de nomenclatura/semântica do valor do enum em si.)*
+Nenhum achado em aberto — o único item duplicado (`Category.FAMÍLIA`, reportado em B-B5 e E-J8) foi resolvido: o valor do enum foi renomeado para `FAMILIA` (o rótulo de exibição acentuado "Família" continua em `TransactionCategoryClassifier#categoryLabel`).
 
 ---
 

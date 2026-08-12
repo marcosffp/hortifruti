@@ -14,8 +14,7 @@ import org.springframework.web.client.RestTemplate;
  * ajuste precisava ser replicado em 3 lugares, e já haviam divergido sem motivo.
  *
  * <p>O timeout de leitura usa o maior dos valores anteriores (download de DANFE em PDF, o mais
- * lento dos três), aplicado uniformemente: folga extra numa chamada JSON rápida não tem custo
- * real.
+ * lento dos três), aplicado uniformemente: folga extra numa chamada JSON rápida não tem custo real.
  */
 @Configuration
 public class FocusNfeRestTemplateConfig {

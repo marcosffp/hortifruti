@@ -36,7 +36,7 @@ public class BilletCancel {
     billetValidation.validateHasBillet(combinedScore);
 
     try {
-      String nossoNumero = combinedScore.getOurNumber_sicoob();
+      String nossoNumero = combinedScore.getOurNumberSicoob();
       String endpoint = buildCancelEndpoint(nossoNumero);
       Map<String, Object> requestBody = buildCancelRequestBody();
 

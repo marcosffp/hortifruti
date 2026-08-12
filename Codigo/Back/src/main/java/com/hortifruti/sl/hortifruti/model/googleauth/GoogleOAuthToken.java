@@ -7,6 +7,8 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,11 +18,11 @@ import lombok.Setter;
 
 /**
  * Credencial OAuth2 do Google (Drive/Gmail) persistida no banco em vez de disco local, para
- * sobreviver a reinícios/redeploys de um filesystem efêmero. {@code storeKey} combina o
- * {@code dataStoreId} (fixo, definido pela biblioteca do Google) com a chave do usuário — ver
- * {@link com.hortifruti.sl.hortifruti.service.googleauth.DatabaseDataStore}. O valor em si (um
- * {@code StoredCredential} serializado) fica criptografado — ver
- * {@link com.hortifruti.sl.hortifruti.service.googleauth.TokenEncryptionService}.
+ * sobreviver a reinícios/redeploys de um filesystem efêmero. {@code storeKey} combina o {@code
+ * dataStoreId} (fixo, definido pela biblioteca do Google) com a chave do usuário — ver {@link
+ * com.hortifruti.sl.hortifruti.service.googleauth.DatabaseDataStore}. O valor em si (um {@code
+ * StoredCredential} serializado) fica criptografado — ver {@link
+ * com.hortifruti.sl.hortifruti.service.googleauth.TokenEncryptionService}.
  */
 @Builder
 @Getter
@@ -32,12 +34,15 @@ import lombok.Setter;
 public class GoogleOAuthToken {
 
   @Id
+  @NotBlank
   @Column(name = "store_key", length = 255)
   private String storeKey;
 
   // columnDefinition explícito porque o ddl-auto=update do Hibernate não redimensiona colunas BLOB
-  // já existentes: o driver MySQL reporta TINYBLOB/BLOB/LONGBLOB sob o mesmo tipo JDBC genérico, então
+  // já existentes: o driver MySQL reporta TINYBLOB/BLOB/LONGBLOB sob o mesmo tipo JDBC genérico,
+  // então
   // a comparação de schema do Hibernate não detecta a diferença de tamanho e nunca emite um ALTER.
+  @NotNull
   @Lob
   @Column(name = "encrypted_value", nullable = false, columnDefinition = "LONGBLOB")
   private byte[] encryptedValue;

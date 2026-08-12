@@ -19,9 +19,9 @@ import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.springframework.stereotype.Component;
 
 /**
- * Junta as fotos de comprovante das compras de um agrupamento em um único PDF (uma foto por
- * página, escalada para caber na página em A4 mantendo a proporção original) — mesma biblioteca
- * (PDFBox) usada pelos demais geradores de PDF do sistema, ver {@code AbstractPdfPageWriter}.
+ * Junta as fotos de comprovante das compras de um agrupamento em um único PDF (uma foto por página,
+ * escalada para caber na página em A4 mantendo a proporção original) — mesma biblioteca (PDFBox)
+ * usada pelos demais geradores de PDF do sistema, ver {@code AbstractPdfPageWriter}.
  */
 @Component
 public class PurchasePhotosPdfGenerator {
@@ -43,8 +43,8 @@ public class PurchasePhotosPdfGenerator {
    * Fotos de câmera de celular guardam a orientação real num campo EXIF em vez de já vir com os
    * pixels rotacionados — o PDFBox desenha os pixels crus como estão armazenados, então sem essa
    * correção a foto sai deitada no PDF mesmo aparecendo em pé em qualquer visualizador de imagem
-   * (que aplica o EXIF automaticamente). Só cobre as rotações puras (3/6/8, de longe as mais
-   * comuns em fotos de câmera); os casos de espelhamento (2/4/5/7) são deixados como estão.
+   * (que aplica o EXIF automaticamente). Só cobre as rotações puras (3/6/8, de longe as mais comuns
+   * em fotos de câmera); os casos de espelhamento (2/4/5/7) são deixados como estão.
    */
   private byte[] upright(byte[] imageBytes) {
     int orientation = readExifOrientation(imageBytes);
@@ -119,8 +119,7 @@ public class PurchasePhotosPdfGenerator {
 
     float availableWidth = page.getMediaBox().getWidth() - 2 * MARGIN;
     float availableHeight = page.getMediaBox().getHeight() - 2 * MARGIN;
-    float scale =
-        Math.min(availableWidth / image.getWidth(), availableHeight / image.getHeight());
+    float scale = Math.min(availableWidth / image.getWidth(), availableHeight / image.getHeight());
 
     float drawWidth = image.getWidth() * scale;
     float drawHeight = image.getHeight() * scale;

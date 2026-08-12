@@ -8,6 +8,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,12 +38,15 @@ public class DispositivoVinculado {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @NotBlank
   @Column(name = "token_hash", nullable = false, unique = true, length = 64)
   private String tokenHash;
 
+  @NotNull
   @Column(name = "user_id", nullable = false)
   private Long userId;
 
+  @NotBlank
   @Column(name = "nome_dispositivo", nullable = false)
   private String nomeDispositivo;
 

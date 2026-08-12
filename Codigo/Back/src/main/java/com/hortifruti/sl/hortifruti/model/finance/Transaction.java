@@ -1,6 +1,8 @@
 package com.hortifruti.sl.hortifruti.model.finance;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,26 +25,32 @@ public class Transaction {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @NotNull
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "statement_id", nullable = false)
   private Statement statement;
 
+  @NotNull
   @Column(nullable = false)
   private LocalDate transactionDate;
 
   @Column(nullable = true)
   private String codHistory;
 
+  @NotBlank
   @Column(nullable = false, length = 500)
   private String history;
 
+  @NotNull
   @Column(nullable = false, precision = 15, scale = 2)
   private BigDecimal amount;
 
+  @NotNull
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private Category category;
 
+  @NotNull
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private TransactionType transactionType;
@@ -56,6 +64,7 @@ public class Transaction {
   @Column(nullable = true)
   private String batch;
 
+  @NotBlank
   @Column(unique = true, nullable = false)
   private String hash;
 

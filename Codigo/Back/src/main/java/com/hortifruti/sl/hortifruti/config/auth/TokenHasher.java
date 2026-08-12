@@ -12,9 +12,9 @@ import org.springframework.stereotype.Component;
  * Geração e hashing de tokens opacos (refresh token, token de dispositivo vinculado): 32 bytes via
  * {@link SecureRandom} codificados em Base64 URL-safe sem padding para o token em si, e SHA-256 em
  * hex para o valor persistido no banco (nunca o token em claro). Compartilhado entre {@link
- * RefreshTokenService} e {@link DispositivoVinculadoService} — antes cada um reimplementava a
- * mesma lógica de forma independente; centralizar aqui garante que uma futura migração de
- * algoritmo (ex.: Argon2/PBKDF2) só precise mudar em um lugar.
+ * RefreshTokenService} e {@link DispositivoVinculadoService} — antes cada um reimplementava a mesma
+ * lógica de forma independente; centralizar aqui garante que uma futura migração de algoritmo (ex.:
+ * Argon2/PBKDF2) só precise mudar em um lugar.
  */
 @Component
 public class TokenHasher {

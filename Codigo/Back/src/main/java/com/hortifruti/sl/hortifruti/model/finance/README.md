@@ -9,4 +9,4 @@ Entidades e enums da conciliação bancária: extratos importados/consultados vi
 | `Bank.java` | Enum | Bancos suportados: `BANCO_DO_BRASIL`, `SICOOB`, `UNKNOWN`. |
 | `StatementOrigin.java` | Enum | Origem do extrato: `PDF_UPLOAD` (upload manual, fluxo legado) ou `API` (consulta às APIs do Sicoob/BB, forma atual). |
 | `TransactionType.java` | Enum | Tipo de lançamento: `DEBITO`, `CREDITO`. |
-| `Category.java` | Enum | Categorias de classificação de transações: `VENDAS_CARTAO`, `VENDAS_PIX`, `SERVICOS_BANCARIOS`, `FORNECEDOR`, `FAMÍLIA`, `FUNCIONARIO`, `SERVICOS_TELEFONICOS`, `CEMIG`, `COPASA`, `FISCAL`, `IMPOSTOS`. |
+| `Category.java` | Enum | Categorias de classificação de transações: `VENDAS_CARTAO`, `VENDAS_PIX`, `SERVICOS_BANCARIOS`, `FORNECEDOR`, `FAMILIA`, `FUNCIONARIO`, `SERVICOS_TELEFONICOS`, `CEMIG`, `COPASA`, `FISCAL`, `IMPOSTOS`. |

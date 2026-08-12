@@ -283,7 +283,7 @@ public class BilletService {
     String seuNumero = (String) responseBody.get("seuNumero");
 
     combinedScore.setHasBillet(true);
-    combinedScore.setOurNumber_sicoob(nossoNumero);
+    combinedScore.setOurNumberSicoob(nossoNumero);
     combinedScore.setYourNumber(seuNumero);
     combinedScoreService.save(combinedScore);
   }

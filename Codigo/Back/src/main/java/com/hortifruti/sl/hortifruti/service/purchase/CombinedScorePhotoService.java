@@ -16,9 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Gera e serve o PDF com as fotos de comprovante das compras de um agrupamento (uma foto por
- * compra que tenha {@link Purchase#getImagemR2Key()} preenchido — só acontece para clientes que
- * exigem comprovante, ver {@code Client#requiresPurchaseProof}).
+ * Gera e serve o PDF com as fotos de comprovante das compras de um agrupamento (uma foto por compra
+ * que tenha {@link Purchase#getImagemR2Key()} preenchido — só acontece para clientes que exigem
+ * comprovante, ver {@code Client#requiresPurchaseProof}).
  */
 @Slf4j
 @Service

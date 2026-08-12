@@ -12,6 +12,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,6 +34,7 @@ public class Client {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @NotBlank
   @Column(nullable = false)
   private String clientName;
 
@@ -43,9 +45,11 @@ public class Client {
   @Column(nullable = true)
   private String phoneNumber;
 
+  @NotBlank
   @Column(nullable = false)
   private String address;
 
+  @NotBlank
   @Column(nullable = false)
   private String document;
 
@@ -56,9 +60,9 @@ public class Client {
   private boolean onlyBillet;
 
   /**
-   * Se {@code true}, a foto original da nota é mantida no R2 quando uma compra desse cliente vem
-   * de uma captura por celular (ver {@code CapturaNotaPendenteService#confirmarComoCompra}); se
-   * {@code false} (padrão), só os dados extraídos são guardados e a foto é descartada.
+   * Se {@code true}, a foto original da nota é mantida no R2 quando uma compra desse cliente vem de
+   * uma captura por celular (ver {@code CapturaNotaPendenteService#confirmarComoCompra}); se {@code
+   * false} (padrão), só os dados extraídos são guardados e a foto é descartada.
    */
   @Column(nullable = false)
   private boolean requiresPurchaseProof;
@@ -78,7 +82,9 @@ public class Client {
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @OneToMany(mappedBy = "client", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+  @OneToMany(
+      mappedBy = "client",
+      cascade = {CascadeType.PERSIST, CascadeType.MERGE})
   @JsonIgnore
   private List<Purchase> purchases;
 

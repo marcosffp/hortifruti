@@ -70,7 +70,8 @@ public class RealtimeNotificationRegistry {
     try {
       payload = objectMapper.writeValueAsString(evento);
     } catch (IOException e) {
-      log.warn("Falha ao serializar evento realtime para usuarioId={}: {}", usuarioId, e.getMessage());
+      log.warn(
+          "Falha ao serializar evento realtime para usuarioId={}: {}", usuarioId, e.getMessage());
       return;
     }
 
@@ -98,8 +99,7 @@ public class RealtimeNotificationRegistry {
     }
   }
 
-  private record EventoCapturaAtualizada(
-      String type, Long capturaId, StatusCaptura status) {
+  private record EventoCapturaAtualizada(String type, Long capturaId, StatusCaptura status) {
     EventoCapturaAtualizada(Long capturaId, StatusCaptura status) {
       this("captura-atualizada", capturaId, status);
     }

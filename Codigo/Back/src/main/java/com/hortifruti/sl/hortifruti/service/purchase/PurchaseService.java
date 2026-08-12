@@ -208,9 +208,10 @@ public class PurchaseService {
   }
 
   /**
-   * Foto de comprovante anexada à compra (ver {@code CapturaNotaPendenteService#confirmarComoCompra}
-   * e {@code Client#requiresPurchaseProof}) — a extensão vem da própria chave R2 (gerada em {@code
-   * StorageKeyGenerator}), então não precisa de uma coluna própria de content-type.
+   * Foto de comprovante anexada à compra (ver {@code
+   * CapturaNotaPendenteService#confirmarComoCompra} e {@code Client#requiresPurchaseProof}) — a
+   * extensão vem da própria chave R2 (gerada em {@code StorageKeyGenerator}), então não precisa de
+   * uma coluna própria de content-type.
    */
   @Transactional(readOnly = true)
   public ImagemCompra buscarImagem(Long purchaseId) {

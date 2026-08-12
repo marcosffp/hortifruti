@@ -46,15 +46,15 @@ public class SecurityConfig {
    *       — a segurança do endpoint é o código de pareamento de vida curta e uso único, não uma
    *       sessão) precisam ser públicas por natureza do fluxo, sem alternativa.
    *   <li>{@code /ws/realtime} nunca carrega o cookie {@code auth_token} (conecta direto no domínio
-   *       do backend, fora do rewrite same-origin do Next — ver {@code useRealtimeSocket.ts}), então
-   *       cai fora do modelo de sessão/role daqui por natureza; quem autentica o handshake é o
-   *       {@code AuthHandshakeInterceptor}, trocando um ticket de uso único (ver {@link
-   *       com.hortifruti.sl.hortifruti.service.realtime.RealtimeTicketService}) — o próprio ticket só
-   *       é emitido para quem já passou pelo catch-all abaixo em {@code /realtime/ws-ticket}.
+   *       do backend, fora do rewrite same-origin do Next — ver {@code useRealtimeSocket.ts}),
+   *       então cai fora do modelo de sessão/role daqui por natureza; quem autentica o handshake é
+   *       o {@code AuthHandshakeInterceptor}, trocando um ticket de uso único (ver {@link
+   *       com.hortifruti.sl.hortifruti.service.realtime.RealtimeTicketService}) — o próprio ticket
+   *       só é emitido para quem já passou pelo catch-all abaixo em {@code /realtime/ws-ticket}.
    *   <li>{@code POST /api/compras/notas/capturas} é o único endpoint que um {@code deviceToken}
-   *       (ver {@link DeviceTokenAuthFilter}, autoridade {@code ROLE_DEVICE_CAPTURE}) pode acessar —
-   *       precisa de matcher próprio aqui porque a regra abaixo, no catch-all, deliberadamente não
-   *       inclui essa role.
+   *       (ver {@link DeviceTokenAuthFilter}, autoridade {@code ROLE_DEVICE_CAPTURE}) pode acessar
+   *       — precisa de matcher próprio aqui porque a regra abaixo, no catch-all, deliberadamente
+   *       não inclui essa role.
    *   <li>Domínios de negócio (produtos, transações, recomendações, notificações) exigem {@code
    *       MANAGER}; leitura de clientes/usuários aceita {@code EMPLOYEE} ou {@code MANAGER}. Regras
    *       mais finas que a role (ex.: mutação x leitura dentro do mesmo domínio) devem usar
@@ -103,8 +103,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/notifications/**")
                         .hasAnyRole("EMPLOYEE", "MANAGER")
                         .requestMatchers(
-                            org.springframework.http.HttpMethod.POST,
-                            "/api/compras/notas/capturas")
+                            org.springframework.http.HttpMethod.POST, "/api/compras/notas/capturas")
                         .hasAnyRole("EMPLOYEE", "MANAGER", "DEVICE_CAPTURE")
                         .anyRequest()
                         .hasAnyRole("EMPLOYEE", "MANAGER"))

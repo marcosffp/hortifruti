@@ -11,6 +11,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,8 +21,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * PDF com as fotos de comprovante (uma por página) das compras que compõem um {@link
- * CombinedScore} — ver {@code CombinedScorePhotoService}. Mesmo padrão de {@code
+ * PDF com as fotos de comprovante (uma por página) das compras que compõem um {@link CombinedScore}
+ * — ver {@code CombinedScorePhotoService}. Mesmo padrão de {@code
  * com.hortifruti.sl.hortifruti.model.billet.BilletFile}.
  */
 @Entity
@@ -41,9 +43,11 @@ public class CombinedScorePhotoFile {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @NotNull
   @Column(name = "combined_score_id", nullable = false)
   private Long combinedScoreId;
 
+  @NotBlank
   @Column(name = "object_key", nullable = false, unique = true, length = 500)
   private String objectKey;
 

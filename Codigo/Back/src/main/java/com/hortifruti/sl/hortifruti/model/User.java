@@ -11,6 +11,8 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -44,15 +46,19 @@ public class User implements UserDetails {
    * com.hortifruti.sl.hortifruti.exception.GlobalExceptionHandler} depende desse nome estável para
    * identificar a violação sem parsear texto de mensagem de driver.
    */
+  @NotBlank
   @Column(nullable = false)
   private String username;
 
+  @NotBlank
   @Column(nullable = false)
   private String password;
 
+  @NotBlank
   @Column(nullable = false)
   private String position;
 
+  @NotNull
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private Role role;
@@ -60,8 +66,8 @@ public class User implements UserDetails {
   /**
    * Marca contas cuja senha foi definida por outra pessoa (ex.: admin de bootstrap criado pelo
    * {@code UserInitializer}) e ainda não foi trocada pelo próprio usuário — {@code SecurityFilter}
-   * bloqueia qualquer rota fora de {@code /auth/**}/{@code PUT /users} enquanto esta flag
-   * for {@code true}.
+   * bloqueia qualquer rota fora de {@code /auth/**}/{@code PUT /users} enquanto esta flag for
+   * {@code true}.
    */
   @Builder.Default
   @Column(nullable = false)

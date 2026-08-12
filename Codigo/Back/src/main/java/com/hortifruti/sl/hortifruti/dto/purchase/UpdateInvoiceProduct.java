@@ -10,6 +10,7 @@ public record UpdateInvoiceProduct(
     @NotBlank(message = "Nome do produto é obrigatório") String name,
     @NotNull(message = "Preço é obrigatório") @Positive(message = "Preço deve ser positivo")
         BigDecimal price,
-    @NotNull(message = "Quantidade é obrigatória") @Positive(message = "Quantidade deve ser positiva")
+    @NotNull(message = "Quantidade é obrigatória")
+        @Positive(message = "Quantidade deve ser positiva")
         BigDecimal quantity,
     @NotBlank(message = "Tipo de unidade é obrigatório") String unitType) {}

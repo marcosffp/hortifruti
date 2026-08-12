@@ -1,25 +1,33 @@
 package com.hortifruti.sl.hortifruti.model.climate;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "products")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ClimateProduct {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @NotBlank
   @Column(nullable = false, length = 100)
   private String name;
 
+  @NotNull
   @Enumerated(EnumType.STRING)
   @Column(name = "temperature_category", nullable = false)
   private TemperatureCategory temperatureCategory;

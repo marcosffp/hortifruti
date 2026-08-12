@@ -12,7 +12,8 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
  * Canal de mão única (servidor → PC): o front nunca envia mensagens por aqui, só escuta eventos
  * ({@code dispositivo-pareado}, {@code captura-atualizada} — ver {@link
  * RealtimeNotificationRegistry}). Por isso não há {@code handleTextMessage} sobrescrito; qualquer
- * mensagem recebida do cliente é ignorada pelo comportamento padrão de {@link TextWebSocketHandler}.
+ * mensagem recebida do cliente é ignorada pelo comportamento padrão de {@link
+ * TextWebSocketHandler}.
  */
 @Slf4j
 @Component

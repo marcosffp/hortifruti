@@ -17,11 +17,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * {@link DataStore} do google-oauth-client com persistência em banco (via
- * {@link GoogleOAuthTokenRepository}) em vez de arquivo local — tokens sobrevivem a
- * reinícios/redeploys de um filesystem efêmero. Cada entrada fica com o valor serializado
- * (Java {@link Serializable}, como {@code StoredCredential}) e criptografado em repouso pelo
- * {@link TokenEncryptionService}.
+ * {@link DataStore} do google-oauth-client com persistência em banco (via {@link
+ * GoogleOAuthTokenRepository}) em vez de arquivo local — tokens sobrevivem a reinícios/redeploys de
+ * um filesystem efêmero. Cada entrada fica com o valor serializado (Java {@link Serializable}, como
+ * {@code StoredCredential}) e criptografado em repouso pelo {@link TokenEncryptionService}.
  */
 class DatabaseDataStore<V extends Serializable> extends AbstractDataStore<V> {
 

@@ -11,6 +11,8 @@ import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -39,18 +41,22 @@ public class CapturaNotaPendente {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @NotNull
   @Column(name = "usuario_id", nullable = false)
   private Long usuarioId;
 
   @Column(name = "dispositivo_id")
   private Long dispositivoId;
 
+  @NotBlank
   @Column(name = "r2_key", nullable = false)
   private String r2Key;
 
+  @NotBlank
   @Column(name = "content_type", nullable = false)
   private String contentType;
 
+  @NotNull
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private StatusCaptura status;

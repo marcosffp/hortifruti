@@ -63,7 +63,7 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
    * cancelamento manual/avulso, quando o operador só tem o número do boleto e não sabe (ou não
    * existe) um CombinedScore local vinculado.
    */
-  @Query("SELECT cs FROM CombinedScore cs WHERE cs.ourNumber_sicoob = :ourNumber")
+  @Query("SELECT cs FROM CombinedScore cs WHERE cs.ourNumberSicoob = :ourNumber")
   List<CombinedScore> findAllByOurNumberSicoob(@Param("ourNumber") String ourNumber);
 
   Optional<CombinedScore> findByInvoiceRef(String invoiceRef);

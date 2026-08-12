@@ -6,8 +6,8 @@ import jakarta.validation.constraints.Size;
 /**
  * Todos os campos são opcionais — {@code null} (ou em branco, para {@code username}/{@code
  * password}) significa "não alterar", ver {@code UserService#updateUserById}. Por isso não levam
- * {@code @NotNull}/{@code @NotBlank}; só as restrições que fazem sentido quando o valor é
- * de fato enviado.
+ * {@code @NotNull}/{@code @NotBlank}; só as restrições que fazem sentido quando o valor é de fato
+ * enviado.
  */
 public record UserUpdateRequest(
     String username,

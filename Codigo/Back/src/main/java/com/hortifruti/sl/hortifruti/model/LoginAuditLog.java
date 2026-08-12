@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,9 +44,11 @@ public class LoginAuditLog {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @NotBlank
   @Column(name = "username", nullable = false, length = 255)
   private String username;
 
+  @NotBlank
   @Column(name = "ip_address", nullable = false, length = 64)
   private String ipAddress;
 

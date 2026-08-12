@@ -59,8 +59,8 @@ public class GlobalExceptionHandler {
 
   /**
    * {@link AccountLockedException} estende {@code AuthException} (logo também é uma {@link
-   * DomainException}), mas precisa de handler próprio porque acrescenta {@code retryAfter} ao
-   * corpo — o resolvedor de {@code @ExceptionHandler} do Spring escolhe o tipo mais específico
+   * DomainException}), mas precisa de handler próprio porque acrescenta {@code retryAfter} ao corpo
+   * — o resolvedor de {@code @ExceptionHandler} do Spring escolhe o tipo mais específico
    * registrado, então este handler tem prioridade sobre o genérico acima para essa subclasse.
    * Retorna o mesmo status/mensagem genérica de {@code AuthException} (indistinguível de senha
    * errada ou usuário inexistente, para evitar enumeration attack), acrescentando apenas {@code
@@ -106,9 +106,9 @@ public class GlobalExceptionHandler {
   }
 
   /**
-   * Cobre {@code LocalDate.parse}/{@code Month.of} chamados direto em controllers sem
-   * try/catch (ex.: {@code DashboardController#getDashboardData}) — data mal formatada ou mês fora
-   * do intervalo 1-12 lançam {@link java.time.DateTimeException} (ou sua subclasse {@link
+   * Cobre {@code LocalDate.parse}/{@code Month.of} chamados direto em controllers sem try/catch
+   * (ex.: {@code DashboardController#getDashboardData}) — data mal formatada ou mês fora do
+   * intervalo 1-12 lançam {@link java.time.DateTimeException} (ou sua subclasse {@link
    * java.time.format.DateTimeParseException}), que sem este handler caía no genérico e virava 500
    * para um erro que é, na verdade, entrada inválida do cliente.
    */
@@ -117,7 +117,9 @@ public class GlobalExceptionHandler {
       java.time.DateTimeException ex, HttpServletRequest request) {
     log.warn("Data ou período inválido em {}: {}", request.getRequestURI(), ex.getMessage());
     return errorResponse(
-        HttpStatus.BAD_REQUEST, "Erro de validação", "Data ou período inválido: " + ex.getMessage());
+        HttpStatus.BAD_REQUEST,
+        "Erro de validação",
+        "Data ou período inválido: " + ex.getMessage());
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -145,8 +147,7 @@ public class GlobalExceptionHandler {
       DataIntegrityViolationException ex, HttpServletRequest request) {
     log.warn("Erro de integridade de dados em {}: {}", request.getRequestURI(), ex.getMessage());
 
-    SQLIntegrityConstraintViolationException constraintViolation =
-        findConstraintViolationCause(ex);
+    SQLIntegrityConstraintViolationException constraintViolation = findConstraintViolationCause(ex);
     if (constraintViolation != null) {
       String constraintMessage = constraintViolation.getMessage();
       if (constraintMessage != null && constraintMessage.contains("uk_users_username")) {
@@ -213,7 +214,9 @@ public class GlobalExceptionHandler {
       WeatherApiException ex, HttpServletRequest request) {
     log.error("Erro na API de clima em {}: {}", request.getRequestURI(), ex.getMessage());
     return errorResponse(
-        HttpStatus.SERVICE_UNAVAILABLE, "Serviço de Previsão do Tempo Indisponível", ex.getMessage());
+        HttpStatus.SERVICE_UNAVAILABLE,
+        "Serviço de Previsão do Tempo Indisponível",
+        ex.getMessage());
   }
 
   @ExceptionHandler(Exception.class)
