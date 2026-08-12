@@ -5,6 +5,7 @@ import com.hortifruti.sl.hortifruti.model.finance.Statement;
 import com.hortifruti.sl.hortifruti.model.finance.StatementOrigin;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
+import com.hortifruti.sl.hortifruti.repository.finance.TransactionSpecifications;
 import com.hortifruti.sl.hortifruti.service.finance.StatementService;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -16,7 +17,6 @@ import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,14 +39,18 @@ public class TransactionExportService {
     byte[] excelBytes = transactionReportService.generateExcel(periodStart, periodEnd);
     byte[] pdfBytes = transactionReportService.generatePdf(periodStart, periodEnd);
 
-    Pageable pageable = Pageable.unpaged(Sort.by("transactionDate").descending());
+    Sort sort = Sort.by("transactionDate").descending();
     List<Transaction> bbTransactions =
-        transactionRepository.findByTransactionDateBetweenAndStatementBank(
-            periodStart, periodEnd, Bank.BANCO_DO_BRASIL, pageable);
+        transactionRepository.findAll(
+            TransactionSpecifications.transactionDateBetween(periodStart, periodEnd)
+                .and(TransactionSpecifications.statementBankEquals(Bank.BANCO_DO_BRASIL)),
+            sort);
 
     List<Transaction> sicoobTransactions =
-        transactionRepository.findByTransactionDateBetweenAndStatementBank(
-            periodStart, periodEnd, Bank.SICOOB, pageable);
+        transactionRepository.findAll(
+            TransactionSpecifications.transactionDateBetween(periodStart, periodEnd)
+                .and(TransactionSpecifications.statementBankEquals(Bank.SICOOB)),
+            sort);
 
     Set<Statement> referencedStatements = new HashSet<>();
 

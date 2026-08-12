@@ -5,7 +5,7 @@ import com.hortifruti.sl.hortifruti.dto.climate.ProductResponse;
 import com.hortifruti.sl.hortifruti.exception.climate.ProductException;
 import com.hortifruti.sl.hortifruti.mapper.ProductMapper;
 import com.hortifruti.sl.hortifruti.model.climate.ClimateProduct;
-import com.hortifruti.sl.hortifruti.repository.climate.ProductRepository;
+import com.hortifruti.sl.hortifruti.repository.climate.ClimateProductRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ProductService {
 
-  private final ProductRepository productRepository;
+  private final ClimateProductRepository productRepository;
   private final ProductMapper productMapper;
 
   public Page<ProductResponse> getAllProducts(Pageable pageable) {

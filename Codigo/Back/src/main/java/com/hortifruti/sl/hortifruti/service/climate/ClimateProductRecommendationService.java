@@ -7,7 +7,7 @@ import com.hortifruti.sl.hortifruti.model.climate.ClimateProduct;
 import com.hortifruti.sl.hortifruti.model.climate.Month;
 import com.hortifruti.sl.hortifruti.model.climate.RecommendationTag;
 import com.hortifruti.sl.hortifruti.model.climate.TemperatureCategory;
-import com.hortifruti.sl.hortifruti.repository.climate.ProductRepository;
+import com.hortifruti.sl.hortifruti.repository.climate.ClimateProductRepository;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ClimateProductRecommendationService {
 
-  private final ProductRepository productRepository;
+  private final ClimateProductRepository productRepository;
   private final WeatherForecastService weatherForecastService;
 
   private static final double CLIMATE_WEIGHT = 0.7;

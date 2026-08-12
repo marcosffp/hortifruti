@@ -37,14 +37,14 @@
 
 O código está organizado em uma arquitetura em camadas coerente (controller → service → repository) e, na maior parte do domínio fiscal/financeiro, usa `BigDecimal` corretamente e tem comentários que explicam o *porquê* das decisões — acima da média para um projeto deste tamanho. O problema não é falta de estrutura; é que **381 arquivos e ~15 integrações externas cresceram sem um segundo revisor consistente**, e isso deixou rachaduras específicas e localizadas, não uma bagunça generalizada.
 
-**Contagem de achados em aberto: ~52** (itens já resolvidos foram removidos deste documento), sendo:
+**Contagem de achados em aberto: ~48** (itens já resolvidos foram removidos deste documento), sendo:
 
 | Severidade | Qtde. em aberto | Onde estão os mais graves |
 |---|---|---|
 | 🔴 Crítico | **1** | Config/Build (schema sem migração versionada) |
 | 🟠 Alto | **7** | Mapper morto, parsing de endereço duplicado, acoplamento cruzado remanescente |
-| 🟡 Médio | **21** | Duplicação de lógica entre integrações parecidas, god classes, paginação de telas com UX dependente da lista completa |
-| 🔵 Baixo | **23** | Nomenclatura inconsistente, código morto isolado, metadados de build |
+| 🟡 Médio | **20** | Duplicação de lógica entre integrações parecidas, god classes, paginação de telas com UX dependente da lista completa |
+| 🔵 Baixo | **20** | Nomenclatura inconsistente, código morto isolado, metadados de build |
 
 ### O achado crítico remanescente
 
@@ -253,20 +253,11 @@ Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos 
   ```
   JPQL não é verificado em tempo de compilação — mover/renomear `Status` quebra essas 6 queries silenciosamente, só detectável em runtime.
 
-- [ ] 🟡 **[E-R2] `TransactionRepository` com 6+ métodos de query redundantes apesar de já ter `JpaSpecificationExecutor`**
-  **Local:** `repository/finance/TransactionRepository.java:24-90` — deveria compor `Specification`s combináveis (mecanismo já disponível na interface) em vez de multiplicar métodos manuais.
-
-- [ ] 🔵 **[E-R3] Query retorna enum como `List<String>` em vez de `List<Category>`**
-  **Local:** `repository/finance/TransactionRepository.java:41-42`
-
-- [ ] 🔵 **[E-R4] Projeção não tipada (`Object[]`) em vez de DTO/interface**
-  **Local:** `repository/purchase/PurchaseRepository.java:22-23` — `List<Object[]> sumTotalGroupedByClientId()`, exige cast manual no chamador.
+Demais achados desta categoria já foram corrigidos: `TransactionRepository` (E-R2) agora compõe `Specification`s combináveis via `TransactionSpecifications` em vez de multiplicar métodos `@Query` — os 3 que não tinham nenhum caller (`...AndStatementOrigin`, `...AndTransactionType`, `...AndCategory`) e o `existsByHash` morto foram removidos; `findAllCategories` (E-R3) agora retorna `List<Category>` (a conversão pra `List<String>` do contrato da API fica no service, não no repositório); `PurchaseRepository.sumTotalGroupedByClientId` (E-R4) retorna `List<ClientPurchaseTotal>` (record via constructor expression) em vez de `List<Object[]>`.
 
 ### E · Baixa coesão
 
-- [ ] 🔵 **[E-B1] Nome de repositório genérico demais, ambíguo entre domínios**
-  **Local:** `repository/climate/ProductRepository.java` — entidade é `ClimateProduct`, mas o repositório se chama só `ProductRepository`, colidindo conceitualmente com `FiscalProductRepository`, `GroupedProductRepository`, `InvoiceProductRepository`.
-  *(De resto, os repositórios do projeto são coesos — nenhum outro método fora do propósito da entidade principal foi encontrado.)*
+Nenhum achado em aberto — `repository/climate/ProductRepository` (E-B1) foi renomeado para `ClimateProductRepository`, removendo a colisão conceitual com `FiscalProductRepository`/`GroupedProductRepository`/`InvoiceProductRepository`.
 
 ### E · Clareza / código confuso
 

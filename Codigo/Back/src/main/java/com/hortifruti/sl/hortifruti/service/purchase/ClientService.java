@@ -10,10 +10,10 @@ import com.hortifruti.sl.hortifruti.exception.purchase.PurchaseException;
 import com.hortifruti.sl.hortifruti.mapper.ClientMapper;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
+import com.hortifruti.sl.hortifruti.repository.purchase.ClientPurchaseTotal;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
 import java.math.BigDecimal;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -75,10 +75,9 @@ public class ClientService {
   public List<ClientResponse> getAllClients() {
     List<Client> clients = clientRepository.findAll();
 
-    Map<Long, BigDecimal> totalsByClientId = new HashMap<>();
-    for (Object[] row : purchaseRepository.sumTotalGroupedByClientId()) {
-      totalsByClientId.put((Long) row[0], (BigDecimal) row[1]);
-    }
+    Map<Long, BigDecimal> totalsByClientId =
+        purchaseRepository.sumTotalGroupedByClientId().stream()
+            .collect(Collectors.toMap(ClientPurchaseTotal::clientId, ClientPurchaseTotal::total));
 
     return clients.stream()
         .map(

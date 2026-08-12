@@ -8,7 +8,7 @@ import com.hortifruti.sl.hortifruti.model.climate.Month;
 import com.hortifruti.sl.hortifruti.model.climate.TemperatureCategory;
 import com.hortifruti.sl.hortifruti.repository.FreightConfigRepository;
 import com.hortifruti.sl.hortifruti.repository.UserRepository;
-import com.hortifruti.sl.hortifruti.repository.climate.ProductRepository;
+import com.hortifruti.sl.hortifruti.repository.climate.ClimateProductRepository;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.util.List;
@@ -32,7 +32,7 @@ public class UserInitializer implements CommandLineRunner {
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
-  private final ProductRepository productRepository;
+  private final ClimateProductRepository productRepository;
   private final FreightConfigRepository freightConfigRepository;
   private final Base64FileDecoder base64FileDecoder;
   private final Environment environment;

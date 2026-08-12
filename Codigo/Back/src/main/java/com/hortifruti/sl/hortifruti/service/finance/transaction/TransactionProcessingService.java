@@ -9,6 +9,7 @@ import com.hortifruti.sl.hortifruti.model.finance.Category;
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import com.hortifruti.sl.hortifruti.model.finance.TransactionType;
 import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
+import com.hortifruti.sl.hortifruti.repository.finance.TransactionSpecifications;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -111,21 +112,24 @@ public class TransactionProcessingService {
   }
 
   public List<String> getAllCategories() {
-    return transactionRepository.findAllCategories();
+    return transactionRepository.findAllCategories().stream().map(Enum::name).toList();
   }
 
   public List<Transaction> findTransactionsByDateRange(LocalDate startDate, LocalDate endDate) {
-    return transactionRepository.findTransactionsByDateRange(startDate, endDate);
+    return transactionRepository.findAll(
+        TransactionSpecifications.transactionDateBetween(startDate, endDate));
   }
 
   public List<Transaction> findTransactionsByCreatedAtBetween(
       LocalDateTime startDate, LocalDateTime endDate) {
-    return transactionRepository.findTransactionsByCreatedAtBetween(startDate, endDate);
+    return transactionRepository.findAll(
+        TransactionSpecifications.createdAtBetween(startDate, endDate));
   }
 
   public void deleteAllByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate) {
     transactionRepository.deleteAll(
-        transactionRepository.findTransactionsByCreatedAtBetween(startDate, endDate));
+        transactionRepository.findAll(
+            TransactionSpecifications.createdAtBetween(startDate, endDate)));
   }
 
   public BigDecimal getTotalRevenue(TransactionRequestDate request) {
@@ -136,8 +140,7 @@ public class TransactionProcessingService {
       startDate = LocalDate.now().withDayOfMonth(1);
       endDate = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
     }
-    List<Transaction> transacoes =
-        transactionRepository.findTransactionsByDateRange(startDate, endDate);
+    List<Transaction> transacoes = findTransactionsByDateRange(startDate, endDate);
     return transacoes.stream()
         .filter(transacao -> transacao.getTransactionType() == TransactionType.CREDITO)
         .map(Transaction::getAmount)
@@ -152,8 +155,7 @@ public class TransactionProcessingService {
       startDate = LocalDate.now().withDayOfMonth(1);
       endDate = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
     }
-    List<Transaction> transacoes =
-        transactionRepository.findTransactionsByDateRange(startDate, endDate);
+    List<Transaction> transacoes = findTransactionsByDateRange(startDate, endDate);
     return transacoes.stream()
         .filter(transacao -> transacao.getTransactionType() == TransactionType.DEBITO)
         .map(Transaction::getAmount)

@@ -2,11 +2,13 @@ package com.hortifruti.sl.hortifruti.service.finance.transaction;
 
 import com.hortifruti.sl.hortifruti.model.finance.Transaction;
 import com.hortifruti.sl.hortifruti.repository.finance.TransactionRepository;
+import com.hortifruti.sl.hortifruti.repository.finance.TransactionSpecifications;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,8 +53,9 @@ public class TransactionReportService {
   }
 
   private List<Transaction> buscarTransacoesOrdenadas(LocalDate dataInicio, LocalDate dataFim) {
-    return transactionRepository.findByTransactionDateBetweenOrderByTransactionDateAscIdAsc(
-        dataInicio, dataFim);
+    return transactionRepository.findAll(
+        TransactionSpecifications.transactionDateBetween(dataInicio, dataFim),
+        Sort.by(Sort.Order.asc("transactionDate"), Sort.Order.asc("id")));
   }
 
   private LocalDate[] resolvePeriodo(LocalDate dataInicio, LocalDate dataFim) {

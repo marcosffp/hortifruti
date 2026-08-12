@@ -19,8 +19,10 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
   @Query("SELECT COALESCE(SUM(p.total), 0) FROM Purchase p WHERE p.client.id = :clientId")
   BigDecimal sumTotalByClientId(@Param("clientId") Long clientId);
 
-  @Query("SELECT p.client.id, COALESCE(SUM(p.total), 0) FROM Purchase p GROUP BY p.client.id")
-  List<Object[]> sumTotalGroupedByClientId();
+  @Query(
+      "SELECT new com.hortifruti.sl.hortifruti.repository.purchase.ClientPurchaseTotal(p.client.id,"
+          + " COALESCE(SUM(p.total), 0)) FROM Purchase p GROUP BY p.client.id")
+  List<ClientPurchaseTotal> sumTotalGroupedByClientId();
 
   List<Purchase> findByClientIdAndPurchaseDateBetween(
       Long clientId, LocalDateTime startDate, LocalDateTime endDate);
