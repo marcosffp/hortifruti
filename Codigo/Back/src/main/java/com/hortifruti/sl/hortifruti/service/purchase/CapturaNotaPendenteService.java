@@ -8,6 +8,7 @@ import com.hortifruti.sl.hortifruti.dto.purchase.ManualPurchaseRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.NotaExtracaoResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.PurchaseResponse;
 import com.hortifruti.sl.hortifruti.exception.purchase.CapturaNotaPendenteNaoEncontradaException;
+import com.hortifruti.sl.hortifruti.mapper.PurchaseMapper;
 import com.hortifruti.sl.hortifruti.model.purchase.CapturaNotaPendente;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
 import com.hortifruti.sl.hortifruti.model.purchase.StatusCaptura;
@@ -51,6 +52,7 @@ public class CapturaNotaPendenteService {
   private final ObjectMapper objectMapper;
   private final PurchaseService purchaseService;
   private final PurchaseRepository purchaseRepository;
+  private final PurchaseMapper purchaseMapper;
 
   @Value("${r2.environment}")
   private String environment;
@@ -125,8 +127,7 @@ public class CapturaNotaPendenteService {
     captura.setStatus(StatusCaptura.CONFIRMADA);
     capturaNotaPendenteRepository.save(captura);
 
-    return new PurchaseResponse(
-        purchase.getId(), purchase.getPurchaseDate(), purchase.getTotal(), purchase.getUpdatedAt());
+    return purchaseMapper.toResponse(purchase);
   }
 
   /**

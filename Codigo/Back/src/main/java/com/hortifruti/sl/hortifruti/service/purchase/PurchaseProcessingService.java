@@ -95,7 +95,11 @@ public class PurchaseProcessingService {
     } catch (IOException e) {
       throw new PurchaseException("Erro ao processar arquivo PDF: " + e.getMessage(), e);
     } catch (Exception e) {
-      throw new PurchaseException("Erro inesperado ao processar a compra: " + e.getMessage(), e);
+      // Diferente das PurchaseException lançadas explicitamente acima (formato de PDF
+      // reconhecido como inválido — esperado), chegar aqui significa que nenhum dos casos
+      // previstos capturou o problema: pode ser bug do parser, não só mudança de layout do
+      // fornecedor. unexpected=true loga com stacktrace para permitir essa distinção.
+      throw new PurchaseException("Erro inesperado ao processar a compra: " + e.getMessage(), e, true);
     }
   }
 
@@ -128,10 +132,11 @@ public class PurchaseProcessingService {
     for (String line : lines) {
       line = line.trim();
 
-      if (line.contains("COD")
-          && line.contains("PRODUTO")
-          && line.contains("QTD")
-          && line.contains("KG")) {
+      String upperLine = line.toUpperCase();
+      if (upperLine.contains("COD")
+          && upperLine.contains("PRODUTO")
+          && upperLine.contains("QTD")
+          && upperLine.contains("KG")) {
         isProductSection = true;
         continue;
       }

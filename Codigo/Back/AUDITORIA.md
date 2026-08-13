@@ -37,20 +37,18 @@
 
 O código está organizado em uma arquitetura em camadas coerente (controller → service → repository) e, na maior parte do domínio fiscal/financeiro, usa `BigDecimal` corretamente e tem comentários que explicam o *porquê* das decisões — acima da média para um projeto deste tamanho. O problema não é falta de estrutura; é que **381 arquivos e ~15 integrações externas cresceram sem um segundo revisor consistente**, e isso deixou rachaduras específicas e localizadas, não uma bagunça generalizada.
 
-**Contagem de achados em aberto: ~35** (itens já resolvidos foram removidos deste documento), sendo:
+**Contagem de achados em aberto: 4** (itens já resolvidos foram removidos deste documento), sendo:
 
-| Severidade | Qtde. em aberto | Onde estão os mais graves |
+| Severidade | Qtde. em aberto | Onde estão |
 |---|---|---|
-| 🔴 Crítico | **1** | Config/Build (schema sem migração versionada) |
-| 🟠 Alto | **7** | Mapper morto, parsing de endereço duplicado, acoplamento cruzado remanescente |
-| 🟡 Médio | **12** | Duplicação de lógica entre integrações parecidas, god classes, paginação de telas com UX dependente da lista completa |
-| 🔵 Baixo | **15** | Nomenclatura inconsistente, código morto isolado, metadados de build |
+| 🔴 Crítico | **0** | — |
+| 🟠 Alto | **1** | Diretório de tokens OAuth do Google divergente entre dois fluxos — C-O3 |
+| 🟡 Médio | **3** | Acoplamento aceito por design em cancelamento de agrupamento (C-A4); paginação de 4 telas que dependem da lista completa no cliente (D-P1); `ddl-auto` ainda não travado em `validate` (E-C1) |
+| 🔵 Baixo | **0** | — |
 
-### O achado crítico remanescente
+### Achados críticos
 
-Dos 8 achados críticos originais, 7 já foram corrigidos e removidos deste documento (bypass de rate limit por IP forjável, bug de zeragem no relatório de apuração de ICMS, no-op na limpeza de tokens OAuth, `DELETE /clients/{id}` sem proteção, `AuthController` acessando repository diretamente, cascade delete de histórico de compras, `FreightConfig` em `double`). Resta em aberto:
-
-1. **Config/Build:** `ddl-auto=update` está ativo em produção, sem Flyway/Liquibase — o schema do banco é alterado automaticamente a cada deploy, sem histórico de migração nem rollback. ([Área E, item E-C1](#e-c1))
+Nenhum em aberto. Dos 8 achados críticos originais, todos os 8 já foram corrigidos e removidos deste documento (bypass de rate limit por IP forjável, bug de zeragem no relatório de apuração de ICMS, no-op na limpeza de tokens OAuth, `DELETE /clients/{id}` sem proteção, `AuthController` acessando repository diretamente, cascade delete de histórico de compras, `FreightConfig` em `double`, e por último `ddl-auto=update` sem nenhuma ferramenta de migração — Flyway foi introduzido e rebaixou o item para 🟡, ver [E-C1](#e-c1)).
 
 Nenhuma das 5 frentes de análise encontrou blocos relevantes de **código morto comentado** ou `TODO`/`FIXME` esquecidos — ao contrário do que a preocupação inicial sugeria, "comentários desnecessários" é a categoria com **menos** achados no projeto inteiro (a maioria dos comentários existentes explica *por quê*, não *o quê*). O problema real de qualidade está concentrado em **acoplamento entre domínios** (services de um módulo mexendo direto no repository de outro) e em **bugs silenciosos** que não geram exceção — só dado errado.
 
@@ -58,13 +56,13 @@ Nenhuma das 5 frentes de análise encontrou blocos relevantes de **código morto
 
 ## 3. Plano de ataque recomendado
 
-Ordem sugerida, misturando "baixo custo/alto impacto" primeiro com os itens que bloqueiam outros. Itens já resolvidos (Onda 1 inteira, a maior parte da Onda 2 e a Onda 3 inteira) foram removidos deste documento — o que resta:
+Ordem sugerida, misturando "baixo custo/alto impacto" primeiro com os itens que bloqueiam outros. Itens já resolvidos (Onda 1 inteira, a Onda 2 inteira e a Onda 3 inteira) foram removidos deste documento — o que resta:
 
-### Onda 2 — Estrutural, mas isolado por módulo (1 a 2 semanas)
-- [ ] **E-C1** — Introduzir Flyway (ou Liquibase), congelar `ddl-auto=validate` em produção, versionar os `.sql` avulsos que já existem em `static/`. *(Não aplicado nesta rodada — exige acesso ao schema real de hml/prod para gerar uma baseline confiável; ver observação abaixo.)*
+### Onda 2 — concluída
+Flyway introduzido, os 11 scripts de `static/*.sql` versionados em `db/migration/V1..V11` com baseline seguro para `hml`/`prod`. Falta só travar `ddl-auto=validate` (ver [E-C1](#e-c1)) — não feito nesta rodada por decisão explícita: exige confirmar com acesso real ao banco de `hml` (depois `prod`) que o schema bate com as entidades antes de travar, senão o app pode não subir no próximo deploy.
 
 ### Onda 4 — Débito técnico contínuo (backlog, sem urgência)
-Tudo marcado 🟡/🔵 nas seções abaixo: duplicação entre provedores de e-mail, god classes, nomenclatura inconsistente, paginação das telas com "selecionar todos" (D-P1 restante).
+Os itens 🟡 restantes: acoplamento aceito por design em `CombinedScoreCancellationService` (C-A4) e paginação das telas com "selecionar todos os filtrados" (D-P1) — ambos exigem redesenho de fluxo, não troca mecânica.
 
 ---
 
@@ -136,8 +134,7 @@ Nenhum bloco relevante de código morto/comentado encontrado. Comentários de le
 
 ### C · Clareza / código confuso
 
-- [ ] 🟠 **[C-C1] Parsing de PDF de fornecedor por regex/split posicional sem tolerância a formato alternativo**
-  **Local:** `service/purchase/PurchaseProcessingService.extractProducts/parseProductLine:123-234`. Assume layout fixo de colunas; qualquer mudança no PDF do fornecedor quebra a extração de forma imprevisível. `catch (Exception e)` em `:97-98` embrulha qualquer erro (incluindo bugs do próprio parser) na mesma mensagem genérica.
+Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos (`[C-C1]`: detecção do cabeçalho do PDF agora tolera variação de maiúsculas/minúsculas, e o `catch (Exception e)` genérico de `PurchaseProcessingService.processPurchaseFile` agora usa `PurchaseException(message, cause, unexpected=true)`, que loga com stacktrace completo — diferenciando, no log, um bug real do parser de uma falha de validação esperada, como layout de PDF não reconhecido. O parsing continua assumindo colunas fixas por natureza do problema — não há como tolerar layout arbitrário sem amostras reais de formatos alternativos do fornecedor).
 
 ### C · Duplicação de código
 
@@ -165,13 +162,7 @@ Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos.
 
 O README documenta 3 regras: *"Controllers nunca acessam repository diretamente"*, *"Endpoints sensíveis exigem `@PreAuthorize(\"hasRole('MANAGER')\")`"*, *"DTOs via MapStruct — entidades JPA não são expostas diretamente"*.
 
-- [ ] 🟠 **[D-V3] `PurchaseMapper` nunca é usado — `Purchase` (entidade JPA) atravessa service→controller e é mapeada manualmente em 5 lugares**
-  **Local:** `mapper/PurchaseMapper.java` (morto, zero referências); repetido manualmente em `controller/purchase/PurchaseController.java:44-52`, `service/purchase/PurchaseService.java:~193,~263,~284`, `service/purchase/CapturaNotaPendenteService.java:124`.
-  ```java
-  Purchase purchase = purchaseService.createManualPurchase(request);
-  return ResponseEntity.ok(new PurchaseResponse(purchase.getId(), purchase.getPurchaseDate(), purchase.getTotal(), purchase.getUpdatedAt()));
-  ```
-  Mudança futura em `PurchaseResponse` exige tocar em 5 arquivos manualmente. Usar o mapper já existente e hoje inerte.
+Nenhum achado em aberto — `[D-V3]` resolvido: `PurchaseMapper` (que já existia, mas nunca era injetado) agora é usado nos 5 pontos que antes montavam `PurchaseResponse` manualmente (`PurchaseController.createManualPurchase`, `PurchaseService.getPurchasesByClientOrdered`/`getPurchasesByDateRange` (2 sobrecargas) e `CapturaNotaPendenteService.confirmarComoCompra`) — mudança futura em `PurchaseResponse` agora só precisa tocar o mapper.
 
 ### D · Qualidade da camada de Controller
 
@@ -215,12 +206,7 @@ Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos 
 
 ### E · Acoplamento excessivo
 
-- [ ] 🟠 **[E-R1] Nome de enum totalmente qualificado repetido como literal de string dentro de `@Query`, 6 vezes**
-  **Local:** `repository/purchase/CombinedScoreRepository.java` linhas 28,33,41,46,76,89-90
-  ```java
-  @Query("SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE AND cs.hasBillet = true")
-  ```
-  JPQL não é verificado em tempo de compilação — mover/renomear `Status` quebra essas 6 queries silenciosamente, só detectável em runtime.
+Nenhum achado em aberto — `[E-R1]` resolvido: as 6 queries de `CombinedScoreRepository` que embutiam `com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE` como literal de string (`findAllPendingWithBilletByClient`, `findAllPendingByClient`, `findOverdueUnpaidScoresByClient`, `findAllOpenBillets`, `findOverduePendingScores`, `findAllOpenInvoiceOnly`) agora recebem `Status` como parâmetro `@Param` (JPQL passa a usar `:status`); os 4 call sites usados (`CombinedScoreService`) passam `Status.PENDENTE` como referência Java normal, checada em tempo de compilação — renomear/mover `Status` agora quebra o build em vez de falhar silenciosamente em runtime.
 
 Demais achados desta categoria já foram corrigidos: `TransactionRepository` (E-R2) agora compõe `Specification`s combináveis via `TransactionSpecifications` em vez de multiplicar métodos `@Query` — os 3 que não tinham nenhum caller (`...AndStatementOrigin`, `...AndTransactionType`, `...AndCategory`) e o `existsByHash` morto foram removidos; `findAllCategories` (E-R3) agora retorna `List<Category>` (a conversão pra `List<String>` do contrato da API fica no service, não no repositório); `PurchaseRepository.sumTotalGroupedByClientId` (E-R4) retorna `List<ClientPurchaseTotal>` (record via constructor expression) em vez de `List<Object[]>`.
 
@@ -234,16 +220,14 @@ Nenhum achado em aberto — todos os itens desta categoria já foram corrigidos 
 
 ### E · Comentários desnecessários / código morto
 
-- [ ] 🔵 **[E-CM1] Linha de configuração comentada residual**
-  **Local:** `application.properties:270` — `#debug=true`. Sem efeito, ruído a remover.
-
-*(Nenhum outro bloco de código morto comentado encontrado em `model/**`/`repository/**`.)*
+Nenhum achado em aberto — `[E-CM1]` resolvido: a linha `#debug=true` comentada e sem efeito foi removida de `application.properties`. Nenhum outro bloco de código morto comentado encontrado em `model/**`/`repository/**`.
 
 ### E · Configuração / Build
 
 <a id="e-c1"></a>
-- [ ] 🔴 **[E-C1] `ddl-auto=update` em produção, sem Flyway/Liquibase**
-  **Local:** `application-local.properties:9`, `application-hml.properties:11`, `application-prod.properties:12` (os 3 ambientes) — `spring.jpa.hibernate.ddl-auto=update`. `pom.xml` não tem Flyway nem Liquibase. O Hibernate altera o schema de produção automaticamente a cada deploy, por inferência das entidades — sem histórico de migração versionado, sem plano de rollback. Reforçado por scripts SQL manuais em `static/*.sql` (`billet_files_migration.sql`, `fiscal_note_xml_storage_migration.sql`, etc.) que existem no repositório mas não são aplicados automaticamente por nenhuma ferramenta — dependem de alguém lembrar de rodá-los manualmente, facilmente divergindo entre `hml` e `prod`.
+- [ ] 🟡 **[E-C1] `ddl-auto=update` continua ativo (não `validate`) — Flyway já introduzido** *(parcialmente resolvido, rebaixado de 🔴 para 🟡)*
+  Flyway foi adicionado (`org.flywaydb:flyway-core`/`flyway-mysql` no `pom.xml`) e os 11 scripts de `static/*.sql` foram versionados em `src/main/resources/db/migration/V1__...` a `V11__...` (mesmo conteúdo, com guarda adicional por `INFORMATION_SCHEMA.TABLES` para funcionar também num banco novo — Flyway roda antes do Hibernate criar as tabelas das entidades). Configurado com `spring.flyway.baseline-on-migrate=true`/`baseline-version=11`: em `hml`/`prod` (bancos já existentes) o Flyway só marca a versão 11 como baseline, sem reexecutar nada — testado com um MySQL descartável simulando os dois cenários (banco vazio e banco com schema legado) antes de aplicar; ambos passaram sem erro. Mudanças de schema futuras agora entram como `V12__...` em diante, versionadas e com histórico (`flyway_schema_history`).
+  **Resta em aberto:** `spring.jpa.hibernate.ddl-auto` continua `update` nos 3 ambientes — não foi travado para `validate`. Travar exige confirmar, com acesso real ao banco de `hml`/`prod`, que o schema batia exatamente com as entidades no momento da troca; sem isso o risco é a aplicação não subir no próximo deploy. Ficou de fora desta rodada por decisão explícita (ver discussão no PR) — plano: trocar `hml` para `validate` primeiro, confirmar boot limpo, só então `prod`.
 
 ---
 

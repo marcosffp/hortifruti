@@ -5,6 +5,7 @@ import com.hortifruti.sl.hortifruti.dto.purchase.InvoiceProductResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.ManualPurchaseItemRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.ManualPurchaseRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.PurchaseResponse;
+import com.hortifruti.sl.hortifruti.mapper.PurchaseMapper;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
 import com.hortifruti.sl.hortifruti.service.purchase.PurchaseService;
 import jakarta.validation.Valid;
@@ -26,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class PurchaseController {
 
   private final PurchaseService purchaseService;
+  private final PurchaseMapper purchaseMapper;
 
   @PreAuthorize("hasRole('MANAGER')")
   @PostMapping(value = "/process", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -40,12 +42,7 @@ public class PurchaseController {
   public ResponseEntity<PurchaseResponse> createManualPurchase(
       @Valid @RequestBody ManualPurchaseRequest request) {
     Purchase purchase = purchaseService.createManualPurchase(request);
-    return ResponseEntity.ok(
-        new PurchaseResponse(
-            purchase.getId(),
-            purchase.getPurchaseDate(),
-            purchase.getTotal(),
-            purchase.getUpdatedAt()));
+    return ResponseEntity.ok(purchaseMapper.toResponse(purchase));
   }
 
   @PreAuthorize("hasRole('MANAGER')")

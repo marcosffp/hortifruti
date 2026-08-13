@@ -7,6 +7,7 @@ import com.hortifruti.sl.hortifruti.dto.purchase.PurchaseResponse;
 import com.hortifruti.sl.hortifruti.exception.purchase.ClientException;
 import com.hortifruti.sl.hortifruti.exception.purchase.PurchaseException;
 import com.hortifruti.sl.hortifruti.mapper.InvoiceProductMapper;
+import com.hortifruti.sl.hortifruti.mapper.PurchaseMapper;
 import com.hortifruti.sl.hortifruti.model.product.FiscalProduct;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.model.purchase.InvoiceProduct;
@@ -37,6 +38,7 @@ public class PurchaseService {
   private final PurchaseRepository purchaseRepository;
   private final ClientRepository clientRepository;
   private final InvoiceProductMapper invoiceProductMapper;
+  private final PurchaseMapper purchaseMapper;
   private final InvoiceProductRepository invoiceProductRepository;
   private final FiscalProductRepository fiscalProductRepository;
   private final R2StorageService r2StorageService;
@@ -198,13 +200,7 @@ public class PurchaseService {
 
     return purchaseRepository
         .findByClientIdOrderByCreatedAtDesc(clientId, pageable)
-        .map(
-            purchase ->
-                new PurchaseResponse(
-                    purchase.getId(),
-                    purchase.getPurchaseDate(),
-                    purchase.getTotal(),
-                    purchase.getUpdatedAt()));
+        .map(purchaseMapper::toResponse);
   }
 
   /**
@@ -270,13 +266,7 @@ public class PurchaseService {
         purchaseRepository.findByPurchaseDateBetweenOrderByPurchaseDateDesc(
             startDate, endDate, pageable);
 
-    return purchases.map(
-        purchase ->
-            new PurchaseResponse(
-                purchase.getId(),
-                purchase.getPurchaseDate(),
-                purchase.getTotal(),
-                purchase.getUpdatedAt()));
+    return purchases.map(purchaseMapper::toResponse);
   }
 
   @Transactional(readOnly = true)
@@ -290,12 +280,6 @@ public class PurchaseService {
     Page<Purchase> purchases =
         purchaseRepository.findByPurchaseDateBetweenOrderByPurchaseDateDesc(start, end, pageable);
 
-    return purchases.map(
-        purchase ->
-            new PurchaseResponse(
-                purchase.getId(),
-                purchase.getPurchaseDate(),
-                purchase.getTotal(),
-                purchase.getUpdatedAt()));
+    return purchases.map(purchaseMapper::toResponse);
   }
 }

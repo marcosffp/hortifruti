@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.repository.purchase;
 
 import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
+import com.hortifruti.sl.hortifruti.model.purchase.Status;
 import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
 import java.util.List;
@@ -25,26 +26,29 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
   Optional<CombinedScore> findByIdForUpdate(@Param("id") Long id);
 
   @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE AND cs.hasBillet = true")
-  List<CombinedScore> findAllPendingWithBilletByClient(@Param("clientId") Long clientId);
+      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = :status AND cs.hasBillet = true")
+  List<CombinedScore> findAllPendingWithBilletByClient(
+      @Param("clientId") Long clientId, @Param("status") Status status);
 
   /** Busca todos os CombinedScores pendentes (com ou sem documentos) para um cliente */
   @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE ORDER BY cs.dueDate ASC")
-  List<CombinedScore> findAllPendingByClient(@Param("clientId") Long clientId);
+      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.status = :status ORDER BY cs.dueDate ASC")
+  List<CombinedScore> findAllPendingByClient(
+      @Param("clientId") Long clientId, @Param("status") Status status);
 
   Page<CombinedScore> findByClientIdOrderByIdDesc(Long clientId, Pageable pageable);
 
   Page<CombinedScore> findAllByOrderByIdDesc(Pageable pageable);
 
   @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.dueDate < :currentDate AND cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE")
+      "SELECT cs FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.dueDate < :currentDate AND cs.status = :status")
   List<CombinedScore> findOverdueUnpaidScoresByClient(
-      @Param("clientId") Long clientId, @Param("currentDate") LocalDate currentDate);
+      @Param("clientId") Long clientId,
+      @Param("currentDate") LocalDate currentDate,
+      @Param("status") Status status);
 
-  @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE AND cs.hasBillet = true")
-  List<CombinedScore> findAllOpenBillets();
+  @Query("SELECT cs FROM CombinedScore cs WHERE cs.status = :status AND cs.hasBillet = true")
+  List<CombinedScore> findAllOpenBillets(@Param("status") Status status);
 
   @Query(
       "SELECT cs FROM CombinedScore cs WHERE cs.id IN "
@@ -72,9 +76,9 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
       "SELECT cs.invoiceRef FROM CombinedScore cs WHERE cs.clientId = :clientId AND cs.hasInvoice = true AND cs.invoiceRef IS NOT NULL")
   List<String> findAllInvoiceRefsByClientId(@Param("clientId") Long clientId);
 
-  @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE AND cs.dueDate <= :date")
-  List<CombinedScore> findOverduePendingScores(@Param("date") LocalDate date);
+  @Query("SELECT cs FROM CombinedScore cs WHERE cs.status = :status AND cs.dueDate <= :date")
+  List<CombinedScore> findOverduePendingScores(
+      @Param("date") LocalDate date, @Param("status") Status status);
 
   @Query(
       "SELECT cs FROM CombinedScore cs WHERE cs.hasInvoice = true AND cs.confirmedAt BETWEEN :startDate AND :endDate")
@@ -88,7 +92,7 @@ public interface CombinedScoreRepository extends JpaRepository<CombinedScore, Lo
    * manual de pagamento.
    */
   @Query(
-      "SELECT cs FROM CombinedScore cs WHERE cs.status = com.hortifruti.sl.hortifruti.model.purchase.Status.PENDENTE AND cs.hasInvoice = true AND"
+      "SELECT cs FROM CombinedScore cs WHERE cs.status = :status AND cs.hasInvoice = true AND"
           + " cs.hasBillet = false")
-  List<CombinedScore> findAllOpenInvoiceOnly();
+  List<CombinedScore> findAllOpenInvoiceOnly(@Param("status") Status status);
 }

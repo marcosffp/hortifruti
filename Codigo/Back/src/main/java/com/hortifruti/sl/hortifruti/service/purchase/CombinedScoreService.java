@@ -367,15 +367,15 @@ public class CombinedScoreService {
    * independentemente do dueDate calculado na criação do agrupamento.
    */
   public List<CombinedScore> findAllPendingWithBilletByClient(Long clientId) {
-    return combinedScoreRepository.findAllPendingWithBilletByClient(clientId);
+    return combinedScoreRepository.findAllPendingWithBilletByClient(clientId, Status.PENDENTE);
   }
 
   public List<CombinedScore> findAllPendingByClient(Long clientId) {
-    return combinedScoreRepository.findAllPendingByClient(clientId);
+    return combinedScoreRepository.findAllPendingByClient(clientId, Status.PENDENTE);
   }
 
   public List<CombinedScore> findAllOpenBillets() {
-    return combinedScoreRepository.findAllOpenBillets();
+    return combinedScoreRepository.findAllOpenBillets(Status.PENDENTE);
   }
 
   public Optional<CombinedScore> findByInvoiceRef(String invoiceRef) {
@@ -443,7 +443,7 @@ public class CombinedScoreService {
 
   @Transactional(readOnly = true)
   public List<OpenInvoiceResponse> listOpenInvoiceOnlyScores() {
-    List<CombinedScore> scores = combinedScoreRepository.findAllOpenInvoiceOnly();
+    List<CombinedScore> scores = combinedScoreRepository.findAllOpenInvoiceOnly(Status.PENDENTE);
     if (scores.isEmpty()) {
       return List.of();
     }
