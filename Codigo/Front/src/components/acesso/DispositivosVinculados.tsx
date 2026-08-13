@@ -10,7 +10,7 @@ import {
   type Dispositivo,
   dispositivoService,
 } from "@/services/dispositivoService";
-import { showError, showSuccess } from "@/services/notificationService";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 type PareamentoAtivo = {
   codigo: string;

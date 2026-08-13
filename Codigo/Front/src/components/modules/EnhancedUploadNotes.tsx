@@ -4,7 +4,7 @@ import { ArrowUp } from "lucide-react";
 import { useRef, useState } from "react";
 import Loading from "@/components/ui/Loading";
 import { useUpload } from "@/hooks/useUpload";
-import { showError, showSuccess } from "@/services/notificationService";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 type EnhancedUploadNotesProps = {
   clientId: number | undefined;

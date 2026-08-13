@@ -1,6 +1,6 @@
 "use client";
 
-import { API_BASE_URL } from "@/config/api";
+import { API_BASE_URL_WITH_API_PREFIX } from "@/config/api";
 
 export interface BulkNotificationRequest {
   files: File[];
@@ -76,7 +76,7 @@ export const bulkNotificationService = {
 
     // NÃO definir Content-Type - o browser define automaticamente com boundary correto
     const response = await fetch(
-      `${API_BASE_URL}/api/notifications/accounting/generic-files`,
+      `${API_BASE_URL_WITH_API_PREFIX}/notifications/accounting/generic-files`,
       {
         method: "POST",
         headers,
@@ -152,7 +152,7 @@ export const bulkNotificationService = {
         }
 
         const response = await fetch(
-          `${API_BASE_URL}/api/notifications/client/documents`,
+          `${API_BASE_URL_WITH_API_PREFIX}/notifications/client/documents`,
           {
             method: "POST",
             headers,
@@ -211,7 +211,7 @@ export const bulkNotificationService = {
   async getAccountingRecipients(): Promise<string[]> {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/notifications/accounting/recipients`,
+        `${API_BASE_URL_WITH_API_PREFIX}/notifications/accounting/recipients`,
         {
           method: "GET",
           credentials: "include",
@@ -233,11 +233,14 @@ export const bulkNotificationService = {
         "Content-Type": "application/json",
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/notifications/test`, {
-        method: "GET",
-        headers,
-        credentials: "include",
-      });
+      const response = await fetch(
+        `${API_BASE_URL_WITH_API_PREFIX}/notifications/test`,
+        {
+          method: "GET",
+          headers,
+          credentials: "include",
+        },
+      );
 
       return response.ok;
     } catch (error) {

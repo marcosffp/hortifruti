@@ -5,6 +5,7 @@ import {
   type BankBalance,
   bankBalanceService,
 } from "@/services/bankBalanceService";
+import { getErrorMessage } from "@/types/errorType";
 
 export function useBankBalance() {
   const [balance, setBalance] = useState<BankBalance | null>(null);
@@ -21,9 +22,7 @@ export function useBankBalance() {
       if (err instanceof DOMException && err.name === "AbortError") {
         return;
       }
-      setError(
-        err instanceof Error ? err.message : "Erro ao buscar saldo bancário.",
-      );
+      setError(getErrorMessage(err));
     } finally {
       if (!signal?.aborted) {
         setIsLoading(false);

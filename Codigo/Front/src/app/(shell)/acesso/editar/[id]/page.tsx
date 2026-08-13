@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
 import RoleGuard from "@/components/auth/RoleGuard";
 import Button from "@/components/ui/Button";
-import { backupService } from "@/services/acessoService";
-import { showError, showSuccess } from "@/services/notificationService";
+import { userAdminService } from "@/services/userAdminService";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 interface EditarUsuarioPageProps {
   readonly params: Promise<{
@@ -36,7 +36,7 @@ const EditarUsuarioPage = ({ params }: EditarUsuarioPageProps) => {
       try {
         setIsLoading(true);
         setError("");
-        const userData = await backupService.getUserById(userId);
+        const userData = await userAdminService.getUserById(userId);
         setFormData({
           name: userData.nome || "",
           cargo: userData.cargo || "",
@@ -72,7 +72,7 @@ const EditarUsuarioPage = ({ params }: EditarUsuarioPageProps) => {
         perfil: formData.perfil as "Funcionário" | "Gestor" | undefined,
         password: formData.password,
       };
-      await backupService.updateUser(userId, userData);
+      await userAdminService.updateUser(userId, userData);
       showSuccess("Usuário atualizado com sucesso!");
       localStorage.setItem("shouldReloadUsers", "true");
       router.push("/acesso");

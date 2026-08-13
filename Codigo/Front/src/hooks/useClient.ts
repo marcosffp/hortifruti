@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { API_BASE_URL } from "@/config/api";
-import { getAuthHeaders } from "@/utils/httpUtils";
+import { clientService } from "@/services/clientService";
+import { getErrorMessage } from "@/types/errorType";
 
 export function useClient() {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,20 +16,9 @@ export function useClient() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/clients/${clientId}`, {
-        method: "GET",
-        headers: getAuthHeaders(),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error(`Erro ao buscar cliente: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
+      return await clientService.getClientById(clientId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao buscar cliente");
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);

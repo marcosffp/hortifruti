@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import ClientForm, { type ClientFormData } from "@/components/forms/ClientForm";
 import { clientService } from "@/services/clientService";
-import { showError, showSuccess } from "@/services/notificationService";
 import { formatAddressForBackend } from "@/utils/addressUtils";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 export default function NovoClientePage() {
   const router = useRouter();

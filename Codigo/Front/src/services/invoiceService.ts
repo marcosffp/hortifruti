@@ -8,8 +8,26 @@ import type {
 } from "@/types/invoiceType";
 import { getAuthHeaders } from "@/utils/httpUtils";
 
-function base64ToBlob(base64: string, mimeType: string): Blob {
-  const byteCharacters = atob(base64);
+function base64ToBlob(
+  base64: string,
+  mimeType: string,
+  fieldName: string,
+): Blob {
+  if (!base64 || typeof base64 !== "string") {
+    throw new Error(
+      `Resposta do servidor veio sem o campo "${fieldName}" esperado`,
+    );
+  }
+
+  let byteCharacters: string;
+  try {
+    byteCharacters = atob(base64);
+  } catch {
+    throw new Error(
+      `Campo "${fieldName}" da resposta do servidor não é um base64 válido`,
+    );
+  }
+
   const byteNumbers = new Array(byteCharacters.length);
   for (let i = 0; i < byteCharacters.length; i++) {
     byteNumbers[i] = byteCharacters.charCodeAt(i);
@@ -162,9 +180,17 @@ export const invoiceService = {
         invoiceRef: result.invoiceRef,
         invoiceNumber: result.invoiceNumber,
         billetNumber: result.billetNumber,
-        danfeBlob: base64ToBlob(result.danfeBase64, "application/pdf"),
-        xmlBlob: base64ToBlob(result.xmlBase64, "application/xml"),
-        billetBlob: base64ToBlob(result.billetBase64, "application/pdf"),
+        danfeBlob: base64ToBlob(
+          result.danfeBase64,
+          "application/pdf",
+          "danfeBase64",
+        ),
+        xmlBlob: base64ToBlob(result.xmlBase64, "application/xml", "xmlBase64"),
+        billetBlob: base64ToBlob(
+          result.billetBase64,
+          "application/pdf",
+          "billetBase64",
+        ),
       };
     } catch (error) {
       console.error("Falha ao gerar nota fiscal e boleto vinculado:", error);

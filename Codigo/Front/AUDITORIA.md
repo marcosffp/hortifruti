@@ -31,8 +31,8 @@ Dito isso, a auditoria encontrou um problema estrutural sério: **o controle de 
 
 | Severidade | Qtde. aprox. | Onde estão os mais graves |
 |---|---|---|
-| 🔴 Crítico | **4** | Guarda de rota ausente (`/lancamentos`, `/dev/teste-nota`), `AuthGuard` não bloqueia render, `acessoService` mascara falha como sucesso |
-| 🟠 Alto | **~9** | Páginas sem `RoleGuard` (recomendações, boletos), backup "simulado" retorna sucesso em falha, dois `backupService` com nomes colidindo, componentes com `fetch` cru embutido, "componente Deus" de 1054 linhas |
+| 🔴 Crítico | **4** | Guarda de rota ausente (`/lancamentos`, `/dev/teste-nota`), `AuthGuard` não bloqueia render, `userAdminService` mascara falha como sucesso |
+| 🟠 Alto | **~6** | Páginas sem `RoleGuard` (recomendações, boletos), backup "simulado" retorna sucesso em falha, componentes com `fetch` cru embutido |
 | 🟡 Médio | **~35** | Padrão sistêmico de guarda só no menu, componentes pulando a camada de hook, duplicação de formatação em 9+ arquivos, CSP com `unsafe-inline` em estilos |
 | 🔵 Baixo | **~40** | Código morto (tabelas mockadas, componente duplicado), nomenclatura, comentários residuais |
 
@@ -41,7 +41,7 @@ Dito isso, a auditoria encontrou um problema estrutural sério: **o controle de 
 1. **`/dev/teste-nota` está acessível em produção sem login algum** — fica fora do route group protegido, e o próprio comentário no topo do arquivo diz "REMOVER ANTES DO MERGE FINAL". ([Área A, item A-V1](#a-v1))
 2. **`/lancamentos` — tela de dados financeiros/bancários documentada como exclusiva do Gestor — não tem `RoleGuard` no conteúdo principal**, só em um botão isolado; qualquer Funcionário ou Contador autenticado edita/exclui lançamentos via URL direta. ([Área A, item A-V2](#a-v2))
 3. **`AuthGuard` decide se renderiza o conteúdo protegido olhando só `isAuthChecked`, nunca `isAuthenticated`** — e como o componente vive no layout persistente do `(shell)` sem resetar esse estado a cada navegação, existe uma janela real em que a tela renderiza com o estado de sessão da rota anterior. ([Área B, item B-V1](#b-v1))
-4. **`acessoService.createUser`/`deleteUser` retornam sucesso mesmo quando a chamada ao backend falha** (inclusive fabricando um usuário fake com `id: Date.now()`) — um admin pode achar que revogou o acesso de um funcionário desligado quando, na verdade, a exclusão nunca aconteceu. ([Área C, item C-V1](#c-v1))
+4. **`userAdminService.createUser`/`deleteUser` retornam sucesso mesmo quando a chamada ao backend falha** (inclusive fabricando um usuário fake com `id: Date.now()`) — um admin pode achar que revogou o acesso de um funcionário desligado quando, na verdade, a exclusão nunca aconteceu. ([Área C, item C-V1](#c-v1))
 
 Curiosamente, assim como no backend, "comentários desnecessários" foi a categoria com menos achados — o problema real está concentrado em **guarda de acesso inconsistente entre menu e rota** e em **services que escondem falhas reais atrás de mensagens de sucesso**.
 
@@ -53,23 +53,21 @@ Curiosamente, assim como no backend, "comentários desnecessários" foi a catego
 - [ ] **A-V1** — Remover (ou proteger com `AuthGuard` + flag de ambiente) a rota `src/app/dev/teste-nota`.
 - [ ] **A-V2** — Envolver o conteúdo principal de `src/app/(shell)/lancamentos/page.tsx` com `<RoleGuard roles="MANAGER">`.
 - [ ] **B-V1** — Corrigir `AuthGuard.tsx`: condicionar `return <>{children}</>` também a `isAuthenticated`, e resetar `isAuthChecked` para `false` no início do `useEffect` a cada troca de `pathname`.
-- [ ] **C-V1** — Remover os `catch` que retornam sucesso fictício em `acessoService.createUser`/`deleteUser`; propagar o erro real para a UI.
-- [ ] **C-V2** — Remover o fallback "Backup simulado realizado com sucesso!" em `acessoService.performBackup`/`restoreBackup`; propagar falha real.
+- [ ] **C-V1** — Remover os `catch` que retornam sucesso fictício em `userAdminService.createUser`/`deleteUser`; propagar o erro real para a UI.
+- [ ] **C-V2** — Remover o fallback "Backup simulado realizado com sucesso!" em `userAdminService.performBackup`/`restoreBackup`; propagar falha real.
 - [ ] **A-V3**/**A-V4** — Adicionar `RoleGuard` faltante em `/comercio/recomendacoes` e `/comercio/boletos`.
 
 ### Onda 2 — Fechar o padrão sistêmico de guarda (3 a 5 dias)
 - [ ] Aplicar `RoleGuard` de forma consistente em todas as rotas marcadas ❌/⚠️ na [tabela do apêndice](#6-apêndice--cobertura-de-guarda-de-papel-por-rota) — idealmente extraindo um wrapper único (`<RestrictedPage roles={...}>`) usado no `layout.tsx` de cada seção, para eliminar a chance desse padrão se repetir no futuro.
-- [ ] **C-B1** — Renomear um dos dois `backupService` (sugestão: `acessoService`'s export interno para `userAdminService`) para eliminar a armadilha de import.
 - [ ] **B-A1** — Extrair a lógica de `fetch` cru de `NotaRevisaoModal.tsx`/`NotasPendentesFila.tsx` para um `capturaNotaService`.
 
 ### Onda 3 — Estrutural, por módulo (1 a 2 semanas)
-- [ ] Quebrar `CombinedScoresCards.tsx` (1054 linhas, 13 `useState` de modal) em hook de dados + subcomponentes + um discriminated union para o modal ativo.
 - [ ] Quebrar `comercio/boletos/page.tsx` (1959 linhas) em 3 componentes de página (uma por aba) + hook/service genérico parametrizado por tipo de cobrança.
 - [ ] Extrair `formatCurrency`/`getStatusColor`/intervalos de data para `src/utils`, hoje duplicados em 9+ arquivos.
 - [ ] Proxiar a chamada de roteamento de `Map.tsx` (hoje vai direto para o servidor de demonstração público do OSRM) pelo backend, como já é feito para o Google Places.
 
 ### Onda 4 — Débito técnico contínuo (backlog, sem urgência)
-Tudo marcado 🟡/🔵 nas seções abaixo: componentes/tabelas mortas (`UserCard.tsx`, `BilletsTable.tsx`, `NotesTable.tsx`), CSP `unsafe-inline` em `style-src`, "criptografia" client-side teatral do rascunho de notificações, tipos de paginação duplicados, extração de mensagem de erro reimplementada ~21 vezes em vez de usar `getErrorMessage` já existente.
+Tudo marcado 🟡/🔵 nas seções abaixo: componentes/tabelas mortas (`BilletsTable.tsx`, `NotesTable.tsx`), CSP `unsafe-inline` em `style-src`, "criptografia" client-side teatral do rascunho de notificações.
 
 ---
 
@@ -194,26 +192,24 @@ Tudo marcado 🟡/🔵 nas seções abaixo: componentes/tabelas mortas (`UserCar
 Arquitetura documentada prevê Componente → Hook → Service. Na prática, boa parte dos modais e algumas tabelas pulam a camada de hook:
 
 - [ ] 🟡 **[B-A1] Componentes que chamam `service` diretamente, sem hook intermediário** *(11 ocorrências)*
-  `ClientForm.tsx:7,131` (cepService), `GroupedProductsModal.tsx:6,26-27`, `CombinedScoreImagesModal.tsx:6,40,54-61` (e ainda faz `fetch` cru), `CreateManualPurchaseModal.tsx:7,9,80-88,134`, `FreightConfigsModal.tsx:3,82-83`, `ClientDetailModal.tsx:16,107`, `InvoiceProductsModal.tsx:8,9,46-165`, `ClientProductsTable.tsx:3,5,90-127`, `PurchaseFilesTable.tsx:8,10,91-183`, `FreightConfigInfo.tsx:5,35-41`, `CombinedScoresCards.tsx:24-27,160-274` (mistura hooks **e** chamada direta no mesmo arquivo).
+  `ClientForm.tsx:7,131` (cepService), `GroupedProductsModal.tsx:6,26-27`, `CombinedScoreImagesModal.tsx:6,40,54-61` (e ainda faz `fetch` cru), `CreateManualPurchaseModal.tsx:7,9,80-88,134`, `FreightConfigsModal.tsx:3,82-83`, `ClientDetailModal.tsx:16,107`, `InvoiceProductsModal.tsx:8,9,46-165`, `ClientProductsTable.tsx:3,5,90-127`, `PurchaseFilesTable.tsx:8,10,91-183`, `FreightConfigInfo.tsx:5,35-41`, `CombinedScoresCards.tsx:12-14,112,127,130,188` (mistura hooks **e** chamada direta no mesmo arquivo).
 
 - [ ] 🟠 **[B-A2] Componentes que fazem `fetch` cru, sem passar nem por hook nem por service**
   **Locais:** `NotaRevisaoModal.tsx:226-248` (monta URL/headers/body/erro completo dentro do modal — caso mais grave, nem hook nem service), `NotasPendentesFila.tsx:64-143` (3 `fetch` diretos, cada um com sua própria extração de erro duplicada), `ClientSummaryCards.tsx:27-51`.
 
 - [ ] 🟡 **[B-A3] Duplicação de formatação/lógica entre arquivos, sem utilitário compartilhado** *(grep confirmou zero `export function formatCurrency` em `src/utils`)*
-  - `formatCurrency` reimplementado de forma idêntica em **9 arquivos**: `GroupedProductsModal.tsx:41-46`, `ShowBilletDataModal.tsx:117-122`, `InvoiceProductsModal.tsx:167-172`, `CreateManualPurchaseModal.tsx:114-118`, `ShowInvoiceDataModal.tsx:90-95`, `CombinedScoreImagesModal.tsx:17-22`, `NotaRevisaoModal.tsx:134-139`, `CombinedScoresCards.tsx:597-602`, `PurchaseFilesTable.tsx:199-204`.
+  - `formatCurrency` reimplementado de forma idêntica em **9 arquivos**: `GroupedProductsModal.tsx:41-46`, `ShowBilletDataModal.tsx:117-122`, `InvoiceProductsModal.tsx:167-172`, `CreateManualPurchaseModal.tsx:114-118`, `ShowInvoiceDataModal.tsx:90-95`, `CombinedScoreImagesModal.tsx:17-22`, `NotaRevisaoModal.tsx:134-139`, `combined-scores/formatters.ts:14-18`, `PurchaseFilesTable.tsx:199-204`.
   - Mesmo padrão de `.toLocaleString` repetido dezenas de vezes em `CashFlow.tsx` e `FreightConfigInfo.tsx:21-24,197-200`.
-  - `getStatusColor` duplicado em `ShowBilletDataModal.tsx:124-139`, `ShowInvoiceDataModal.tsx:107-121`, `CombinedScoresCards.tsx:604-617`.
+  - `getStatusColor` duplicado em `ShowBilletDataModal.tsx:124-139`, `ShowInvoiceDataModal.tsx:107-121`, `combined-scores/formatters.ts:21-33`.
   - `getWeekInterval`/`getLastMonthInterval` **copiadas literalmente** entre `ClientProductsTable.tsx:13-42` e `PurchaseFilesTable.tsx:20-49`.
   - Padrão de "recalcular o 3º campo numérico a partir dos outros dois" (`recalcRow`/`round`/`NumericField`) duplicado quase byte-a-byte entre `CreateManualPurchaseModal.tsx:19-66` e `NotaRevisaoModal.tsx:60-118` — candidato a hook compartilhado.
   - Normalização de texto para busca (`normalize()` + regex de diacríticos) duplicada 3× com o mesmo comentário: `ClientAutocompleteField.tsx:6-19`, `ProductAutocompleteField.tsx:6-19`, `ClientSelector.tsx:10-21`.
 
 - [ ] 🟡 **[B-A4] Regra fiscal/comercial hardcoded como string mágica em componente de UI**
-  **Local:** `src/components/modules/CombinedScoresCards.tsx:452-454,525-527` — decide se exige "dados adicionais" na nota fiscal comparando o nome do cliente contra o literal `"LLINEA"`, duplicado em 2 handlers dentro de um componente de 1000+ linhas.
+  **Local:** `src/components/modules/CombinedScoresCards.tsx:301,372` — decide se exige "dados adicionais" na nota fiscal comparando o nome do cliente contra o literal `"LLINEA"`, duplicado em 2 handlers.
 
 ### B · Baixa coesão (arquivos "kitchen sink" / código morto)
 
-- [ ] 🟡 **[B-B1] `UserCard.tsx` exporta um componente chamado `ClientCard`, duplicando (com contrato de props diferente) o `ClientCard.tsx` real**
-  **Local:** `src/components/modules/UserCard.tsx` — nome de arquivo enganoso, confirmado via grep que nenhum arquivo importa `UserCard`; risco de alguém editar o arquivo errado ou reintroduzir o duplicado.
 - [ ] 🔵 **[B-B2] Tabelas inteiramente mockadas, nunca importadas em lugar nenhum**
   **Locais:** `src/components/modules/tables/BilletsTable.tsx`, `NotesTable.tsx` — dados hardcoded (`"BOL123"`, `"R$ 500,00"`), scaffolding esquecido de fase inicial.
 - [ ] 🔵 **[B-B3] Componente de exemplo estático deixado como se fosse reutilizável**
@@ -221,21 +217,14 @@ Arquitetura documentada prevê Componente → Hook → Service. Na prática, boa
 
 ### B · Clareza / código confuso
 
-- [ ] 🟠 **[B-C1] `CombinedScoresCards.tsx` — 1054 linhas, "componente Deus"**
-  Fetch, derivação de status, 13 estados de modal, regra fiscal hardcoded e formatação, tudo no mesmo arquivo — maior prioridade de refatoração do lote de componentes.
-- [ ] 🟠 **[B-C2] 13 variáveis de estado independentes só para controlar "qual modal está aberto"**
-  **Local:** `CombinedScoresCards.tsx:57-99` — `clientNumberModal`, `showAdditionalDataModal`, `pendingInvoiceScore`, `pendingCombinedFlow`, `showWildcardBilletModal`, `deleteConfirmScore`, `productsModalScore`, `imagesModalScore`, `billetResultModal`, `billetDataModalScore`, `invoiceResultModal`, `invoiceDataModalScore`, `invoiceBilletResultModal`. Nada impede dois "modais" ficarem tecnicamente abertos ao mesmo tempo. Deveria ser um único discriminated union.
-- [ ] 🟡 **[B-C3] Mutação direta de objeto vindo de API dentro de `.map()`**
-  **Local:** `CombinedScoresCards.tsx:184-203` — `score.status = "PAID"` muta o parâmetro recebido antes de ser espalhado (`{...score, ...}`) na linha 224. Funciona hoje só porque cada `score` é um objeto novo por requisição — padrão frágil para memoização/cache futuro.
 - [ ] 🟡 **[B-C4] Componentes muito longos (>250 linhas)**
   `ClientForm.tsx` (919 — deveria dividir em subcomponentes de seção), `CashFlow.tsx` (854 — extrair cada par Card+gráfico), `PurchaseFilesTable.tsx` (568, com o modal de "Criar Agrupamento" inteiro embutido nas linhas 390-537), `NotaRevisaoModal.tsx` (547), `InvoiceProductsModal.tsx` (459), `FavoritesModal.tsx` (422, duas abas inteiras no mesmo arquivo).
-- [ ] 🔵 **[B-C5] Dois componentes diferentes chamados `ClientCard`** *(mesmo achado que B-B1, sinalizado aqui como problema de nomenclatura)*
 
 ### B · Comentários desnecessários / código morto
 
 - [ ] 🟡 **[B-CM1] Comentário mascarando funcionalidade sabidamente incompleta em produção**
   **Local:** `src/components/modals/FavoritesModal.tsx:70-85` — `lat: 0, lng: 0` hardcoded ao adicionar local favorito manualmente, com o comentário `// Seria obtido do autocomplete` como único registro do problema (não um TODO rastreável). Favoritos manuais ficam com coordenadas no meio do oceano, quebrando cálculo de frete/rota — bug funcional, não só comentário morto.
-- [ ] 🔵 **[B-CM2] Arquivos mortos que deveriam ser removidos, não deixados "por via das dúvidas"** — `UserCard.tsx`, `BilletsTable.tsx`, `NotesTable.tsx` (ver seção Baixa coesão).
+- [ ] 🔵 **[B-CM2] Arquivos mortos que deveriam ser removidos, não deixados "por via das dúvidas"** — `BilletsTable.tsx`, `NotesTable.tsx` (ver seção Baixa coesão).
 
 ---
 
@@ -249,7 +238,7 @@ Arquitetura documentada prevê Componente → Hook → Service. Na prática, boa
 
 <a id="c-v1"></a>
 - [ ] 🔴 **[C-V1] Falso sucesso mascarando falhas reais de escrita/exclusão de usuário**
-  **Local:** `src/services/acessoService.ts:67-98` (`createUser`), `:163-172` (`deleteUser`)
+  **Local:** `src/services/userAdminService.ts:67-98` (`createUser`), `:163-172` (`deleteUser`)
   ```ts
   async deleteUser(id: number): Promise<boolean> {
     try {
@@ -266,7 +255,7 @@ Arquitetura documentada prevê Componente → Hook → Service. Na prática, boa
 
 <a id="c-v2"></a>
 - [ ] 🟠 **[C-V2] Backup "simulado" retorna sucesso quando a chamada real falha**
-  **Local:** `src/services/acessoService.ts:174-193` (`performBackup`), `:195-220` (`restoreBackup`)
+  **Local:** `src/services/userAdminService.ts:174-193` (`performBackup`), `:195-220` (`restoreBackup`)
   ```ts
   } catch (error) {
     console.warn("Backend não disponível para backup:", error);
@@ -276,7 +265,7 @@ Arquitetura documentada prevê Componente → Hook → Service. Na prática, boa
   Se o backend estiver fora do ar — exatamente o cenário em que um backup é mais necessário — o usuário recebe mensagem de conclusão. Risco real de perda de dados por falsa sensação de segurança.
 
 - [ ] 🟡 **[C-V3] `getStats()` retorna dados mockados silenciosamente em caso de erro**
-  **Local:** `src/services/acessoService.ts:31-50` — `{ totalUsers: 2, totalManagers: 1, ... }` fixo no `catch`, sem sinalização de erro na tela. Decisões administrativas podem ser tomadas sobre dado fictício.
+  **Local:** `src/services/userAdminService.ts:31-50` — `{ totalUsers: 2, totalManagers: 1, ... }` fixo no `catch`, sem sinalização de erro na tela. Decisões administrativas podem ser tomadas sobre dado fictício.
 
 - [ ] 🟡 **[C-V4] Interpolação direta de datas/strings em URL sem `encodeURIComponent`/`URLSearchParams`**
   **Locais:** `reportService.ts:8-9` (datas viram **segmentos de path** — `/` ou `..` alteram o caminho requisitado), `dashboardService.ts:58-59`, `transactionService.ts:64,90,118`, `fiscalNoteXmlStorageService.ts:11`, `groupedProductsService.ts:10` (`clientId` pode virar literalmente `"undefined"` na URL). O resto do código-base já usa `encodeURIComponent` consistentemente em outros pontos — desvio pontual, fácil de padronizar.
@@ -288,55 +277,8 @@ Arquitetura documentada prevê Componente → Hook → Service. Na prática, boa
 - [ ] 🔵 **[C-V6] Mensagens de erro do backend repassadas ao usuário sem filtragem**
   **Locais:** `authService.ts:50-57`, `billetService.ts:29-37` (`response.text()` cru), `groupedProductsService.ts` e outros — `throw new Error(errorData.message || ...)` propaga texto do backend direto para toasts. Risco baixo hoje (backend confiável/mesmo time), mas sem allowlist/normalização.
 
-### C · Acoplamento e baixa coesão
-
-- [ ] 🟡 **[C-A1] `useClient` faz `fetch` direto em vez de delegar a `clientService` (duplica lógica já existente)**
-  **Local:** `src/hooks/useClient.ts:19-30` — `clientService.getClientById` (`clientService.ts:32-50`) já implementa exatamente essa chamada. Mudança futura de endpoint/erro precisa ser feita em dois lugares.
-
-- [ ] 🟡 **[C-A2] `acessoService`/`BackupService` depende de `userService` — service nomeado por um domínio (acesso/backup) é, na prática, uma camada de tradução para outro domínio (usuários)**
-  **Local:** `src/services/acessoService.ts:2,33,53,76,105,127,166` — consequência direta deste acoplamento estranho é o achado C-B1 abaixo (colisão de nomes).
-
-- [ ] 🔵 **[C-A3] Extração de mensagem de erro reimplementada ~21 vezes em vez de usar o utilitário já existente**
-  **Locais:** `useTransaction.ts` (9), `useInvoice.ts` (8), `useBillet.ts` (9), `useClient.ts:32`, `useBankBalance.ts:24-26`, `useGroupedProducts.ts` (3), `useDashboard.ts:36-39` — todos fazendo `err instanceof Error ? err.message : "..."` manualmente, quando `src/types/errorType.ts` já expõe `getErrorMessage(error)`, usado em só 1 arquivo do projeto inteiro.
-
-- [ ] 🔵 **[C-A4] `userService.ts` duplica `getAuthHeaders` local em vez de reusar `httpUtils.ts`**
-  **Local:** `src/services/userService.ts:19-21` — cópia exata da função em `httpUtils.ts:1-5`; fica dessincronizada silenciosamente se a original mudar.
-
-- [ ] 🟡 **[C-A5] Convenção de path `/api/...` duplicado (dentro de `API_BASE_URL` que já é `/api`) documentada só em 1 de 4 lugares**
-  **Locais:** `dispositivoService.ts:30-37` (com comentário explicando) vs. `bulkNotificationService.ts:79,155,214,236`, `productService.ts:51,75,97`, `acessoService.ts:176,202` (sem comentário). Fácil um desenvolvedor "corrigir" o que parece bug (`/api/api/...`) e quebrar essas chamadas em produção.
-
-### C · Baixa coesão / arquivos "gaveta"
-
-<a id="c-b1"></a>
-- [ ] 🟠 **[C-B1] Dois exports diferentes chamados `backupService`, com propósitos completamente distintos**
-  **Locais:** `src/services/backupService.ts:19` (backup real de banco: `/backup/storage`, `/backup`) vs. `src/services/acessoService.ts:223` (`export const backupService = new BackupService()` — na verdade CRUD de usuários + backup "simulado"). `useBackup.ts` importa o real; as páginas de `/acesso/**` importam o "falso". Armadilha de import séria — renomear um dos dois (ex.: `userAdminService`) elimina o risco.
-
-- [ ] 🟡 **[C-B2] `notificationService.tsx` não é um service de API — é utilitário de toast, mal localizado, com código morto**
-  **Local:** `src/services/notificationService.tsx` — convive na pasta `services` junto de `bulkNotificationService.ts` (que de fato chama a API), mas não faz nenhuma chamada de rede; só exporta helpers de toast. `handleApiError`/`ApiError` estão completamente sem uso em todo o projeto (nunca "pegaram" — todo o resto trata erro manualmente, ver C-A3). Deveria estar em `src/utils`.
-
-### C · Clareza / código confuso
-
-- [ ] 🔵 **[C-C1] `useAutocomplete.ts` não é um hook React — é um par de Server Actions com nome enganoso**
-  **Local:** `src/hooks/useAutocomplete.ts:1-2` (`"use server"`) — sem `useState`/`useEffect`, não segue o padrão "hook encapsula loading/erro sobre service".
-
-- [ ] 🔵 **[C-C2] Reatribuição de parâmetros de função**
-  **Local:** `src/hooks/useReport.ts:8-16` — `startDate = startDate.split("T")[0]` dificulta depuração; preferível nova variável.
-
-- [ ] 🟡 **[C-C3] Pelo menos 3 formatos diferentes de "resposta paginada" redefinidos manualmente em vez de um `Page<T>` genérico**
-  **Locais:** `GroupedScoreResponse` (`types/groupedType.ts:12-24`), `PurchaseResponse` (`types/purchaseType.ts:10-22`), `PageResult<T>` (`transactionService.ts:31-37`), mais objetos inline ad-hoc em `combinedScoreService.ts:28-38` e `purchaseService.ts:90-101` — todos representando a mesma página do Spring, com nomes de campo ligeiramente diferentes.
-
-- [ ] 🔵 **[C-C4] Função com 4 parâmetros posicionais do mesmo tipo primitivo**
-  **Local:** `src/services/dashboardService.ts:50-56` — `getDashboardData(startDate: string, endDate: string, month: number, year: number, signal?)`. Inverter `month`/`year` compila silenciosamente. Objeto nomeado eliminaria a classe de bug.
-
-- [ ] 🔵 **[C-C5] `atob()` sobre campos da resposta do backend sem validar shape antes**
-  **Local:** `src/services/invoiceService.ts:11-18,160-168` — payload malformado derruba com exceção genérica do `atob`, sem mensagem amigável específica.
-
-- [ ] 🔵 **[C-C6] Variáveis redundantes sem transformação real**
-  **Local:** `src/services/reportService.ts:5-7` — `const sDate = startDate;` sem motivo aparente.
-
 ### C · Comentários desnecessários / código morto
 
-- [ ] 🔵 **[C-CM1] `handleApiError`/`ApiError` mortos** *(ver também C-B2)* — `src/services/notificationService.tsx:5-39`, zero uso em todo o repositório.
 - Nenhum `TODO`/`FIXME`/código comentado morto encontrado além disso. Os `catch` "vazios" encontrados (`billetService.ts:33`, `invoiceService.ts:43,70,154`, `authService.ts:80,101`, `statementApiService.ts:37`, `useRealtimeSocket.ts:50,66`) **têm comentário explicando a decisão de ignorar o erro** — padrão consciente, não descuido.
 
 ### C · Configuração de build/qualidade

@@ -11,12 +11,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useBillet } from "@/hooks/useBillet";
-import {
-  showError,
-  showInfo,
-  showSuccess,
-} from "@/services/notificationService";
 import type { BilletResponse } from "@/types/billetType";
+import { showError, showInfo, showSuccess } from "@/utils/toastUtils";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
 interface ShowBilletDataModalProps {

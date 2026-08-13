@@ -6,10 +6,10 @@ import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import CreateManualPurchaseModal from "@/components/modals/CreateManualPurchaseModal";
 import InvoiceProductsModal from "@/components/modals/InvoiceProductsModal";
 import { combinedScoreService } from "@/services/combinedScoreService";
-import { showError, showSuccess } from "@/services/notificationService";
 import { purchaseService } from "@/services/purchaseService";
 import type { PurchaseType } from "@/types/purchaseType";
 import { todaySaoPaulo } from "@/utils/dateUtils";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 interface PurchaseFilesTableProps {
   clientId?: number;

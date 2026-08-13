@@ -20,7 +20,7 @@ import ClientCard from "@/components/modules/ClientCard";
 import Button from "@/components/ui/Button";
 import { clientService } from "@/services/clientService";
 import { combinedScoreService } from "@/services/combinedScoreService";
-import { showError, showSuccess } from "@/services/notificationService";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 interface ClienteUI {
   id: number;

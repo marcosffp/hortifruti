@@ -1,6 +1,9 @@
 "use client";
 
-import { API_BASE_URL as API_URL } from "@/config/api";
+import {
+  API_BASE_URL_WITH_API_PREFIX,
+  API_BASE_URL as API_URL,
+} from "@/config/api";
 import { fetchWithAuth } from "@/utils/httpUtils";
 
 export type TemperatureCategory = "CONGELANDO" | "FRIO" | "AMENO" | "QUENTE";
@@ -48,7 +51,7 @@ export interface WeatherForecast {
 export const productService = {
   async getWeatherForecast(): Promise<WeatherForecast> {
     const response = await fetchWithAuth(
-      `${API_URL}/api/weather/forecast/5days`,
+      `${API_BASE_URL_WITH_API_PREFIX}/weather/forecast/5days`,
       {
         method: "GET",
         headers: {
@@ -72,7 +75,7 @@ export const productService = {
     date: string,
   ): Promise<ProductRecommendation[]> {
     const response = await fetchWithAuth(
-      `${API_URL}/api/recommendations/by-date?date=${date}`,
+      `${API_BASE_URL_WITH_API_PREFIX}/recommendations/by-date?date=${date}`,
       {
         method: "GET",
         headers: {
@@ -94,7 +97,7 @@ export const productService = {
     category: string,
   ): Promise<ProductRecommendation[]> {
     const response = await fetchWithAuth(
-      `${API_URL}/api/recommendations/by-temperature/${category}`,
+      `${API_BASE_URL_WITH_API_PREFIX}/recommendations/by-temperature/${category}`,
       {
         method: "GET",
         headers: {

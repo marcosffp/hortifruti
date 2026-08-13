@@ -8,10 +8,10 @@ import ProductAutocompleteField from "@/components/ui/ProductAutocompleteField";
 import { API_BASE_URL } from "@/config/api";
 import { clientService } from "@/services/clientService";
 import { fiscalProductService } from "@/services/fiscalProductService";
-import { showError, showSuccess } from "@/services/notificationService";
 import type { ClientSelectionInfo } from "@/types/clientType";
 import type { FiscalProductType } from "@/types/purchaseType";
 import { todaySaoPaulo } from "@/utils/dateUtils";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 async function extrairMensagemErro(
   response: Response,

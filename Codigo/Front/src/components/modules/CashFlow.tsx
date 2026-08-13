@@ -110,13 +110,13 @@ export default function CashFlow({
   // biome-ignore lint/correctness/useExhaustiveDependencies: getDashboardData is recreated on every render by useDashboard and is not part of the fetch identity
   const fetchDashboardData = useCallback(
     async (signal?: AbortSignal) => {
-      const data = await getDashboardData(
+      const data = await getDashboardData({
         startDate,
         endDate,
-        selectedMonth,
-        selectedYear,
+        month: selectedMonth,
+        year: selectedYear,
         signal,
-      );
+      });
       if (data) {
         setDashboardData(data);
       }

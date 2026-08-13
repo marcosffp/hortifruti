@@ -1,6 +1,6 @@
 "use client";
 
-import { API_BASE_URL } from "@/config/api";
+import { API_BASE_URL_WITH_API_PREFIX } from "@/config/api";
 import { getAuthHeaders } from "@/utils/httpUtils";
 
 /**
@@ -27,14 +27,7 @@ export interface PareamentoConfirmado {
   dispositivoId: number;
 }
 
-/**
- * `DispositivoController`/`NotaController` (diferente da maioria dos outros controllers, ex.
- * `/clients`) já incluem "/api" no próprio `@RequestMapping`. Como `API_BASE_URL` é o prefixo do
- * rewrite same-origin do Next (`/api`, ver next.config.ts), o caminho aqui precisa repetir "/api"
- * pra virar `/api/api/dispositivos/...` no browser — o rewrite descarta o primeiro `/api` e repassa
- * `/api/dispositivos/...` pro backend, que é o que o `@RequestMapping("/api/dispositivos")` espera.
- */
-const DISPOSITIVOS_PATH = `${API_BASE_URL}/api/dispositivos`;
+const DISPOSITIVOS_PATH = `${API_BASE_URL_WITH_API_PREFIX}/dispositivos`;
 
 async function extrairMensagemErro(
   response: Response,

@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 import MaskedDecimalInput from "@/components/ui/MaskedDecimalInput";
 import ProductAutocompleteField from "@/components/ui/ProductAutocompleteField";
 import { fiscalProductService } from "@/services/fiscalProductService";
-import { showError, showSuccess } from "@/services/notificationService";
 import { purchaseService } from "@/services/purchaseService";
 import type { FiscalProductType } from "@/types/purchaseType";
 import { todaySaoPaulo } from "@/utils/dateUtils";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 interface CreateManualPurchaseModalProps {
   clientId: number;

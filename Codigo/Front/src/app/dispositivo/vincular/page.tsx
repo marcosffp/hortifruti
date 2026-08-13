@@ -10,7 +10,7 @@ import {
   DEVICE_TOKEN_STORAGE_KEY,
   dispositivoService,
 } from "@/services/dispositivoService";
-import { showError, showSuccess } from "@/services/notificationService";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 async function extrairMensagemErro(
   response: Response,

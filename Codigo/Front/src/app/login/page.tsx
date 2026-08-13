@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { showError, showSuccess } from "@/services/notificationService";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 export default function Login() {
   const router = useRouter();

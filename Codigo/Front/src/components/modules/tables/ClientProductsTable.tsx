@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import SkeletonTableLoading from "@/components/ui/SkeletonTableLoading";
 import { groupedProductsService } from "@/services/groupedProductsService";
-import { showError, showSuccess } from "@/services/notificationService";
 import { purchaseService } from "@/services/purchaseService";
 import type { GroupedProductRequest } from "@/types/groupedType";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 interface ClientProductsTableProps {
   clientId: number | undefined;

@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/config/api";
+import type { Page } from "@/types/PagesType";
 import { getAuthHeaders } from "@/utils/httpUtils";
 
 export interface TransactionResponse {
@@ -26,14 +27,6 @@ export interface TransactionRequest {
   codHistory: string;
   batch: string;
   sourceAgency: string;
-}
-
-export interface PageResult<T> {
-  content: T[];
-  totalPages: number;
-  totalElements: number;
-  size: number;
-  number: number;
 }
 
 export const transactionService = {
@@ -139,7 +132,7 @@ export const transactionService = {
     category?: string,
     page = 0,
     size = 20,
-  ): Promise<PageResult<TransactionResponse>> {
+  ): Promise<Page<TransactionResponse>> {
     const params = new URLSearchParams();
     if (search) params.append("search", search);
     if (type && type !== "Todos os tipos")
@@ -166,12 +159,17 @@ export const transactionService = {
 
     const data = await response.json();
 
-    const result: PageResult<TransactionResponse> = {
+    const totalPages = data.totalPages || data.page?.totalPages || 0;
+    const number = data.number || data.page?.number || 0;
+
+    const result: Page<TransactionResponse> = {
       content: data.content || [],
-      totalPages: data.totalPages || data.page?.totalPages || 0,
+      totalPages,
       totalElements: data.totalElements || data.page?.totalElements || 0,
       size: data.size || data.page?.size || 0,
-      number: data.number || data.page?.number || 0,
+      number,
+      first: number === 0,
+      last: totalPages === 0 || number >= totalPages - 1,
     };
 
     return result;

@@ -1,6 +1,8 @@
 import { useCallback, useState } from "react";
 import { groupedProductsService } from "@/services/groupedProductsService";
-import type { GroupedScoreResponse } from "@/types/groupedType";
+import { getErrorMessage } from "@/types/errorType";
+import type { GroupedScoreType } from "@/types/groupedType";
+import type { Page } from "@/types/PagesType";
 
 export function useGroupedProducts() {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,7 +13,7 @@ export function useGroupedProducts() {
       clientId: number,
       page = 0,
       size = 10,
-    ): Promise<GroupedScoreResponse> => {
+    ): Promise<Page<GroupedScoreType>> => {
       setIsLoading(true);
       setError(null);
       try {
@@ -21,11 +23,7 @@ export function useGroupedProducts() {
           size,
         );
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Erro ao buscar produtos agrupados",
-        );
+        setError(getErrorMessage(err));
         throw err;
       } finally {
         setIsLoading(false);
@@ -40,11 +38,7 @@ export function useGroupedProducts() {
     try {
       return await groupedProductsService.confirmPayment(groupId);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Erro ao confirmar pagamento do agrupamento",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -57,11 +51,7 @@ export function useGroupedProducts() {
     try {
       return await groupedProductsService.cancelGrouping(groupId);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Erro ao cancelar agrupamento de produtos",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);

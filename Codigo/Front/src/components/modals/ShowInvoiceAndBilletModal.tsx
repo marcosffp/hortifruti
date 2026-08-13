@@ -2,7 +2,7 @@
 
 import { Code, Download, FileText, Printer, Receipt, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { showError, showSuccess } from "@/services/notificationService";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 interface ShowInvoiceAndBilletModalProps {
   isOpen: boolean;

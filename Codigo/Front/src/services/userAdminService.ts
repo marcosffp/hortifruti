@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/config/api";
+import { API_BASE_URL_WITH_API_PREFIX } from "@/config/api";
 import { type UserRequest, userService } from "./userService";
 
 // Interfaces para compatibilidade com a UI
@@ -25,8 +25,8 @@ interface BackupStats {
   lastBackup?: string;
 }
 
-class BackupService {
-  private baseURL = API_BASE_URL;
+class UserAdminService {
+  private baseURL = API_BASE_URL_WITH_API_PREFIX;
 
   async getStats(): Promise<BackupStats> {
     try {
@@ -173,7 +173,7 @@ class BackupService {
 
   async performBackup(): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await fetch(`${this.baseURL}/api/acesso`, {
+      const response = await fetch(`${this.baseURL}/acesso`, {
         method: "POST",
         credentials: "include",
       });
@@ -199,7 +199,7 @@ class BackupService {
       const formData = new FormData();
       formData.append("backup", backupFile);
 
-      const response = await fetch(`${this.baseURL}/api/acesso/restore`, {
+      const response = await fetch(`${this.baseURL}/acesso/restore`, {
         method: "POST",
         credentials: "include",
         body: formData,
@@ -220,5 +220,5 @@ class BackupService {
   }
 }
 
-export const backupService = new BackupService();
+export const userAdminService = new UserAdminService();
 export type { BackupStats, UIUserRequest, UIUserResponse };

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { invoiceService } from "@/services/invoiceService";
+import { getErrorMessage } from "@/types/errorType";
 import type {
   InvoiceResponseGet,
   InvoiceWithBilletResult,
@@ -25,9 +26,7 @@ export function useInvoice() {
       );
       return response;
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao gerar nota fiscal",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -41,11 +40,7 @@ export function useInvoice() {
       const result = await invoiceService.fetchInvoiceInfo(ref);
       return result;
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Erro ao buscar informações da nota fiscal",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -59,7 +54,7 @@ export function useInvoice() {
       const result = await invoiceService.downloadDanfe(ref);
       return result;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao baixar DANFE");
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -73,7 +68,7 @@ export function useInvoice() {
       const result = await invoiceService.downloadXml(ref);
       return result;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao baixar XML");
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -95,11 +90,7 @@ export function useInvoice() {
       );
       return result;
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Erro ao gerar nota fiscal e boleto",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -113,11 +104,7 @@ export function useInvoice() {
       const result = await invoiceService.getOpenInvoiceOnly();
       return result;
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Erro ao buscar notas fiscais em aberto",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -132,11 +119,7 @@ export function useInvoice() {
         await invoiceService.reconcileInvoiceStatus(combinedScoreId);
       return result;
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Erro ao reconciliar status da nota fiscal",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -150,9 +133,7 @@ export function useInvoice() {
       const result = await invoiceService.cancelInvoice(ref);
       return result;
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao cancelar nota fiscal",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);

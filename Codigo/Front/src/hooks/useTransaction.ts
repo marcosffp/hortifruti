@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import {
-  type PageResult,
   type TransactionRequest,
   type TransactionResponse,
   transactionService,
 } from "@/services/transactionService";
+import { getErrorMessage } from "@/types/errorType";
+import type { Page } from "@/types/PagesType";
 
 export function useTransaction() {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,7 +19,7 @@ export function useTransaction() {
     category?: string,
     page: number = 0,
     size: number = 20,
-  ): Promise<PageResult<TransactionResponse> | undefined> => {
+  ): Promise<Page<TransactionResponse> | undefined> => {
     setIsLoading(true);
     setError(null);
     try {
@@ -31,9 +32,7 @@ export function useTransaction() {
       );
       return data;
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao buscar transações.",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -53,9 +52,7 @@ export function useTransaction() {
       );
       return data;
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao buscar receita total.",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -75,9 +72,7 @@ export function useTransaction() {
       );
       return data;
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao buscar despesas totais.",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -97,9 +92,7 @@ export function useTransaction() {
       );
       return data;
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao buscar saldo total.",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -113,9 +106,7 @@ export function useTransaction() {
       const data = await transactionService.getAllCategories();
       return data;
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao buscar categorias.",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -132,9 +123,7 @@ export function useTransaction() {
       const data = await transactionService.updateTransaction(id, transaction);
       return data;
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao atualizar transação.",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -147,9 +136,7 @@ export function useTransaction() {
     try {
       await transactionService.deleteTransaction(id);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao deletar transação.",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -184,9 +171,7 @@ export function useTransaction() {
       window.URL.revokeObjectURL(url);
       return data;
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao exportar transações.",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -221,11 +206,7 @@ export function useTransaction() {
       window.URL.revokeObjectURL(url);
       return data;
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Erro ao exportar relatório completo.",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);

@@ -6,8 +6,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import RoleGuard from "@/components/auth/RoleGuard";
 import Button from "@/components/ui/Button";
-import { backupService, type UIUserRequest } from "@/services/acessoService";
-import { showError, showSuccess } from "@/services/notificationService";
+import {
+  type UIUserRequest,
+  userAdminService,
+} from "@/services/userAdminService";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 export default function NovoUsuarioPage() {
   const router = useRouter();
@@ -44,7 +47,7 @@ export default function NovoUsuarioPage() {
 
     try {
       setIsSubmitting(true);
-      await backupService.createUser(formData);
+      await userAdminService.createUser(formData);
       showSuccess(
         "Usuário criado com sucesso! Agora ele pode fazer login com o e-mail e senha cadastrados.",
       );

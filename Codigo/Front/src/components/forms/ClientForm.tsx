@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import { cepService } from "@/services/cepService";
-import { showError, showSuccess } from "@/services/notificationService";
+import { showError, showSuccess } from "@/utils/toastUtils";
 import {
   formatarCEP,
   formatarCNPJ,
@@ -890,8 +890,8 @@ export default function ClientForm({
                 <p className="text-xs text-gray-500 mt-1">
                   Selecione "Precisa anexar foto da nota" para manter a foto da
                   nota como comprovante quando a compra vier de uma captura por
-                  celular; caso contrário, só os dados extraídos são
-                  guardados e a foto é descartada.
+                  celular; caso contrário, só os dados extraídos são guardados e
+                  a foto é descartada.
                 </p>
               </div>
             </div>

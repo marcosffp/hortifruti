@@ -24,18 +24,14 @@ import Button from "@/components/ui/Button";
 import GameLoadingOverlay from "@/components/ui/GameLoadingOverlay";
 import Loading from "@/components/ui/Loading";
 import { useTransaction } from "@/hooks/useTransaction";
-import {
-  showError,
-  showInfo,
-  showSuccess,
-} from "@/services/notificationService";
 import { statementApiService } from "@/services/statementApiService";
 import type {
-  PageResult,
   TransactionRequest,
   TransactionResponse,
 } from "@/services/transactionService";
 import { getErrorMessage } from "@/types/errorType";
+import type { Page } from "@/types/PagesType";
+import { showError, showInfo, showSuccess } from "@/utils/toastUtils";
 
 type BankGenerateStatus = "success" | "alreadyProcessed" | "error";
 
@@ -148,7 +144,7 @@ export default function FinancialLaunchesPage() {
       const categories = await getAllCategories();
       setCategories(categories);
 
-      const allTransactions: PageResult<TransactionResponse> | undefined =
+      const allTransactions: Page<TransactionResponse> | undefined =
         await getAllTransactions(search, type, category, page);
 
       if (allTransactions) {

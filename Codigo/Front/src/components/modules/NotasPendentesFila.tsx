@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { API_BASE_URL } from "@/config/api";
 import { useRealtimeSocket } from "@/hooks/useRealtimeSocket";
-import { showError, showInfo } from "@/services/notificationService";
+import { showError, showInfo } from "@/utils/toastUtils";
 import NotaRevisaoModal, {
   type NotaExtracaoResponse,
 } from "./NotaRevisaoModal";

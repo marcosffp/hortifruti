@@ -1,8 +1,9 @@
 import { API_BASE_URL } from "@/config/api";
 import type {
   GroupedProductRequest,
-  GroupedScoreResponse,
+  GroupedScoreType,
 } from "@/types/groupedType";
+import type { Page } from "@/types/PagesType";
 import { getAuthHeaders } from "@/utils/httpUtils";
 
 export const groupedProductsService = {
@@ -15,7 +16,7 @@ export const groupedProductsService = {
 
     if (!response.ok) throw new Error("Erro ao buscar produtos agrupados");
 
-    const result: GroupedScoreResponse = await response.json();
+    const result: Page<GroupedScoreType> = await response.json();
     return result;
   },
 

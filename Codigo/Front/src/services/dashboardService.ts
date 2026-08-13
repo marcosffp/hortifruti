@@ -46,14 +46,22 @@ export interface DashboardData {
   Top10ProdutosPorQuantidade: TopProductByQuantity[];
 }
 
+export interface GetDashboardDataParams {
+  startDate: string;
+  endDate: string;
+  month: number;
+  year: number;
+  signal?: AbortSignal;
+}
+
 export const dashboardService = {
-  async getDashboardData(
-    startDate: string,
-    endDate: string,
-    month: number,
-    year: number,
-    signal?: AbortSignal,
-  ): Promise<DashboardData> {
+  async getDashboardData({
+    startDate,
+    endDate,
+    month,
+    year,
+    signal,
+  }: GetDashboardDataParams): Promise<DashboardData> {
     try {
       const response = await fetch(
         `${API_BASE_URL}/dashboard?startDate=${startDate}&endDate=${endDate}&month=${month}&year=${year}`,

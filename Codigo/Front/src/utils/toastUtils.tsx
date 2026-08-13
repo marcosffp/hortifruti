@@ -2,42 +2,6 @@
 
 import { toast } from "react-toastify";
 
-export interface ApiError {
-  message: string;
-  statusCode?: number;
-  details?: string[];
-}
-
-export const handleApiError = async (error: unknown): Promise<ApiError> => {
-  console.error("API Error:", error);
-
-  if (error instanceof Response) {
-    try {
-      const errorData = await error.json();
-      return {
-        message: errorData.message || "Erro desconhecido no servidor",
-        statusCode: error.status,
-        details: errorData.details || [],
-      };
-    } catch (_parseError) {
-      return {
-        message: `Erro ${error.status}: ${error.statusText}`,
-        statusCode: error.status,
-      };
-    }
-  }
-
-  if (error instanceof Error) {
-    return {
-      message: error.message || "Ocorreu um erro inesperado",
-    };
-  }
-
-  return {
-    message: "Erro desconhecido ao processar a requisição",
-  };
-};
-
 export const showSuccess = (message: string) => {
   toast.success(message, {
     position: "top-right",

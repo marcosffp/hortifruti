@@ -14,8 +14,8 @@ import { useCallback, useEffect, useState } from "react";
 import DispositivosVinculados from "@/components/acesso/DispositivosVinculados";
 import RoleGuard from "@/components/auth/RoleGuard";
 import Button from "@/components/ui/Button";
-import { backupService } from "@/services/acessoService";
-import { showError, showSuccess } from "@/services/notificationService";
+import { userAdminService } from "@/services/userAdminService";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 interface UsuarioUI {
   id: number;
@@ -45,7 +45,7 @@ export default function AcessoPage() {
   const fetchUsuarios = useCallback(async () => {
     try {
       setIsLoading(true);
-      const usuariosFormatados = await backupService.getFormattedUsers();
+      const usuariosFormatados = await userAdminService.getFormattedUsers();
       setUsuarios(usuariosFormatados);
     } catch (error) {
       showError("Não foi possível carregar a lista de usuários");
@@ -115,7 +115,7 @@ export default function AcessoPage() {
     if (!usuarioParaExcluir) return;
 
     try {
-      const sucesso = await backupService.deleteUser(usuarioParaExcluir);
+      const sucesso = await userAdminService.deleteUser(usuarioParaExcluir);
 
       if (sucesso) {
         await fetchUsuarios();

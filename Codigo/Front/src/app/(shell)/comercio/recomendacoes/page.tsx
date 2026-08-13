@@ -18,7 +18,6 @@ import {
 import { TbChartBar } from "react-icons/tb";
 import { WiHumidity } from "react-icons/wi";
 import Card from "@/components/ui/Card";
-import { showError, showSuccess } from "@/services/notificationService";
 import {
   type ProductRecommendation,
   type ProductRequest,
@@ -26,6 +25,7 @@ import {
   type TemperatureCategory,
   type WeatherForecast,
 } from "@/services/productService";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 export default function RecommendationPage() {
   const [recommendations, setRecommendations] = useState<

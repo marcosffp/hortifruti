@@ -11,16 +11,6 @@ export interface CombinedScoreType {
   invoiceRef?: string | null;
 }
 
-export interface CombinedScoreResponse {
-  content: CombinedScoreType[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-  size: number;
-  first: boolean;
-  last: boolean;
-}
-
 export interface GroupedProductType {
   code: string;
   name: string;

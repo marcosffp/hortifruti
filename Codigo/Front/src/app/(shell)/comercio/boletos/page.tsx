@@ -27,10 +27,10 @@ import ClientSelector from "@/components/modules/ClientSelector";
 import { useBillet } from "@/hooks/useBillet";
 import { useInvoice } from "@/hooks/useInvoice";
 import { combinedScoreService } from "@/services/combinedScoreService";
-import { showError, showSuccess } from "@/services/notificationService";
 import type { BilletResponse, OpenBilletResponse } from "@/types/billetType";
 import type { ClientSelectionInfo } from "@/types/clientType";
 import type { OpenInvoiceResponse } from "@/types/invoiceType";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 type RowActionType = "pay" | "download" | "cancel";
 type BulkActionType = "pay" | "download" | "cancel";

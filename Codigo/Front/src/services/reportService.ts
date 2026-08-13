@@ -3,10 +3,8 @@ import { getAuthHeaders } from "@/utils/httpUtils";
 
 export const reportService = {
   async fetchMonthlyReport(startDate: string, endDate: string): Promise<Blob> {
-    const sDate = startDate;
-    const eDate = endDate;
     const response = await fetch(
-      `${API_BASE_URL}/dashboard/icms-report/monthly/${sDate}/${eDate}`,
+      `${API_BASE_URL}/dashboard/icms-report/monthly/${startDate}/${endDate}`,
       { headers: getAuthHeaders(), credentials: "include" },
     );
     if (!response.ok) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { API_BASE_URL } from "@/config/api";
+import { getAuthHeaders } from "@/utils/httpUtils";
 
 interface UserRequest {
   username: string;
@@ -15,10 +16,6 @@ interface UserResponse {
   position: string;
   role: "MANAGER" | "EMPLOYEE";
 }
-
-const getAuthHeaders = (): HeadersInit => ({
-  "Content-Type": "application/json",
-});
 
 class UserService {
   private baseURL = API_BASE_URL;

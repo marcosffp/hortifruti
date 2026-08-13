@@ -7,11 +7,11 @@ import { useEffect, useState } from "react";
 import ClientForm, { type ClientFormData } from "@/components/forms/ClientForm";
 import Button from "@/components/ui/Button";
 import { clientService } from "@/services/clientService";
-import { showError, showSuccess } from "@/services/notificationService";
 import {
   formatAddressForBackend,
   parseAddressFromBackend,
 } from "@/utils/addressUtils";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 interface EditarClientePageProps {
   id: string;

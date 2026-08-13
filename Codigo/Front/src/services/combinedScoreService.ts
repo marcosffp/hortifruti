@@ -2,10 +2,11 @@ import { API_BASE_URL } from "@/config/api";
 import type {
   ClientLastGroupingType,
   CombinedScoreRequest,
-  CombinedScoreResponse,
+  CombinedScoreType,
   GroupedProductType,
   PurchaseImageType,
 } from "@/types/combinedScoreType";
+import type { Page } from "@/types/PagesType";
 import { getAuthHeaders } from "@/utils/httpUtils";
 
 export const combinedScoreService = {
@@ -13,7 +14,7 @@ export const combinedScoreService = {
     clientId?: number,
     page = 0,
     size = 20,
-  ): Promise<CombinedScoreResponse> {
+  ): Promise<Page<CombinedScoreType>> {
     let url = `${API_BASE_URL}/combined-scores?page=${page}&size=${size}`;
     if (clientId) url += `&clientId=${clientId}`;
 

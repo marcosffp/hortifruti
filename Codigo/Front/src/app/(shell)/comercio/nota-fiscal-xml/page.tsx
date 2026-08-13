@@ -4,9 +4,9 @@ import { Download, FileX, Search } from "lucide-react";
 import { useState } from "react";
 import RoleGuard from "@/components/auth/RoleGuard";
 import { fiscalNoteXmlStorageService } from "@/services/fiscalNoteXmlStorageService";
-import { showError } from "@/services/notificationService";
 import type { FiscalNoteXmlStorageResponse } from "@/types/fiscalNoteXmlStorageType";
 import { todaySaoPaulo } from "@/utils/dateUtils";
+import { showError } from "@/utils/toastUtils";
 
 export default function FiscalNoteXmlPage() {
   const [startDate, setStartDate] = useState(() => {

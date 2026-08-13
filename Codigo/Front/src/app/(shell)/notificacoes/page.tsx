@@ -26,11 +26,7 @@ import {
   bulkNotificationService,
 } from "@/services/bulkNotificationService";
 import { clientService } from "@/services/clientService";
-import {
-  showError,
-  showErrorWithLink,
-  showSuccess,
-} from "@/services/notificationService";
+import { showError, showErrorWithLink, showSuccess } from "@/utils/toastUtils";
 
 interface Cliente {
   id: number;

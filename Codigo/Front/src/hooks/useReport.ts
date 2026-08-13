@@ -11,10 +11,10 @@ export function useReport() {
     try {
       if (!startDate || !endDate || startDate === endDate)
         throw new Error("Informe um intervalo de datas válido");
-      startDate = startDate.split("T")[0];
-      endDate = endDate.split("T")[0];
-      const result = await reportService.fetchMonthlyReport(startDate, endDate);
-      downloadReport(result, `RELATORIO_FISCAL_${startDate}_A_${endDate}.zip`);
+      const start = startDate.split("T")[0];
+      const end = endDate.split("T")[0];
+      const result = await reportService.fetchMonthlyReport(start, end);
+      downloadReport(result, `RELATORIO_FISCAL_${start}_A_${end}.zip`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao gerar relatório");
     } finally {

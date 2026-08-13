@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "@/config/api";
 import type { GroupedProductRequest } from "@/types/groupedType";
+import type { Page } from "@/types/PagesType";
 import type {
   InvoiceProductType,
   InvoiceProductUpdate,
@@ -77,7 +78,11 @@ export const purchaseService = {
     return data.products || [];
   },
 
-  async fetchPurchaseFiles(clientId: number, page = 0, size = 10) {
+  async fetchPurchaseFiles(
+    clientId: number,
+    page = 0,
+    size = 10,
+  ): Promise<Page<PurchaseType>> {
     const response = await fetch(
       `${API_BASE_URL}/purchases/client/${clientId}/ordered?page=${page}&size=${size}`,
       {

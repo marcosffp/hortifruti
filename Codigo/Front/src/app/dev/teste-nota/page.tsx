@@ -20,7 +20,7 @@ import NotaRevisaoModal, {
 } from "@/components/modules/NotaRevisaoModal";
 import NotasPendentesFila from "@/components/modules/NotasPendentesFila";
 import { DEVICE_TOKEN_STORAGE_KEY } from "@/services/dispositivoService";
-import { showError, showSuccess } from "@/services/notificationService";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 

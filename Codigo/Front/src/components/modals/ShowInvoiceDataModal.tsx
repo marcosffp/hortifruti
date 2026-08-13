@@ -3,12 +3,8 @@
 import { AlertTriangle, Download, FileText, X } from "lucide-react";
 import { useState } from "react";
 import { useInvoice } from "@/hooks/useInvoice";
-import {
-  showError,
-  showInfo,
-  showSuccess,
-} from "@/services/notificationService";
 import type { InvoiceResponseGet } from "@/types/invoiceType";
+import { showError, showInfo, showSuccess } from "@/utils/toastUtils";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
 interface ShowInvoiceDataModalProps {

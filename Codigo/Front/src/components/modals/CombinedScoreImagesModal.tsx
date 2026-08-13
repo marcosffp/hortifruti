@@ -4,9 +4,9 @@ import { Camera, Download, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { API_BASE_URL } from "@/config/api";
 import { combinedScoreService } from "@/services/combinedScoreService";
-import { showError } from "@/services/notificationService";
 import type { PurchaseImageType } from "@/types/combinedScoreType";
 import { getAuthHeaders } from "@/utils/httpUtils";
+import { showError } from "@/utils/toastUtils";
 
 interface CombinedScoreImagesModalProps {
   combinedScoreId: number;

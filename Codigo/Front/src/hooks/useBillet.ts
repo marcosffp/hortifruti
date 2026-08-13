@@ -7,6 +7,7 @@ import type {
   BilletResponse,
   OpenBilletResponse,
 } from "@/types/billetType";
+import { getErrorMessage } from "@/types/errorType";
 
 export function useBillet() {
   const [isLoading, setIsLoading] = useState(false);
@@ -43,7 +44,7 @@ export function useBillet() {
       downloadBillet(blob, combinedScoreId, number);
       return blob;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao gerar boleto");
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -59,11 +60,7 @@ export function useBillet() {
       const result = await billetService.fetchBilletInfo(combinedScoreId);
       return result;
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Erro ao buscar informações do boleto",
-      );
+      setError(getErrorMessage(err));
       return null;
     } finally {
       setIsLoading(false);
@@ -80,11 +77,7 @@ export function useBillet() {
       const result = await billetService.getClientBillets(clientId, filters);
       return result;
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Erro ao buscar boletos do cliente",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -98,9 +91,7 @@ export function useBillet() {
       const result = await billetService.getOpenBillets();
       return result;
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao buscar boletos em aberto",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -114,9 +105,7 @@ export function useBillet() {
       const result = await billetService.issueCopy(combinedScoreId);
       return result;
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao emitir 2ª via do boleto",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -132,9 +121,7 @@ export function useBillet() {
       const result = await billetService.downloadStoredBillet(combinedScoreId);
       return result;
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao baixar boleto armazenado",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -148,7 +135,7 @@ export function useBillet() {
       const result = await billetService.cancelBillet(combinedScoreId);
       return result;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao cancelar boleto");
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -162,9 +149,7 @@ export function useBillet() {
       const result = await billetService.cancelBilletByNumber(nossoNumero);
       return result;
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao cancelar boleto avulso",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);
@@ -178,11 +163,7 @@ export function useBillet() {
       const result = await billetService.markBilletAsPaid(combinedScoreId);
       return result;
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Erro ao confirmar pagamento do boleto",
-      );
+      setError(getErrorMessage(err));
       throw err;
     } finally {
       setIsLoading(false);

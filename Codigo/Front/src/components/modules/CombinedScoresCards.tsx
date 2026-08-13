@@ -1,102 +1,69 @@
 "use client";
 
-import {
-  Calendar,
-  Camera,
-  CheckCircle,
-  Eye,
-  FileText,
-  Info,
-  Trash2,
-} from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import AdditionalDataModal from "@/components/modals/AdditionalDataModal";
-import CombinedScoreImagesModal from "@/components/modals/CombinedScoreImagesModal";
-import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
-import GroupedProductsModal from "@/components/modals/GroupedProductsModal";
-import ShowBilletDataModal from "@/components/modals/ShowBilletDataModal";
-import ShowBilletModal from "@/components/modals/ShowBilletModal";
-import ShowInvoiceAndBilletModal from "@/components/modals/ShowInvoiceAndBilletModal";
-import ShowInvoiceDataModal from "@/components/modals/ShowInvoiceDataModal";
-import ShowInvoiceModal from "@/components/modals/ShowInvoiceModal";
-import WildcardBilletModal from "@/components/modals/WildcardBilletModal";
-import GameLoadingOverlay from "@/components/ui/GameLoadingOverlay";
+import { FileText } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import CombinedScoreCard from "@/components/modules/combined-scores/CombinedScoreCard";
+import CombinedScoreModals, {
+  type BilletResultModalState,
+  type InvoiceBilletResultModalState,
+  type InvoiceResultModalState,
+} from "@/components/modules/combined-scores/CombinedScoreModals";
+import { useCombinedScores } from "@/components/modules/combined-scores/useCombinedScores";
 import { useBillet } from "@/hooks/useBillet";
 import { useClient } from "@/hooks/useClient";
 import { useInvoice } from "@/hooks/useInvoice";
 import { combinedScoreService } from "@/services/combinedScoreService";
-import {
-  showError,
-  showInfo,
-  showSuccess,
-} from "@/services/notificationService";
-import type { BilletResponse } from "@/types/billetType";
-import type { ClientResponse } from "@/types/clientType";
-import type { CombinedScoreType } from "@/types/combinedScoreType";
+import { showError, showInfo, showSuccess } from "@/utils/toastUtils";
 import type {
-  InvoiceResponseGet,
-  InvoiceWithBilletResult,
-} from "@/types/invoiceType";
-import ClientNumberModal from "../modals/ClientNumberModal";
+  ScoreModalState,
+  ScoreWithBilletInfo,
+} from "./combined-scores/types";
 
 interface CombinedScoresCardsProps {
   clientId?: number;
   refreshKey?: number;
 }
 
-interface ScoreWithBilletInfo extends CombinedScoreType {
-  billetInfo?: BilletResponse | null;
-  invoiceInfo?: InvoiceResponseGet | null;
-  invoiceRef?: string | null;
-}
-
 export default function CombinedScoresCards({
   clientId,
   refreshKey,
 }: CombinedScoresCardsProps) {
-  const [scores, setScores] = useState<ScoreWithBilletInfo[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [clientNumberModal, setClientNumberModal] = useState({
-    state: false,
-    groupId: -1,
-  });
-  const [showAdditionalDataModal, setShowAdditionalDataModal] = useState(false);
-  const [pendingInvoiceScore, setPendingInvoiceScore] =
-    useState<ScoreWithBilletInfo | null>(null);
-  const [pendingCombinedFlow, setPendingCombinedFlow] = useState(false);
-  const [client, setClient] = useState<ClientResponse | null>(null);
-  const [showWildcardBilletModal, setShowWildcardBilletModal] = useState(false);
-  const [deleteConfirmScore, setDeleteConfirmScore] =
-    useState<ScoreWithBilletInfo | null>(null);
+  const { generateBillet, getBilletInfo } = useBillet();
+  const {
+    generateInvoice,
+    generateInvoiceWithBillet,
+    getInvoiceInfo,
+    getDanfe,
+    reconcileInvoiceStatus,
+  } = useInvoice();
+  const { getClientById } = useClient();
 
-  // Cada modal abaixo guarda seu PRÓPRIO agrupamento (score), em vez de compartilhar
-  // um único "selectedScore" global. Isso evita que duas operações assíncronas para
-  // agrupamentos diferentes (ex.: gerar NF+boleto do 349, que demora minutos, enquanto
-  // o usuário abre "Ver Boleto" do 335) acabem sobrescrevendo uma à outra e abrindo o
-  // modal errado com os dados do agrupamento errado quando a operação demorada resolver.
-  const [productsModalScore, setProductsModalScore] =
-    useState<ScoreWithBilletInfo | null>(null);
-  const [imagesModalScore, setImagesModalScore] =
-    useState<ScoreWithBilletInfo | null>(null);
-  const [billetResultModal, setBilletResultModal] = useState<{
-    score: ScoreWithBilletInfo;
-    pdf: Blob;
-    clientNumber: string | null;
-  } | null>(null);
-  const [billetDataModalScore, setBilletDataModalScore] =
-    useState<ScoreWithBilletInfo | null>(null);
-  const [invoiceResultModal, setInvoiceResultModal] = useState<{
-    score: ScoreWithBilletInfo;
-    pdf: Blob;
-  } | null>(null);
-  const [invoiceDataModalScore, setInvoiceDataModalScore] =
-    useState<ScoreWithBilletInfo | null>(null);
-  const [invoiceBilletResultModal, setInvoiceBilletResultModal] = useState<{
-    score: ScoreWithBilletInfo;
-    result: InvoiceWithBilletResult;
-  } | null>(null);
+  const { scores, loading, page, setPage, totalPages, client, refetch } =
+    useCombinedScores({
+      clientId,
+      refreshKey,
+      getBilletInfo,
+      getInvoiceInfo,
+      getClientById,
+    });
+
+  // Estado de navegação síncrona (o que o usuário abriu clicando em um botão) — ver
+  // ScoreModalState em combined-scores/types.ts para o porquê do discriminated union.
+  const [modal, setModal] = useState<ScoreModalState>({ type: "none" });
+  const closeModal = useCallback(() => setModal({ type: "none" }), []);
+
+  // Os 3 modais de RESULTADO assíncrono abaixo ficam FORA do union acima de propósito.
+  // Cada um guarda seu PRÓPRIO agrupamento (score), em vez de compartilhar o mesmo slot
+  // de "modal ativo". Isso evita que duas operações assíncronas para agrupamentos
+  // diferentes (ex.: gerar NF+boleto do 349, que demora minutos, enquanto o usuário abre
+  // "Ver Boleto" do 335 nesse meio tempo) acabem se sobrescrevendo: se estivessem no mesmo
+  // union, a resposta tardia do 349 fecharia à força o modal que o usuário tem aberto do 335.
+  const [billetResultModal, setBilletResultModal] =
+    useState<BilletResultModalState | null>(null);
+  const [invoiceResultModal, setInvoiceResultModal] =
+    useState<InvoiceResultModalState | null>(null);
+  const [invoiceBilletResultModal, setInvoiceBilletResultModal] =
+    useState<InvoiceBilletResultModalState | null>(null);
 
   // Guarda de duplo clique: bloqueia uma segunda geração de boleto/NF para o mesmo
   // agrupamento enquanto a primeira ainda está em andamento. Usa ref (além do state, só para
@@ -138,133 +105,13 @@ export default function CombinedScoresCards({
     setActionProcessingIds(new Set(actionProcessingIdsRef.current));
   }, []);
 
-  const { generateBillet, getBilletInfo } = useBillet();
-  const {
-    generateInvoice,
-    generateInvoiceWithBillet,
-    getInvoiceInfo,
-    getDanfe,
-    reconcileInvoiceStatus,
-  } = useInvoice();
-  const { getClientById } = useClient();
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: getBilletInfo/getInvoiceInfo are recreated on every render by useBillet/useInvoice and are not part of the fetch identity
-  const fetchScores = useCallback(async () => {
-    if (!clientId) {
-      setScores([]);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const data = await combinedScoreService.fetchCombinedScores(
-        clientId,
-        page,
-        20,
-      );
-
-      // Para cada score que tem boleto ou nota fiscal, busca as informações
-      const scoresWithInfo = await Promise.all(
-        data.content.map(async (score) => {
-          let billetInfo = null;
-          let invoiceInfo = null;
-
-          // Busca informações do boleto se existir
-          if (score.hasBillet) {
-            try {
-              billetInfo = await getBilletInfo(score.id);
-
-              // Atualiza o status do score baseado no status do boleto
-              if (billetInfo) {
-                const billetStatus = billetInfo.situacaoBoleto.toLowerCase();
-                if (
-                  billetStatus.includes("liquidado") ||
-                  billetStatus.includes("pago")
-                ) {
-                  score.status = "PAID";
-                } else if (
-                  billetStatus.includes("cancelado") ||
-                  billetStatus.includes("baixado")
-                ) {
-                  score.status = "CANCELLED";
-                } else if (
-                  billetStatus.includes("aberto") ||
-                  billetStatus.includes("pendente")
-                ) {
-                  // Verifica se está vencido
-                  const vencimento = new Date(billetInfo.dataVencimento);
-                  const hoje = new Date();
-                  if (vencimento < hoje) {
-                    score.status = "OVERDUE";
-                  } else {
-                    score.status = "PENDING";
-                  }
-                }
-              }
-            } catch (error) {
-              console.error(
-                `Erro ao buscar info do boleto ${score.id}:`,
-                error,
-              );
-            }
-          }
-
-          // Busca informações da nota fiscal se existir e tiver referência
-          if (score.hasInvoice && score.invoiceRef) {
-            try {
-              invoiceInfo = await getInvoiceInfo(score.invoiceRef);
-            } catch (error) {
-              console.error(
-                `Erro ao buscar info da nota fiscal ${score.id}:`,
-                error,
-              );
-            }
-          }
-
-          return {
-            ...score,
-            billetInfo,
-            invoiceInfo,
-            invoiceRef: score.invoiceRef,
-          };
-        }),
-      );
-
-      setScores(scoresWithInfo);
-      setTotalPages(data.totalPages);
-    } catch (error) {
-      showError("Erro ao carregar agrupamentos");
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }, [clientId, page]);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey is intentionally unused inside the effect — it only exists to force a refetch when the parent bumps it
-  useEffect(() => {
-    fetchScores();
-  }, [fetchScores, refreshKey]);
-
-  useEffect(() => {
-    if (!clientId) {
-      setClient(null);
-      return;
-    }
-    getClientById(clientId)
-      .then(setClient)
-      .catch((error) => {
-        console.error("Erro ao buscar cliente:", error);
-        setClient(null);
-      });
-  }, [clientId, getClientById]);
-
   const handleDelete = async (id: number) => {
     if (!beginAction(id)) return;
 
     try {
       await combinedScoreService.cancelGrouping(id);
       showSuccess("Agrupamento deletado com sucesso");
-      fetchScores();
+      refetch();
     } catch (error) {
       showError("Erro ao deletar agrupamento");
       console.error(error);
@@ -283,7 +130,7 @@ export default function CombinedScoresCards({
         await combinedScoreService.confirmPayment(score.id);
         showSuccess("Pagamento confirmado com sucesso");
       }
-      fetchScores();
+      refetch();
     } catch (error) {
       showError("Erro ao atualizar pagamento");
       console.error(error);
@@ -293,7 +140,7 @@ export default function CombinedScoresCards({
   };
 
   const handleViewProducts = (score: ScoreWithBilletInfo) => {
-    setProductsModalScore(score);
+    setModal({ type: "products", score });
   };
 
   const handleGenerateBillet = async (
@@ -315,7 +162,7 @@ export default function CombinedScoresCards({
 
       showSuccess("Boleto gerado com sucesso!");
 
-      fetchScores();
+      refetch();
     } catch (error) {
       showError(
         error instanceof Error ? error.message : "Erro ao gerar boleto",
@@ -361,7 +208,7 @@ export default function CombinedScoresCards({
       });
 
       showSuccess("Boleto gerado com sucesso!");
-      fetchScores();
+      refetch();
     } catch (error) {
       showError("Erro ao gerar boleto");
       console.error(error);
@@ -373,7 +220,7 @@ export default function CombinedScoresCards({
   const handleShowBillet = async (score: ScoreWithBilletInfo) => {
     try {
       if (score.billetInfo) {
-        setBilletDataModalScore(score);
+        setModal({ type: "billetData", score });
         return;
       }
 
@@ -381,7 +228,7 @@ export default function CombinedScoresCards({
       showInfo("Buscando informações do boleto...");
       const billetInfo = await getBilletInfo(score.id);
       if (billetInfo) {
-        setBilletDataModalScore({ ...score, billetInfo });
+        setModal({ type: "billetData", score: { ...score, billetInfo } });
       } else {
         showError("Não foi possível buscar as informações do boleto");
       }
@@ -422,9 +269,9 @@ export default function CombinedScoresCards({
           });
 
           showSuccess("Nota fiscal gerada com sucesso!");
-          fetchScores();
+          refetch();
         } catch (_danfeError) {
-          fetchScores();
+          refetch();
 
           showInfo(
             "Nota fiscal gerada! O documento está sendo processado e estará disponível em alguns instantes. Clique em 'Ver NF' para visualizar.",
@@ -436,7 +283,7 @@ export default function CombinedScoresCards({
         error instanceof Error ? error.message : "Erro ao gerar nota fiscal",
       );
       console.error(error);
-      fetchScores();
+      refetch();
     } finally {
       endProcessing(scoreId);
     }
@@ -457,9 +304,7 @@ export default function CombinedScoresCards({
         // A geração real só ocorre depois que o usuário preencher o modal,
         // então libera o "processando" aqui — ele será reativado ao confirmar.
         endProcessing(score.id);
-        setPendingInvoiceScore(score);
-        setPendingCombinedFlow(false);
-        setShowAdditionalDataModal(true);
+        setModal({ type: "additionalData", score, combinedFlow: false });
       } else {
         await handleGenerateInvoice(score.id, undefined, {
           alreadyProcessing: true,
@@ -501,7 +346,7 @@ export default function CombinedScoresCards({
       });
 
       showSuccess("Nota fiscal e boleto vinculado gerados com sucesso!");
-      fetchScores();
+      refetch();
     } catch (error) {
       showError(
         error instanceof Error
@@ -509,7 +354,7 @@ export default function CombinedScoresCards({
           : "Erro ao gerar nota fiscal e boleto",
       );
       console.error(error);
-      fetchScores();
+      refetch();
     } finally {
       endProcessing(scoreId);
     }
@@ -528,9 +373,7 @@ export default function CombinedScoresCards({
 
       if (isLlineaClient) {
         endProcessing(score.id);
-        setPendingInvoiceScore(score);
-        setPendingCombinedFlow(true);
-        setShowAdditionalDataModal(true);
+        setModal({ type: "additionalData", score, combinedFlow: true });
       } else {
         await handleGenerateInvoiceAndBillet(score.id, undefined, {
           alreadyProcessing: true,
@@ -548,7 +391,7 @@ export default function CombinedScoresCards({
   const handleShowInvoice = async (score: ScoreWithBilletInfo) => {
     // Se já tem a referência e info da invoice
     if (score.invoiceRef && score.invoiceInfo) {
-      setInvoiceDataModalScore(score);
+      setModal({ type: "invoiceData", score });
       return;
     }
 
@@ -561,7 +404,7 @@ export default function CombinedScoresCards({
     showInfo("Buscando nota fiscal...");
     try {
       const invoiceInfo = await getInvoiceInfo(score.invoiceRef);
-      setInvoiceDataModalScore({ ...score, invoiceInfo });
+      setModal({ type: "invoiceData", score: { ...score, invoiceInfo } });
     } catch (error) {
       console.error(error);
       // A nota nunca chegou a ser autorizada pela Sefaz (rejeitada/denegada/cancelada) — o
@@ -570,7 +413,7 @@ export default function CombinedScoresCards({
       // volta a false) para que "Gerar NF" e "Deletar" reapareçam no card.
       try {
         const reconcileResult = await reconcileInvoiceStatus(score.id);
-        await fetchScores();
+        await refetch();
         showInfo(reconcileResult);
       } catch (reconcileError) {
         console.error(reconcileError);
@@ -583,61 +426,16 @@ export default function CombinedScoresCards({
     }
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Não definida";
-    try {
-      const datePart = dateString.split("T")[0];
-      const [year, month, day] = datePart.split("-");
-      return `${day}/${month}/${year}`;
-    } catch {
-      return dateString;
+  const handleConfirmAdditionalData = (
+    scoreId: number,
+    combinedFlow: boolean,
+    dadosAdicionais: string,
+  ) => {
+    if (combinedFlow) {
+      handleGenerateInvoiceAndBillet(scoreId, dadosAdicionais);
+    } else {
+      handleGenerateInvoice(scoreId, dadosAdicionais);
     }
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "PAGO":
-        return "bg-green-100 text-green-800";
-      case "PENDENTE":
-        return "bg-blue-100 text-blue-800";
-      case "BAIXADO":
-      case "CANCELADO":
-      case "CANCELADO_BOLETO":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-blue-100 text-blue-800";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "PAID":
-        return "PAGO";
-      case "PENDING":
-        return "PENDENTE";
-      case "OVERDUE":
-        return "VENCIDO";
-      case "CANCELLED":
-        return "CANCELADO";
-      case "CANCELADO_BOLETO":
-        return "BOLETO CANCELADO";
-      default:
-        return status;
-    }
-  };
-
-  // Verifica se o boleto está em aberto (não permite deletar)
-  const isBilletOpen = (score: ScoreWithBilletInfo): boolean => {
-    if (!score.billetInfo) return false;
-    const status = score.billetInfo.situacaoBoleto.toLowerCase();
-    return status.includes("aberto") || status.includes("pendente");
   };
 
   if (!clientId) {
@@ -654,7 +452,7 @@ export default function CombinedScoresCards({
         <div className="flex justify-end">
           <button
             type="button"
-            onClick={() => setShowWildcardBilletModal(true)}
+            onClick={() => setModal({ type: "wildcardBillet" })}
             className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm cursor-pointer"
           >
             <FileText className="w-4 h-4" />
@@ -687,173 +485,26 @@ export default function CombinedScoresCards({
           {/* Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {scores.map((score) => (
-              <div
+              <CombinedScoreCard
                 key={score.id}
-                className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow"
-              >
-                {/* Header do Card */}
-                <div className="flex justify-between gap-2 flex-wrap items-start mb-4">
-                  <div>
-                    <h3 className="font-semibold text-lg">
-                      Agrupamento {score.number || score.id}
-                    </h3>
-                    <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                      <Calendar className="w-3 h-3" />
-                      {formatDate(score.confirmedAt)}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Informações */}
-                <div className="space-y-2 mb-4 pb-4 border-b">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Valor Total:</span>
-                    <span className="font-semibold">
-                      {formatCurrency(score.totalValue)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Vencimento:</span>
-                    <span>{formatDate(score.dueDate)}</span>
-                  </div>
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
-                      score.status,
-                    )}`}
-                  >
-                    {getStatusLabel(score.status)}
-                  </span>
-                </div>
-
-                {/* Ações */}
-                <div className="space-y-2">
-                  {/* Botão Ver Produtos */}
-                  <button
-                    type="button"
-                    onClick={() => handleViewProducts(score)}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm cursor-pointer"
-                  >
-                    <Eye className="w-4 h-4" />
-                    Ver Produtos
-                  </button>
-
-                  {/* Botão Ver Fotos — comprovantes de compras deste agrupamento que vieram de
-                      captura por celular de clientes que exigem foto (ver Client.requiresPurchaseProof) */}
-                  <button
-                    type="button"
-                    onClick={() => setImagesModalScore(score)}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 transition-colors text-sm cursor-pointer"
-                  >
-                    <Camera className="w-4 h-4" />
-                    Ver Fotos
-                  </button>
-
-                  {/* Botões de Boleto e Nota Fiscal */}
-                  <div className="space-y-2">
-                    {!client?.onlyBillet &&
-                      !score.hasBillet &&
-                      !score.hasInvoice && (
-                        <button
-                          type="button"
-                          onClick={() => handleCombinedButtonClick(score)}
-                          disabled={processingScoreIds.has(score.id)}
-                          className="w-full flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <FileText className="w-3 h-3" />
-                          {processingScoreIds.has(score.id)
-                            ? "Gerando..."
-                            : "Gerar NF + Boleto"}
-                        </button>
-                      )}
-
-                    <div
-                      className={`grid gap-2 ${client?.onlyBillet ? "grid-cols-1" : "grid-cols-2"}`}
-                    >
-                      {score.hasBillet ? (
-                        <button
-                          type="button"
-                          onClick={() => handleShowBillet(score)}
-                          className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs cursor-pointer"
-                        >
-                          <Info className="w-3 h-3" />
-                          Ver Boleto
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setClientNumberModal({
-                              state: true,
-                              groupId: score.id,
-                            })
-                          }
-                          disabled={processingScoreIds.has(score.id)}
-                          className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <FileText className="w-3 h-3" />
-                          {processingScoreIds.has(score.id)
-                            ? "Gerando..."
-                            : "Gerar Boleto"}
-                        </button>
-                      )}
-
-                      {!client?.onlyBillet &&
-                        (score.hasInvoice ? (
-                          <button
-                            type="button"
-                            onClick={() => handleShowInvoice(score)}
-                            className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs cursor-pointer"
-                          >
-                            <Info className="w-3 h-3" />
-                            Ver NF
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleInvoiceButtonClick(score)}
-                            disabled={processingScoreIds.has(score.id)}
-                            className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <FileText className="w-3 h-3" />
-                            {processingScoreIds.has(score.id)
-                              ? "Gerando..."
-                              : "Gerar NF"}
-                          </button>
-                        ))}
-                    </div>
-                  </div>
-
-                  {/* Confirmar Pagamento e Deletar */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {!score.hasBillet && (
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePayment(score)}
-                        disabled={
-                          (score.hasInvoice && score.status === "PAGO") ||
-                          actionProcessingIds.has(score.id)
-                        }
-                        className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg transition-colors text-xs cursor-pointer text-white bg-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--primary-dark)] ${score.hasInvoice ? "col-span-2 w-full" : ""}`}
-                      >
-                        <CheckCircle className="w-3 h-3" />
-                        Confirmar Pag.
-                      </button>
-                    )}
-                    {/* Esconde botão deletar se boleto ou fatura estiver em aberto */}
-                    {!isBilletOpen(score) && !score.hasInvoice && (
-                      <button
-                        type="button"
-                        onClick={() => setDeleteConfirmScore(score)}
-                        disabled={actionProcessingIds.has(score.id)}
-                        className="flex items-center justify-center gap-1 px-2 py-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        Deletar
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+                score={score}
+                client={client}
+                isProcessing={processingScoreIds.has(score.id)}
+                isActionProcessing={actionProcessingIds.has(score.id)}
+                onViewProducts={handleViewProducts}
+                onViewImages={(s) => setModal({ type: "images", score: s })}
+                onCombinedClick={handleCombinedButtonClick}
+                onShowBillet={handleShowBillet}
+                onOpenClientNumberModal={(groupId) =>
+                  setModal({ type: "clientNumber", groupId })
+                }
+                onShowInvoice={handleShowInvoice}
+                onInvoiceClick={handleInvoiceButtonClick}
+                onTogglePayment={handleTogglePayment}
+                onDeleteClick={(s) =>
+                  setModal({ type: "deleteConfirm", score: s })
+                }
+              />
             ))}
           </div>
 
@@ -884,171 +535,23 @@ export default function CombinedScoresCards({
         </>
       )}
 
-      {/* Modal de produtos */}
-      {productsModalScore && (
-        <GroupedProductsModal
-          combinedScoreId={productsModalScore.id}
-          scoreNumber={productsModalScore.number}
-          onClose={() => setProductsModalScore(null)}
-        />
-      )}
-
-      {/* Modal de fotos (comprovantes) */}
-      {imagesModalScore && (
-        <CombinedScoreImagesModal
-          combinedScoreId={imagesModalScore.id}
-          scoreNumber={imagesModalScore.number}
-          onClose={() => setImagesModalScore(null)}
-        />
-      )}
-
-      <ConfirmDeleteModal
-        open={!!deleteConfirmScore}
-        onClose={() => setDeleteConfirmScore(null)}
-        confirmDisabled={
-          deleteConfirmScore
-            ? actionProcessingIds.has(deleteConfirmScore.id)
-            : false
-        }
-        onConfirm={() => {
-          if (deleteConfirmScore) {
-            handleDelete(deleteConfirmScore.id);
-          }
-          setDeleteConfirmScore(null);
-        }}
-        title={`Tem certeza que deseja deletar o agrupamento ${
-          deleteConfirmScore?.number || deleteConfirmScore?.id
-        }? Esta ação não pode ser desfeita.`}
+      <CombinedScoreModals
+        modal={modal}
+        onCloseModal={closeModal}
+        isActionProcessing={(id) => actionProcessingIds.has(id)}
+        onConfirmDelete={handleDelete}
+        onConfirmWildcardBillet={handleGenerateWildcardBillet}
+        onConfirmClientNumber={handleGenerateBillet}
+        onConfirmAdditionalData={handleConfirmAdditionalData}
+        onRefetch={refetch}
+        billetResultModal={billetResultModal}
+        onCloseBilletResult={() => setBilletResultModal(null)}
+        invoiceResultModal={invoiceResultModal}
+        onCloseInvoiceResult={() => setInvoiceResultModal(null)}
+        invoiceBilletResultModal={invoiceBilletResultModal}
+        onCloseInvoiceBilletResult={() => setInvoiceBilletResultModal(null)}
+        isGenerating={processingScoreIds.size > 0}
       />
-
-      <WildcardBilletModal
-        open={showWildcardBilletModal}
-        onClose={() => setShowWildcardBilletModal(false)}
-        onConfirm={(number, value, dueDate) => {
-          setShowWildcardBilletModal(false);
-          handleGenerateWildcardBillet(number, value, dueDate);
-        }}
-      />
-
-      {/* Modal de boleto recém-gerado */}
-      {billetResultModal && (
-        <ShowBilletModal
-          isOpen={true}
-          onClose={() => setBilletResultModal(null)}
-          billetData={billetResultModal.pdf}
-          scoreNumber={
-            billetResultModal.score.number || billetResultModal.score.id
-          }
-          clientNumber={billetResultModal.clientNumber}
-        />
-      )}
-
-      {billetDataModalScore?.billetInfo && (
-        <ShowBilletDataModal
-          isOpen={true}
-          onClose={() => setBilletDataModalScore(null)}
-          billetData={billetDataModalScore.billetInfo}
-          combinedScoreId={billetDataModalScore.id}
-          clientNumber={
-            billetDataModalScore.number ||
-            billetDataModalScore.billetInfo?.seuNumero ||
-            null
-          }
-          onBilletCancelled={() => {
-            fetchScores();
-          }}
-        />
-      )}
-
-      <ClientNumberModal
-        open={clientNumberModal.state}
-        onClose={() => setClientNumberModal({ state: false, groupId: -1 })}
-        onConfirm={(number, dueDate) => {
-          setClientNumberModal({ state: false, groupId: -1 });
-          handleGenerateBillet(clientNumberModal.groupId, number, dueDate);
-        }}
-      />
-
-      {/* Modal de Nota Fiscal recém-gerada */}
-      {invoiceResultModal && (
-        <ShowInvoiceModal
-          isOpen={true}
-          onClose={() => setInvoiceResultModal(null)}
-          invoiceData={invoiceResultModal.pdf}
-          scoreNumber={
-            invoiceResultModal.score.number || invoiceResultModal.score.id
-          }
-          ref={invoiceResultModal.score.invoiceRef || ""}
-          invoiceNumber={invoiceResultModal.score.invoiceInfo?.number}
-        />
-      )}
-
-      {invoiceDataModalScore?.invoiceInfo && (
-        <ShowInvoiceDataModal
-          isOpen={true}
-          onClose={() => setInvoiceDataModalScore(null)}
-          invoiceData={invoiceDataModalScore.invoiceInfo}
-          onInvoiceCancelled={() => {
-            fetchScores();
-          }}
-        />
-      )}
-
-      {/* Modal de Dados Adicionais */}
-      {showAdditionalDataModal && pendingInvoiceScore && (
-        <AdditionalDataModal
-          isOpen={showAdditionalDataModal}
-          onClose={() => {
-            setShowAdditionalDataModal(false);
-            setPendingInvoiceScore(null);
-            setPendingCombinedFlow(false);
-          }}
-          onConfirm={(dadosAdicionais) => {
-            setShowAdditionalDataModal(false);
-            if (pendingInvoiceScore) {
-              if (pendingCombinedFlow) {
-                handleGenerateInvoiceAndBillet(
-                  pendingInvoiceScore.id,
-                  dadosAdicionais,
-                );
-              } else {
-                handleGenerateInvoice(pendingInvoiceScore.id, dadosAdicionais);
-              }
-            }
-            setPendingInvoiceScore(null);
-            setPendingCombinedFlow(false);
-          }}
-          scoreNumber={pendingInvoiceScore.number || pendingInvoiceScore.id}
-        />
-      )}
-
-      <GameLoadingOverlay
-        isOpen={processingScoreIds.size > 0}
-        title="Gerando documento"
-        messages={[
-          "Conectando aos servidores fiscais...",
-          "Processando nota fiscal e/ou boleto...",
-          "Isso pode levar alguns instantes...",
-          "Quase lá...",
-        ]}
-      />
-
-      {/* Modal de NF + Boleto gerados juntos */}
-      {invoiceBilletResultModal && (
-        <ShowInvoiceAndBilletModal
-          isOpen={true}
-          onClose={() => setInvoiceBilletResultModal(null)}
-          danfeBlob={invoiceBilletResultModal.result.danfeBlob}
-          xmlBlob={invoiceBilletResultModal.result.xmlBlob}
-          billetBlob={invoiceBilletResultModal.result.billetBlob}
-          scoreNumber={
-            invoiceBilletResultModal.score.number ||
-            invoiceBilletResultModal.score.id
-          }
-          invoiceNumber={invoiceBilletResultModal.result.invoiceNumber}
-          billetNumber={invoiceBilletResultModal.result.billetNumber}
-        />
-      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { Download, Printer, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useBillet } from "@/hooks/useBillet";
-import { showError, showSuccess } from "@/services/notificationService";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 interface ShowBilletModalProps {
   isOpen: boolean;

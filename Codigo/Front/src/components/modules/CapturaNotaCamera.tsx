@@ -2,7 +2,7 @@
 
 import { Camera } from "lucide-react";
 import { useId, useState } from "react";
-import { showError, showSuccess } from "@/services/notificationService";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 interface CapturaNotaCameraProps {
   /** Envia o arquivo pro backend — lança erro em caso de falha (mensagem já tratada). */

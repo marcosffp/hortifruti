@@ -3,7 +3,7 @@
 import { AlertTriangle, FileX, X } from "lucide-react";
 import { useState } from "react";
 import { useInvoice } from "@/hooks/useInvoice";
-import { showError, showSuccess } from "@/services/notificationService";
+import { showError, showSuccess } from "@/utils/toastUtils";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
 interface ManualCancelModalProps {

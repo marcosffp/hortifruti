@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getPlaceDetails,
   getPlacesAutocomplete,
-} from "@/hooks/useAutocomplete";
+} from "@/actions/placesActions";
 import type { AddressSuggestion, AddressType } from "@/types/addressType";
 
 interface AddressAutocompleteProps {
