@@ -2,23 +2,11 @@ import { UserRoundSearch } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { clientService } from "@/services/clientService";
 import type { ClientSelectionInfo } from "@/types/clientType";
+import { normalize } from "@/utils/textSearch";
 
 type ClientSelectorProps = {
   onClientSelect?: (client: ClientSelectionInfo) => void;
 };
-
-const DIACRITICS_REGEX = new RegExp(
-  `[${String.fromCharCode(0x0300)}-${String.fromCharCode(0x036f)}]`,
-  "g",
-);
-
-function normalize(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(DIACRITICS_REGEX, "")
-    .toLowerCase()
-    .trim();
-}
 
 export default function ClientSelector({
   onClientSelect,

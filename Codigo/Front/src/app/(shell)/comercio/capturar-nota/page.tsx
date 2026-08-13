@@ -1,6 +1,7 @@
 "use client";
 
 import { Camera } from "lucide-react";
+import RoleGuard from "@/components/auth/RoleGuard";
 import CapturaNotaCamera from "@/components/modules/CapturaNotaCamera";
 import { API_BASE_URL } from "@/config/api";
 
@@ -36,28 +37,30 @@ export default function CapturarNotaPage() {
   };
 
   return (
-    <main className="flex-1 p-6 bg-gray-50 overflow-auto min-h-full">
-      <div className="max-w-md mx-auto space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <Camera className="text-primary" size={26} />
-            Capturar Nota
-          </h1>
-          <p className="text-gray-600 text-sm mt-1">
-            Tire a foto da nota de compra (pode ter mais de uma nota na mesma
-            foto) — cada uma cai separada na fila de{" "}
-            <span className="font-medium">Gerenciamento de Compras</span> pra
-            revisão em tempo real.
-          </p>
-        </div>
+    <RoleGuard roles={["MANAGER", "EMPLOYEE"]}>
+      <main className="flex-1 p-6 bg-gray-50 overflow-auto min-h-full">
+        <div className="max-w-md mx-auto space-y-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <Camera className="text-primary" size={26} />
+              Capturar Nota
+            </h1>
+            <p className="text-gray-600 text-sm mt-1">
+              Tire a foto da nota de compra (pode ter mais de uma nota na mesma
+              foto) — cada uma cai separada na fila de{" "}
+              <span className="font-medium">Gerenciamento de Compras</span> pra
+              revisão em tempo real.
+            </p>
+          </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <CapturaNotaCamera
-            enviar={enviar}
-            mensagemSucesso="Foto enviada! Já aparece na fila de Gerenciamento de Compras."
-          />
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <CapturaNotaCamera
+              enviar={enviar}
+              mensagemSucesso="Foto enviada! Já aparece na fila de Gerenciamento de Compras."
+            />
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </RoleGuard>
   );
 }

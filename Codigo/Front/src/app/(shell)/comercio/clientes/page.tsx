@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import RoleGuard from "@/components/auth/RoleGuard";
 import ClientDetailModal from "@/components/modals/ClientDetailModal";
 import ClientCard from "@/components/modules/ClientCard";
 import Button from "@/components/ui/Button";
@@ -137,7 +138,7 @@ export default function ClientesPage() {
   };
 
   return (
-    <>
+    <RoleGuard roles={["MANAGER", "EMPLOYEE"]}>
       <main className="flex-1 p-8 bg-gray-50 overflow-auto">
         <div className="flex flex-col max-w-7xl mx-auto">
           <div className="mb-8">
@@ -420,6 +421,6 @@ export default function ClientesPage() {
         clientId={clienteDetalhesId}
         onClose={() => setClienteDetalhesId(null)}
       />
-    </>
+    </RoleGuard>
   );
 }

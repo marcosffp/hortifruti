@@ -81,157 +81,163 @@ export default function FreightCalculationPage() {
   };
 
   return (
-    <main className="flex-1 p-6 bg-gray-50 overflow-auto flex flex-col h-full">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Cálculo de Frete</h1>
-        <p className="text-gray-600">
-          Calcule o valor do frete entre dois endereços
-        </p>
-      </div>
+    <RoleGuard roles={["MANAGER", "EMPLOYEE"]}>
+      <main className="flex-1 p-6 bg-gray-50 overflow-auto flex flex-col h-full">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">Cálculo de Frete</h1>
+          <p className="text-gray-600">
+            Calcule o valor do frete entre dois endereços
+          </p>
+        </div>
 
-      <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
-        <FreightConfigInfo />
-      </RoleGuard>
+        <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
+          <FreightConfigInfo />
+        </RoleGuard>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-800">
-              Dados da Entrega
-            </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Dados da Entrega
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowFavoritesModal(true)}
+                className="flex items-center text-green-600 hover:text-green-800 transition-colors"
+              >
+                <Star size={18} className="mr-1" />
+                Favoritos
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <label
+                  htmlFor="frete-origem"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Origem
+                </label>
+                <button
+                  type="button"
+                  onClick={openFavoritesForOrigin}
+                  className="text-xs text-green-600 hover:text-green-800"
+                >
+                  Escolher dos favoritos
+                </button>
+              </div>
+              <AddressAutocomplete
+                id="frete-origem"
+                value={origin}
+                onChange={setOrigin}
+                onAddressSelect={handleOriginSelect}
+                placeholder="Digite o endereço de origem..."
+              />
+            </div>
+
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-2">
+                <label
+                  htmlFor="frete-destino"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Destino
+                </label>
+                <button
+                  type="button"
+                  onClick={openFavoritesForDestination}
+                  className="text-xs text-green-600 hover:text-green-800"
+                >
+                  Escolher dos favoritos
+                </button>
+              </div>
+              <AddressAutocomplete
+                id="frete-destino"
+                value={destination}
+                onChange={setDestination}
+                onAddressSelect={handleDestinationSelect}
+                placeholder="Digite o endereço de destino..."
+              />
+            </div>
+
+            {freightValue && routeData && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="text-sm font-medium text-green-800 mb-2">
+                  Informações da Rota
+                </h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-green-600">Distância:</span>
+                    <span className="ml-2 font-medium">
+                      {routeData.distance}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-green-600">Tempo:</span>
+                    <span className="ml-2 font-medium">
+                      {routeData.duration}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <button
               type="button"
-              onClick={() => setShowFavoritesModal(true)}
-              className="flex items-center text-green-600 hover:text-green-800 transition-colors"
+              onClick={handleCalculateFreight}
+              disabled={!originData || !destinationData || isCalculating}
+              className="w-50 bg-green-600 text-white py-3 px-4 rounded-lg flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-green-700 transition-colors"
             >
-              <Star size={18} className="mr-1" />
-              Favoritos
-            </button>
-          </div>
-
-          <div className="mb-4">
-            <div className="flex justify-between items-center mb-2">
-              <label
-                htmlFor="frete-origem"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Origem
-              </label>
-              <button
-                type="button"
-                onClick={openFavoritesForOrigin}
-                className="text-xs text-green-600 hover:text-green-800"
-              >
-                Escolher dos favoritos
-              </button>
-            </div>
-            <AddressAutocomplete
-              id="frete-origem"
-              value={origin}
-              onChange={setOrigin}
-              onAddressSelect={handleOriginSelect}
-              placeholder="Digite o endereço de origem..."
-            />
-          </div>
-
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <label
-                htmlFor="frete-destino"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Destino
-              </label>
-              <button
-                type="button"
-                onClick={openFavoritesForDestination}
-                className="text-xs text-green-600 hover:text-green-800"
-              >
-                Escolher dos favoritos
-              </button>
-            </div>
-            <AddressAutocomplete
-              id="frete-destino"
-              value={destination}
-              onChange={setDestination}
-              onAddressSelect={handleDestinationSelect}
-              placeholder="Digite o endereço de destino..."
-            />
-          </div>
-
-          {freightValue && routeData && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h3 className="text-sm font-medium text-green-800 mb-2">
-                Informações da Rota
-              </h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-green-600">Distância:</span>
-                  <span className="ml-2 font-medium">{routeData.distance}</span>
-                </div>
-                <div>
-                  <span className="text-green-600">Tempo:</span>
-                  <span className="ml-2 font-medium">{routeData.duration}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={handleCalculateFreight}
-            disabled={!originData || !destinationData || isCalculating}
-            className="w-50 bg-green-600 text-white py-3 px-4 rounded-lg flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-green-700 transition-colors"
-          >
-            {isCalculating ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                Calculando...
-              </>
-            ) : (
-              <>
-                <Calculator size={18} className="mr-2" />
-                Calcular Frete
-              </>
-            )}
-          </button>
-
-          {freightValue && (
-            <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center mb-2">
-                <Truck size={20} className="text-green-600 mr-2" />
-                <h3 className="text-lg font-semibold text-green-800">
-                  Valor do Frete
-                </h3>
-              </div>
-              <p className="text-3xl font-bold text-green-600">
-                R$ {freightValue.toFixed(2).replace(".", ",")}
-              </p>
-              {routeData && (
-                <p className="text-sm text-green-700 mt-2">
-                  Baseado em {routeData.distance} de distância
-                </p>
+              {isCalculating ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Calculando...
+                </>
+              ) : (
+                <>
+                  <Calculator size={18} className="mr-2" />
+                  Calcular Frete
+                </>
               )}
-            </div>
-          )}
+            </button>
+
+            {freightValue && (
+              <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center mb-2">
+                  <Truck size={20} className="text-green-600 mr-2" />
+                  <h3 className="text-lg font-semibold text-green-800">
+                    Valor do Frete
+                  </h3>
+                </div>
+                <p className="text-3xl font-bold text-green-600">
+                  R$ {freightValue.toFixed(2).replace(".", ",")}
+                </p>
+                {routeData && (
+                  <p className="text-sm text-green-700 mt-2">
+                    Baseado em {routeData.distance} de distância
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Rota no Mapa
+            </h2>
+            <MapComponent routeData={routeData} />
+          </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Rota no Mapa
-          </h2>
-          <MapComponent routeData={routeData} />
-        </div>
-      </div>
-
-      <FavoritesModal
-        isOpen={showFavoritesModal}
-        onClose={() => {
-          setShowFavoritesModal(false);
-          setSelectingFor(null);
-        }}
-        onSelectAddress={handleFavoritesSelect}
-      />
-    </main>
+        <FavoritesModal
+          isOpen={showFavoritesModal}
+          onClose={() => {
+            setShowFavoritesModal(false);
+            setSelectingFor(null);
+          }}
+          onSelectAddress={handleFavoritesSelect}
+        />
+      </main>
+    </RoleGuard>
   );
 }

@@ -53,8 +53,12 @@ export const transactionService = {
     try {
       const { startDate: defaultStartDate, endDate: defaultEndDate } =
         this.getDateRange(startDate, endDate);
+      const params = new URLSearchParams({
+        startDate: defaultStartDate,
+        endDate: defaultEndDate,
+      });
       const response = await fetch(
-        `${API_BASE_URL}/transactions/revenue?startDate=${defaultStartDate}&endDate=${defaultEndDate}`,
+        `${API_BASE_URL}/transactions/revenue?${params.toString()}`,
         {
           method: "GET",
           headers: getAuthHeaders(),
@@ -79,8 +83,12 @@ export const transactionService = {
     try {
       const { startDate: defaultStartDate, endDate: defaultEndDate } =
         this.getDateRange(startDate, endDate);
+      const params = new URLSearchParams({
+        startDate: defaultStartDate,
+        endDate: defaultEndDate,
+      });
       const response = await fetch(
-        `${API_BASE_URL}/transactions/expenses?startDate=${defaultStartDate}&endDate=${defaultEndDate}`,
+        `${API_BASE_URL}/transactions/expenses?${params.toString()}`,
         {
           method: "GET",
           headers: getAuthHeaders(),
@@ -107,8 +115,12 @@ export const transactionService = {
     try {
       const { startDate: defaultStartDate, endDate: defaultEndDate } =
         this.getDateRange(startDate, endDate);
+      const params = new URLSearchParams({
+        startDate: defaultStartDate,
+        endDate: defaultEndDate,
+      });
       const response = await fetch(
-        `${API_BASE_URL}/transactions/balance?startDate=${defaultStartDate}&endDate=${defaultEndDate}`,
+        `${API_BASE_URL}/transactions/balance?${params.toString()}`,
         {
           method: "GET",
           headers: getAuthHeaders(),

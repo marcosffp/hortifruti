@@ -1,44 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import SkeletonTableLoading from "@/components/ui/SkeletonTableLoading";
-import { groupedProductsService } from "@/services/groupedProductsService";
-import { purchaseService } from "@/services/purchaseService";
+import { useGroupedProducts } from "@/hooks/useGroupedProducts";
+import { usePurchase } from "@/hooks/usePurchase";
 import type { GroupedProductRequest } from "@/types/groupedType";
+import { getLastMonthInterval, getWeekInterval } from "@/utils/dateUtils";
 import { showError, showSuccess } from "@/utils/toastUtils";
 
 interface ClientProductsTableProps {
   clientId: number | undefined;
   refreshKey?: number;
-}
-
-function getWeekInterval() {
-  const today = new Date();
-  const lastMonday = new Date(today);
-  lastMonday.setDate(today.getDate() - ((today.getDay() + 6) % 7) - 7);
-  lastMonday.setHours(0, 0, 0, 0);
-
-  const lastSaturday = new Date(lastMonday);
-  lastSaturday.setDate(lastMonday.getDate() + 6);
-  lastSaturday.setHours(23, 59, 59, 999);
-
-  return {
-    start: lastMonday.toISOString().split("T")[0],
-    end: lastSaturday.toISOString().split("T")[0],
-  };
-}
-
-function getLastMonthInterval() {
-  const today = new Date();
-  const year =
-    today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
-  const month = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
-
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-
-  return {
-    start: firstDay.toISOString().split("T")[0],
-    end: lastDay.toISOString().split("T")[0],
-  };
 }
 
 export default function ClientProductsTable({
@@ -62,6 +32,8 @@ export default function ClientProductsTable({
   const [error, setError] = useState<string | null>(null);
 
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const { fetchClientProducts } = usePurchase();
+  const { confirmGrouping } = useGroupedProducts();
 
   useEffect(() => {
     if (groupBy === "week") {
@@ -87,7 +59,7 @@ export default function ClientProductsTable({
         setIsLoading(true);
         setError(null);
         try {
-          const products = await purchaseService.fetchClientProducts(
+          const products = await fetchClientProducts(
             clientId,
             startDate,
             endDate,
@@ -110,12 +82,11 @@ export default function ClientProductsTable({
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
-  }, [clientId, startDate, endDate, refreshKey]);
+  }, [clientId, startDate, endDate, refreshKey, fetchClientProducts]);
 
   const handleConfirmGrouping = () => {
     if (!clientId) return;
-    groupedProductsService
-      .confirmGrouping(clientId, products)
+    confirmGrouping(clientId, products)
       .then(() => {
         showSuccess("Agrupamento confirmado com sucesso!");
       })

@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { clientService } from "@/services/clientService";
+import { useClient } from "@/hooks/useClient";
 import type { ClientResponse } from "@/types/clientType";
 
 interface ClientDetailModalProps {
@@ -93,6 +93,7 @@ export default function ClientDetailModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copyToast, setCopyToast] = useState<CopyToast | null>(null);
+  const { getClientById } = useClient();
 
   useEffect(() => {
     if (clientId === null) {
@@ -104,7 +105,7 @@ export default function ClientDetailModal({
       setIsLoading(true);
       setError(null);
       try {
-        const data = await clientService.getClientById(clientId);
+        const data = await getClientById(clientId);
         setClient(data);
       } catch {
         setError("Não foi possível carregar os dados do cliente");
@@ -114,7 +115,7 @@ export default function ClientDetailModal({
     };
 
     fetchClient();
-  }, [clientId]);
+  }, [clientId, getClientById]);
 
   useEffect(() => {
     if (clientId === null) return;

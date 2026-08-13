@@ -25,5 +25,37 @@ export function useClient() {
     }
   }, []);
 
-  return { getClientById, isLoading, error };
+  const getClientSummary = useCallback(async (clientId: number) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      return await clientService.getClientSummary(clientId);
+    } catch (err) {
+      setError(getErrorMessage(err));
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const getAllClientsForSelection = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      return await clientService.getAllClientsForSelection();
+    } catch (err) {
+      setError(getErrorMessage(err));
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return {
+    getClientById,
+    getClientSummary,
+    getAllClientsForSelection,
+    isLoading,
+    error,
+  };
 }

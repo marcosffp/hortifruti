@@ -1,7 +1,14 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import type React from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { publicPages } from "@/config/publicPages";
 import { authService, LoginError } from "@/services/authService";
 
@@ -11,7 +18,20 @@ export interface LoginResult {
   retryAfter?: number;
 }
 
-export function useAuth() {
+interface AuthContextValue {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  userName: string;
+  userRoles: string[];
+  environment: string;
+  login: (username: string, password: string) => Promise<LoginResult>;
+  logout: () => Promise<void>;
+  hasRole: (role: string) => boolean;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -88,14 +108,28 @@ export function useAuth() {
     return userRoles.includes(role);
   };
 
-  return {
-    isAuthenticated,
-    isLoading,
-    userName,
-    userRoles,
-    environment,
-    login,
-    logout,
-    hasRole,
-  };
+  return (
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        isLoading,
+        userName,
+        userRoles,
+        environment,
+        login,
+        logout,
+        hasRole,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth(): AuthContextValue {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth deve ser usado dentro de um AuthProvider");
+  }
+  return context;
 }

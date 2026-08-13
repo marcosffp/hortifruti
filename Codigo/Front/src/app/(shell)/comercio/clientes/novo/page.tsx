@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import RoleGuard from "@/components/auth/RoleGuard";
 import ClientForm, { type ClientFormData } from "@/components/forms/ClientForm";
 import { clientService } from "@/services/clientService";
 import { formatAddressForBackend } from "@/utils/addressUtils";
@@ -54,12 +55,14 @@ export default function NovoClientePage() {
   };
 
   return (
-    <ClientForm
-      onSubmit={handleSubmit}
-      isSubmitting={isSubmitting}
-      title="Novo Cliente"
-      subtitle="Preencha o formulário abaixo para adicionar um novo cliente."
-      submitButtonText="Salvar Cliente"
-    />
+    <RoleGuard roles={["MANAGER", "EMPLOYEE"]}>
+      <ClientForm
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+        title="Novo Cliente"
+        subtitle="Preencha o formulário abaixo para adicionar um novo cliente."
+        submitButtonText="Salvar Cliente"
+      />
+    </RoleGuard>
   );
 }

@@ -5,21 +5,25 @@ import { useEffect, useState } from "react";
 import ClientAutocompleteField from "@/components/ui/ClientAutocompleteField";
 import MaskedDecimalInput from "@/components/ui/MaskedDecimalInput";
 import ProductAutocompleteField from "@/components/ui/ProductAutocompleteField";
-import { API_BASE_URL } from "@/config/api";
-import { clientService } from "@/services/clientService";
-import { fiscalProductService } from "@/services/fiscalProductService";
+import { useCapturaNota } from "@/hooks/useCapturaNota";
+import { useClient } from "@/hooks/useClient";
+import { useFiscalProduct } from "@/hooks/useFiscalProduct";
 import type { ClientSelectionInfo } from "@/types/clientType";
+import type {
+  ItemNotaExtraido,
+  NotaExtracaoResponse,
+  ProdutoSugerido,
+} from "@/types/notaExtracaoType";
 import type { FiscalProductType } from "@/types/purchaseType";
 import { todaySaoPaulo } from "@/utils/dateUtils";
+import { formatCurrency } from "@/utils/formatCurrency";
+import {
+  type NumericField,
+  type NumericRow,
+  recalcNumericRow,
+  round,
+} from "@/utils/numericRow";
 import { showError, showSuccess } from "@/utils/toastUtils";
-
-async function extrairMensagemErro(
-  response: Response,
-  fallback: string,
-): Promise<string> {
-  const body = await response.json().catch(() => null);
-  return body?.message || body?.error || fallback;
-}
 
 // A "data lida" vem da OCR como texto solto (dd/mm/aaaa) — tenta converter pra ISO (o formato que
 // <input type="date"> e o backend esperam); se não bater com esse formato, quem chama cai pro
@@ -31,52 +35,12 @@ function parseDataLidaParaIso(dataLida: string | null): string | null {
   return `${ano}-${mes}-${dia}`;
 }
 
-export type ProdutoSugerido = {
-  id: number;
-  codigo: string;
-  nome: string;
-  score: number;
-};
-
-export type ClienteSugerido = {
-  id: number;
-  nome: string;
-  score: number;
-};
-
-export type ItemNotaExtraido = {
-  produtoLido: string;
-  quantidade: number | null;
-  unidade: string | null;
-  precoUnitario: number | null;
-  total: number | null;
-  produtoSugerido: ProdutoSugerido | null;
-  confianca: "alta" | "media" | "baixa" | null;
-};
-
-export type NotaExtracaoResponse = {
-  cliente: string | null;
-  data: string | null;
-  itens: ItemNotaExtraido[];
-  totalGeral: number | null;
-  consistente: boolean | null;
-  itensParaConferir: string[];
-  clienteSugerido: ClienteSugerido | null;
-  clienteConfianca: "alta" | "media" | "baixa" | null;
-};
-
-type NumericField = "quantity" | "price" | "total";
-
-interface RevisaoRow {
+interface RevisaoRow extends NumericRow {
   produtoLido: string;
   unidadeLida: string | null;
   produtoSugerido: ProdutoSugerido | null;
   confianca: "alta" | "media" | "baixa" | null;
   code: string;
-  quantity: number;
-  price: number;
-  total: number;
-  lastEdited: NumericField[];
 }
 
 const CONFIANCA_BADGE: Record<"alta" | "media" | "baixa", string> = {
@@ -93,38 +57,6 @@ function itemBate(row: RevisaoRow): boolean {
   return Math.abs(row.quantity * row.price - row.total) < MARGEM_CONSISTENCIA;
 }
 
-const NUMERIC_FIELDS: NumericField[] = ["quantity", "price", "total"];
-
-function round(value: number, decimals: number): number {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
-}
-
-function recalcRow(
-  row: RevisaoRow,
-  field: NumericField,
-  value: number,
-): RevisaoRow {
-  const next: RevisaoRow = { ...row, [field]: value };
-  next.lastEdited = [...row.lastEdited.filter((f) => f !== field), field].slice(
-    -2,
-  );
-
-  if (next.lastEdited.length === 2) {
-    const target = NUMERIC_FIELDS.find((f) => !next.lastEdited.includes(f));
-    if (target === "total") {
-      next.total = round(next.quantity * next.price, 2);
-    } else if (target === "price") {
-      next.price =
-        next.quantity !== 0 ? round(next.total / next.quantity, 2) : 0;
-    } else if (target === "quantity") {
-      next.quantity = next.price !== 0 ? round(next.total / next.price, 3) : 0;
-    }
-  }
-
-  return next;
-}
-
 function itemToRow(item: ItemNotaExtraido): RevisaoRow {
   return {
     produtoLido: item.produtoLido,
@@ -137,13 +69,6 @@ function itemToRow(item: ItemNotaExtraido): RevisaoRow {
     total: item.total ?? 0,
     lastEdited: ["quantity", "price"],
   };
-}
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
 }
 
 interface NotaRevisaoModalProps {
@@ -186,24 +111,25 @@ export default function NotaRevisaoModal({
   );
   const [zoom, setZoom] = useState(1);
   const [confirmando, setConfirmando] = useState(false);
+  const { getFiscalProducts } = useFiscalProduct();
+  const { getAllClientsForSelection } = useClient();
+  const { confirmar } = useCapturaNota();
 
   useEffect(() => {
-    fiscalProductService
-      .getFiscalProducts()
+    getFiscalProducts()
       .then(setProducts)
       .catch((error) => console.error(error))
       .finally(() => setLoadingProducts(false));
-  }, []);
+  }, [getFiscalProducts]);
 
   // Carrega o cadastro completo pro autocomplete poder resolver o clienteId já pré-selecionado
   // (extraction.clienteSugerido) pro nome exato do cadastro, e pra sugerir o resto conforme o
   // usuário digita se precisar trocar.
   useEffect(() => {
-    clientService
-      .getAllClientsForSelection()
+    getAllClientsForSelection()
       .then(setClients)
       .catch((error) => console.error(error));
-  }, []);
+  }, [getAllClientsForSelection]);
 
   const selecionarCliente = (id: number | null, nome: string) => {
     setClienteId(id);
@@ -222,7 +148,9 @@ export default function NotaRevisaoModal({
     value: number,
   ) => {
     setRows((prev) =>
-      prev.map((row, i) => (i === index ? recalcRow(row, field, value) : row)),
+      prev.map((row, i) =>
+        i === index ? recalcNumericRow(row, field, value) : row,
+      ),
     );
   };
 
@@ -238,29 +166,15 @@ export default function NotaRevisaoModal({
 
     setConfirmando(true);
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/compras/notas/pendentes/${capturaId}/confirmar`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            clientId: clienteId,
-            purchaseDate,
-            items: rows.map((row) => ({
-              code: row.code,
-              quantity: row.quantity,
-              price: row.price,
-            })),
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          await extrairMensagemErro(response, "Falha ao lançar a compra."),
-        );
-      }
+      await confirmar(capturaId, {
+        clientId: clienteId,
+        purchaseDate,
+        items: rows.map((row) => ({
+          code: row.code,
+          quantity: row.quantity,
+          price: row.price,
+        })),
+      });
 
       showSuccess("Compra lançada com sucesso!");
       onConfirmado?.();

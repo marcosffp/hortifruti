@@ -1,10 +1,9 @@
 import { CircleDollarSign, Package, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import ClientDetailModal from "@/components/modals/ClientDetailModal";
-import { API_BASE_URL } from "@/config/api";
+import { useClient } from "@/hooks/useClient";
 import { useCountUp } from "@/hooks/useCountUp";
 import type { ClientInfo } from "@/types/clientType";
-import { getAuthHeaders } from "@/utils/httpUtils";
 
 interface ClientSummaryCardsProps {
   clientId: number | undefined;
@@ -22,6 +21,7 @@ export default function ClientSummaryCards({
 
   const animatedTotalProducts = useCountUp(clientInfo?.totalProducts ?? 0);
   const animatedTotalValue = useCountUp(clientInfo?.totalValue ?? 0);
+  const { getClientSummary } = useClient();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey is intentionally unused inside the effect — it only exists to force a refetch when the parent bumps it
   useEffect(() => {
@@ -29,15 +29,7 @@ export default function ClientSummaryCards({
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/clients/${clientId}/summary`,
-          {
-            headers: getAuthHeaders(),
-            credentials: "include",
-          },
-        );
-        if (!response.ok) throw new Error("Erro ao buscar dados do cliente");
-        const data: ClientInfo = await response.json();
+        const data = await getClientSummary(clientId as number);
         setClientInfo(data);
       } catch (err) {
         setError(
@@ -51,7 +43,7 @@ export default function ClientSummaryCards({
     };
 
     if (clientId) fetchClientSummary();
-  }, [clientId, refreshKey]);
+  }, [clientId, refreshKey, getClientSummary]);
 
   if (isLoading) {
     return (

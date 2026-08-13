@@ -45,6 +45,10 @@ const FavoritesModal = ({
   });
   const [newLocationName, setNewLocationName] = useState("");
   const [newLocationAddress, setNewLocationAddress] = useState("");
+  const [newLocationCoords, setNewLocationCoords] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [deleteLocationTarget, setDeleteLocationTarget] = useState<
     number | null
   >(null);
@@ -68,19 +72,20 @@ const FavoritesModal = ({
   };
 
   const handleAddFavoriteLocation = () => {
-    if (newLocationName && newLocationAddress) {
-      const newLocation = {
+    if (newLocationName && newLocationAddress && newLocationCoords) {
+      const newLocation: FavoriteLocation = {
         id: Date.now(),
         name: newLocationName,
         address: newLocationAddress,
-        lat: 0, // Seria obtido do autocomplete
-        lng: 0,
+        lat: newLocationCoords.lat,
+        lng: newLocationCoords.lng,
       };
       const updated = [...favoriteLocations, newLocation];
       setFavoriteLocations(updated);
       localStorage.setItem("favoriteLocations", JSON.stringify(updated));
       setNewLocationName("");
       setNewLocationAddress("");
+      setNewLocationCoords(null);
     }
   };
 
@@ -91,21 +96,34 @@ const FavoritesModal = ({
     if (location) {
       setNewLocationName(location.name);
       setNewLocationAddress(location.address);
+      setNewLocationCoords({ lat: location.lat, lng: location.lng });
       setEditingId(id);
     }
   };
 
   const handleUpdateFavoriteLocation = () => {
-    if (newLocationName && newLocationAddress && editingId) {
+    if (
+      newLocationName &&
+      newLocationAddress &&
+      editingId &&
+      newLocationCoords
+    ) {
       const updated = favoriteLocations.map((loc: FavoriteLocation) =>
         loc.id === editingId
-          ? { ...loc, name: newLocationName, address: newLocationAddress }
+          ? {
+              ...loc,
+              name: newLocationName,
+              address: newLocationAddress,
+              lat: newLocationCoords.lat,
+              lng: newLocationCoords.lng,
+            }
           : loc,
       );
       setFavoriteLocations(updated);
       localStorage.setItem("favoriteLocations", JSON.stringify(updated));
       setNewLocationName("");
       setNewLocationAddress("");
+      setNewLocationCoords(null);
       setEditingId(null);
     }
   };
@@ -288,31 +306,39 @@ const FavoritesModal = ({
                 />
                 <AddressAutocomplete
                   value={newLocationAddress}
-                  onChange={setNewLocationAddress}
+                  onChange={(value) => {
+                    setNewLocationAddress(value);
+                    setNewLocationCoords(null);
+                  }}
                   onAddressSelect={(addressData) => {
                     setNewLocationAddress(addressData.address);
-                    const newFavorite: FavoriteLocation = {
-                      ...addressData,
-                      id: Date.now(),
-                      name: newLocationName,
-                    };
-                    setFavoriteLocations((prev) => [...prev, newFavorite]);
-                    localStorage.setItem(
-                      "favoriteLocations",
-                      JSON.stringify([...favoriteLocations, newFavorite]),
-                    );
+                    setNewLocationCoords({
+                      lat: addressData.lat,
+                      lng: addressData.lng,
+                    });
                   }}
                   placeholder="Endereço completo..."
                 />
+                {newLocationAddress && !newLocationCoords && (
+                  <p className="text-sm text-amber-600">
+                    Selecione um endereço da lista de sugestões para obter as
+                    coordenadas.
+                  </p>
+                )}
                 <div className="flex space-x-3">
                   <button
                     type="button"
+                    disabled={
+                      !newLocationName ||
+                      !newLocationAddress ||
+                      !newLocationCoords
+                    }
                     onClick={
                       editingId
                         ? handleUpdateFavoriteLocation
                         : handleAddFavoriteLocation
                     }
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Plus size={18} className="mr-2" />
                     {editingId ? "Atualizar" : "Adicionar"}
@@ -324,6 +350,7 @@ const FavoritesModal = ({
                         setEditingId(null);
                         setNewLocationName("");
                         setNewLocationAddress("");
+                        setNewLocationCoords(null);
                       }}
                       className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
                     >
@@ -348,6 +375,7 @@ const FavoritesModal = ({
                     setEditingId(null);
                     setNewLocationName("");
                     setNewLocationAddress("");
+                    setNewLocationCoords(null);
                   }}
                 >
                   <Plus size={18} className="mr-2" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { API_BASE_URL } from "@/config/api";
+import { sanitizeErrorMessage } from "@/utils/sanitizeErrorMessage";
 
 export interface AuthRequest {
   username: string;
@@ -47,10 +48,9 @@ export const authService = {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        const fallback = `Erro ao fazer login: ${response.status}`;
         throw new LoginError(
-          errorData.message ||
-            errorData.erro ||
-            `Erro ao fazer login: ${response.status}`,
+          sanitizeErrorMessage(errorData.message || errorData.erro, fallback),
           typeof errorData.retryAfter === "number"
             ? errorData.retryAfter
             : undefined,

@@ -5,12 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import MaskedDecimalInput from "@/components/ui/MaskedDecimalInput";
 import ProductAutocompleteField from "@/components/ui/ProductAutocompleteField";
-import { fiscalProductService } from "@/services/fiscalProductService";
-import { purchaseService } from "@/services/purchaseService";
+import { useFiscalProduct } from "@/hooks/useFiscalProduct";
+import { usePurchase } from "@/hooks/usePurchase";
 import type {
   FiscalProductType,
   InvoiceProductType,
 } from "@/types/purchaseType";
+import { formatCurrency } from "@/utils/formatCurrency";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
 interface InvoiceProductsModalProps {
@@ -41,22 +42,28 @@ export default function InvoiceProductsModal({
   const [addingItem, setAddingItem] = useState(false);
   const [newItem, setNewItem] = useState({ code: "", quantity: 0, price: 0 });
   const [savingNewItem, setSavingNewItem] = useState(false);
+  const { getFiscalProducts } = useFiscalProduct();
+  const {
+    fetchInvoiceProducts,
+    addInvoiceProduct,
+    updateInvoiceProduct,
+    deleteInvoiceProduct,
+  } = usePurchase();
 
   useEffect(() => {
-    fiscalProductService
-      .getFiscalProducts()
+    getFiscalProducts()
       .then(setCatalogProducts)
       .catch((error) => {
         toast.error("Erro ao carregar catálogo de produtos");
         console.error(error);
       })
       .finally(() => setLoadingCatalog(false));
-  }, []);
+  }, [getFiscalProducts]);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await purchaseService.fetchInvoiceProducts(purchaseId);
+      const data = await fetchInvoiceProducts(purchaseId);
       setProducts(data);
     } catch (error) {
       toast.error("Erro ao carregar produtos");
@@ -64,7 +71,7 @@ export default function InvoiceProductsModal({
     } finally {
       setLoading(false);
     }
-  }, [purchaseId]);
+  }, [purchaseId, fetchInvoiceProducts]);
 
   useEffect(() => {
     fetchProducts();
@@ -72,7 +79,7 @@ export default function InvoiceProductsModal({
 
   const handleDelete = async (productId: number) => {
     try {
-      await purchaseService.deleteInvoiceProduct(productId);
+      await deleteInvoiceProduct(productId);
       toast.success("Produto deletado com sucesso");
       fetchProducts();
       onUpdate();
@@ -89,7 +96,7 @@ export default function InvoiceProductsModal({
     }
     setSavingNewItem(true);
     try {
-      await purchaseService.addInvoiceProduct(purchaseId, newItem);
+      await addInvoiceProduct(purchaseId, newItem);
       toast.success("Produto adicionado com sucesso");
       setAddingItem(false);
       setNewItem({ code: "", quantity: 0, price: 0 });
@@ -145,10 +152,7 @@ export default function InvoiceProductsModal({
             : editForm.quantity,
         unitType: editForm.unitType,
       };
-      const updated = await purchaseService.updateInvoiceProduct(
-        editingProductId,
-        payload,
-      );
+      const updated = await updateInvoiceProduct(editingProductId, payload);
       setProducts((prev) =>
         prev.map((p) => (p.id === updated.id ? updated : p)),
       );
@@ -162,13 +166,6 @@ export default function InvoiceProductsModal({
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
   };
 
   const calculateTotal = (price: number, quantity: number) => {

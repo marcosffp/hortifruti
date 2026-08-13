@@ -5,47 +5,21 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import CreateManualPurchaseModal from "@/components/modals/CreateManualPurchaseModal";
 import InvoiceProductsModal from "@/components/modals/InvoiceProductsModal";
-import { combinedScoreService } from "@/services/combinedScoreService";
-import { purchaseService } from "@/services/purchaseService";
+import { useCombinedScore } from "@/hooks/useCombinedScore";
+import { usePurchase } from "@/hooks/usePurchase";
 import type { PurchaseType } from "@/types/purchaseType";
-import { todaySaoPaulo } from "@/utils/dateUtils";
+import {
+  getLastMonthInterval,
+  getWeekInterval,
+  todaySaoPaulo,
+} from "@/utils/dateUtils";
+import { formatCurrency } from "@/utils/formatCurrency";
 import { showError, showSuccess } from "@/utils/toastUtils";
 
 interface PurchaseFilesTableProps {
   clientId?: number;
   refreshKey?: number;
   onGroupingCreated?: () => void;
-}
-
-function getWeekInterval() {
-  const today = new Date();
-  const lastMonday = new Date(today);
-  lastMonday.setDate(today.getDate() - ((today.getDay() + 6) % 7) - 7);
-  lastMonday.setHours(0, 0, 0, 0);
-
-  const lastSaturday = new Date(lastMonday);
-  lastSaturday.setDate(lastMonday.getDate() + 6);
-  lastSaturday.setHours(23, 59, 59, 999);
-
-  return {
-    start: lastMonday.toISOString().split("T")[0],
-    end: lastSaturday.toISOString().split("T")[0],
-  };
-}
-
-function getLastMonthInterval() {
-  const today = new Date();
-  const year =
-    today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
-  const month = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
-
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-
-  return {
-    start: firstDay.toISOString().split("T")[0],
-    end: lastDay.toISOString().split("T")[0],
-  };
 }
 
 export default function PurchaseFilesTable({
@@ -75,6 +49,8 @@ export default function PurchaseFilesTable({
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
 
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const { fetchPurchaseFiles, deletePurchaseFile } = usePurchase();
+  const { createCombinedScore } = useCombinedScore();
 
   useEffect(() => {
     if (groupBy === "week") {
@@ -96,7 +72,7 @@ export default function PurchaseFilesTable({
 
     setLoading(true);
     try {
-      const data = await purchaseService.fetchPurchaseFiles(clientId, page, 10);
+      const data = await fetchPurchaseFiles(clientId, page, 10);
       setPurchases(data.content || []);
       setTotalPages(data.totalPages || 0);
     } catch (error) {
@@ -105,7 +81,7 @@ export default function PurchaseFilesTable({
     } finally {
       setLoading(false);
     }
-  }, [clientId, page]);
+  }, [clientId, page, fetchPurchaseFiles]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey is intentionally unused inside the effect — it only exists to force a refetch when the parent bumps it
   useEffect(() => {
@@ -129,7 +105,7 @@ export default function PurchaseFilesTable({
     const purchaseId = deleteTarget;
     setDeleteTarget(null);
     try {
-      await purchaseService.deletePurchaseFile(purchaseId);
+      await deletePurchaseFile(purchaseId);
       showSuccess("Arquivo deletado com sucesso");
       fetchPurchases();
     } catch (error) {
@@ -161,7 +137,7 @@ export default function PurchaseFilesTable({
 
     setCreatingGrouping(true);
     try {
-      await combinedScoreService.createCombinedScore({
+      await createCombinedScore({
         clientId,
         startDate,
         endDate,
@@ -194,13 +170,6 @@ export default function PurchaseFilesTable({
     } catch {
       return dateString;
     }
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
   };
 
   if (!clientId) {

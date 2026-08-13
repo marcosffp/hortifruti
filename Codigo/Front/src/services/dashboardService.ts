@@ -63,8 +63,14 @@ export const dashboardService = {
     signal,
   }: GetDashboardDataParams): Promise<DashboardData> {
     try {
+      const params = new URLSearchParams({
+        startDate,
+        endDate,
+        month: month.toString(),
+        year: year.toString(),
+      });
       const response = await fetch(
-        `${API_BASE_URL}/dashboard?startDate=${startDate}&endDate=${endDate}&month=${month}&year=${year}`,
+        `${API_BASE_URL}/dashboard?${params.toString()}`,
         {
           method: "GET",
           headers: getAuthHeaders(),

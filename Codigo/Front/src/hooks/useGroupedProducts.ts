@@ -1,7 +1,10 @@
 import { useCallback, useState } from "react";
 import { groupedProductsService } from "@/services/groupedProductsService";
 import { getErrorMessage } from "@/types/errorType";
-import type { GroupedScoreType } from "@/types/groupedType";
+import type {
+  GroupedProductRequest,
+  GroupedScoreType,
+} from "@/types/groupedType";
 import type { Page } from "@/types/PagesType";
 
 export function useGroupedProducts() {
@@ -32,6 +35,25 @@ export function useGroupedProducts() {
     [],
   );
 
+  const confirmGrouping = async (
+    clientId: number,
+    groupedProducts: GroupedProductRequest[],
+  ) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      return await groupedProductsService.confirmGrouping(
+        clientId,
+        groupedProducts,
+      );
+    } catch (err) {
+      setError(getErrorMessage(err));
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const confirmPayment = async (groupId: number) => {
     setIsLoading(true);
     setError(null);
@@ -60,6 +82,7 @@ export function useGroupedProducts() {
 
   return {
     fetchGroupedProducts,
+    confirmGrouping,
     confirmPayment,
     cancelGrouping,
     isLoading,

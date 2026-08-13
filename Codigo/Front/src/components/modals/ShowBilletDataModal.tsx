@@ -12,6 +12,7 @@ import {
 import { useState } from "react";
 import { useBillet } from "@/hooks/useBillet";
 import type { BilletResponse } from "@/types/billetType";
+import { formatCurrency } from "@/utils/formatCurrency";
 import { showError, showInfo, showSuccess } from "@/utils/toastUtils";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
@@ -108,13 +109,6 @@ export default function ShowBilletDataModal({
     } catch {
       return dateString;
     }
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
   };
 
   const getStatusColor = (status: string) => {

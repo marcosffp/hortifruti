@@ -1,6 +1,6 @@
 import { AlertCircle, Car, DollarSign, Save, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { freightService } from "@/services/freightService";
+import { useFreightConfig } from "@/hooks/useFreightConfig";
 import type { FreightConfigDTO } from "@/types/freightType";
 
 interface FreightConfigModalProps {
@@ -35,6 +35,7 @@ const FreightConfigModal = ({
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { updateFreightConfig } = useFreightConfig();
 
   useEffect(() => {
     if (isOpen && initialData) {
@@ -79,8 +80,7 @@ const FreightConfigModal = ({
         return;
       }
 
-      const updatedConfig =
-        await freightService.updateFreightConfig(changedFields);
+      const updatedConfig = await updateFreightConfig(changedFields);
 
       onClose(updatedConfig);
     } catch (error) {

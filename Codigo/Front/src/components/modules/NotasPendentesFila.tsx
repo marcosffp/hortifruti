@@ -1,28 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE_URL } from "@/config/api";
+import { useCapturaNota } from "@/hooks/useCapturaNota";
 import { useRealtimeSocket } from "@/hooks/useRealtimeSocket";
+import type {
+  CapturaPendente,
+  StatusCaptura,
+} from "@/services/capturaNotaService";
 import { showError, showInfo } from "@/utils/toastUtils";
-import NotaRevisaoModal, {
-  type NotaExtracaoResponse,
-} from "./NotaRevisaoModal";
-
-type StatusCaptura =
-  | "RECEBIDA"
-  | "EXTRAINDO"
-  | "PRONTA"
-  | "ERRO"
-  | "CONFIRMADA"
-  | "DESCARTADA";
-
-type CapturaPendente = {
-  id: number;
-  status: StatusCaptura;
-  extracao: NotaExtracaoResponse | null;
-  mensagemErro: string | null;
-  criadaEm: string;
-};
+import NotaRevisaoModal from "./NotaRevisaoModal";
 
 const STATUS_LABEL: Record<StatusCaptura, string> = {
   RECEBIDA: "Recebida",
@@ -49,33 +35,21 @@ const STATUS_DESCARTAVEIS: StatusCaptura[] = [
   "ERRO",
 ];
 
-async function extrairMensagemErro(response: Response, fallback: string) {
-  const body = await response.json().catch(() => null);
-  return body?.message || body?.error || fallback;
-}
-
 export default function NotasPendentesFila() {
   const [capturas, setCapturas] = useState<CapturaPendente[]>([]);
   const [revisando, setRevisando] = useState<{
     captura: CapturaPendente;
     imageUrl: string;
   } | null>(null);
+  const {
+    fetchPendentes,
+    fetchImagem,
+    descartar: descartarCaptura,
+  } = useCapturaNota();
 
   const carregarPendentes = useCallback(async () => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/compras/notas/pendentes`,
-        { credentials: "include" },
-      );
-      if (!response.ok) {
-        throw new Error(
-          await extrairMensagemErro(
-            response,
-            "Falha ao carregar a fila de notas.",
-          ),
-        );
-      }
-      setCapturas(await response.json());
+      setCapturas(await fetchPendentes());
     } catch (error) {
       showError(
         error instanceof Error
@@ -83,7 +57,7 @@ export default function NotasPendentesFila() {
           : "Falha ao carregar a fila de notas.",
       );
     }
-  }, []);
+  }, [fetchPendentes]);
 
   useEffect(() => {
     carregarPendentes();
@@ -97,19 +71,7 @@ export default function NotasPendentesFila() {
 
   const abrirRevisao = async (captura: CapturaPendente) => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/compras/notas/pendentes/${captura.id}/imagem`,
-        { credentials: "include" },
-      );
-      if (!response.ok) {
-        throw new Error(
-          await extrairMensagemErro(
-            response,
-            "Falha ao carregar a foto da captura.",
-          ),
-        );
-      }
-      const blob = await response.blob();
+      const blob = await fetchImagem(captura.id);
       setRevisando({ captura, imageUrl: URL.createObjectURL(blob) });
     } catch (error) {
       showError(
@@ -122,15 +84,7 @@ export default function NotasPendentesFila() {
 
   const descartar = async (captura: CapturaPendente) => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/compras/notas/pendentes/${captura.id}/descartar`,
-        { method: "POST", credentials: "include" },
-      );
-      if (!response.ok) {
-        throw new Error(
-          await extrairMensagemErro(response, "Falha ao descartar a captura."),
-        );
-      }
+      await descartarCaptura(captura.id);
       showInfo("Captura descartada.");
       carregarPendentes();
     } catch (error) {

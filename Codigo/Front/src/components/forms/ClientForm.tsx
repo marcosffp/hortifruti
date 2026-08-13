@@ -4,7 +4,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
-import { cepService } from "@/services/cepService";
+import { useCep } from "@/hooks/useCep";
 import { showError, showSuccess } from "@/utils/toastUtils";
 import {
   formatarCEP,
@@ -97,6 +97,8 @@ export default function ClientForm({
     cideCode: "",
   });
 
+  const { consultarCep } = useCep();
+
   const isCNPJ = formData.cpfCnpj.replace(/[^0-9A-Za-z]/g, "").length > 11;
 
   useEffect(() => {
@@ -128,7 +130,7 @@ export default function ClientForm({
 
       showSuccess("Buscando informações do CEP...");
 
-      const endereco = await cepService.consultarCep(cep);
+      const endereco = await consultarCep(cep);
 
       if (!endereco) {
         showError("CEP não encontrado");

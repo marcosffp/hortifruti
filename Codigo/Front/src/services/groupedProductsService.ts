@@ -8,7 +8,12 @@ import { getAuthHeaders } from "@/utils/httpUtils";
 
 export const groupedProductsService = {
   async fetchGroupedProducts(clientId?: number, page = 0, size = 10) {
-    const url = `${API_BASE_URL}/grouped-products?clientId=${clientId}&page=${page}&size=${size}`;
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+    if (clientId !== undefined) params.append("clientId", clientId.toString());
+    const url = `${API_BASE_URL}/grouped-products?${params.toString()}`;
     const response = await fetch(url, {
       headers: getAuthHeaders(),
       credentials: "include",

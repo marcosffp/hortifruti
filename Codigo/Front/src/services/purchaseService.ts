@@ -200,4 +200,13 @@ export const purchaseService = {
     );
     if (!response.ok) throw new Error("Erro ao deletar produto");
   },
+
+  async fetchPurchaseImage(purchaseId: number): Promise<Blob> {
+    const response = await fetch(
+      `${API_BASE_URL}/purchases/${purchaseId}/imagem`,
+      { headers: getAuthHeaders(), credentials: "include" },
+    );
+    if (!response.ok) throw new Error("Falha ao carregar a foto");
+    return await response.blob();
+  },
 };

@@ -8,11 +8,12 @@ import CombinedScoreModals, {
   type InvoiceBilletResultModalState,
   type InvoiceResultModalState,
 } from "@/components/modules/combined-scores/CombinedScoreModals";
+import { clientRequiresAdditionalInvoiceData } from "@/components/modules/combined-scores/fiscalRules";
 import { useCombinedScores } from "@/components/modules/combined-scores/useCombinedScores";
 import { useBillet } from "@/hooks/useBillet";
 import { useClient } from "@/hooks/useClient";
+import { useCombinedScore } from "@/hooks/useCombinedScore";
 import { useInvoice } from "@/hooks/useInvoice";
-import { combinedScoreService } from "@/services/combinedScoreService";
 import { showError, showInfo, showSuccess } from "@/utils/toastUtils";
 import type {
   ScoreModalState,
@@ -37,6 +38,12 @@ export default function CombinedScoresCards({
     reconcileInvoiceStatus,
   } = useInvoice();
   const { getClientById } = useClient();
+  const {
+    cancelGrouping: cancelGroupingRequest,
+    cancelPayment: cancelPaymentRequest,
+    confirmPayment: confirmPaymentRequest,
+    createWildcardBillet,
+  } = useCombinedScore();
 
   const { scores, loading, page, setPage, totalPages, client, refetch } =
     useCombinedScores({
@@ -109,7 +116,7 @@ export default function CombinedScoresCards({
     if (!beginAction(id)) return;
 
     try {
-      await combinedScoreService.cancelGrouping(id);
+      await cancelGroupingRequest(id);
       showSuccess("Agrupamento deletado com sucesso");
       refetch();
     } catch (error) {
@@ -124,10 +131,10 @@ export default function CombinedScoresCards({
     if (!beginAction(score.id)) return;
     try {
       if (score.status === "PAID") {
-        await combinedScoreService.cancelPayment(score.id);
+        await cancelPaymentRequest(score.id);
         showSuccess("Pagamento cancelado com sucesso");
       } else {
-        await combinedScoreService.confirmPayment(score.id);
+        await confirmPaymentRequest(score.id);
         showSuccess("Pagamento confirmado com sucesso");
       }
       refetch();
@@ -185,10 +192,7 @@ export default function CombinedScoresCards({
     creatingWildcardBilletRef.current = true;
 
     try {
-      const newScoreId = await combinedScoreService.createWildcardBillet(
-        clientId,
-        value,
-      );
+      const newScoreId = await createWildcardBillet(clientId, value);
       const pdfBlob = await generateBillet(newScoreId, number, dueDate);
 
       setBilletResultModal({
@@ -296,11 +300,11 @@ export default function CombinedScoresCards({
     if (!beginProcessing(score.id)) return;
     try {
       const clientData = await getClientById(score.clientId);
-      const firstName =
-        clientData.clientName?.split(/\s+/)[0]?.toUpperCase()?.trim() || "";
-      const isLlineaClient = firstName.includes("LLINEA");
+      const requiresAdditionalData = clientRequiresAdditionalInvoiceData(
+        clientData.clientName,
+      );
 
-      if (isLlineaClient) {
+      if (requiresAdditionalData) {
         // A geração real só ocorre depois que o usuário preencher o modal,
         // então libera o "processando" aqui — ele será reativado ao confirmar.
         endProcessing(score.id);
@@ -367,11 +371,11 @@ export default function CombinedScoresCards({
     if (!beginProcessing(score.id)) return;
     try {
       const clientData = await getClientById(score.clientId);
-      const firstName =
-        clientData.clientName?.split(/\s+/)[0]?.toUpperCase()?.trim() || "";
-      const isLlineaClient = firstName.includes("LLINEA");
+      const requiresAdditionalData = clientRequiresAdditionalInvoiceData(
+        clientData.clientName,
+      );
 
-      if (isLlineaClient) {
+      if (requiresAdditionalData) {
         endProcessing(score.id);
         setModal({ type: "additionalData", score, combinedFlow: true });
       } else {

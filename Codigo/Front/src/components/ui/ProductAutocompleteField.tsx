@@ -2,21 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { FiscalProductType } from "@/types/purchaseType";
-
-// Faixa Unicode dos diacríticos combinantes (acentos após NFD); construída via charCode em vez de
-// escape \u literal no código-fonte para evitar ambiguidade de encoding entre editores.
-const DIACRITICS_REGEX = new RegExp(
-  `[${String.fromCharCode(0x0300)}-${String.fromCharCode(0x036f)}]`,
-  "g",
-);
-
-function normalize(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(DIACRITICS_REGEX, "")
-    .toLowerCase()
-    .trim();
-}
+import { normalize } from "@/utils/textSearch";
 
 // Distância de edição (Levenshtein) — usada como último critério, pra tolerar erro de digitação
 // (troca/falta de letra) quando não há match exato nem por prefixo/substring.

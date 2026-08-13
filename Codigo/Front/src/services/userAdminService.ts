@@ -29,24 +29,14 @@ class UserAdminService {
   private baseURL = API_BASE_URL_WITH_API_PREFIX;
 
   async getStats(): Promise<BackupStats> {
-    try {
-      const users = await userService.getAllUsers();
+    const users = await userService.getAllUsers();
 
-      return {
-        totalUsers: users.length,
-        totalManagers: users.filter((u) => u.role === "MANAGER").length,
-        totalEmployees: users.filter((u) => u.role === "EMPLOYEE").length,
-        lastBackup: new Date().toISOString(),
-      };
-    } catch (_error) {
-      // Fallback com dados mockados
-      return {
-        totalUsers: 2,
-        totalManagers: 1,
-        totalEmployees: 1,
-        lastBackup: new Date().toISOString(),
-      };
-    }
+    return {
+      totalUsers: users.length,
+      totalManagers: users.filter((u) => u.role === "MANAGER").length,
+      totalEmployees: users.filter((u) => u.role === "EMPLOYEE").length,
+      lastBackup: new Date().toISOString(),
+    };
   }
 
   async getFormattedUsers(): Promise<UIUserResponse[]> {

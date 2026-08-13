@@ -1,4 +1,7 @@
+import { formatCurrency } from "@/utils/formatCurrency";
 import type { ScoreWithBilletInfo } from "./types";
+
+export { formatCurrency };
 
 export function formatDate(dateString: string | null): string {
   if (!dateString) return "Não definida";
@@ -9,13 +12,6 @@ export function formatDate(dateString: string | null): string {
   } catch {
     return dateString;
   }
-}
-
-export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
 }
 
 export function getStatusColor(status: string): string {

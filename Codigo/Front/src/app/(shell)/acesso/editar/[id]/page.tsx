@@ -187,7 +187,7 @@ const EditarUsuarioPage = ({ params }: EditarUsuarioPageProps) => {
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
-                      minLength={4}
+                      minLength={8}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       placeholder="Deixe vazio para manter a senha atual"
                     />

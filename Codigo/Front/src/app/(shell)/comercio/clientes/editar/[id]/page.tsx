@@ -1,3 +1,4 @@
+import RoleGuard from "@/components/auth/RoleGuard";
 import EditarClientePageContent from "./content";
 
 interface PageProps {
@@ -7,5 +8,9 @@ interface PageProps {
 export default async function EditarClientePage({ params }: PageProps) {
   const { id } = await params;
 
-  return <EditarClientePageContent id={id} />;
+  return (
+    <RoleGuard roles={["MANAGER", "EMPLOYEE"]}>
+      <EditarClientePageContent id={id} />
+    </RoleGuard>
+  );
 }

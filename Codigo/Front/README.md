@@ -149,6 +149,7 @@ Todas as rotas internas ficam sob o *route group* `(shell)` e são protegidas po
 | `/comercio/compras` | Upload e gestão de notas de compra | Gestor, Funcionário |
 | `/comercio/boletos` | Geração, listagem (inclusive boletos em aberto), baixa manual e cancelamento de boletos | Gestor, Funcionário |
 | `/comercio/frete` | Cálculo de frete com mapa interativo | Gestor, Funcionário |
+| `/comercio/capturar-nota` | Captura rápida de nota de compra por foto (celular) | Gestor, Funcionário |
 | `/comercio/recomendacoes` | Recomendações de compra por clima | Gestor |
 | `/comercio/nota-fiscal-xml` | Armazenamento e download de XMLs de NF-e | Gestor |
 | `/notificacoes` | Central de notificações (e-mail/WhatsApp) | Gestor, Funcionário |

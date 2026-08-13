@@ -3,7 +3,7 @@
 import { LogOut, MenuIcon, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const { userName, logout } = useAuth();

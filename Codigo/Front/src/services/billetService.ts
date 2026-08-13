@@ -5,6 +5,7 @@ import type {
   OpenBilletResponse,
 } from "@/types/billetType";
 import { getAuthHeaders } from "@/utils/httpUtils";
+import { sanitizeErrorMessage } from "@/utils/sanitizeErrorMessage";
 
 export const billetService = {
   async generateBillet(
@@ -26,10 +27,11 @@ export const billetService = {
       });
 
       if (!response.ok) {
-        let message = `Erro ao gerar boleto: ${response.status}`;
+        const fallback = `Erro ao gerar boleto: ${response.status}`;
+        let message = fallback;
         try {
           const errorText = await response.text();
-          if (errorText?.trim()) message = errorText;
+          message = sanitizeErrorMessage(errorText, fallback);
         } catch {
           // corpo do erro indisponível, mantém a mensagem padrão
         }
@@ -214,7 +216,10 @@ export const billetService = {
       const result = await response.text();
       if (!response.ok) {
         throw new Error(
-          result || `Erro ao cancelar boleto: ${response.status}`,
+          sanitizeErrorMessage(
+            result,
+            `Erro ao cancelar boleto: ${response.status}`,
+          ),
         );
       }
 
@@ -239,7 +244,10 @@ export const billetService = {
       const result = await response.text();
       if (!response.ok) {
         throw new Error(
-          result || `Erro ao confirmar pagamento: ${response.status}`,
+          sanitizeErrorMessage(
+            result,
+            `Erro ao confirmar pagamento: ${response.status}`,
+          ),
         );
       }
 

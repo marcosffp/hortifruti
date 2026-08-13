@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface RoleGuardProps {
   roles: string | string[];

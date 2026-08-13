@@ -20,7 +20,7 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import MaskedDecimalInput from "@/components/ui/MaskedDecimalInput";
 import MaskedThousandsInput from "@/components/ui/MaskedThousandsInput";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { useBulkNotificationSend } from "@/hooks/useBulkNotificationSend";
 import { bulkNotificationService } from "@/services/bulkNotificationService";
 import { clientService } from "@/services/clientService";
@@ -119,27 +119,26 @@ export default function NotificacoesPage() {
   const isGestor = hasRole("MANAGER");
 
   useEffect(() => {
-    loadDraft().then((draft) => {
-      if (!draft) return;
+    const draft = loadDraft();
+    if (!draft) return;
 
-      setTipoDestinatario(draft.tipoDestinatario);
-      setMensagemPersonalizada(draft.mensagemPersonalizada);
-      setCanaisEnvio(draft.canaisEnvio);
-      setCardValue(draft.cardValue);
-      setCashValue(draft.cashValue);
-      // "?? padrão" cobre rascunhos salvos antes desses campos existirem.
-      setTipoReferencia(draft.tipoReferencia ?? "periodo");
-      setMesReferencia(draft.mesReferencia ?? getMesAnoAnteriorPadrao().mes);
-      setAnoReferencia(draft.anoReferencia ?? getMesAnoAnteriorPadrao().ano);
-      setDataInicialReferencia(
-        draft.dataInicialReferencia ?? getPeriodoPadrao().dataInicial,
-      );
-      setDataFinalReferencia(
-        draft.dataFinalReferencia ?? getPeriodoPadrao().dataFinal,
-      );
-      setTextoEditadoManualmente(draft.textoEditadoManualmente ?? false);
-      pendingSelectedClientIdsRef.current = draft.selectedClientIds;
-    });
+    setTipoDestinatario(draft.tipoDestinatario);
+    setMensagemPersonalizada(draft.mensagemPersonalizada);
+    setCanaisEnvio(draft.canaisEnvio);
+    setCardValue(draft.cardValue);
+    setCashValue(draft.cashValue);
+    // "?? padrão" cobre rascunhos salvos antes desses campos existirem.
+    setTipoReferencia(draft.tipoReferencia ?? "periodo");
+    setMesReferencia(draft.mesReferencia ?? getMesAnoAnteriorPadrao().mes);
+    setAnoReferencia(draft.anoReferencia ?? getMesAnoAnteriorPadrao().ano);
+    setDataInicialReferencia(
+      draft.dataInicialReferencia ?? getPeriodoPadrao().dataInicial,
+    );
+    setDataFinalReferencia(
+      draft.dataFinalReferencia ?? getPeriodoPadrao().dataFinal,
+    );
+    setTextoEditadoManualmente(draft.textoEditadoManualmente ?? false);
+    pendingSelectedClientIdsRef.current = draft.selectedClientIds;
   }, []);
 
   useEffect(() => {
@@ -399,502 +398,507 @@ export default function NotificacoesPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6 bg-[var(--neutral-50)] min-h-full">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl md:text-3xl font-bold text-[var(--neutral-900)]">
-          Módulo Notificações
-        </h1>
-        <p className="text-[var(--neutral-600)]">
-          Envie documentos e comunicados para clientes e contabilidade
-        </p>
-      </div>
+    <RoleGuard roles={["MANAGER", "EMPLOYEE"]}>
+      <div className="p-4 md:p-6 space-y-6 bg-[var(--neutral-50)] min-h-full">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-[var(--neutral-900)]">
+            Módulo Notificações
+          </h1>
+          <p className="text-[var(--neutral-600)]">
+            Envie documentos e comunicados para clientes e contabilidade
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <Card title="Envio de Documentos">
-            <div className="space-y-6">
-              <div>
-                <div className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
-                  Destinatário
-                </div>
-                <div
-                  className={`grid gap-3 ${isGestor ? "grid-cols-2" : "grid-cols-1"}`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setTipoDestinatario("clientes")}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                      tipoDestinatario === "clientes"
-                        ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
-                        : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
-                    }`}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            <Card title="Envio de Documentos">
+              <div className="space-y-6">
+                <div>
+                  <div className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
+                    Destinatário
+                  </div>
+                  <div
+                    className={`grid gap-3 ${isGestor ? "grid-cols-2" : "grid-cols-1"}`}
                   >
-                    <Users className="w-5 h-5" />
-                    <span className="font-medium">Clientes</span>
-                  </button>
-                  <RoleGuard roles="MANAGER" ignoreRedirect>
                     <button
                       type="button"
-                      onClick={() => setTipoDestinatario("contabilidade")}
+                      onClick={() => setTipoDestinatario("clientes")}
                       className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                        tipoDestinatario === "contabilidade"
+                        tipoDestinatario === "clientes"
                           ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
                           : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
                       }`}
                     >
-                      <Building2 className="w-5 h-5" />
-                      <span className="font-medium">Contabilidade</span>
+                      <Users className="w-5 h-5" />
+                      <span className="font-medium">Clientes</span>
                     </button>
-                  </RoleGuard>
-                </div>
-              </div>
-
-              <div>
-                <div className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
-                  Canal de Envio
-                </div>
-                <div className="flex items-center gap-2 p-3 rounded-lg border-2 border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)] w-fit">
-                  <Mail className="w-5 h-5" />
-                  <span className="font-medium">E-mail</span>
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="block text-sm font-medium text-[var(--neutral-700)]">
-                    Arquivos (PDF, imagens e pacotes — Máx. 10MB cada)
+                    <RoleGuard roles="MANAGER" ignoreRedirect>
+                      <button
+                        type="button"
+                        onClick={() => setTipoDestinatario("contabilidade")}
+                        className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                          tipoDestinatario === "contabilidade"
+                            ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
+                            : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
+                        }`}
+                      >
+                        <Building2 className="w-5 h-5" />
+                        <span className="font-medium">Contabilidade</span>
+                      </button>
+                    </RoleGuard>
                   </div>
+                </div>
+
+                <div>
+                  <div className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
+                    Canal de Envio
+                  </div>
+                  <div className="flex items-center gap-2 p-3 rounded-lg border-2 border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)] w-fit">
+                    <Mail className="w-5 h-5" />
+                    <span className="font-medium">E-mail</span>
+                    <CheckCircle2 className="w-4 h-4" />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="block text-sm font-medium text-[var(--neutral-700)]">
+                      Arquivos (PDF, imagens e pacotes — Máx. 10MB cada)
+                    </div>
+                    {arquivos.length > 0 && (
+                      <span className="text-sm text-[var(--primary)] font-medium">
+                        {arquivos.length} arquivo(s)
+                      </span>
+                    )}
+                  </div>
+
+                  <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-[var(--neutral-300)] rounded-lg cursor-pointer hover:border-[var(--primary)] hover:bg-[var(--primary-bg)] transition-all mb-3">
+                    <div className="flex flex-col items-center justify-center">
+                      <Upload className="w-6 h-6 text-[var(--neutral-500)] mb-1" />
+                      <p className="text-sm text-[var(--neutral-600)]">
+                        <span className="font-semibold">
+                          Clique para adicionar
+                        </span>{" "}
+                        ou arraste arquivos
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileChange}
+                      multiple
+                    />
+                  </label>
+
                   {arquivos.length > 0 && (
-                    <span className="text-sm text-[var(--primary)] font-medium">
-                      {arquivos.length} arquivo(s)
-                    </span>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {arquivos.map((arquivo, index) => (
+                        <div
+                          key={`${arquivo.name}-${arquivo.size}-${arquivo.lastModified}`}
+                          className="flex items-center justify-between p-3 bg-[var(--primary-bg)] border border-[var(--primary)] rounded-lg"
+                        >
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <FileText className="w-6 h-6 text-[var(--primary)] flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-[var(--neutral-900)] truncate">
+                                {arquivo.name}
+                              </p>
+                              <p className="text-sm text-[var(--neutral-600)]">
+                                {(arquivo.size / 1024).toFixed(2)} KB
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removerArquivo(index)}
+                            className="p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0 cursor-pointer"
+                            title="Remover arquivo"
+                          >
+                            <X className="w-5 h-5 text-[var(--secondary)]" />
+                          </button>
+                        </div>
+                      ))}
+                      {arquivos.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={removerTodosArquivos}
+                          className="w-full py-2 text-sm text-[var(--secondary)] hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors font-medium cursor-pointer"
+                        >
+                          Remover todos os arquivos
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
 
-                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-[var(--neutral-300)] rounded-lg cursor-pointer hover:border-[var(--primary)] hover:bg-[var(--primary-bg)] transition-all mb-3">
-                  <div className="flex flex-col items-center justify-center">
-                    <Upload className="w-6 h-6 text-[var(--neutral-500)] mb-1" />
-                    <p className="text-sm text-[var(--neutral-600)]">
-                      <span className="font-semibold">
-                        Clique para adicionar
-                      </span>{" "}
-                      ou arraste arquivos
-                    </p>
+                <div>
+                  <div className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
+                    Tipo de Referência
                   </div>
-                  <input
-                    type="file"
-                    className="hidden"
-                    onChange={handleFileChange}
-                    multiple
-                  />
-                </label>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setTipoReferencia("mes")}
+                      className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                        tipoReferencia === "mes"
+                          ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
+                          : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
+                      }`}
+                    >
+                      <span className="font-medium">Mês</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTipoReferencia("periodo")}
+                      className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                        tipoReferencia === "periodo"
+                          ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
+                          : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
+                      }`}
+                    >
+                      <span className="font-medium">Período</span>
+                    </button>
+                  </div>
 
-                {arquivos.length > 0 && (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {arquivos.map((arquivo, index) => (
-                      <div
-                        key={`${arquivo.name}-${arquivo.size}-${arquivo.lastModified}`}
-                        className="flex items-center justify-between p-3 bg-[var(--primary-bg)] border border-[var(--primary)] rounded-lg"
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <FileText className="w-6 h-6 text-[var(--primary)] flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-[var(--neutral-900)] truncate">
-                              {arquivo.name}
-                            </p>
-                            <p className="text-sm text-[var(--neutral-600)]">
-                              {(arquivo.size / 1024).toFixed(2)} KB
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removerArquivo(index)}
-                          className="p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0 cursor-pointer"
-                          title="Remover arquivo"
+                  {tipoReferencia === "mes" ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label
+                          htmlFor="mesReferencia"
+                          className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
                         >
-                          <X className="w-5 h-5 text-[var(--secondary)]" />
-                        </button>
+                          Mês
+                        </label>
+                        <select
+                          id="mesReferencia"
+                          value={mesReferencia}
+                          onChange={(e) =>
+                            setMesReferencia(Number(e.target.value))
+                          }
+                          className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                        >
+                          {MESES_PT_BR.map((nome, index) => (
+                            <option key={nome} value={index + 1}>
+                              {nome.replace(/^\w/, (c) => c.toUpperCase())}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                    ))}
-                    {arquivos.length > 1 && (
+                      <div>
+                        <label
+                          htmlFor="anoReferencia"
+                          className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
+                        >
+                          Ano
+                        </label>
+                        <input
+                          id="anoReferencia"
+                          type="number"
+                          min={2000}
+                          max={2100}
+                          value={anoReferencia}
+                          onChange={(e) =>
+                            setAnoReferencia(Number(e.target.value))
+                          }
+                          className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label
+                          htmlFor="dataInicialReferencia"
+                          className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
+                        >
+                          Data Inicial
+                        </label>
+                        <input
+                          id="dataInicialReferencia"
+                          type="date"
+                          value={dataInicialReferencia}
+                          onChange={(e) =>
+                            setDataInicialReferencia(e.target.value)
+                          }
+                          className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="dataFinalReferencia"
+                          className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
+                        >
+                          Data Final
+                        </label>
+                        <input
+                          id="dataFinalReferencia"
+                          type="date"
+                          value={dataFinalReferencia}
+                          onChange={(e) =>
+                            setDataFinalReferencia(e.target.value)
+                          }
+                          className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label
+                      htmlFor="mensagem"
+                      className="block text-sm font-medium text-[var(--neutral-700)]"
+                    >
+                      Mensagem Personalizada (opcional)
+                    </label>
+                    {textoEditadoManualmente && (
                       <button
                         type="button"
-                        onClick={removerTodosArquivos}
-                        className="w-full py-2 text-sm text-[var(--secondary)] hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors font-medium cursor-pointer"
+                        onClick={handleRestaurarTextoPadrao}
+                        className="flex items-center gap-1 text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] font-medium cursor-pointer"
                       >
-                        Remover todos os arquivos
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        Restaurar texto padrão
                       </button>
                     )}
                   </div>
-                )}
-              </div>
-
-              <div>
-                <div className="block text-sm font-medium text-[var(--neutral-700)] mb-2">
-                  Tipo de Referência
-                </div>
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <button
-                    type="button"
-                    onClick={() => setTipoReferencia("mes")}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                      tipoReferencia === "mes"
-                        ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
-                        : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
-                    }`}
-                  >
-                    <span className="font-medium">Mês</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTipoReferencia("periodo")}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                      tipoReferencia === "periodo"
-                        ? "border-[var(--primary)] bg-[var(--primary-bg)] text-[var(--primary)]"
-                        : "border-[var(--neutral-300)] bg-white text-[var(--neutral-600)] hover:border-[var(--neutral-400)]"
-                    }`}
-                  >
-                    <span className="font-medium">Período</span>
-                  </button>
+                  <textarea
+                    id="mensagem"
+                    rows={4}
+                    placeholder="Digite uma mensagem para enviar junto com o arquivo..."
+                    value={mensagemPersonalizada}
+                    onChange={(e) => {
+                      setMensagemPersonalizada(e.target.value);
+                      setTextoEditadoManualmente(true);
+                    }}
+                    className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent resize-none"
+                  />
                 </div>
 
-                {tipoReferencia === "mes" ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        htmlFor="mesReferencia"
-                        className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
-                      >
-                        Mês
-                      </label>
-                      <select
-                        id="mesReferencia"
-                        value={mesReferencia}
-                        onChange={(e) =>
-                          setMesReferencia(Number(e.target.value))
-                        }
-                        className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                      >
-                        {MESES_PT_BR.map((nome, index) => (
-                          <option key={nome} value={index + 1}>
-                            {nome.replace(/^\w/, (c) => c.toUpperCase())}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="anoReferencia"
-                        className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
-                      >
-                        Ano
-                      </label>
-                      <input
-                        id="anoReferencia"
-                        type="number"
-                        min={2000}
-                        max={2100}
-                        value={anoReferencia}
-                        onChange={(e) =>
-                          setAnoReferencia(Number(e.target.value))
-                        }
-                        className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        htmlFor="dataInicialReferencia"
-                        className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
-                      >
-                        Data Inicial
-                      </label>
-                      <input
-                        id="dataInicialReferencia"
-                        type="date"
-                        value={dataInicialReferencia}
-                        onChange={(e) =>
-                          setDataInicialReferencia(e.target.value)
-                        }
-                        className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="dataFinalReferencia"
-                        className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
-                      >
-                        Data Final
-                      </label>
-                      <input
-                        id="dataFinalReferencia"
-                        type="date"
-                        value={dataFinalReferencia}
-                        onChange={(e) => setDataFinalReferencia(e.target.value)}
-                        className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                      />
+                {tipoDestinatario === "contabilidade" && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-[var(--neutral-900)]">
+                      Valores Financeiros
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label
+                          htmlFor="cartao"
+                          className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
+                        >
+                          Valor de Cartão (R$)
+                        </label>
+                        <MaskedDecimalInput
+                          id="cartao"
+                          value={cardValue}
+                          onChange={setCardValue}
+                          placeholder="0,00"
+                          className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                        />
+                        <p className="text-xs text-[var(--neutral-500)] mt-1">
+                          Apenas 40% deste valor será informado no e-mail
+                        </p>
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="dinheiro"
+                          className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
+                        >
+                          Valor em Dinheiro (R$)
+                        </label>
+                        <MaskedThousandsInput
+                          id="dinheiro"
+                          value={cashValue}
+                          onChange={setCashValue}
+                          placeholder="0,00"
+                          className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                        />
+                        <p className="text-xs text-[var(--neutral-500)] mt-1">
+                          Digite apenas os milhares — ex.: "5" vira R$ 5.000,00
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
-              </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label
-                    htmlFor="mensagem"
-                    className="block text-sm font-medium text-[var(--neutral-700)]"
-                  >
-                    Mensagem Personalizada (opcional)
-                  </label>
-                  {textoEditadoManualmente && (
+                <Button
+                  variant="primary"
+                  fullWidth
+                  size="lg"
+                  icon={<Send className="w-5 h-5" />}
+                  onClick={handleEnviar}
+                  disabled={enviando}
+                >
+                  {(() => {
+                    if (enviando) return "Enviando...";
+                    const canais = [];
+                    if (canaisEnvio.email) canais.push("E-mail");
+                    if (canaisEnvio.whatsapp) canais.push("WhatsApp");
+                    const canaisTexto =
+                      canais.length > 0 ? canais.join(" e ") : "Notificação";
+                    const contador =
+                      tipoDestinatario === "clientes" &&
+                      clientesSelecionados > 0
+                        ? ` (${clientesSelecionados})`
+                        : "";
+                    return `Enviar ${canaisTexto}${contador}`;
+                  })()}
+                </Button>
+              </div>
+            </Card>
+          </div>
+
+          <div className="space-y-4">
+            {tipoDestinatario === "clientes" ? (
+              <Card title={`Selecionar Clientes (${clientesSelecionados})`}>
+                <div className="space-y-4">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Buscar cliente..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                    />
+                    <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--neutral-400)]" />
+                  </div>
+
+                  {filteredClientes.length > 0 && (
                     <button
                       type="button"
-                      onClick={handleRestaurarTextoPadrao}
-                      className="flex items-center gap-1 text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] font-medium cursor-pointer"
+                      onClick={toggleTodos}
+                      className="text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] font-medium cursor-pointer"
                     >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      Restaurar texto padrão
+                      {todosAtivos ? "Desselecionar" : "Selecionar"} todos
                     </button>
                   )}
-                </div>
-                <textarea
-                  id="mensagem"
-                  rows={4}
-                  placeholder="Digite uma mensagem para enviar junto com o arquivo..."
-                  value={mensagemPersonalizada}
-                  onChange={(e) => {
-                    setMensagemPersonalizada(e.target.value);
-                    setTextoEditadoManualmente(true);
-                  }}
-                  className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent resize-none"
-                />
-              </div>
 
-              {tipoDestinatario === "contabilidade" && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-[var(--neutral-900)]">
-                    Valores Financeiros
-                  </h3>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        htmlFor="cartao"
-                        className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
-                      >
-                        Valor de Cartão (R$)
-                      </label>
-                      <MaskedDecimalInput
-                        id="cartao"
-                        value={cardValue}
-                        onChange={setCardValue}
-                        placeholder="0,00"
-                        className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                      />
-                      <p className="text-xs text-[var(--neutral-500)] mt-1">
-                        Apenas 40% deste valor será informado no e-mail
-                      </p>
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="dinheiro"
-                        className="block text-sm font-medium text-[var(--neutral-700)] mb-2"
-                      >
-                        Valor em Dinheiro (R$)
-                      </label>
-                      <MaskedThousandsInput
-                        id="dinheiro"
-                        value={cashValue}
-                        onChange={setCashValue}
-                        placeholder="0,00"
-                        className="w-full px-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                      />
-                      <p className="text-xs text-[var(--neutral-500)] mt-1">
-                        Digite apenas os milhares — ex.: "5" vira R$ 5.000,00
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <Button
-                variant="primary"
-                fullWidth
-                size="lg"
-                icon={<Send className="w-5 h-5" />}
-                onClick={handleEnviar}
-                disabled={enviando}
-              >
-                {(() => {
-                  if (enviando) return "Enviando...";
-                  const canais = [];
-                  if (canaisEnvio.email) canais.push("E-mail");
-                  if (canaisEnvio.whatsapp) canais.push("WhatsApp");
-                  const canaisTexto =
-                    canais.length > 0 ? canais.join(" e ") : "Notificação";
-                  const contador =
-                    tipoDestinatario === "clientes" && clientesSelecionados > 0
-                      ? ` (${clientesSelecionados})`
-                      : "";
-                  return `Enviar ${canaisTexto}${contador}`;
-                })()}
-              </Button>
-            </div>
-          </Card>
-        </div>
-
-        <div className="space-y-4">
-          {tipoDestinatario === "clientes" ? (
-            <Card title={`Selecionar Clientes (${clientesSelecionados})`}>
-              <div className="space-y-4">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Buscar cliente..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-[var(--neutral-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                  />
-                  <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--neutral-400)]" />
-                </div>
-
-                {filteredClientes.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={toggleTodos}
-                    className="text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] font-medium cursor-pointer"
-                  >
-                    {todosAtivos ? "Desselecionar" : "Selecionar"} todos
-                  </button>
-                )}
-
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  {(() => {
-                    if (isLoading) {
-                      return (
-                        <p className="text-center text-[var(--neutral-500)] py-4">
-                          Carregando clientes...
-                        </p>
-                      );
-                    }
-                    if (filteredClientes.length === 0) {
-                      return (
-                        <p className="text-center text-[var(--neutral-500)] py-4">
-                          Nenhum cliente encontrado
-                        </p>
-                      );
-                    }
-                    return filteredClientes.map((cliente) => {
-                      const elegivel = clienteElegivel(cliente);
-                      return (
-                        <label
-                          key={cliente.id}
-                          title={
-                            elegivel
-                              ? undefined
-                              : "Cliente sem o contato necessário para o canal selecionado"
-                          }
-                          className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
-                            !elegivel
-                              ? "cursor-not-allowed opacity-50 border-[var(--neutral-200)] bg-[var(--neutral-50)]"
-                              : "cursor-pointer"
-                          } ${
-                            cliente.selecionado
-                              ? "border-[var(--primary)] bg-[var(--primary-bg)]"
-                              : "border-[var(--neutral-200)] hover:border-[var(--neutral-300)] bg-white"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={cliente.selecionado}
-                            disabled={!elegivel}
-                            onChange={() => toggleCliente(cliente.id)}
-                            className="mt-1 w-4 h-4 text-[var(--primary)] border-[var(--neutral-300)] rounded focus:ring-[var(--primary)] disabled:cursor-not-allowed"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-[var(--neutral-900)] truncate">
-                              {cliente.nome}
-                            </p>
-                            <div className="space-y-1">
-                              {canaisEnvio.email &&
-                                (cliente.email ? (
-                                  <p className="text-sm text-[var(--neutral-600)] truncate flex items-center gap-1">
-                                    <Mail className="w-3 h-3" />
-                                    {cliente.email}
-                                  </p>
-                                ) : (
-                                  <p className="text-xs text-[var(--secondary)] flex items-center gap-1">
-                                    <Mail className="w-3 h-3" />
-                                    Sem e-mail cadastrado
-                                  </p>
-                                ))}
-                              {canaisEnvio.whatsapp &&
-                                (cliente.telefone ? (
-                                  <p className="text-sm text-[var(--neutral-600)] truncate flex items-center gap-1">
-                                    <MessageCircle className="w-3 h-3" />
-                                    {cliente.telefone}
-                                  </p>
-                                ) : (
-                                  <p className="text-xs text-[var(--secondary)] flex items-center gap-1">
-                                    <MessageCircle className="w-3 h-3" />
-                                    Sem telefone cadastrado
-                                  </p>
-                                ))}
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                    {(() => {
+                      if (isLoading) {
+                        return (
+                          <p className="text-center text-[var(--neutral-500)] py-4">
+                            Carregando clientes...
+                          </p>
+                        );
+                      }
+                      if (filteredClientes.length === 0) {
+                        return (
+                          <p className="text-center text-[var(--neutral-500)] py-4">
+                            Nenhum cliente encontrado
+                          </p>
+                        );
+                      }
+                      return filteredClientes.map((cliente) => {
+                        const elegivel = clienteElegivel(cliente);
+                        return (
+                          <label
+                            key={cliente.id}
+                            title={
+                              elegivel
+                                ? undefined
+                                : "Cliente sem o contato necessário para o canal selecionado"
+                            }
+                            className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
+                              !elegivel
+                                ? "cursor-not-allowed opacity-50 border-[var(--neutral-200)] bg-[var(--neutral-50)]"
+                                : "cursor-pointer"
+                            } ${
+                              cliente.selecionado
+                                ? "border-[var(--primary)] bg-[var(--primary-bg)]"
+                                : "border-[var(--neutral-200)] hover:border-[var(--neutral-300)] bg-white"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={cliente.selecionado}
+                              disabled={!elegivel}
+                              onChange={() => toggleCliente(cliente.id)}
+                              className="mt-1 w-4 h-4 text-[var(--primary)] border-[var(--neutral-300)] rounded focus:ring-[var(--primary)] disabled:cursor-not-allowed"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-[var(--neutral-900)] truncate">
+                                {cliente.nome}
+                              </p>
+                              <div className="space-y-1">
+                                {canaisEnvio.email &&
+                                  (cliente.email ? (
+                                    <p className="text-sm text-[var(--neutral-600)] truncate flex items-center gap-1">
+                                      <Mail className="w-3 h-3" />
+                                      {cliente.email}
+                                    </p>
+                                  ) : (
+                                    <p className="text-xs text-[var(--secondary)] flex items-center gap-1">
+                                      <Mail className="w-3 h-3" />
+                                      Sem e-mail cadastrado
+                                    </p>
+                                  ))}
+                                {canaisEnvio.whatsapp &&
+                                  (cliente.telefone ? (
+                                    <p className="text-sm text-[var(--neutral-600)] truncate flex items-center gap-1">
+                                      <MessageCircle className="w-3 h-3" />
+                                      {cliente.telefone}
+                                    </p>
+                                  ) : (
+                                    <p className="text-xs text-[var(--secondary)] flex items-center gap-1">
+                                      <MessageCircle className="w-3 h-3" />
+                                      Sem telefone cadastrado
+                                    </p>
+                                  ))}
+                              </div>
                             </div>
-                          </div>
-                          {cliente.selecionado && (
-                            <CheckCircle2 className="w-5 h-5 text-[var(--primary)] flex-shrink-0" />
-                          )}
-                        </label>
-                      );
-                    });
-                  })()}
-                </div>
-              </div>
-            </Card>
-          ) : (
-            <Card title="Destinatário">
-              <div className="space-y-3">
-                <div className="p-4 bg-[var(--primary-bg)] border border-[var(--primary)] rounded-lg">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Building2 className="w-6 h-6 text-[var(--primary)]" />
-                    <p className="font-semibold text-[var(--neutral-900)]">
-                      Contabilidade Hortifruti
-                    </p>
+                            {cliente.selecionado && (
+                              <CheckCircle2 className="w-5 h-5 text-[var(--primary)] flex-shrink-0" />
+                            )}
+                          </label>
+                        );
+                      });
+                    })()}
                   </div>
-                  <div className="space-y-1">
-                    {canaisEnvio.email &&
-                      contabilidadeEmails.map((email) => (
-                        <p
-                          key={email}
-                          className="text-sm text-[var(--neutral-600)] flex items-center gap-2"
-                        >
-                          <Mail className="w-4 h-4" />
-                          {email}
-                        </p>
-                      ))}
-                    {canaisEnvio.whatsapp && (
-                      <p className="text-sm text-[var(--neutral-600)] flex items-center gap-2">
-                        <MessageCircle className="w-4 h-4" />
-                        (31) 98765-4321
+                </div>
+              </Card>
+            ) : (
+              <Card title="Destinatário">
+                <div className="space-y-3">
+                  <div className="p-4 bg-[var(--primary-bg)] border border-[var(--primary)] rounded-lg">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Building2 className="w-6 h-6 text-[var(--primary)]" />
+                      <p className="font-semibold text-[var(--neutral-900)]">
+                        Contabilidade Hortifruti
                       </p>
-                    )}
+                    </div>
+                    <div className="space-y-1">
+                      {canaisEnvio.email &&
+                        contabilidadeEmails.map((email) => (
+                          <p
+                            key={email}
+                            className="text-sm text-[var(--neutral-600)] flex items-center gap-2"
+                          >
+                            <Mail className="w-4 h-4" />
+                            {email}
+                          </p>
+                        ))}
+                      {canaisEnvio.whatsapp && (
+                        <p className="text-sm text-[var(--neutral-600)] flex items-center gap-2">
+                          <MessageCircle className="w-4 h-4" />
+                          (31) 98765-4321
+                        </p>
+                      )}
+                    </div>
                   </div>
+                  <p className="text-xs text-[var(--neutral-500)]">
+                    Os documentos serão enviados automaticamente para o
+                    escritório de contabilidade
+                  </p>
                 </div>
-                <p className="text-xs text-[var(--neutral-500)]">
-                  Os documentos serão enviados automaticamente para o escritório
-                  de contabilidade
-                </p>
-              </div>
-            </Card>
-          )}
+              </Card>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </RoleGuard>
   );
 }

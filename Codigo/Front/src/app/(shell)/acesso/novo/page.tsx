@@ -40,8 +40,8 @@ export default function NovoUsuarioPage() {
       return;
     }
 
-    if (formData.password.length < 4) {
-      showError("A senha deve ter pelo menos 4 caracteres");
+    if (formData.password.length < 8) {
+      showError("A senha deve ter pelo menos 8 caracteres");
       return;
     }
 
@@ -132,10 +132,10 @@ export default function NovoUsuarioPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                   placeholder="Digite uma senha para o usuário"
                   required
-                  minLength={4}
+                  minLength={8}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Mínimo de 4 caracteres
+                  Mínimo de 8 caracteres
                 </p>
               </div>
 

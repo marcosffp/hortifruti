@@ -2,7 +2,7 @@
 
 import L from "leaflet";
 import { MapPin } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   MapContainer,
   Marker,
@@ -10,7 +10,8 @@ import {
   Popup,
   TileLayer,
 } from "react-leaflet";
-import type { Location, RouteData } from "@/types/addressType";
+import { getRoute } from "@/actions/routeActions";
+import type { RouteData } from "@/types/addressType";
 import "leaflet/dist/leaflet.css";
 
 const MapComponent = ({ routeData }: { routeData: RouteData | null }) => {
@@ -25,36 +26,24 @@ const MapComponent = ({ routeData }: { routeData: RouteData | null }) => {
     });
   }, []);
 
-  const fetchRoute = useCallback(
-    async (origin: Location, destination: Location) => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(
-          `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson`,
-        );
-        const data = await response.json();
-
-        if (data.routes && data.routes.length > 0) {
-          const points: [number, number][] =
-            data.routes[0].geometry.coordinates.map(
-              (coord: [number, number]) => [coord[1], coord[0]], // OSRM retorna [lng, lat], precisamos inverter para [lat, lng]
-            );
-          setRoutePoints(points);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar rota:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [],
-  );
-
   useEffect(() => {
-    if (routeData) {
-      fetchRoute(routeData.origin, routeData.destination);
-    }
-  }, [routeData, fetchRoute]);
+    if (!routeData) return;
+
+    let cancelled = false;
+
+    (async () => {
+      setIsLoading(true);
+      const points = await getRoute(routeData.origin, routeData.destination);
+
+      if (cancelled) return;
+      setRoutePoints(points.map((point) => [point.lat, point.lng]));
+      setIsLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [routeData]);
 
   const center: [number, number] = routeData
     ? [

@@ -4,6 +4,7 @@ import { AlertTriangle, Download, FileText, X } from "lucide-react";
 import { useState } from "react";
 import { useInvoice } from "@/hooks/useInvoice";
 import type { InvoiceResponseGet } from "@/types/invoiceType";
+import { formatCurrency } from "@/utils/formatCurrency";
 import { showError, showInfo, showSuccess } from "@/utils/toastUtils";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
@@ -81,13 +82,6 @@ export default function ShowInvoiceDataModal({
     } finally {
       setCancelling(false);
     }
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
   };
 
   const formatDate = (dateString: string) => {

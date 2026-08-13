@@ -2,6 +2,7 @@
 
 import { API_BASE_URL } from "@/config/api";
 import type {
+  ClientInfo,
   ClientRequest,
   ClientResponse,
   ClientSelectionInfo,
@@ -132,6 +133,25 @@ export const clientService = {
       return await response.json();
     } catch (error) {
       console.error(`Falha ao buscar cliente pelo nome ${name}:`, error);
+      throw error;
+    }
+  },
+
+  async getClientSummary(id: number): Promise<ClientInfo> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/clients/${id}/summary`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar resumo do cliente: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Falha ao obter resumo do cliente ${id}:`, error);
       throw error;
     }
   },

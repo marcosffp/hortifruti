@@ -2,7 +2,7 @@
 
 import { Car, DollarSign, Edit, User } from "lucide-react";
 import { useEffect, useState } from "react";
-import { freightService } from "@/services/freightService";
+import { useFreightConfig } from "@/hooks/useFreightConfig";
 import type { FreightConfigDTO } from "@/types/freightType";
 import FreightConfigModal from "../modals/FreightConfigsModal";
 
@@ -32,7 +32,7 @@ export default function FreightConfigInfo() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { getFreightConfig } = freightService;
+  const { getFreightConfig } = useFreightConfig();
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -48,7 +48,7 @@ export default function FreightConfigInfo() {
     };
 
     fetchConfig();
-  }, []);
+  }, [getFreightConfig]);
 
   const handleModalClose = (updatedConfig?: FreightConfigDTO) => {
     setIsModalOpen(false);

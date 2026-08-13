@@ -13,7 +13,6 @@ import RoleGuard from "@/components/auth/RoleGuard";
 import MobileQuickAccess from "@/components/layout/MobileQuickAccess";
 import BankBalanceCard from "@/components/modules/BankBalanceCard";
 import CashFlow from "@/components/modules/CashFlow";
-import Alerts from "@/components/ui/Alerts";
 import Card from "@/components/ui/Card";
 import GameLoadingOverlay from "@/components/ui/GameLoadingOverlay";
 import { useReport } from "@/hooks/useReport";
@@ -125,22 +124,19 @@ export default function Dashboard() {
           roles={["MANAGER"]}
           ignoreRedirect={true}
           fallback={
-            <>
-              <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-8 text-center mb-2">
-                <Lock size={48} className="mx-auto text-gray-400 mb-4" />
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                  Acesso Restrito
-                </h3>
-                <p className="text-gray-500 mb-4">
-                  Os relatórios financeiros são acessíveis apenas para usuários
-                  com perfil de Gerente.
-                </p>
-                <p className="text-sm text-gray-400">
-                  Entre em contato com um administrador para solicitar acesso.
-                </p>
-              </div>
-              <Alerts></Alerts>
-            </>
+            <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-8 text-center mb-2">
+              <Lock size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                Acesso Restrito
+              </h3>
+              <p className="text-gray-500 mb-4">
+                Os relatórios financeiros são acessíveis apenas para usuários
+                com perfil de Gerente.
+              </p>
+              <p className="text-sm text-gray-400">
+                Entre em contato com um administrador para solicitar acesso.
+              </p>
+            </div>
           }
         >
           {null}

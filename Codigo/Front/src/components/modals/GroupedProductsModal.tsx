@@ -3,8 +3,9 @@
 import { X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { combinedScoreService } from "@/services/combinedScoreService";
+import { useCombinedScore } from "@/hooks/useCombinedScore";
 import type { GroupedProductType } from "@/types/combinedScoreType";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 interface GroupedProductsModalProps {
   combinedScoreId: number;
@@ -19,12 +20,12 @@ export default function GroupedProductsModal({
 }: GroupedProductsModalProps) {
   const [products, setProducts] = useState<GroupedProductType[]>([]);
   const [loading, setLoading] = useState(false);
+  const { fetchGroupedProducts } = useCombinedScore();
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const data =
-        await combinedScoreService.fetchGroupedProducts(combinedScoreId);
+      const data = await fetchGroupedProducts(combinedScoreId);
       setProducts(data);
     } catch (error) {
       toast.error("Erro ao carregar produtos");
@@ -32,18 +33,11 @@ export default function GroupedProductsModal({
     } finally {
       setLoading(false);
     }
-  }, [combinedScoreId]);
+  }, [combinedScoreId, fetchGroupedProducts]);
 
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

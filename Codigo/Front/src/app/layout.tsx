@@ -5,6 +5,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 import FetchInterceptorInit from "@/components/auth/FetchInterceptorInit";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,7 +43,7 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <FetchInterceptorInit />
-        {children}
+        <AuthProvider>{children}</AuthProvider>
         <ToastContainer aria-label={undefined} />
       </body>
     </html>

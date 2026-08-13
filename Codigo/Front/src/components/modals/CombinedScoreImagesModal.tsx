@@ -2,23 +2,16 @@
 
 import { Camera, Download, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE_URL } from "@/config/api";
-import { combinedScoreService } from "@/services/combinedScoreService";
+import { useCombinedScore } from "@/hooks/useCombinedScore";
+import { usePurchase } from "@/hooks/usePurchase";
 import type { PurchaseImageType } from "@/types/combinedScoreType";
-import { getAuthHeaders } from "@/utils/httpUtils";
+import { formatCurrency } from "@/utils/formatCurrency";
 import { showError } from "@/utils/toastUtils";
 
 interface CombinedScoreImagesModalProps {
   combinedScoreId: number;
   scoreNumber: string;
   onClose: () => void;
-}
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
 }
 
 export default function CombinedScoreImagesModal({
@@ -33,18 +26,21 @@ export default function CombinedScoreImagesModal({
     purchaseId: number;
     url: string;
   } | null>(null);
+  const { fetchImages: fetchImagesRequest, downloadPhotosPdf } =
+    useCombinedScore();
+  const { fetchPurchaseImage } = usePurchase();
 
   const fetchImages = useCallback(async () => {
     setLoading(true);
     try {
-      setImages(await combinedScoreService.fetchImages(combinedScoreId));
+      setImages(await fetchImagesRequest(combinedScoreId));
     } catch (error) {
       showError("Erro ao carregar fotos do agrupamento");
       console.error(error);
     } finally {
       setLoading(false);
     }
-  }, [combinedScoreId]);
+  }, [combinedScoreId, fetchImagesRequest]);
 
   useEffect(() => {
     fetchImages();
@@ -52,15 +48,7 @@ export default function CombinedScoreImagesModal({
 
   const abrirFoto = async (purchaseId: number) => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/purchases/${purchaseId}/imagem`,
-        {
-          headers: getAuthHeaders(),
-          credentials: "include",
-        },
-      );
-      if (!response.ok) throw new Error("Falha ao carregar a foto");
-      const blob = await response.blob();
+      const blob = await fetchPurchaseImage(purchaseId);
       setAmpliada({ purchaseId, url: URL.createObjectURL(blob) });
     } catch (error) {
       showError("Erro ao carregar a foto");
@@ -76,8 +64,7 @@ export default function CombinedScoreImagesModal({
   const baixarPdf = async () => {
     setDownloadingPdf(true);
     try {
-      const pdfBlob =
-        await combinedScoreService.downloadPhotosPdf(combinedScoreId);
+      const pdfBlob = await downloadPhotosPdf(combinedScoreId);
       const url = URL.createObjectURL(pdfBlob);
       const link = document.createElement("a");
       link.href = url;

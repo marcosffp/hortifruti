@@ -7,8 +7,9 @@ export const fiscalNoteXmlStorageService = {
     startDate: string,
     endDate: string,
   ): Promise<FiscalNoteXmlStorageResponse[]> {
+    const params = new URLSearchParams({ startDate, endDate });
     const response = await fetch(
-      `${API_BASE_URL}/invoices/xml-storage?startDate=${startDate}&endDate=${endDate}`,
+      `${API_BASE_URL}/invoices/xml-storage?${params.toString()}`,
       { method: "GET", headers: getAuthHeaders(), credentials: "include" },
     );
     if (!response.ok) {
@@ -19,7 +20,7 @@ export const fiscalNoteXmlStorageService = {
 
   async downloadXml(ref: string, nfNumber: string): Promise<void> {
     const response = await fetch(
-      `${API_BASE_URL}/invoices/xml-storage/${ref}/download`,
+      `${API_BASE_URL}/invoices/xml-storage/${encodeURIComponent(ref)}/download`,
       { method: "GET", headers: getAuthHeaders(), credentials: "include" },
     );
     if (!response.ok) {

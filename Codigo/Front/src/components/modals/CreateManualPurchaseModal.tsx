@@ -4,10 +4,16 @@ import { Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import MaskedDecimalInput from "@/components/ui/MaskedDecimalInput";
 import ProductAutocompleteField from "@/components/ui/ProductAutocompleteField";
-import { fiscalProductService } from "@/services/fiscalProductService";
-import { purchaseService } from "@/services/purchaseService";
+import { useFiscalProduct } from "@/hooks/useFiscalProduct";
+import { usePurchase } from "@/hooks/usePurchase";
 import type { FiscalProductType } from "@/types/purchaseType";
 import { todaySaoPaulo } from "@/utils/dateUtils";
+import { formatCurrency } from "@/utils/formatCurrency";
+import {
+  type NumericField,
+  type NumericRow,
+  recalcNumericRow,
+} from "@/utils/numericRow";
 import { showError, showSuccess } from "@/utils/toastUtils";
 
 interface CreateManualPurchaseModalProps {
@@ -16,53 +22,12 @@ interface CreateManualPurchaseModalProps {
   onCreated: () => void;
 }
 
-type NumericField = "quantity" | "price" | "total";
-
-interface ManualItemRow {
+interface ManualItemRow extends NumericRow {
   code: string;
-  quantity: number;
-  price: number;
-  total: number;
-  // Campos numéricos na ordem em que foram editados por último (máx. 2).
-  // O único campo dos 3 que não está aqui é o que fica "em aberto" e passa
-  // a ser calculado automaticamente a partir dos outros dois.
-  lastEdited: NumericField[];
 }
 
 function emptyRow(): ManualItemRow {
   return { code: "", quantity: 0, price: 0, total: 0, lastEdited: [] };
-}
-
-function round(value: number, decimals: number): number {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
-}
-
-const NUMERIC_FIELDS: NumericField[] = ["quantity", "price", "total"];
-
-function recalcRow(
-  row: ManualItemRow,
-  field: NumericField,
-  value: number,
-): ManualItemRow {
-  const next: ManualItemRow = { ...row, [field]: value };
-  next.lastEdited = [...row.lastEdited.filter((f) => f !== field), field].slice(
-    -2,
-  );
-
-  if (next.lastEdited.length === 2) {
-    const target = NUMERIC_FIELDS.find((f) => !next.lastEdited.includes(f));
-    if (target === "total") {
-      next.total = round(next.quantity * next.price, 2);
-    } else if (target === "price") {
-      next.price =
-        next.quantity !== 0 ? round(next.total / next.quantity, 2) : 0;
-    } else if (target === "quantity") {
-      next.quantity = next.price !== 0 ? round(next.total / next.price, 3) : 0;
-    }
-  }
-
-  return next;
 }
 
 export default function CreateManualPurchaseModal({
@@ -75,17 +40,18 @@ export default function CreateManualPurchaseModal({
   const [purchaseDate, setPurchaseDate] = useState(() => todaySaoPaulo());
   const [rows, setRows] = useState<ManualItemRow[]>([emptyRow()]);
   const [submitting, setSubmitting] = useState(false);
+  const { getFiscalProducts } = useFiscalProduct();
+  const { createManualPurchase } = usePurchase();
 
   useEffect(() => {
-    fiscalProductService
-      .getFiscalProducts()
+    getFiscalProducts()
       .then(setProducts)
       .catch((error) => {
         showError("Erro ao carregar catálogo de produtos");
         console.error(error);
       })
       .finally(() => setLoadingProducts(false));
-  }, []);
+  }, [getFiscalProducts]);
 
   const updateRowCode = (index: number, code: string) => {
     setRows((prev) =>
@@ -99,7 +65,9 @@ export default function CreateManualPurchaseModal({
     value: number,
   ) => {
     setRows((prev) =>
-      prev.map((row, i) => (i === index ? recalcRow(row, field, value) : row)),
+      prev.map((row, i) =>
+        i === index ? recalcNumericRow(row, field, value) : row,
+      ),
     );
   };
 
@@ -110,12 +78,6 @@ export default function CreateManualPurchaseModal({
   };
 
   const grandTotal = rows.reduce((sum, row) => sum + row.total, 0);
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
 
   const isValid =
     rows.length > 0 &&
@@ -131,7 +93,7 @@ export default function CreateManualPurchaseModal({
 
     setSubmitting(true);
     try {
-      await purchaseService.createManualPurchase({
+      await createManualPurchase({
         clientId,
         purchaseDate,
         items: rows.map((row) => ({
