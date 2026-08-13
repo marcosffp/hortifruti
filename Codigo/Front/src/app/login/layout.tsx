@@ -19,27 +19,6 @@ export default function LoginLayout({
         background: "#d9f7e1ff",
       }}
     >
-      {/* Padrão de fundo animado (desabilitado para fundo branco) */}
-      <div className="absolute inset-0 opacity-0 pointer-events-none">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-emerald-300 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000"></div>
-      </div>
-
-      {/* Grid decorativo (desabilitado para fundo branco) */}
-      <div className="absolute inset-0 opacity-0 pointer-events-none">
-        <div
-          className="h-full w-full"
-          style={{
-            backgroundImage: `
-            linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)
-          `,
-            backgroundSize: "50px 50px",
-          }}
-        ></div>
-      </div>
-
       <div className="relative z-10 flex-1">{children}</div>
     </div>
   );

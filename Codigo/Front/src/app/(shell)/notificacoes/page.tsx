@@ -21,43 +21,16 @@ import Card from "@/components/ui/Card";
 import MaskedDecimalInput from "@/components/ui/MaskedDecimalInput";
 import MaskedThousandsInput from "@/components/ui/MaskedThousandsInput";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  type BulkNotificationRequest,
-  bulkNotificationService,
-} from "@/services/bulkNotificationService";
+import { useBulkNotificationSend } from "@/hooks/useBulkNotificationSend";
+import { bulkNotificationService } from "@/services/bulkNotificationService";
 import { clientService } from "@/services/clientService";
-import { showError, showErrorWithLink, showSuccess } from "@/utils/toastUtils";
-
-interface Cliente {
-  id: number;
-  nome: string;
-  email: string;
-  telefone: string;
-  selecionado: boolean;
-}
-
-type TipoDestinatario = "clientes" | "contabilidade";
-type TipoReferencia = "mes" | "periodo";
-
-const DRAFT_STORAGE_KEY = "notificacoes:rascunho";
-const DRAFT_TTL_MS = 30 * 60 * 1000;
-const DRAFT_KEY_MATERIAL = "hortifruti-sl-notificacoes-draft-v1";
-const DRAFT_SALT = new TextEncoder().encode("hortifruti-sl-notificacoes-salt");
-
-interface NotificacoesDraft {
-  tipoDestinatario: TipoDestinatario;
-  mensagemPersonalizada: string;
-  canaisEnvio: { email: boolean; whatsapp: boolean };
-  cardValue: number;
-  cashValue: number;
-  selectedClientIds: number[];
-  tipoReferencia: TipoReferencia;
-  mesReferencia: number;
-  anoReferencia: number;
-  dataInicialReferencia: string;
-  dataFinalReferencia: string;
-  textoEditadoManualmente: boolean;
-}
+import type {
+  Cliente,
+  TipoDestinatario,
+  TipoReferencia,
+} from "@/types/notificacoesTypes";
+import { loadDraft, saveDraft } from "@/utils/notificationDraft";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 const MESES_PT_BR = Array.from({ length: 12 }, (_, i) =>
   new Date(2000, i, 1).toLocaleString("pt-BR", { month: "long" }),
@@ -105,92 +78,6 @@ function gerarTextoReferencia(
   return `Encaminhamos as informações referentes ao pedido realizado no período de ${formatarDiaMes(dataInicial)} a ${formatarDiaMes(dataFinal)}.`;
 }
 
-async function getDraftCryptoKey(): Promise<CryptoKey> {
-  const baseKey = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(DRAFT_KEY_MATERIAL),
-    "PBKDF2",
-    false,
-    ["deriveKey"],
-  );
-  return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt: DRAFT_SALT, iterations: 100_000, hash: "SHA-256" },
-    baseKey,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["encrypt", "decrypt"],
-  );
-}
-
-function bytesToBase64(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes));
-}
-
-function base64ToBytes(base64: string): Uint8Array<ArrayBuffer> {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
-
-async function loadDraft(): Promise<NotificacoesDraft | null> {
-  try {
-    const raw = sessionStorage.getItem(DRAFT_STORAGE_KEY);
-    if (!raw) return null;
-
-    const { iv, data } = JSON.parse(raw);
-    const key = await getDraftCryptoKey();
-    const plaintext = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv: base64ToBytes(iv) },
-      key,
-      base64ToBytes(data),
-    );
-    const parsed = JSON.parse(new TextDecoder().decode(plaintext));
-
-    if (Date.now() - parsed.savedAt > DRAFT_TTL_MS) {
-      sessionStorage.removeItem(DRAFT_STORAGE_KEY);
-      return null;
-    }
-
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-async function saveDraft(draft: NotificacoesDraft) {
-  try {
-    const key = await getDraftCryptoKey();
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const plaintext = new TextEncoder().encode(
-      JSON.stringify({ ...draft, savedAt: Date.now() }),
-    );
-    const ciphertext = await crypto.subtle.encrypt(
-      { name: "AES-GCM", iv },
-      key,
-      plaintext,
-    );
-
-    sessionStorage.setItem(
-      DRAFT_STORAGE_KEY,
-      JSON.stringify({
-        iv: bytesToBase64(iv),
-        data: bytesToBase64(new Uint8Array(ciphertext)),
-      }),
-    );
-  } catch {
-    // sessionStorage/WebCrypto indisponível (ex.: modo privado) — rascunho não é essencial, ignora
-  }
-}
-
-function clearDraft() {
-  try {
-    sessionStorage.removeItem(DRAFT_STORAGE_KEY);
-  } catch {}
-}
-
 export default function NotificacoesPage() {
   const { environment, hasRole } = useAuth();
   const searchParams = useSearchParams();
@@ -220,9 +107,6 @@ export default function NotificacoesPage() {
     () => getPeriodoPadrao().dataFinal,
   );
   const [textoEditadoManualmente, setTextoEditadoManualmente] = useState(false);
-  const [_dataVencimento, setDataVencimento] = useState("");
-  const [_valorBoleto, setValorBoleto] = useState("");
-  const [enviando, setEnviando] = useState(false);
 
   const [cardValue, setCardValue] = useState(0);
   const [cashValue, setCashValue] = useState(0);
@@ -454,142 +338,41 @@ export default function NotificacoesPage() {
     showSuccess("Todos os arquivos foram removidos");
   };
 
-  const validarArquivoECanais = () => {
-    if (arquivos.length === 0) {
-      showError("Por favor, selecione pelo menos um arquivo para enviar");
-      return false;
-    }
-    if (!canaisEnvio.email && !canaisEnvio.whatsapp) {
-      showError("Por favor, selecione pelo menos um canal de envio");
-      return false;
-    }
-    return true;
-  };
+  const { enviando, handleEnviar } = useBulkNotificationSend({
+    arquivos,
+    canaisEnvio,
+    clientes,
+    tipoDestinatario,
+    mensagemPersonalizada,
+    cardValue,
+    cashValue,
+    onSuccess: () => {
+      setArquivos([]);
+      setClientes(clientes.map((c) => ({ ...c, selecionado: false })));
+      setCanaisEnvio({ email: true, whatsapp: false });
 
-  const validarClientes = () => {
-    const clientesSelecionados = clientes.filter((c) => c.selecionado);
-    if (clientesSelecionados.length === 0) {
-      showError("Por favor, selecione pelo menos um cliente");
-      return false;
-    }
+      setCardValue(0);
+      setCashValue(0);
 
-    if (canaisEnvio.email) {
-      const clientesSemEmail = clientes
-        .filter((c) => c.selecionado && !c.email)
-        .map((c) => c.nome);
-      if (clientesSemEmail.length > 0) {
-        showError(
-          `Os seguintes clientes não possuem e-mail cadastrado: ${clientesSemEmail.join(", ")}`,
-        );
-        return false;
-      }
-    }
-
-    if (canaisEnvio.whatsapp) {
-      const clientesSemTelefone = clientes
-        .filter((c) => c.selecionado && !c.telefone)
-        .map((c) => c.nome);
-      if (clientesSemTelefone.length > 0) {
-        showError(
-          `Os seguintes clientes não possuem telefone cadastrado: ${clientesSemTelefone.join(", ")}`,
-        );
-        return false;
-      }
-    }
-
-    return true;
-  };
-
-  const validarFormulario = () => {
-    if (!validarArquivoECanais()) return false;
-    if (tipoDestinatario === "clientes" && !validarClientes()) return false;
-    return true;
-  };
-
-  const handleEnviar = async () => {
-    if (!validarFormulario()) {
-      return;
-    }
-
-    try {
-      setEnviando(true);
-
-      const clientesSelecionados = clientes.filter((c) => c.selecionado);
-      const clientIds =
-        tipoDestinatario === "clientes"
-          ? clientesSelecionados.map((c) => c.id)
-          : [];
-
-      const channels: string[] = [];
-      if (canaisEnvio.email) channels.push("email");
-      if (canaisEnvio.whatsapp) channels.push("whatsapp");
-
-      const requestData: BulkNotificationRequest = {
-        files: arquivos,
-        clientIds,
-        channels,
-        destinationType: tipoDestinatario,
-        customMessage: mensagemPersonalizada || undefined,
-      };
-
-      if (tipoDestinatario === "contabilidade") {
-        if (cardValue > 0) requestData.cardValue = cardValue.toFixed(2);
-        if (cashValue > 0) requestData.cashValue = cashValue.toFixed(2);
-      }
-
-      const response =
-        await bulkNotificationService.sendBulkNotifications(requestData);
-
-      if (response.success) {
-        showSuccess(response.message);
-
-        setArquivos([]);
-        setDataVencimento("");
-        setValorBoleto("");
-        setClientes(clientes.map((c) => ({ ...c, selecionado: false })));
-        setCanaisEnvio({ email: true, whatsapp: false });
-
-        setCardValue(0);
-        setCashValue(0);
-
-        const mesAnoPadrao = getMesAnoAnteriorPadrao();
-        const periodoPadrao = getPeriodoPadrao();
-        setTipoReferencia("periodo");
-        setMesReferencia(mesAnoPadrao.mes);
-        setAnoReferencia(mesAnoPadrao.ano);
-        setDataInicialReferencia(periodoPadrao.dataInicial);
-        setDataFinalReferencia(periodoPadrao.dataFinal);
-        setTextoEditadoManualmente(false);
-        setMensagemPersonalizada(
-          gerarTextoReferencia(
-            "periodo",
-            mesAnoPadrao.mes,
-            mesAnoPadrao.ano,
-            periodoPadrao.dataInicial,
-            periodoPadrao.dataFinal,
-          ),
-        );
-
-        clearDraft();
-      } else if (response.authorizationUrl) {
-        showErrorWithLink(response.message, response.authorizationUrl);
-      } else {
-        showError(response.message);
-
-        if (response.failedRecipients && response.failedRecipients.length > 0) {
-          const failedList = response.failedRecipients.join(", ");
-          showError(`Falha ao enviar para: ${failedList}`);
-        }
-      }
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Erro desconhecido";
-      showError(`Erro ao enviar notificação: ${errorMessage}`);
-      console.error("Erro ao enviar:", error);
-    } finally {
-      setEnviando(false);
-    }
-  };
+      const mesAnoPadrao = getMesAnoAnteriorPadrao();
+      const periodoPadrao = getPeriodoPadrao();
+      setTipoReferencia("periodo");
+      setMesReferencia(mesAnoPadrao.mes);
+      setAnoReferencia(mesAnoPadrao.ano);
+      setDataInicialReferencia(periodoPadrao.dataInicial);
+      setDataFinalReferencia(periodoPadrao.dataFinal);
+      setTextoEditadoManualmente(false);
+      setMensagemPersonalizada(
+        gerarTextoReferencia(
+          "periodo",
+          mesAnoPadrao.mes,
+          mesAnoPadrao.ano,
+          periodoPadrao.dataInicial,
+          periodoPadrao.dataFinal,
+        ),
+      );
+    },
+  });
 
   const clientesSelecionados = clientes.filter((c) => c.selecionado).length;
   const elegiveisFiltrados = filteredClientes.filter(clienteElegivel);

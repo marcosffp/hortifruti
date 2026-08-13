@@ -17,6 +17,7 @@ import {
 } from "react-icons/ri";
 import { TbChartBar } from "react-icons/tb";
 import { WiHumidity } from "react-icons/wi";
+import RecommendationEditModal from "@/components/modals/RecommendationEditModal";
 import Card from "@/components/ui/Card";
 import {
   type ProductRecommendation,
@@ -88,6 +89,12 @@ export default function RecommendationPage() {
     }
   };
 
+  const reloadRecommendations = useCallback(async () => {
+    const date = selectedDate ?? new Date().toISOString().slice(0, 10);
+    const data = await productService.getRecommendationsByDate(date);
+    setRecommendations(data);
+  }, [selectedDate]);
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -134,10 +141,7 @@ export default function RecommendationPage() {
         lowSalesMonths: [],
       });
 
-      const data = await productService.getRecommendationsByDate(
-        new Date().toISOString().slice(0, 10),
-      );
-      setRecommendations(data);
+      await reloadRecommendations();
       setError("");
     } catch (err) {
       console.error("Erro ao adicionar produto:", err);
@@ -210,15 +214,7 @@ export default function RecommendationPage() {
       setShowEdit(false);
       setEditingProduct(null);
 
-      if (selectedDate) {
-        const data =
-          await productService.getRecommendationsByDate(selectedDate);
-        setRecommendations(data);
-      } else {
-        const today = new Date().toISOString().slice(0, 10);
-        const data = await productService.getRecommendationsByDate(today);
-        setRecommendations(data);
-      }
+      await reloadRecommendations();
       setError("");
     } catch (err) {
       console.error("Erro ao atualizar produto:", err);
@@ -241,33 +237,12 @@ export default function RecommendationPage() {
       showSuccess("Produto excluído com sucesso!");
       setProductToDelete(null);
 
-      if (selectedDate) {
-        const data =
-          await productService.getRecommendationsByDate(selectedDate);
-        setRecommendations(data);
-      } else {
-        const today = new Date().toISOString().slice(0, 10);
-        const data = await productService.getRecommendationsByDate(today);
-        setRecommendations(data);
-      }
+      await reloadRecommendations();
     } catch (err) {
       console.error("Erro ao excluir produto:", err);
       showError("Não foi possível excluir o produto.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const _getTagColor = (tag: string) => {
-    switch (tag) {
-      case "BOM":
-        return "bg-[var(--primary)] text-white";
-      case "MEDIO":
-        return "bg-[#f39c12] text-white";
-      case "RUIM":
-        return "bg-[var(--secondary)] text-white";
-      default:
-        return "bg-gray-200";
     }
   };
 
@@ -730,120 +705,32 @@ export default function RecommendationPage() {
       )}
 
       {showEdit && editingProduct && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-              <Edit className="mr-2 text-blue-600" size={20} />
-              Editar Produto
-            </h3>
-
-            <div className="flex flex-col gap-3 mb-6">
-              <label
-                htmlFor="rec-edit-nome"
-                className="text-sm text-[var(--neutral-700)]"
-              >
-                Nome do Produto*
-              </label>
-              <input
-                id="rec-edit-nome"
-                className="border border-[var(--neutral-300)] rounded px-3 py-2"
-                placeholder="Ex: Tomate"
-                value={editingProduct.data.name}
-                onChange={(e) =>
-                  setEditingProduct({
-                    ...editingProduct,
-                    data: { ...editingProduct.data, name: e.target.value },
-                  })
-                }
-              />
-
-              <label
-                htmlFor="rec-edit-categoria"
-                className="text-sm text-[var(--neutral-700)]"
-              >
-                Categoria de Temperatura*
-              </label>
-              <select
-                id="rec-edit-categoria"
-                className="border border-[var(--neutral-300)] rounded px-3 py-2"
-                value={editingProduct.data.temperatureCategory}
-                onChange={(e) =>
-                  setEditingProduct({
-                    ...editingProduct,
-                    data: {
-                      ...editingProduct.data,
-                      temperatureCategory: e.target
-                        .value as TemperatureCategory,
-                    },
-                  })
-                }
-              >
-                {temperatureCategorias.map((cat) => (
-                  <option key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
-
-              <label
-                htmlFor="rec-edit-pico"
-                className="text-sm text-[var(--neutral-700)]"
-              >
-                Meses de Pico de Vendas
-              </label>
-              <input
-                id="rec-edit-pico"
-                className="border border-[var(--neutral-300)] rounded px-3 py-2"
-                placeholder="Ex: 1,2,3 (separados por vírgula)"
-                value={editingProduct.data.peakSalesMonths.join(",")}
-                onChange={(e) =>
-                  handleMonthsChange(e.target.value, "peakSalesMonths", true)
-                }
-              />
-
-              <label
-                htmlFor="rec-edit-baixa"
-                className="text-sm text-[var(--neutral-700)]"
-              >
-                Meses de Baixa nas Vendas
-              </label>
-              <input
-                id="rec-edit-baixa"
-                className="border border-[var(--neutral-300)] rounded px-3 py-2"
-                placeholder="Ex: 7,8,9 (separados por vírgula)"
-                value={editingProduct.data.lowSalesMonths.join(",")}
-                onChange={(e) =>
-                  handleMonthsChange(e.target.value, "lowSalesMonths", true)
-                }
-              />
-
-              {error && (
-                <span className="text-[var(--secondary)]">{error}</span>
-              )}
-
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEdit(false);
-                    setEditingProduct(null);
-                    setError("");
-                  }}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveEdit}
-                  className="px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-dark)] text-white rounded-md"
-                >
-                  Salvar Alterações
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <RecommendationEditModal
+          data={editingProduct.data}
+          temperatureCategorias={temperatureCategorias}
+          error={error}
+          onNameChange={(name) =>
+            setEditingProduct({
+              ...editingProduct,
+              data: { ...editingProduct.data, name },
+            })
+          }
+          onCategoryChange={(temperatureCategory) =>
+            setEditingProduct({
+              ...editingProduct,
+              data: { ...editingProduct.data, temperatureCategory },
+            })
+          }
+          onMonthsChange={(value, field) =>
+            handleMonthsChange(value, field, true)
+          }
+          onCancel={() => {
+            setShowEdit(false);
+            setEditingProduct(null);
+            setError("");
+          }}
+          onSave={handleSaveEdit}
+        />
       )}
 
       {productToDelete !== null && (

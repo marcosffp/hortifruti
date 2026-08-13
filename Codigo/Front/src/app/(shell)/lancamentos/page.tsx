@@ -15,11 +15,11 @@ import {
   Search,
   Trash2,
   Wallet,
-  X,
 } from "lucide-react";
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import RoleGuard from "@/components/auth/RoleGuard";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
+import TransactionEditModal from "@/components/modals/TransactionEditModal";
 import Button from "@/components/ui/Button";
 import GameLoadingOverlay from "@/components/ui/GameLoadingOverlay";
 import Loading from "@/components/ui/Loading";
@@ -107,11 +107,11 @@ export default function FinancialLaunchesPage() {
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [currentTransaction, setCurrentTransaction] =
     useState<TransactionResponse | null>(null);
-  const [isGeneratingExtratos, setIsGeneratingExtratos] = useState(false);
-  const [sicoobResult, setSicoobResult] = useState<SicoobGenerateResult | null>(
-    null,
-  );
-  const [bbResult, setBbResult] = useState<BBGenerateResult | null>(null);
+  const [extratos, setExtratos] = useState<{
+    isGenerating: boolean;
+    sicoobResult: SicoobGenerateResult | null;
+    bbResult: BBGenerateResult | null;
+  }>({ isGenerating: false, sicoobResult: null, bbResult: null });
   const [exportKind, setExportKind] = useState<"excel" | "complete" | null>(
     null,
   );
@@ -257,11 +257,9 @@ export default function FinancialLaunchesPage() {
       : `${totalSaved} lançamento(s) novo(s) salvo(s) (${totalDuplicatedSkipped} já existiam).`;
 
   const handleGenerateExtratos = async () => {
-    if (!isSameMonth || isGeneratingExtratos) return;
+    if (!isSameMonth || extratos.isGenerating) return;
 
-    setIsGeneratingExtratos(true);
-    setSicoobResult(null);
-    setBbResult(null);
+    setExtratos({ isGenerating: true, sicoobResult: null, bbResult: null });
 
     const ano = Number(startYearStr);
     const mes = Number(startMonthStr);
@@ -282,14 +280,17 @@ export default function FinancialLaunchesPage() {
         summary.totalSaved,
         summary.totalDuplicatedSkipped,
       );
-      setSicoobResult({
-        status: summary.alreadyProcessed ? "alreadyProcessed" : "success",
-        message,
-        mes,
-        ano,
-        diaInicial,
-        diaFinal,
-      });
+      setExtratos((prev) => ({
+        ...prev,
+        sicoobResult: {
+          status: summary.alreadyProcessed ? "alreadyProcessed" : "success",
+          message,
+          mes,
+          ano,
+          diaInicial,
+          diaFinal,
+        },
+      }));
       if (summary.alreadyProcessed) {
         showInfo(`Sicoob: ${message}`);
       } else {
@@ -297,14 +298,17 @@ export default function FinancialLaunchesPage() {
       }
     } else {
       const message = getErrorMessage(sicoobSettled.reason);
-      setSicoobResult({
-        status: "error",
-        message,
-        mes,
-        ano,
-        diaInicial,
-        diaFinal,
-      });
+      setExtratos((prev) => ({
+        ...prev,
+        sicoobResult: {
+          status: "error",
+          message,
+          mes,
+          ano,
+          diaInicial,
+          diaFinal,
+        },
+      }));
       showError(`Sicoob: ${message}`);
     }
 
@@ -317,12 +321,15 @@ export default function FinancialLaunchesPage() {
         summary.totalSaved,
         summary.totalDuplicatedSkipped,
       );
-      setBbResult({
-        status: summary.alreadyProcessed ? "alreadyProcessed" : "success",
-        message,
-        dataInicio: startDate,
-        dataFim: endDate,
-      });
+      setExtratos((prev) => ({
+        ...prev,
+        bbResult: {
+          status: summary.alreadyProcessed ? "alreadyProcessed" : "success",
+          message,
+          dataInicio: startDate,
+          dataFim: endDate,
+        },
+      }));
       if (summary.alreadyProcessed) {
         showInfo(`BB: ${message}`);
       } else {
@@ -330,16 +337,19 @@ export default function FinancialLaunchesPage() {
       }
     } else {
       const message = getErrorMessage(bbSettled.reason);
-      setBbResult({
-        status: "error",
-        message,
-        dataInicio: startDate,
-        dataFim: endDate,
-      });
+      setExtratos((prev) => ({
+        ...prev,
+        bbResult: {
+          status: "error",
+          message,
+          dataInicio: startDate,
+          dataFim: endDate,
+        },
+      }));
       showError(`BB: ${message}`);
     }
 
-    setIsGeneratingExtratos(false);
+    setExtratos((prev) => ({ ...prev, isGenerating: false }));
 
     const anySucceeded =
       (sicoobSettled.status === "fulfilled" &&
@@ -352,17 +362,17 @@ export default function FinancialLaunchesPage() {
   };
 
   const handleDownloadSicoobPdf = async () => {
-    if (!sicoobResult) return;
+    if (!extratos.sicoobResult) return;
     try {
       const blob = await statementApiService.downloadSicoobPdf(
-        sicoobResult.mes,
-        sicoobResult.ano,
-        sicoobResult.diaInicial,
-        sicoobResult.diaFinal,
+        extratos.sicoobResult.mes,
+        extratos.sicoobResult.ano,
+        extratos.sicoobResult.diaInicial,
+        extratos.sicoobResult.diaFinal,
       );
       triggerBlobDownload(
         blob,
-        `extrato-sicoob_${sicoobResult.ano}${String(sicoobResult.mes).padStart(2, "0")}.pdf`,
+        `extrato-sicoob_${extratos.sicoobResult.ano}${String(extratos.sicoobResult.mes).padStart(2, "0")}.pdf`,
       );
     } catch (err) {
       showError(`Erro ao baixar PDF do Sicoob: ${getErrorMessage(err)}`);
@@ -370,17 +380,17 @@ export default function FinancialLaunchesPage() {
   };
 
   const handleDownloadSicoobExcel = async () => {
-    if (!sicoobResult) return;
+    if (!extratos.sicoobResult) return;
     try {
       const blob = await statementApiService.downloadSicoobExcel(
-        sicoobResult.mes,
-        sicoobResult.ano,
-        sicoobResult.diaInicial,
-        sicoobResult.diaFinal,
+        extratos.sicoobResult.mes,
+        extratos.sicoobResult.ano,
+        extratos.sicoobResult.diaInicial,
+        extratos.sicoobResult.diaFinal,
       );
       triggerBlobDownload(
         blob,
-        `extrato-sicoob_${sicoobResult.ano}${String(sicoobResult.mes).padStart(2, "0")}.xlsx`,
+        `extrato-sicoob_${extratos.sicoobResult.ano}${String(extratos.sicoobResult.mes).padStart(2, "0")}.xlsx`,
       );
     } catch (err) {
       showError(`Erro ao baixar Excel do Sicoob: ${getErrorMessage(err)}`);
@@ -388,15 +398,15 @@ export default function FinancialLaunchesPage() {
   };
 
   const handleDownloadBBPdf = async () => {
-    if (!bbResult) return;
+    if (!extratos.bbResult) return;
     try {
       const blob = await statementApiService.downloadBBPdf(
-        bbResult.dataInicio,
-        bbResult.dataFim,
+        extratos.bbResult.dataInicio,
+        extratos.bbResult.dataFim,
       );
       triggerBlobDownload(
         blob,
-        `extrato-bb_${bbResult.dataInicio}_a_${bbResult.dataFim}.pdf`,
+        `extrato-bb_${extratos.bbResult.dataInicio}_a_${extratos.bbResult.dataFim}.pdf`,
       );
     } catch (err) {
       showError(`Erro ao baixar PDF do BB: ${getErrorMessage(err)}`);
@@ -404,15 +414,15 @@ export default function FinancialLaunchesPage() {
   };
 
   const handleDownloadBBExcel = async () => {
-    if (!bbResult) return;
+    if (!extratos.bbResult) return;
     try {
       const blob = await statementApiService.downloadBBExcel(
-        bbResult.dataInicio,
-        bbResult.dataFim,
+        extratos.bbResult.dataInicio,
+        extratos.bbResult.dataFim,
       );
       triggerBlobDownload(
         blob,
-        `extrato-bb_${bbResult.dataInicio}_a_${bbResult.dataFim}.xlsx`,
+        `extrato-bb_${extratos.bbResult.dataInicio}_a_${extratos.bbResult.dataFim}.xlsx`,
       );
     } catch (err) {
       showError(`Erro ao baixar Excel do BB: ${getErrorMessage(err)}`);
@@ -481,7 +491,7 @@ export default function FinancialLaunchesPage() {
               <Button
                 variant="outline"
                 onClick={handleGenerateExtratos}
-                disabled={!isSameMonth || isGeneratingExtratos}
+                disabled={!isSameMonth || extratos.isGenerating}
                 title={
                   !isSameMonth
                     ? "Selecione um período dentro de um único mês"
@@ -489,10 +499,10 @@ export default function FinancialLaunchesPage() {
                 }
                 className="border border-gray-300 text-gray-700 px-4 py-2"
                 icon={
-                  isGeneratingExtratos ? undefined : <RefreshCw size={18} />
+                  extratos.isGenerating ? undefined : <RefreshCw size={18} />
                 }
               >
-                {isGeneratingExtratos ? "Gerando..." : "Gerar Extratos"}
+                {extratos.isGenerating ? "Gerando..." : "Gerar Extratos"}
               </Button>
             </RoleGuard>
           </div>
@@ -502,22 +512,22 @@ export default function FinancialLaunchesPage() {
             </p>
           )}
 
-          {(sicoobResult || bbResult) && (
+          {(extratos.sicoobResult || extratos.bbResult) && (
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {sicoobResult && (
+              {extratos.sicoobResult && (
                 <div
                   className={`rounded-lg border p-4 ${
-                    sicoobResult.status === "error"
+                    extratos.sicoobResult.status === "error"
                       ? "border-red-200 bg-red-50"
-                      : sicoobResult.status === "alreadyProcessed"
+                      : extratos.sicoobResult.status === "alreadyProcessed"
                         ? "border-blue-200 bg-blue-50"
                         : "border-green-200 bg-green-50"
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    {sicoobResult.status === "error" ? (
+                    {extratos.sicoobResult.status === "error" ? (
                       <AlertCircle className="text-red-500" size={18} />
-                    ) : sicoobResult.status === "alreadyProcessed" ? (
+                    ) : extratos.sicoobResult.status === "alreadyProcessed" ? (
                       <Info className="text-blue-500" size={18} />
                     ) : (
                       <CheckCircle2 className="text-green-500" size={18} />
@@ -525,9 +535,9 @@ export default function FinancialLaunchesPage() {
                     <span className="font-medium text-gray-800">Sicoob</span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    {sicoobResult.message}
+                    {extratos.sicoobResult.message}
                   </p>
-                  {sicoobResult.status !== "error" && (
+                  {extratos.sicoobResult.status !== "error" && (
                     <div className="flex gap-2 mt-3">
                       <Button
                         variant="outline"
@@ -550,20 +560,20 @@ export default function FinancialLaunchesPage() {
                 </div>
               )}
 
-              {bbResult && (
+              {extratos.bbResult && (
                 <div
                   className={`rounded-lg border p-4 ${
-                    bbResult.status === "error"
+                    extratos.bbResult.status === "error"
                       ? "border-red-200 bg-red-50"
-                      : bbResult.status === "alreadyProcessed"
+                      : extratos.bbResult.status === "alreadyProcessed"
                         ? "border-blue-200 bg-blue-50"
                         : "border-green-200 bg-green-50"
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    {bbResult.status === "error" ? (
+                    {extratos.bbResult.status === "error" ? (
                       <AlertCircle className="text-red-500" size={18} />
-                    ) : bbResult.status === "alreadyProcessed" ? (
+                    ) : extratos.bbResult.status === "alreadyProcessed" ? (
                       <Info className="text-blue-500" size={18} />
                     ) : (
                       <CheckCircle2 className="text-green-500" size={18} />
@@ -572,8 +582,10 @@ export default function FinancialLaunchesPage() {
                       Banco do Brasil
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600">{bbResult.message}</p>
-                  {bbResult.status !== "error" && (
+                  <p className="text-sm text-gray-600">
+                    {extratos.bbResult.message}
+                  </p>
+                  {extratos.bbResult.status !== "error" && (
                     <div className="flex gap-2 mt-3">
                       <Button
                         variant="outline"
@@ -1058,244 +1070,16 @@ export default function FinancialLaunchesPage() {
       </div>
 
       {isEditModalOpen && currentTransaction && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-xl">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Editar Lançamento</h2>
-              <button
-                type="button"
-                className="text-gray-500 hover:text-gray-800"
-                onClick={() => setIsEditModalOpen(false)}
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <form
-              onSubmit={(e: FormEvent) => {
-                e.preventDefault();
-                const form = e.target as HTMLFormElement;
-                const formData = new FormData(form);
-
-                const transaction: TransactionRequest = {
-                  document: (formData.get("document") as string) || null,
-                  history: formData.get("history") as string,
-                  category: formData.get("category") as string,
-                  transactionType: formData.get("transactionType") as
-                    | "CREDITO"
-                    | "DEBITO",
-                  transactionDate: formData.get("transactionDate") as string,
-                  amount: parseFloat(formData.get("amount") as string),
-                  bank: formData.get("bank") as string,
-                  codHistory: formData.get("codHistory") as string,
-                  batch: formData.get("batch") as string,
-                  sourceAgency: formData.get("sourceAgency") as string,
-                };
-
-                handleUpdateTransaction(transaction);
-              }}
-            >
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label
-                    htmlFor="edit-history"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Histórico
-                  </label>
-                  <input
-                    id="edit-history"
-                    type="text"
-                    name="history"
-                    defaultValue={currentTransaction.history}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="edit-category"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Categoria
-                  </label>
-                  <select
-                    id="edit-category"
-                    name="category"
-                    defaultValue={currentTransaction.category}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  >
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="edit-transactionType"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Tipo
-                  </label>
-                  <select
-                    id="edit-transactionType"
-                    name="transactionType"
-                    defaultValue={currentTransaction.transactionType}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="CREDITO">Entrada</option>
-                    <option value="DEBITO">Saída</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="edit-transactionDate"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Data
-                  </label>
-                  <input
-                    id="edit-transactionDate"
-                    type="date"
-                    name="transactionDate"
-                    defaultValue={currentTransaction.transactionDate}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="edit-amount"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Valor
-                  </label>
-                  <input
-                    id="edit-amount"
-                    type="number"
-                    step="0.01"
-                    name="amount"
-                    defaultValue={currentTransaction.amount}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="edit-bank"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Banco
-                  </label>
-                  <input
-                    id="edit-bank"
-                    type="text"
-                    name="bank"
-                    defaultValue={currentTransaction.bank}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="edit-document"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Documento (opcional)
-                  </label>
-                  <input
-                    id="edit-document"
-                    type="text"
-                    name="document"
-                    defaultValue={currentTransaction.document || ""}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="edit-codHistory"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Código de Histórico*
-                  </label>
-                  <input
-                    id="edit-codHistory"
-                    type="text"
-                    name="codHistory"
-                    defaultValue={currentTransaction.codHistory || "001"}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="edit-batch"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Lote*
-                  </label>
-                  <input
-                    id="edit-batch"
-                    type="text"
-                    name="batch"
-                    defaultValue={currentTransaction.batch || "001"}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="edit-sourceAgency"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Agência de Origem*
-                  </label>
-                  <input
-                    id="edit-sourceAgency"
-                    type="text"
-                    name="sourceAgency"
-                    defaultValue={currentTransaction.sourceAgency || "001"}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                >
-                  Salvar Alterações
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <TransactionEditModal
+          transaction={currentTransaction}
+          categories={categories}
+          onClose={() => setIsEditModalOpen(false)}
+          onSubmit={handleUpdateTransaction}
+        />
       )}
 
       <GameLoadingOverlay
-        isOpen={isGeneratingExtratos}
+        isOpen={extratos.isGenerating}
         title="Gerando extratos"
         messages={[
           "Conectando ao Sicoob e Banco do Brasil...",

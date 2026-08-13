@@ -132,27 +132,6 @@ Tudo marcado 🟡/🔵 nas seções abaixo: componentes/tabelas mortas (`Billets
 - [ ] 🔵 **[A-A4] Guardas de papel ad-hoc repetidas em vez de um wrapper de seção reaproveitável**
   **Local:** `src/app/(shell)/dashboard/page.tsx:53,62,78,115,124` — 5 usos de `<RoleGuard roles={["MANAGER"]}>` no mesmo arquivo. Um componente `GestorOnly` reduziria a chance de alguém esquecer de aplicá-lo (como aconteceu nas rotas de A-V5).
 
-### A · Clareza / código confuso
-
-- [ ] 🟠 **[A-C1] `comercio/boletos/page.tsx` — 1959 linhas** *(ver também A-A2)* — mistura data-fetching, 12+ `useState`, tabela responsiva duplicada (desktop/mobile) e modais de confirmação.
-- [ ] 🟠 **[A-C2] `lancamentos/page.tsx` — 1343 linhas**, incluindo um formulário de edição inteiro definido inline (linhas 1064-1299) em vez de extraído — compare com `ClientForm`, usado corretamente em `clientes/novo`/`editar`.
-- [ ] 🟡 **[A-C3] `comercio/recomendacoes/page.tsx` — 881 linhas**, modal de edição inline (732-846) e a mesma lógica de "recarregar recomendações" repetida em 3 lugares (`handleAddProduct`, `handleSaveEdit`, `handleConfirmDelete`).
-- [ ] 🟡 **[A-C4] `notificacoes/page.tsx` — 846 linhas**, com criptografia de rascunho, validações e envio todos dentro do componente de página em vez de hooks/utils dedicados.
-- [ ] 🔵 **[A-C5] Estados booleanos/união paralelos que poderiam ser uma máquina de estados**
-  **Local:** `src/app/(shell)/lancamentos/page.tsx:114-121` — `isGeneratingExtratos` (boolean) + `sicoobResult`/`bbResult` (union) + `exportKind` como três fontes de verdade paralelas para "qual operação assíncrona está em andamento".
-- [ ] 🔵 **[A-C6] Estado morto mantido com prefixo `_` para silenciar o linter**
-  **Local:** `notificacoes/page.tsx:157-158` (`_dataVencimento`, `_valorBoleto`) — setados mas nunca lidos; `recomendacoes/page.tsx:261-272` (`_getTagColor`) nunca chamada.
-- [ ] 🔵 **[A-C7] `"use client"` em páginas majoritariamente estáticas**
-  **Locais:** `src/app/acesso-negado/page.tsx:1`, `src/app/(shell)/admin/page.tsx:1` — poderiam ser Server Components com só o `onClick`/`RoleGuard` extraído para um Client Component filho pequeno. Padrão repetido em quase toda página do projeto.
-
-### A · Comentários desnecessários / código morto
-
-- [ ] 🔵 **[A-CM1] Bloco de dark mode inteiro comentado (34 linhas)**
-  **Local:** `src/app/globals.css:57-91` — ou implementa ou remove; deixado comentado sugere trabalho inacabado.
-- [ ] 🔵 **[A-CM2] Decorações de fundo com `opacity-0 pointer-events-none` em vez de removidas**
-  **Local:** `src/app/login/layout.tsx:22-41` — elementos continuam no DOM e o CSS de animação continua no bundle, só invisíveis.
-- [ ] 🔵 **[A-CM3] Comentário "REMOVER ANTES DO MERGE FINAL" não removido** *(mesmo achado que A-V1, sinal de processo — recomenda-se lint/CI que falhe o build se `src/app/dev/**` existir fora de ambiente de desenvolvimento)*
-
 ---
 
 ## Área B — Componentes
