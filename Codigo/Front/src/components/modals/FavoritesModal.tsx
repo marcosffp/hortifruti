@@ -1,7 +1,8 @@
-import { Edit, MapPin, Plus, Store, Trash2, X } from "lucide-react";
+import { MapPin, Store, X } from "lucide-react";
 import { useState } from "react";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
-import AddressAutocomplete from "@/components/modules/AddressAutocomplete";
+import FavoriteLocationsTab from "@/components/modals/favorites/FavoriteLocationsTab";
+import SacolaoTab from "@/components/modals/favorites/SacolaoTab";
 import type {
   AddressType,
   FavoriteLocation,
@@ -153,6 +154,13 @@ const FavoritesModal = ({
     onClose();
   };
 
+  const resetLocationForm = () => {
+    setEditingId(null);
+    setNewLocationName("");
+    setNewLocationAddress("");
+    setNewLocationCoords(null);
+  };
+
   return (
     <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10 max-lg:px-4">
       <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -197,243 +205,57 @@ const FavoritesModal = ({
         </div>
 
         {activeTab === "sacolao" && (
-          <div>
-            <h3 className="text-lg font-medium text-gray-800 mb-4">
-              Endereço do Sacolão
-            </h3>
-
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <h4 className="font-medium text-green-800 mb-1">
-                    {sacolaoData.name}
-                  </h4>
-                  <p className="text-green-700 text-sm">
-                    {sacolaoData.address}
-                  </p>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => handleSelectLocation(sacolaoData)}
-                    className="text-green-600 hover:text-green-800 p-1"
-                    title="Usar este endereço"
-                  >
-                    <MapPin size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsEditing(true);
-                      setNewSacolaoName(sacolaoData.name);
-                      setNewSacolaoAddress(sacolaoData.address);
-                    }}
-                    className="text-blue-600 hover:text-blue-800 p-1"
-                    title="Editar"
-                  >
-                    <Edit size={18} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {isEditing && (
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                <h4 className="font-medium text-gray-800 mb-4">
-                  Editar Sacolão
-                </h4>
-                <div className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Nome do sacolão..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    value={newSacolaoName}
-                    onChange={(e) => setNewSacolaoName(e.target.value)}
-                  />
-                  <AddressAutocomplete
-                    value={newSacolaoAddress}
-                    onChange={setNewSacolaoAddress}
-                    placeholder="Endereço completo do sacolão..."
-                  />
-                  <div className="flex space-x-3">
-                    <button
-                      type="button"
-                      onClick={handleSaveSacolao}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-                    >
-                      Salvar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsEditing(false);
-                        setNewSacolaoName("");
-                        setNewSacolaoAddress("");
-                      }}
-                      className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          <SacolaoTab
+            sacolaoData={sacolaoData}
+            isEditing={isEditing}
+            newSacolaoName={newSacolaoName}
+            newSacolaoAddress={newSacolaoAddress}
+            onSelectLocation={handleSelectLocation}
+            onStartEditing={() => {
+              setIsEditing(true);
+              setNewSacolaoName(sacolaoData.name);
+              setNewSacolaoAddress(sacolaoData.address);
+            }}
+            onNameChange={setNewSacolaoName}
+            onAddressChange={setNewSacolaoAddress}
+            onSave={handleSaveSacolao}
+            onCancel={() => {
+              setIsEditing(false);
+              setNewSacolaoName("");
+              setNewSacolaoAddress("");
+            }}
+          />
         )}
 
         {activeTab === "favorites" && (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-800">
-                Locais Favoritos
-              </h3>
-              <span className="text-sm text-gray-500">
-                {favoriteLocations.length} locais
-              </span>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <h4 className="font-medium text-gray-800 mb-4">
-                {editingId ? "Editar Local" : "Adicionar Novo Local"}
-              </h4>
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Nome do local..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  value={newLocationName}
-                  onChange={(e) => setNewLocationName(e.target.value)}
-                />
-                <AddressAutocomplete
-                  value={newLocationAddress}
-                  onChange={(value) => {
-                    setNewLocationAddress(value);
-                    setNewLocationCoords(null);
-                  }}
-                  onAddressSelect={(addressData) => {
-                    setNewLocationAddress(addressData.address);
-                    setNewLocationCoords({
-                      lat: addressData.lat,
-                      lng: addressData.lng,
-                    });
-                  }}
-                  placeholder="Endereço completo..."
-                />
-                {newLocationAddress && !newLocationCoords && (
-                  <p className="text-sm text-amber-600">
-                    Selecione um endereço da lista de sugestões para obter as
-                    coordenadas.
-                  </p>
-                )}
-                <div className="flex space-x-3">
-                  <button
-                    type="button"
-                    disabled={
-                      !newLocationName ||
-                      !newLocationAddress ||
-                      !newLocationCoords
-                    }
-                    onClick={
-                      editingId
-                        ? handleUpdateFavoriteLocation
-                        : handleAddFavoriteLocation
-                    }
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Plus size={18} className="mr-2" />
-                    {editingId ? "Atualizar" : "Adicionar"}
-                  </button>
-                  {editingId && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingId(null);
-                        setNewLocationName("");
-                        setNewLocationAddress("");
-                        setNewLocationCoords(null);
-                      }}
-                      className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {favoriteLocations.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <MapPin size={48} className="mx-auto mb-3 text-gray-300" />
-                <p>Nenhum local favorito cadastrado</p>
-                <p className="text-sm">
-                  Adicione locais para facilitar o cálculo de frete
-                </p>
-                <button
-                  type="button"
-                  className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center mx-auto"
-                  onClick={() => {
-                    setEditingId(null);
-                    setNewLocationName("");
-                    setNewLocationAddress("");
-                    setNewLocationCoords(null);
-                  }}
-                >
-                  <Plus size={18} className="mr-2" />
-                  Criar Favorito
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {favoriteLocations.map((location: FavoriteLocation) => (
-                  <div
-                    key={location.id}
-                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-800 mb-1">
-                          {location.name}
-                        </h4>
-                        <p className="text-gray-600 text-sm">
-                          {location.address}
-                        </p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          type="button"
-                          onClick={() => handleSelectLocation(location)}
-                          className="text-green-600 hover:text-green-800 p-1"
-                          title="Usar este endereço"
-                        >
-                          <MapPin size={18} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleEditFavoriteLocation(location.id)
-                          }
-                          className="text-blue-600 hover:text-blue-800 p-1"
-                          title="Editar"
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleDeleteFavoriteLocation(location.id)
-                          }
-                          className="text-red-600 hover:text-red-800 p-1"
-                          title="Excluir"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <FavoriteLocationsTab
+            favoriteLocations={favoriteLocations}
+            editingId={editingId}
+            newLocationName={newLocationName}
+            newLocationAddress={newLocationAddress}
+            newLocationCoords={newLocationCoords}
+            onNameChange={setNewLocationName}
+            onAddressChange={(value) => {
+              setNewLocationAddress(value);
+              setNewLocationCoords(null);
+            }}
+            onAddressSelect={(addressData) => {
+              setNewLocationAddress(addressData.address);
+              setNewLocationCoords({
+                lat: addressData.lat,
+                lng: addressData.lng,
+              });
+            }}
+            onSubmit={
+              editingId
+                ? handleUpdateFavoriteLocation
+                : handleAddFavoriteLocation
+            }
+            onCancelEdit={resetLocationForm}
+            onSelectLocation={handleSelectLocation}
+            onEditLocation={handleEditFavoriteLocation}
+            onDeleteLocation={handleDeleteFavoriteLocation}
+          />
         )}
       </div>
 

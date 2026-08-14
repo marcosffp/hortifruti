@@ -1,18 +1,17 @@
 "use client";
 
-import { Check, Edit, Plus, Trash2, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import MaskedDecimalInput from "@/components/ui/MaskedDecimalInput";
-import ProductAutocompleteField from "@/components/ui/ProductAutocompleteField";
 import { useFiscalProduct } from "@/hooks/useFiscalProduct";
 import { usePurchase } from "@/hooks/usePurchase";
 import type {
   FiscalProductType,
   InvoiceProductType,
 } from "@/types/purchaseType";
-import { formatCurrency } from "@/utils/formatCurrency";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
+import AddInvoiceItemForm from "./invoice-products/AddInvoiceItemForm";
+import InvoiceProductsTable from "./invoice-products/InvoiceProductsTable";
 
 interface InvoiceProductsModalProps {
   purchaseId: number;
@@ -168,10 +167,6 @@ export default function InvoiceProductsModal({
     }
   };
 
-  const calculateTotal = (price: number, quantity: number) => {
-    return price * quantity;
-  };
-
   return (
     <div className="fixed inset-0 h-full bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -201,57 +196,24 @@ export default function InvoiceProductsModal({
           </div>
 
           {addingItem && (
-            <div className="flex flex-col md:flex-row md:items-center gap-2 border border-gray-200 rounded-lg p-3 mb-4 bg-gray-50">
-              <div className="flex-1">
-                <ProductAutocompleteField
-                  products={catalogProducts}
-                  value={newItem.code}
-                  onSelect={(code) => setNewItem((prev) => ({ ...prev, code }))}
-                  disabled={loadingCatalog || savingNewItem}
-                />
-              </div>
-              <div className="flex gap-2">
-                <MaskedDecimalInput
-                  value={newItem.quantity}
-                  onChange={(quantity) =>
-                    setNewItem((prev) => ({ ...prev, quantity }))
-                  }
-                  placeholder="Qtd."
-                  disabled={savingNewItem}
-                  className="w-full md:w-24 p-2 border border-gray-300 rounded-lg text-right focus:outline-none focus:ring-1 focus:ring-green-500"
-                />
-                <MaskedDecimalInput
-                  value={newItem.price}
-                  onChange={(price) =>
-                    setNewItem((prev) => ({ ...prev, price }))
-                  }
-                  placeholder="Preço"
-                  disabled={savingNewItem}
-                  className="w-full md:w-24 p-2 border border-gray-300 rounded-lg text-right focus:outline-none focus:ring-1 focus:ring-green-500"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddItem}
-                  disabled={savingNewItem}
-                  className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors disabled:opacity-50"
-                  title="Salvar"
-                >
-                  <Check className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAddingItem(false);
-                    setNewItem({ code: "", quantity: 0, price: 0 });
-                  }}
-                  disabled={savingNewItem}
-                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-                  title="Cancelar"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+            <AddInvoiceItemForm
+              catalogProducts={catalogProducts}
+              loadingCatalog={loadingCatalog}
+              newItem={newItem}
+              onCodeChange={(code) => setNewItem((prev) => ({ ...prev, code }))}
+              onQuantityChange={(quantity) =>
+                setNewItem((prev) => ({ ...prev, quantity }))
+              }
+              onPriceChange={(price) =>
+                setNewItem((prev) => ({ ...prev, price }))
+              }
+              saving={savingNewItem}
+              onSave={handleAddItem}
+              onCancel={() => {
+                setAddingItem(false);
+                setNewItem({ code: "", quantity: 0, price: 0 });
+              }}
+            />
           )}
 
           {loading ? (
@@ -269,176 +231,19 @@ export default function InvoiceProductsModal({
               Nenhum produto encontrado
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100 border-b border-gray-300">
-                    <th className="text-left p-3 font-semibold">Código</th>
-                    <th className="text-left p-3 font-semibold">Produto</th>
-                    <th className="text-right p-3 font-semibold">Quantidade</th>
-                    <th className="text-right p-3 font-semibold">Unidade</th>
-                    <th className="text-right p-3 font-semibold">
-                      Preço Unit.
-                    </th>
-                    <th className="text-right p-3 font-semibold">Total</th>
-                    <th className="text-center p-3 font-semibold">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map((product) => (
-                    <tr
-                      key={product.id}
-                      className="border-b border-gray-300 hover:bg-gray-50"
-                    >
-                      <td className="p-3">
-                        {editingProductId === product.id ? (
-                          <input
-                            value={editForm.code ?? ""}
-                            onChange={(e) =>
-                              handleEditChange("code", e.target.value)
-                            }
-                            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            disabled={loading}
-                          />
-                        ) : (
-                          product.code
-                        )}
-                      </td>
-                      <td className="p-3">
-                        {editingProductId === product.id ? (
-                          <input
-                            value={editForm.name ?? ""}
-                            onChange={(e) =>
-                              handleEditChange("name", e.target.value)
-                            }
-                            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            disabled={loading}
-                          />
-                        ) : (
-                          product.name
-                        )}
-                      </td>
-                      <td className="p-3 text-right">
-                        {editingProductId === product.id ? (
-                          <input
-                            type="number"
-                            step="0.001"
-                            value={editForm.quantity ?? ""}
-                            onChange={(e) =>
-                              handleEditChange("quantity", e.target.value)
-                            }
-                            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            disabled={loading}
-                          />
-                        ) : (
-                          new Intl.NumberFormat("pt-BR", {
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 3,
-                          }).format(parseFloat(product.quantity.toString()))
-                        )}
-                      </td>
-                      <td className="p-3 text-right">
-                        {editingProductId === product.id ? (
-                          <input
-                            value={editForm.unitType ?? ""}
-                            onChange={(e) =>
-                              handleEditChange("unitType", e.target.value)
-                            }
-                            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            disabled={loading}
-                          />
-                        ) : (
-                          product.unitType
-                        )}
-                      </td>
-                      <td className="p-3 text-right">
-                        {editingProductId === product.id ? (
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={editForm.price ?? ""}
-                            onChange={(e) =>
-                              handleEditChange("price", e.target.value)
-                            }
-                            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            disabled={loading}
-                          />
-                        ) : (
-                          formatCurrency(product.price)
-                        )}
-                      </td>
-                      <td className="p-3 text-right font-semibold">
-                        {formatCurrency(
-                          calculateTotal(product.price, product.quantity),
-                        )}
-                      </td>
-                      <td className="p-3 flex items-center justify-center gap-2">
-                        {editingProductId === product.id ? (
-                          <div className="flex items-center justify-cente">
-                            <button
-                              type="button"
-                              onClick={saveEdit}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                              title="Salvar"
-                              disabled={loading}
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={cancelEdit}
-                              className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-                              title="Cancelar"
-                              disabled={loading}
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => startEdit(product)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Editar"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setConfirmDeleteModal({
-                              state: true,
-                              productId: product.id,
-                            })
-                          }
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Deletar produto"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-gray-50 font-semibold">
-                    <td colSpan={5} className="p-3 text-right">
-                      Total Geral:
-                    </td>
-                    <td className="p-3 text-right">
-                      {formatCurrency(
-                        products.reduce(
-                          (sum, p) => sum + calculateTotal(p.price, p.quantity),
-                          0,
-                        ),
-                      )}
-                    </td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+            <InvoiceProductsTable
+              products={products}
+              editingProductId={editingProductId}
+              editForm={editForm}
+              loading={loading}
+              onEditChange={handleEditChange}
+              onStartEdit={startEdit}
+              onCancelEdit={cancelEdit}
+              onSaveEdit={saveEdit}
+              onDeleteClick={(productId) =>
+                setConfirmDeleteModal({ state: true, productId })
+              }
+            />
           )}
         </div>
       </div>

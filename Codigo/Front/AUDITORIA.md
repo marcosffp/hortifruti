@@ -138,8 +138,7 @@ Tudo marcado 🟡/🔵 nas seções abaixo: CSP `unsafe-inline` em `style-src`, 
 - [ ] 🔵 **[B-V4] Validação de upload é responsabilidade só do client** *(informativo)*
   **Local:** `src/components/modules/EnhancedUploadNotes.tsx:25-41`, `src/hooks/useUpload.ts` — arquitetura correta (componente→hook→service), mas a tela assume implicitamente que tipo/tamanho também são reforçados no backend. Checagem client-side é trivial de contornar.
 
-- [ ] 🔵 **[B-V5] Token de dispositivo (`X-Device-Token`) em `localStorage`** *(informativo, fora do escopo direto)*
-  Citado em `src/components/modules/CapturaNotaCamera.tsx:16` — não é o JWT de sessão (arquitetura de cookie httpOnly continua intacta), mas é um bearer token exposto a XSS. Ver detalhamento em [Área C, item C-V5](#c-v5).
+- [x] ✅ **[B-V5] Token de dispositivo (`X-Device-Token`) em `localStorage`** *(Corrigido — ver [Área C, item C-V5](#c-v5))*
 
 ### B · Acoplamento e baixa coesão
 
@@ -151,8 +150,14 @@ Arquitetura documentada prevê Componente → Hook → Service. Na prática, boa
 
 ### B · Clareza / código confuso
 
-- [ ] 🟡 **[B-C4] Componentes muito longos (>250 linhas)**
-  `ClientForm.tsx` (921), `CashFlow.tsx` (854 — extrair cada par Card+gráfico), `PurchaseFilesTable.tsx` (537, com o modal de "Criar Agrupamento" embutido), `NotaRevisaoModal.tsx` (473), `InvoiceProductsModal.tsx` (456), `FavoritesModal.tsx` (450, duas abas inteiras no mesmo arquivo). *(Avaliado nesta rodada e adiado a pedido — mexe em telas grandes de produção sem suíte de testes para validar visualmente.)*
+- [x] ✅ **[B-C4] Componentes muito longos (>250 linhas)** *(Corrigido — todos os 6 quebrados em orquestrador + subcomponentes, seguindo o precedente já existente em `src/components/modules/combined-scores/`. API pública/props de cada componente preservadas; nenhum importador precisou mudar.)*
+  - `ClientForm.tsx`: 921 → 109 linhas (`src/components/forms/client-form/`: `types.ts`, `constants.ts`, `validation.ts`, `useClientForm.ts`, `PersonalDataSection.tsx`, `FiscalDataSection.tsx`, `AddressSection.tsx`, `AdditionalInfoSection.tsx`).
+  - `CashFlow.tsx`: 854 → 160 linhas (`src/components/modules/cash-flow/`: 9 arquivos, um por par Card+gráfico/lista, mais `constants.ts`/`chartHelpers.ts`).
+  - `PurchaseFilesTable.tsx`: 537 → 277 linhas (modal "Criar Agrupamento" extraído para `src/components/modals/CriarAgrupamentoModal.tsx`; linhas/cards da tabela para `src/components/modules/tables/purchase-files-table/PurchaseFileRows.tsx`).
+  - `NotaRevisaoModal.tsx`: 473 → 208 linhas (`src/components/modules/nota-revisao/`: 8 arquivos — imagem, alerta de inconsistência, campos de cliente/data, linhas de item, totais, rodapé de ações).
+  - `InvoiceProductsModal.tsx`: 456 → 261 linhas (`src/components/modals/invoice-products/`: formatadores, formulário de novo item, linha de produto, tabela).
+  - `FavoritesModal.tsx`: 450 → 272 linhas (`src/components/modals/favorites/`: `SacolaoTab.tsx`, `FavoriteLocationsTab.tsx`).
+  - **Validação:** `npx tsc --noEmit` e `npx biome check` limpos no projeto inteiro após as 6 extrações. **Não testado visualmente no navegador** (ambiente completo — MySQL + backend + login — não foi levantado nesta rodada); recomenda-se um smoke test manual das 6 telas antes de considerar isso definitivamente fechado em produção.
 
 ---
 
@@ -193,8 +198,8 @@ Arquitetura documentada prevê Componente → Hook → Service. Na prática, boa
   Se o backend estiver fora do ar — exatamente o cenário em que um backup é mais necessário — o usuário recebe mensagem de conclusão. Risco real de perda de dados por falsa sensação de segurança.
 
 <a id="c-v5"></a>
-- [ ] 🔵 **[C-V5] Token de dispositivo (`X-Device-Token`) em `localStorage`, acessível via XSS** *(informativo — não corrigido nesta rodada: a melhoria sugerida (cookie `httpOnly`) exige mudança de contrato no backend, fora do escopo de `Codigo/Front`)*
-  **Local:** `src/services/dispositivoService.ts:11`, uso em `src/app/dispositivo/vincular/page.tsx:89,196`. Não é o JWT de sessão (comentário em `dispositivoService.ts:6-10` explica o motivo, uso legítimo de pareamento de dispositivo móvel) — mas qualquer XSS teria acesso, permitindo chamadas autenticadas como aquele dispositivo. Melhoria possível: cookie `httpOnly` de curta duração em vez de `localStorage`.
+- [x] ✅ **[C-V5] Token de dispositivo (`X-Device-Token`) em `localStorage`, acessível via XSS** *(Corrigido — exigiu mudança de contrato no backend, ver `Codigo/Back/AUDITORIA.md`)*
+  **Local:** `src/services/dispositivoService.ts`, uso em `src/app/dispositivo/vincular/page.tsx`. O device token agora é emitido pelo backend como cookie `httpOnly` (`device_token`, ver `DispositivoController`/`DeviceTokenAuthFilter`), nunca mais lido/gravado em `localStorage` nem enviado via header `X-Device-Token` montado no cliente. Como o cookie é opaco pro JS, foram adicionados `GET /api/dispositivos/pareamento/status` (saber se já há vínculo válido) e `POST /api/dispositivos/pareamento/desvincular` (limpar o cookie local pra vincular com outro código) — mesmo padrão já usado pelo cookie de sessão (`GET /auth/me`).
 
 ### C · Comentários desnecessários / código morto
 
@@ -203,7 +208,7 @@ Arquitetura documentada prevê Componente → Hook → Service. Na prática, boa
 ### C · Configuração de build/qualidade
 
 - [ ] ✅ `tsconfig.json` em `strict: true`, sem flags enfraquecidas — nenhum achado.
-- [ ] ✅ `biome.json` sem regras relevantes desabilitadas sem justificativa (única regra off, `suspicious.noUnknownAtRules`, tem efeito prático questionável já que `**/*.css` está excluído da varredura do Biome — vale confirmar se ainda é necessária).
+- [x] ✅ `biome.json` sem regras relevantes desabilitadas sem justificativa. *(Corrigido: `suspicious.noUnknownAtRules: "off"` foi removida — confirmado que não tinha efeito prático, já que `**/*.css` está excluído da varredura do Biome. `npx biome check` seguiu limpo (achado remanescente é pré-existente e não relacionado).)*
 - [ ] ✅ `npm audit --production` — 0 vulnerabilidades conhecidas no momento da varredura (2026-08-06).
 - [ ] 🔵 **[C-CFG1] Nenhum workflow de CI encontrado no escopo rodando `check-types`/`lint`/`npm audit` em PRs** *(informativo — fora do escopo estrito de arquivos revisados, sinalizado para confirmação externa)*
 

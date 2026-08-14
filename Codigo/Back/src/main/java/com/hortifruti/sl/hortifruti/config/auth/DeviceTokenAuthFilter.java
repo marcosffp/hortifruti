@@ -7,6 +7,7 @@ import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -24,13 +25,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Autentica requisições de um dispositivo vinculado (celular que já fez o pareamento — ver {@link
- * DispositivoVinculadoService}) via um header dedicado, {@code X-Device-Token}, propositalmente
- * separado do {@code Authorization} usado pelo JWT de login: se os dois dividissem o mesmo header,
- * o {@link SecurityFilter} (que já rejeita a requisição inteira quando o Bearer não decodifica como
- * JWT válido) entraria em conflito com este filtro sobre quem decide primeiro. Com um header
- * próprio, os dois fluxos de autenticação nunca colidem — este filtro só age quando {@code
- * X-Device-Token} está presente; do contrário, é transparente e o {@link SecurityFilter} segue seu
- * fluxo normal de JWT/cookie sem nenhuma interferência.
+ * DispositivoVinculadoService}) via um cookie {@code httpOnly} dedicado, {@code device_token},
+ * propositalmente separado do cookie {@code auth_token} usado pelo JWT de login: se os dois
+ * dividissem o mesmo cookie, o {@link SecurityFilter} (que já rejeita a requisição inteira quando o
+ * valor não decodifica como JWT válido) entraria em conflito com este filtro sobre quem decide
+ * primeiro. Com um cookie próprio, os dois fluxos de autenticação nunca colidem — este filtro só
+ * age quando {@code device_token} está presente; do contrário, é transparente e o {@link
+ * SecurityFilter} segue seu fluxo normal de JWT/cookie sem nenhuma interferência. O cookie sendo
+ * {@code httpOnly} também tira o token do alcance de um XSS no celular (diferente do antigo header
+ * {@code X-Device-Token}, alimentado por um valor lido do `localStorage`).
  *
  * <p>A autoridade concedida ({@code ROLE_DEVICE_CAPTURE}) é montada manualmente — nunca a partir de
  * {@code user.getAuthorities()} — e só é reconhecida pelos endpoints de captura de nota (ver
@@ -42,7 +45,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RequiredArgsConstructor
 public class DeviceTokenAuthFilter extends OncePerRequestFilter {
 
-  private static final String HEADER_NAME = "X-Device-Token";
+  private static final String COOKIE_NAME = "device_token";
 
   /**
    * Limite por dispositivo, não por IP — o {@code RateLimitingFilter} genérico já protege por IP,
@@ -67,7 +70,7 @@ public class DeviceTokenAuthFilter extends OncePerRequestFilter {
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
-    String deviceToken = request.getHeader(HEADER_NAME);
+    String deviceToken = recoverCookie(request);
 
     if (deviceToken != null && !deviceToken.isBlank()) {
       DispositivoVinculadoService.DispositivoAutenticado autenticado;
@@ -105,6 +108,18 @@ public class DeviceTokenAuthFilter extends OncePerRequestFilter {
     }
 
     filterChain.doFilter(request, response);
+  }
+
+  private String recoverCookie(HttpServletRequest request) {
+    if (request.getCookies() == null) {
+      return null;
+    }
+    for (Cookie cookie : request.getCookies()) {
+      if (COOKIE_NAME.equals(cookie.getName()) && !cookie.getValue().isEmpty()) {
+        return cookie.getValue();
+      }
+    }
+    return null;
   }
 
   private boolean consumirCotaDoDispositivo(Long dispositivoId) {

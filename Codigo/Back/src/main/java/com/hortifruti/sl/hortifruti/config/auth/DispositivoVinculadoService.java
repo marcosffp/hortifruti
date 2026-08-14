@@ -119,6 +119,20 @@ public class DispositivoVinculadoService {
     return new DispositivoAutenticado(dispositivo.getUserId(), dispositivo.getId());
   }
 
+  /**
+   * Usado só pra decidir qual tela mostrar no celular ao abrir a página de vínculo (o cookie
+   * {@code httpOnly} é opaco pro JS, então o front não tem como checar sozinho se ainda é válido).
+   * Diferente de {@link #validarToken}, não atualiza {@code ultimoUsoEm} nem revoga por
+   * inatividade — um simples carregar de página não deveria contar como "uso" do dispositivo nem
+   * ressuscitar o relógio de inatividade de um token que já devia ter expirado.
+   */
+  public boolean tokenValido(String tokenClaro) {
+    return dispositivoVinculadoRepository
+        .findByTokenHashAndRevogadoEmIsNull(tokenHasher.hash(tokenClaro))
+        .filter(dispositivo -> !inativoDemais(dispositivo))
+        .isPresent();
+  }
+
   public List<DispositivoResponse> listarDispositivos(Long usuarioId) {
     return dispositivoVinculadoRepository
         .findByUserIdAndRevogadoEmIsNullOrderByPareadoEmDesc(usuarioId)

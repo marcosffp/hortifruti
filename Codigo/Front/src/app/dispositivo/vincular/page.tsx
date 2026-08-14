@@ -6,10 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import CapturaNotaCamera from "@/components/modules/CapturaNotaCamera";
 import { API_BASE_URL } from "@/config/api";
-import {
-  DEVICE_TOKEN_STORAGE_KEY,
-  dispositivoService,
-} from "@/services/dispositivoService";
+import { dispositivoService } from "@/services/dispositivoService";
 import { showError, showSuccess } from "@/utils/toastUtils";
 
 async function extrairMensagemErro(
@@ -64,16 +61,17 @@ function VincularDispositivoPageInner() {
   const searchParams = useSearchParams();
   const codigoDaUrl = searchParams.get("codigo") ?? "";
 
-  const [tokenExistente, setTokenExistente] = useState<
-    string | null | undefined
-  >(undefined);
+  const [pareado, setPareado] = useState<boolean | undefined>(undefined);
   const [codigo, setCodigo] = useState(codigoDaUrl);
   const [nomeDispositivo, setNomeDispositivo] = useState("");
   const [confirmando, setConfirmando] = useState(false);
 
   useEffect(() => {
-    setTokenExistente(localStorage.getItem(DEVICE_TOKEN_STORAGE_KEY));
     setNomeDispositivo(nomeDispositivoPadrao());
+    dispositivoService
+      .statusPareamento()
+      .then((status) => setPareado(status.pareado))
+      .catch(() => setPareado(false));
   }, []);
 
   const confirmar = async () => {
@@ -82,12 +80,11 @@ function VincularDispositivoPageInner() {
 
     setConfirmando(true);
     try {
-      const { deviceToken } = await dispositivoService.confirmarPareamento(
+      await dispositivoService.confirmarPareamento(
         codigoLimpo,
         nomeDispositivo.trim(),
       );
-      localStorage.setItem(DEVICE_TOKEN_STORAGE_KEY, deviceToken);
-      setTokenExistente(deviceToken);
+      setPareado(true);
       showSuccess("Dispositivo vinculado! Pode voltar pro computador.");
     } catch (error) {
       showError(
@@ -101,23 +98,20 @@ function VincularDispositivoPageInner() {
   };
 
   const esquecerDispositivo = () => {
-    localStorage.removeItem(DEVICE_TOKEN_STORAGE_KEY);
-    setTokenExistente(null);
+    dispositivoService.desvincularLocal().catch(() => {});
+    setPareado(false);
     setCodigo("");
   };
 
-  // Enquanto não sabemos se já existe token salvo, evita piscar o formulário à toa.
-  if (tokenExistente === undefined) {
+  // Enquanto não sabemos se já existe vínculo válido, evita piscar o formulário à toa.
+  if (pareado === undefined) {
     return <Cartao>{null}</Cartao>;
   }
 
-  if (tokenExistente) {
+  if (pareado) {
     return (
       <Cartao>
-        <CapturaFoto
-          deviceToken={tokenExistente}
-          onDesvincular={esquecerDispositivo}
-        />
+        <CapturaFoto onDesvincular={esquecerDispositivo} />
       </Cartao>
     );
   }
@@ -178,22 +172,23 @@ function VincularDispositivoPageInner() {
 }
 
 interface CapturaFotoProps {
-  deviceToken: string;
   onDesvincular: () => void;
 }
 
 /**
  * Cada foto vai pra fila do PC assim que enviada — a extração (Gemini) e a revisão acontecem
- * lá, não aqui. Por isso o celular só precisa confirmar o envio, sem esperar resultado.
+ * lá, não aqui. Por isso o celular só precisa confirmar o envio, sem esperar resultado. A
+ * autenticação vai só pelo cookie `httpOnly` `device_token` (`credentials: "include"`) — nunca
+ * mais por header lido de `localStorage`.
  */
-function CapturaFoto({ deviceToken, onDesvincular }: CapturaFotoProps) {
+function CapturaFoto({ onDesvincular }: CapturaFotoProps) {
   const enviar = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
 
     const response = await fetch(`${API_BASE_URL}/api/compras/notas/capturas`, {
       method: "POST",
-      headers: { "X-Device-Token": deviceToken },
+      credentials: "include",
       body: formData,
     });
 

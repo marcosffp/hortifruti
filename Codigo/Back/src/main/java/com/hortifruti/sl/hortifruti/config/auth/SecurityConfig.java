@@ -42,9 +42,11 @@ public class SecurityConfig {
    *   <li>{@code /auth/**} (login/refresh/logout/me), {@code /swagger-ui/**}/{@code
    *       /v3/api-docs/**} (docs, desabilitadas em prod — ver application-prod.properties), {@code
    *       /backup/oauth2callback} (callback do Google) e {@code
-   *       /api/dispositivos/pareamento/confirmar} (o celular ainda não tem cookie/JWT nesse momento
-   *       — a segurança do endpoint é o código de pareamento de vida curta e uso único, não uma
-   *       sessão) precisam ser públicas por natureza do fluxo, sem alternativa.
+   *       /api/dispositivos/pareamento/confirmar}/{@code status}/{@code desvincular} (o celular
+   *       ainda não tem cookie de sessão/JWT nesse momento — a segurança de {@code confirmar} é o
+   *       código de pareamento de vida curta e uso único, não uma sessão; {@code status} e {@code
+   *       desvincular} só leem/limpam o cookie {@code device_token} do próprio chamador, sem tocar
+   *       em dado de outro usuário) precisam ser públicas por natureza do fluxo, sem alternativa.
    *   <li>{@code /ws/realtime} nunca carrega o cookie {@code auth_token} (conecta direto no domínio
    *       do backend, fora do rewrite same-origin do Next — ver {@code useRealtimeSocket.ts}),
    *       então cai fora do modelo de sessão/role daqui por natureza; quem autentica o handshake é
@@ -88,6 +90,8 @@ public class SecurityConfig {
                             "/v3/api-docs/**",
                             "/backup/oauth2callback",
                             "/api/dispositivos/pareamento/confirmar",
+                            "/api/dispositivos/pareamento/status",
+                            "/api/dispositivos/pareamento/desvincular",
                             "/ws/realtime")
                         .permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/clients/**")

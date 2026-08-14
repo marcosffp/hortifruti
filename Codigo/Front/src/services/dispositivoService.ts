@@ -3,13 +3,6 @@
 import { API_BASE_URL_WITH_API_PREFIX } from "@/config/api";
 import { getAuthHeaders } from "@/utils/httpUtils";
 
-/**
- * Chave do device token no localStorage do celular — compartilhada entre a página pública de
- * pareamento (que grava) e qualquer tela de captura (que lê, ver `X-Device-Token` no upload).
- * Centralizada aqui pra nunca dessincronizar entre os dois lugares.
- */
-export const DEVICE_TOKEN_STORAGE_KEY = "hortifruti_device_token";
-
 export interface Dispositivo {
   id: number;
   nome: string;
@@ -23,8 +16,11 @@ export interface PareamentoIniciado {
 }
 
 export interface PareamentoConfirmado {
-  deviceToken: string;
   dispositivoId: number;
+}
+
+export interface PareamentoStatus {
+  pareado: boolean;
 }
 
 const DISPOSITIVOS_PATH = `${API_BASE_URL_WITH_API_PREFIX}/dispositivos`;
@@ -58,7 +54,11 @@ export const dispositivoService = {
     return response.json();
   },
 
-  /** Celular, sem sessão: confirma o código e recebe o device token (salvo pelo chamador). */
+  /**
+   * Celular, sem sessão: confirma o código. O backend grava o device token num cookie
+   * `httpOnly` (nunca chega no corpo da resposta nem no JS) — ver Área C, item C-V5 da
+   * AUDITORIA.md.
+   */
   async confirmarPareamento(
     codigo: string,
     nomeDispositivo: string,
@@ -66,6 +66,7 @@ export const dispositivoService = {
     const response = await fetch(`${DISPOSITIVOS_PATH}/pareamento/confirmar`, {
       method: "POST",
       headers: getAuthHeaders(),
+      credentials: "include",
       body: JSON.stringify({ codigo, nomeDispositivo }),
     });
 
@@ -76,6 +77,54 @@ export const dispositivoService = {
     }
 
     return response.json();
+  },
+
+  /**
+   * Celular, sem sessão: como o device token é `httpOnly`, o JS não consegue checar sozinho se
+   * o cookie salvo ainda é válido — esta chamada pergunta pro backend (mesmo padrão de
+   * `GET /auth/me` pro cookie de sessão).
+   */
+  async statusPareamento(): Promise<PareamentoStatus> {
+    const response = await fetch(`${DISPOSITIVOS_PATH}/pareamento/status`, {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        await extrairMensagemErro(
+          response,
+          "Falha ao verificar vínculo do dispositivo.",
+        ),
+      );
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Celular, sem sessão: limpa o cookie `device_token` deste aparelho pra permitir vincular com
+   * outro código. Não revoga o dispositivo pros outros — isso é `revogarDispositivo`, só
+   * acessível do PC autenticado.
+   */
+  async desvincularLocal(): Promise<void> {
+    const response = await fetch(
+      `${DISPOSITIVOS_PATH}/pareamento/desvincular`,
+      {
+        method: "POST",
+        credentials: "include",
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        await extrairMensagemErro(
+          response,
+          "Falha ao desvincular dispositivo.",
+        ),
+      );
+    }
   },
 
   /** PC, autenticado normalmente: lista os dispositivos vinculados ao usuário logado. */
