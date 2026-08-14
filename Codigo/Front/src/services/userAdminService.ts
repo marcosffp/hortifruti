@@ -74,16 +74,8 @@ class UserAdminService {
         status: "ativo" as const,
       };
     } catch (error) {
-      console.warn("Erro ao criar usuário no backend:", error);
-
-      return {
-        id: Date.now(),
-        nome: userData.name,
-        cargo: userData.cargo,
-        perfil: userData.perfil,
-        cadastrado: new Date().toLocaleDateString("pt-BR"),
-        status: "ativo" as const,
-      };
+      console.error("Erro ao criar usuário no backend:", error);
+      throw error;
     }
   }
 
@@ -156,8 +148,8 @@ class UserAdminService {
       await userService.deleteUser(usuario.nome);
       return true;
     } catch (error) {
-      console.warn("Erro ao excluir usuário no backend:", error);
-      return true;
+      console.error("Erro ao excluir usuário no backend:", error);
+      throw error;
     }
   }
 
@@ -174,11 +166,8 @@ class UserAdminService {
 
       throw new Error("Erro no backup");
     } catch (error) {
-      console.warn("Backend não disponível para backup:", error);
-      return {
-        success: true,
-        message: "Backup simulado realizado com sucesso! (Modo offline)",
-      };
+      console.error("Erro ao realizar backup:", error);
+      throw error;
     }
   }
 
@@ -201,11 +190,8 @@ class UserAdminService {
 
       throw new Error("Erro na restauração");
     } catch (error) {
-      console.warn("Backend não disponível para restauração:", error);
-      return {
-        success: true,
-        message: "Restauração simulada realizada com sucesso! (Modo offline)",
-      };
+      console.error("Erro ao restaurar backup:", error);
+      throw error;
     }
   }
 }

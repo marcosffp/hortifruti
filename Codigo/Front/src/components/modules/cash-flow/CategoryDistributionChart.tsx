@@ -2,6 +2,7 @@ import type { TooltipItem } from "chart.js";
 import { Pie } from "react-chartjs-2";
 import Card from "@/components/ui/Card";
 import type { DashboardData } from "@/services/dashboardService";
+import { formatCurrency } from "@/utils/formatCurrency";
 import { categoryNames } from "./constants";
 
 interface CategoryDistributionChartProps {
@@ -76,10 +77,7 @@ export default function CategoryDistributionChart({
 
             return [
               `${label}: ${percentage.toFixed(2)}%`,
-              `R$ ${valor.toLocaleString("pt-BR", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}`,
+              formatCurrency(valor),
             ];
           },
         },

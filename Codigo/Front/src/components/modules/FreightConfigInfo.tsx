@@ -4,6 +4,7 @@ import { Car, DollarSign, Edit, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useFreightConfig } from "@/hooks/useFreightConfig";
 import type { FreightConfigDTO } from "@/types/freightType";
+import { formatDecimal } from "@/utils/formatCurrency";
 import FreightConfigModal from "../modals/FreightConfigsModal";
 
 const InfoItem = ({
@@ -18,11 +19,7 @@ const InfoItem = ({
   <div className="text-sm">
     <span className="text-gray-500">{label}: </span>
     <span className="font-medium text-gray-800">
-      {value?.toLocaleString("pt-BR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }) || "0,00"}{" "}
-      {unit}
+      {formatDecimal(value ?? 0)} {unit}
     </span>
   </div>
 );
@@ -188,16 +185,13 @@ export default function FreightConfigInfo() {
               Custo por Km
             </h4>
             <div className="text-lg font-semibold text-green-600">
-              {(
+              {formatDecimal(
                 config.maintenanceCostPerKm +
-                config.tireCostPerKm +
-                config.depreciationCostPerKm +
-                config.insuranceCostPerKm +
-                config.fuelPrice / config.kmPerLiterConsumption
-              ).toLocaleString("pt-BR", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}{" "}
+                  config.tireCostPerKm +
+                  config.depreciationCostPerKm +
+                  config.insuranceCostPerKm +
+                  config.fuelPrice / config.kmPerLiterConsumption,
+              )}{" "}
               R$/Km
             </div>
           </div>

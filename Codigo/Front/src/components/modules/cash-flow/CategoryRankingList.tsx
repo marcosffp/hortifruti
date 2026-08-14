@@ -1,5 +1,6 @@
 import Card from "@/components/ui/Card";
 import type { DashboardData } from "@/services/dashboardService";
+import { formatCurrency } from "@/utils/formatCurrency";
 import { categoryNames } from "./constants";
 
 interface CategoryRankingListProps {
@@ -28,11 +29,7 @@ export default function CategoryRankingList({
                 </span>
               </div>
               <span className="text-sm font-bold text-red-600">
-                R${" "}
-                {item.Valor.toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {formatCurrency(item.Valor)}
               </span>
             </div>
           ))

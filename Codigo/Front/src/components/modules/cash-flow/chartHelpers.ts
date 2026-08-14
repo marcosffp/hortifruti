@@ -1,8 +1,14 @@
 import type { TooltipItem } from "chart.js";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 // Helper para truncar labels longas nos eixos (evita "estourar" a largura)
 export const truncate = (text: string, max = 18) =>
   text.length > max ? `${text.slice(0, max)}…` : text;
+
+// Ticks de eixo usam um formato mais compacto (sem casas decimais forçadas)
+// que a formatação de moeda padrão do tooltip.
+export const formatAxisCurrency = (value: number | string) =>
+  `R$ ${Number(value).toLocaleString("pt-BR")}`;
 
 // Compartilhado pelo gráfico de linha (Fluxo de Caixa Mensal) e pelo gráfico de
 // barras (Receitas por Tipo de Venda) — ambos usam o mesmo layout vertical padrão.
@@ -24,10 +30,7 @@ export const chartOptions = {
         label: (context: TooltipItem<"bar"> | TooltipItem<"line">) => {
           const label = context.dataset.label || "";
           const value = context.parsed.y ?? 0;
-          return `${label}: R$ ${value.toLocaleString("pt-BR", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}`;
+          return `${label}: ${formatCurrency(value)}`;
         },
       },
     },
@@ -46,8 +49,7 @@ export const chartOptions = {
         autoSkip: true,
         maxTicksLimit: 6,
         font: { size: 10 },
-        callback: (value: number | string) =>
-          `R$ ${Number(value).toLocaleString("pt-BR")}`,
+        callback: formatAxisCurrency,
       },
     },
   },

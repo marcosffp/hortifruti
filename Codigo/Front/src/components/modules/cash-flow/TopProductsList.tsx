@@ -1,6 +1,7 @@
 import { Package } from "lucide-react";
 import Card from "@/components/ui/Card";
 import type { DashboardData } from "@/services/dashboardService";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 interface TopProductsListProps {
   dashboardData: DashboardData | null;
@@ -36,11 +37,7 @@ export default function TopProductsList({
               </div>
               <div className="text-right ml-3">
                 <p className="text-sm font-bold text-orange-600">
-                  R${" "}
-                  {produto.ValorTotal.toLocaleString("pt-BR", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  {formatCurrency(produto.ValorTotal)}
                 </p>
               </div>
             </div>

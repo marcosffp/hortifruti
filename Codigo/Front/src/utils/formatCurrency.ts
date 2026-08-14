@@ -4,3 +4,10 @@ export function formatCurrency(value: number): string {
     currency: "BRL",
   }).format(value);
 }
+
+export function formatDecimal(value: number, digits = 2): string {
+  return value.toLocaleString("pt-BR", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}

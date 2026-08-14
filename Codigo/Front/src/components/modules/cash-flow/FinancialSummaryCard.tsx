@@ -1,5 +1,6 @@
 import Card from "@/components/ui/Card";
 import type { DashboardData } from "@/services/dashboardService";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 interface FinancialSummaryCardProps {
   dashboardData: DashboardData | null;
@@ -14,27 +15,13 @@ export default function FinancialSummaryCard({
         <div className="bg-green-50 p-4 rounded-lg">
           <p className="text-sm text-gray-600">Total Receita</p>
           <p className="text-2xl font-bold text-green-600">
-            R${" "}
-            {(dashboardData?.Totais?.TotalReceita || 0).toLocaleString(
-              "pt-BR",
-              {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              },
-            )}
+            {formatCurrency(dashboardData?.Totais?.TotalReceita || 0)}
           </p>
         </div>
         <div className="bg-red-50 p-4 rounded-lg">
           <p className="text-sm text-gray-600">Total Custos</p>
           <p className="text-2xl font-bold text-red-600">
-            R${" "}
-            {Math.abs(dashboardData?.Totais?.TotalCusto || 0).toLocaleString(
-              "pt-BR",
-              {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              },
-            )}
+            {formatCurrency(Math.abs(dashboardData?.Totais?.TotalCusto || 0))}
           </p>
         </div>
         <div className="bg-blue-50 p-4 rounded-lg">
@@ -54,14 +41,10 @@ export default function FinancialSummaryCard({
                 : "text-red-600"
             }`}
           >
-            R${" "}
-            {(
+            {formatCurrency(
               (dashboardData?.Totais?.TotalReceita || 0) -
-              Math.abs(dashboardData?.Totais?.TotalCusto || 0)
-            ).toLocaleString("pt-BR", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+                Math.abs(dashboardData?.Totais?.TotalCusto || 0),
+            )}
           </p>
         </div>
       </div>

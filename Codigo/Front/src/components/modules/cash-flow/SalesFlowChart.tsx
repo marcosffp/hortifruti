@@ -3,7 +3,8 @@ import { TrendingUp } from "lucide-react";
 import { Bar } from "react-chartjs-2";
 import Card from "@/components/ui/Card";
 import type { DashboardData } from "@/services/dashboardService";
-import { truncate } from "./chartHelpers";
+import { formatCurrency } from "@/utils/formatCurrency";
+import { formatAxisCurrency, truncate } from "./chartHelpers";
 
 interface SalesFlowChartProps {
   dashboardData: DashboardData | null;
@@ -41,10 +42,7 @@ export default function SalesFlowChart({ dashboardData }: SalesFlowChartProps) {
         callbacks: {
           label: (context: TooltipItem<"bar">) => {
             const value = context.parsed.x ?? 0;
-            return `R$ ${value.toLocaleString("pt-BR", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}`;
+            return formatCurrency(value);
           },
         },
       },
@@ -56,8 +54,7 @@ export default function SalesFlowChart({ dashboardData }: SalesFlowChartProps) {
           autoSkip: true,
           maxTicksLimit: 6,
           font: { size: 10 },
-          callback: (value: number | string) =>
-            `R$ ${Number(value).toLocaleString("pt-BR")}`,
+          callback: formatAxisCurrency,
         },
       },
       y: {
