@@ -32,8 +32,9 @@ public final class EmailMessageVariables {
     variables.put("PERIOD_RANGE", EmailGreetingUtil.weekPeriodLabel(today));
     variables.put("SENDER_NAME", senderName);
 
-    variables.put("DEFAULT_MESSAGE", "true");
-    variables.put("CUSTOM_MESSAGE", customMessage != null ? customMessage : "");
+    boolean hasCustomMessage = customMessage != null && !customMessage.isEmpty();
+    variables.put("CUSTOM_MESSAGE", hasCustomMessage ? customMessage : "");
+    variables.put("DEFAULT_MESSAGE", hasCustomMessage ? "" : "true");
   }
 
   /**
