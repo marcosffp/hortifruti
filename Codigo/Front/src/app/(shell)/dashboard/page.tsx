@@ -9,7 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
-import RoleGuard from "@/components/auth/RoleGuard";
+import GestorOnly from "@/components/auth/GestorOnly";
 import MobileQuickAccess from "@/components/layout/MobileQuickAccess";
 import BankBalanceCard from "@/components/modules/BankBalanceCard";
 import CashFlow from "@/components/modules/CashFlow";
@@ -49,7 +49,7 @@ export default function Dashboard() {
   };
 
   return (
-    <RoleGuard roles={["MANAGER"]} redirectTo="/comercio/compras">
+    <GestorOnly redirectTo="/comercio/compras">
       <main className="flex-1 p-6 bg-gray-50 overflow-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
@@ -58,11 +58,11 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
+        <GestorOnly ignoreRedirect={true}>
           <div className="mb-6">
             <BankBalanceCard />
           </div>
-        </RoleGuard>
+        </GestorOnly>
 
         <MobileQuickAccess />
 
@@ -74,7 +74,7 @@ export default function Dashboard() {
             </p>
           </Card>
 
-          <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
+          <GestorOnly ignoreRedirect={true}>
             <Card title="Relatórios Financeiros">
               <div className="space-y-3">
                 <p className="text-gray-600">
@@ -108,20 +108,19 @@ export default function Dashboard() {
                 )}
               </div>
             </Card>
-          </RoleGuard>
+          </GestorOnly>
         </div>
 
-        <RoleGuard roles={["MANAGER"]} ignoreRedirect={true}>
+        <GestorOnly ignoreRedirect={true}>
           <CashFlow
             startDate={startDate}
             endDate={endDate}
             setStartDate={setStartDate}
             setEndDate={setEndDate}
           />
-        </RoleGuard>
+        </GestorOnly>
 
-        <RoleGuard
-          roles={["MANAGER"]}
+        <GestorOnly
           ignoreRedirect={true}
           fallback={
             <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-8 text-center mb-2">
@@ -140,7 +139,7 @@ export default function Dashboard() {
           }
         >
           {null}
-        </RoleGuard>
+        </GestorOnly>
 
         {showModalReport && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -244,6 +243,6 @@ export default function Dashboard() {
           ]}
         />
       </main>
-    </RoleGuard>
+    </GestorOnly>
   );
 }

@@ -1,6 +1,6 @@
 # Auditoria de Qualidade e Segurança — Frontend Hortifruti SL
 
-**Data:** 2026-08-06 (última limpeza: 2026-08-13)
+**Data:** 2026-08-06 (última limpeza: 2026-08-15)
 **Escopo:** `Codigo/Front/src/**` (140 arquivos TS/TSX), `next.config.ts`, `package.json`, `biome.json`, `tsconfig.json`, `scripts/check-env.mjs`.
 **Metodologia:** leitura completa (não apenas grep) de todo o código-fonte, dividida em 3 frentes paralelas: rotas/páginas (`app/`), componentes (`components/`), e a camada de dados (`services`, `hooks`, `types`, `utils`, `config`).
 **Não avaliado:** backend (ver `Codigo/Back/AUDITORIA.md`), testes automatizados (o projeto não tem suíte de testes no escopo revisado), pipeline de CI (não há `.github/workflows` no escopo).
@@ -24,21 +24,20 @@
 
 O frontend segue uma arquitetura documentada e coerente (App Router + route group `(shell)` com `AuthGuard`/`RoleGuard` + camada `services`/`hooks`), e a promessa mais crítica de segurança — **o JWT de sessão nunca é lido/decodificado/armazenado no cliente, só cookie `httpOnly`** — está genuinamente respeitada em todo o código auditado.
 
-O problema estrutural mais sério que resta: **o controle de acesso por papel foi implementado no menu (`Sidebar.tsx`), mas não foi replicado de forma consistente dentro das próprias páginas.** Isso significa que, para boa parte das telas restritas a Gestor, um usuário Funcionário ou Contador que souber (ou adivinhar) a URL acessa o conteúdo completo — inclusive ações de escrita e cancelamento financeiro — mesmo não vendo o link no menu. Some-se a isso um bug real no `AuthGuard` (o componente que decide "há sessão válida?") que pode deixar conteúdo protegido renderizar antes/sem confirmar a autenticação, e uma rota de debug esquecida em produção sem proteção nenhuma.
+O problema estrutural mais sério que resta: **o controle de acesso por papel foi implementado no menu (`Sidebar.tsx`), mas não foi replicado de forma consistente dentro das próprias páginas.** Isso significa que, para boa parte das telas restritas a Gestor, um usuário Funcionário ou Contador que souber (ou adivinhar) a URL acessa o conteúdo completo — inclusive ações de escrita e cancelamento financeiro — mesmo não vendo o link no menu. Some-se a isso um bug real no `AuthGuard` (o componente que decide "há sessão válida?") que pode deixar conteúdo protegido renderizar antes/sem confirmar a autenticação.
 
-**Contagem aproximada de achados restantes: ~77**, distribuídos como:
+**Contagem aproximada de achados restantes: ~76**, distribuídos como:
 
 | Severidade | Qtde. aprox. | Onde estão os mais graves |
 |---|---|---|
-| 🔴 Crítico | **2** | Guarda de rota ausente (`/dev/teste-nota`), `AuthGuard` não bloqueia render |
+| 🔴 Crítico | **1** | `AuthGuard` não bloqueia render |
 | 🟠 Alto | **~4** | Componentes com `fetch` cru embutido, `comercio/boletos` monolítico |
 | 🟡 Médio | **~33** | Padrão sistêmico de guarda só no menu, componentes pulando a camada de hook |
 | 🔵 Baixo | **~38** | Código morto, nomenclatura, ausência de CI rodando lint/typecheck |
 
-### Os 2 achados críticos, em uma frase cada
+### O achado crítico
 
-1. **`/dev/teste-nota` está acessível em produção sem login algum** — fica fora do route group protegido, e o próprio comentário no topo do arquivo diz "REMOVER ANTES DO MERGE FINAL". ([Área A, item A-V1](#a-v1))
-2. **`AuthGuard` decide se renderiza o conteúdo protegido olhando só `isAuthChecked`, nunca `isAuthenticated`** — e como o componente vive no layout persistente do `(shell)` sem resetar esse estado a cada navegação, existe uma janela real em que a tela renderiza com o estado de sessão da rota anterior. ([Área B, item B-V1](#b-v1))
+1. **`AuthGuard` decide se renderiza o conteúdo protegido olhando só `isAuthChecked`, nunca `isAuthenticated`** — e como o componente vive no layout persistente do `(shell)` sem resetar esse estado a cada navegação, existe uma janela real em que a tela renderiza com o estado de sessão da rota anterior. ([Área B, item B-V1](#b-v1))
 
 O problema real está concentrado em **guarda de acesso inconsistente entre menu e rota**.
 
@@ -47,7 +46,7 @@ O problema real está concentrado em **guarda de acesso inconsistente entre menu
 ## 2. Plano de ataque recomendado
 
 ### Onda 1 — Correções pontuais, baixo risco, alto impacto (1 a 3 dias)
-- [ ] **A-V1** — Remover (ou proteger com `AuthGuard` + flag de ambiente) a rota `src/app/dev/teste-nota`.
+- [x] **A-V1** — Remover (ou proteger com `AuthGuard` + flag de ambiente) a rota `src/app/dev/teste-nota`. *(rota removida do código — não existe mais `src/app/dev`)*
 - [x] **A-V2** — Envolver o conteúdo principal de `src/app/(shell)/lancamentos/page.tsx` com `<RoleGuard roles="MANAGER">`.
 - [ ] **B-V1** — Corrigir `AuthGuard.tsx`: condicionar `return <>{children}</>` também a `isAuthenticated`, e resetar `isAuthChecked` para `false` no início do `useEffect` a cada troca de `pathname`.
 - [x] **C-V1** — Remover os `catch` que retornam sucesso fictício em `userAdminService.createUser`/`deleteUser`; propagar o erro real para a UI.
@@ -73,27 +72,21 @@ Tudo marcado 🟡/🔵 nas seções abaixo: CSP `unsafe-inline` em `style-src`, 
 
 ### A · Vulnerabilidades
 
-<a id="a-v1"></a>
-- [ ] 🔴 **[A-V1] `/dev/teste-nota` acessível em produção sem nenhuma autenticação**
-  **Local:** `src/app/dev/teste-nota/page.tsx:1-48`
-  ```
-  // ⚠️ PÁGINA TEMPORÁRIA DE DEV — REMOVER ANTES DO MERGE FINAL (ver Etapa 7 da spec de...)
-  ```
-  A rota vive fora do route group `(shell)` (não existe `src/app/dev/layout.tsx`), então nunca passa pelo `AuthGuard`. Nada em `next.config.ts` ou no build exclui essa pasta de produção; não há checagem de `NODE_ENV`. Qualquer pessoa não autenticada abre a página e vê a fila de notas pendentes em tempo real de **todos os usuários** (`NotasPendentesFila`, WebSocket + fetch para `/api/compras/notas/pendentes`) — exposição de rota de debug e de dados operacionais/de clientes em produção.
+> Nenhuma vulnerabilidade pendente nesta subárea. A rota de debug `/dev/teste-nota` (antigo A-V1) foi removida do código.
 
 ### A · Acoplamento e baixa coesão
 
-- [ ] 🟡 **[A-A1] `fetch()` direto em páginas, ignorando a camada de `services`**
-  **Locais:** `src/app/dev/teste-nota/page.tsx:100-107,208-215`, `src/app/(shell)/comercio/capturar-nota/page.tsx:25-29`, `src/app/dispositivo/vincular/page.tsx` — montam `FormData`, chamam `fetch` com URL manual e duplicam a mesma lógica de "extrair mensagem de erro" (`extrairMensagemErro`). Mudança de contrato de API ainda exige tocar em múltiplos arquivos de página em vez de 1.
+- [x] 🟡 **[A-A1] `fetch()` direto em páginas, ignorando a camada de `services`**
+  **Locais:** `src/app/(shell)/comercio/capturar-nota/page.tsx`, `src/app/dispositivo/vincular/page.tsx` — o envio de foto (`FormData` + `fetch` manual + `extrairMensagemErro` duplicada) foi movido para `capturaNotaService.enviarFoto`, reutilizado pelas duas páginas. A rota `src/app/dev/teste-nota` já não existe no código (removida). O caso do device pareado (401 → desvincular) agora usa `CapturaSessaoExpiradaError` exportado pelo service.
 
-- [ ] 🟠 **[A-A2] `/comercio/boletos/page.tsx` concentra estado e lógica de 3 telas completamente diferentes em um único componente de 1959 linhas**
-  **Local:** `src/app/(shell)/comercio/boletos/page.tsx` — mistura aba "Boletos em Aberto" (seleção em massa, pagar/baixar/cancelar), "Consultar por Cliente" e "NF sem Boleto". Funções como `executeMarkAsPaid`/`executeConfirmInvoicePayment` e `executeCancel`/`executeCancelInvoices` são pares quase idênticos duplicados para boleto vs. nota fiscal (ex.: linhas 723-773 vs. 437-487). Qualquer bug fix precisa ser replicado manualmente nos dois fluxos.
+- [x] 🟠 **[A-A2] `/comercio/boletos/page.tsx` concentra estado e lógica de 3 telas completamente diferentes em um único componente de 1959 linhas**
+  **Local:** `src/app/(shell)/comercio/boletos/` — já dividido em `page.tsx` (102 linhas, só as abas) + `BoletosAbertosTab.tsx`, `ConsultarBoletoTab.tsx`, `NfSemBoletoTab.tsx` + `shared.tsx`. Os pares quase idênticos `executeMarkAsPaid`/`executeConfirmInvoicePayment` e `executeCancel`/`executeCancelInvoices` foram unificados num helper genérico `executeBulkAction` em `shared.tsx`, que cada tab agora chama passando só a ação por id e as mensagens.
 
-- [ ] 🟡 **[A-A3] Lógica de negócio pesada dentro da página em vez de hooks/services**
-  **Local:** `src/app/(shell)/lancamentos/page.tsx:263-356` (`handleGenerateExtratos`) — orquestra diretamente 2 chamadas de API em paralelo (`Promise.allSettled`), monta resultados por banco e decide side-effects, tudo fora de `useTransaction` (que já existe e é usado no resto do arquivo).
+- [x] 🟡 **[A-A3] Lógica de negócio pesada dentro da página em vez de hooks/services**
+  **Local:** `src/app/(shell)/lancamentos/page.tsx` (`handleGenerateExtratos`) — a orquestração das 2 chamadas em paralelo (`Promise.allSettled`), montagem dos resultados por banco e downloads de PDF/Excel foram extraídos para o novo hook `src/hooks/useStatementImport.ts`; a página só decide os toasts e o refetch a partir do resultado retornado.
 
-- [ ] 🔵 **[A-A4] Guardas de papel ad-hoc repetidas em vez de um wrapper de seção reaproveitável**
-  **Local:** `src/app/(shell)/dashboard/page.tsx:53,62,78,115,124` — 5 usos de `<RoleGuard roles={["MANAGER"]}>` no mesmo arquivo. Um componente `GestorOnly` reduziria a chance de alguém esquecer de aplicá-lo.
+- [x] 🔵 **[A-A4] Guardas de papel ad-hoc repetidas em vez de um wrapper de seção reaproveitável**
+  **Local:** `src/app/(shell)/dashboard/page.tsx` — os 5 usos de `<RoleGuard roles={["MANAGER"]}>` foram substituídos por `<GestorOnly>` (`src/components/auth/GestorOnly.tsx`), um atalho fino sobre `RoleGuard` fixando a role.
 
 ---
 
@@ -154,4 +147,3 @@ Comparação entre a tabela de papéis do `README.md` / declaração em `Sidebar
 | `/admin` | Gestor | ✅ `RoleGuard roles="MANAGER"` |
 | `/backup` | Gestor | ✅ `RoleGuard roles="MANAGER"` |
 | `/perfil` | Gestor, Funcionário | ✅ `RoleGuard roles={["MANAGER","EMPLOYEE"]}` |
-| `/dev/teste-nota` | (não deveria existir) | ❌ **fora do `AuthGuard`, sem guarda nenhuma** — [A-V1](#a-v1) |

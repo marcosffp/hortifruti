@@ -18,6 +18,7 @@ import { showError, showSuccess } from "@/utils/toastUtils";
 import {
   type BulkActionType,
   DueBadge,
+  executeBulkAction,
   formatCurrency,
   formatDate,
   goToGrouping,
@@ -90,36 +91,22 @@ export default function NfSemBoletoTab() {
   };
 
   const executeConfirmInvoicePayment = async (ids: number[]) => {
-    const succeeded: number[] = [];
-    const failed: number[] = [];
-    for (const id of ids) {
-      try {
-        await combinedScoreService.confirmPayment(id);
-        succeeded.push(id);
-      } catch (error) {
-        failed.push(id);
-        console.error(error);
-      }
-    }
+    const { succeeded } = await executeBulkAction(
+      ids,
+      (id) => combinedScoreService.confirmPayment(id),
+      {
+        successOne: "Pagamento confirmado com sucesso.",
+        successMany: (count) =>
+          `${count} pagamento(s) confirmado(s) com sucesso.`,
+        failureOne: "Não foi possível confirmar o pagamento da NF",
+        failureMany: (count) =>
+          `Não foi possível confirmar o pagamento de ${count} NF(s).`,
+        partial: (succeeded, failed) =>
+          `${succeeded} pagamento(s) confirmado(s), ${failed} falharam.`,
+      },
+    );
     if (succeeded.length > 0) {
       removeInvoices(succeeded);
-    }
-    if (failed.length === 0) {
-      showSuccess(
-        succeeded.length > 1
-          ? `${succeeded.length} pagamento(s) confirmado(s) com sucesso.`
-          : "Pagamento confirmado com sucesso.",
-      );
-    } else if (succeeded.length === 0) {
-      showError(
-        failed.length > 1
-          ? `Não foi possível confirmar o pagamento de ${failed.length} NF(s).`
-          : "Não foi possível confirmar o pagamento da NF",
-      );
-    } else {
-      showError(
-        `${succeeded.length} pagamento(s) confirmado(s), ${failed.length} falharam.`,
-      );
     }
   };
 
@@ -161,41 +148,28 @@ export default function NfSemBoletoTab() {
   };
 
   const executeCancelInvoices = async (ids: number[]) => {
-    const succeeded: number[] = [];
-    const failed: number[] = [];
-    for (const id of ids) {
-      const invoice = openInvoices.find((i) => i.combinedScoreId === id);
-      if (!invoice?.invoiceRef) {
-        failed.push(id);
-        continue;
-      }
-      try {
-        await cancelInvoiceApi(invoice.invoiceRef);
-        succeeded.push(id);
-      } catch (error) {
-        failed.push(id);
-        console.error(error);
-      }
-    }
+    const { succeeded } = await executeBulkAction(
+      ids,
+      (id) => {
+        const invoice = openInvoices.find((i) => i.combinedScoreId === id);
+        if (!invoice?.invoiceRef) {
+          throw new Error(`NF ${id} não possui referência para cancelamento.`);
+        }
+        return cancelInvoiceApi(invoice.invoiceRef);
+      },
+      {
+        successOne: "Nota fiscal cancelada com sucesso.",
+        successMany: (count) =>
+          `${count} notas fiscais canceladas com sucesso.`,
+        failureOne: "Não foi possível cancelar a nota fiscal.",
+        failureMany: (count) =>
+          `Não foi possível cancelar ${count} notas fiscais.`,
+        partial: (succeeded, failed) =>
+          `${succeeded} nota(s) fiscal(is) cancelada(s), ${failed} falharam.`,
+      },
+    );
     if (succeeded.length > 0) {
       removeInvoices(succeeded);
-    }
-    if (failed.length === 0) {
-      showSuccess(
-        succeeded.length > 1
-          ? `${succeeded.length} notas fiscais canceladas com sucesso.`
-          : "Nota fiscal cancelada com sucesso.",
-      );
-    } else if (succeeded.length === 0) {
-      showError(
-        failed.length > 1
-          ? `Não foi possível cancelar ${failed.length} notas fiscais.`
-          : "Não foi possível cancelar a nota fiscal.",
-      );
-    } else {
-      showError(
-        `${succeeded.length} nota(s) fiscal(is) cancelada(s), ${failed.length} falharam.`,
-      );
     }
   };
 

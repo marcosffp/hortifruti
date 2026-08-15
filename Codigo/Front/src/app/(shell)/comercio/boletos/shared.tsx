@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { BilletResponse, OpenBilletResponse } from "@/types/billetType";
 import type { OpenInvoiceResponse } from "@/types/invoiceType";
+import { showError, showSuccess } from "@/utils/toastUtils";
 
 export type RowActionType = "pay" | "download" | "cancel";
 export type BulkActionType = "pay" | "download" | "cancel";
@@ -150,6 +151,55 @@ export function isBilletCancelable(situacao: string): boolean {
 
 export function getClientBilletKey(billet: BilletResponse): string {
   return `${billet.seuNumero}-${billet.dataVencimento}-${billet.valor}`;
+}
+
+export interface BulkActionMessages {
+  successOne: string;
+  successMany: (count: number) => string;
+  failureOne: string;
+  failureMany: (count: number) => string;
+  partial: (succeeded: number, failed: number) => string;
+}
+
+/**
+ * Roda `action` sequencialmente para cada id, coleta sucessos/falhas e mostra um único toast
+ * resumindo o resultado — mesma forma usada tanto pra baixa/cancelamento de boleto quanto de NF,
+ * mudando só a chamada de API e as mensagens.
+ */
+export async function executeBulkAction(
+  ids: number[],
+  action: (id: number) => Promise<unknown>,
+  messages: BulkActionMessages,
+): Promise<{ succeeded: number[]; failed: number[] }> {
+  const succeeded: number[] = [];
+  const failed: number[] = [];
+  for (const id of ids) {
+    try {
+      await action(id);
+      succeeded.push(id);
+    } catch (error) {
+      failed.push(id);
+      console.error(error);
+    }
+  }
+
+  if (failed.length === 0) {
+    showSuccess(
+      succeeded.length > 1
+        ? messages.successMany(succeeded.length)
+        : messages.successOne,
+    );
+  } else if (succeeded.length === 0) {
+    showError(
+      failed.length > 1
+        ? messages.failureMany(failed.length)
+        : messages.failureOne,
+    );
+  } else {
+    showError(messages.partial(succeeded.length, failed.length));
+  }
+
+  return { succeeded, failed };
 }
 
 export function ActionSpinner() {

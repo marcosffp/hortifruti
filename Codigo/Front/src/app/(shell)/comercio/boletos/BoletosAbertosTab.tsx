@@ -19,6 +19,7 @@ import {
   BilletRowActions,
   type BulkActionType,
   DueBadge,
+  executeBulkAction,
   formatCurrency,
   formatDate,
   goToGrouping,
@@ -82,36 +83,18 @@ export default function BoletosAbertosTab() {
   };
 
   const executeMarkAsPaid = async (ids: number[]) => {
-    const succeeded: number[] = [];
-    const failed: number[] = [];
-    for (const id of ids) {
-      try {
-        await markBilletAsPaid(id);
-        succeeded.push(id);
-      } catch (error) {
-        failed.push(id);
-        console.error(error);
-      }
-    }
+    const { succeeded } = await executeBulkAction(ids, markBilletAsPaid, {
+      successOne: "Pagamento confirmado com sucesso.",
+      successMany: (count) =>
+        `${count} pagamento(s) confirmado(s) com sucesso.`,
+      failureOne: "Não foi possível confirmar o pagamento do boleto",
+      failureMany: (count) =>
+        `Não foi possível confirmar o pagamento de ${count} boleto(s).`,
+      partial: (succeeded, failed) =>
+        `${succeeded} pagamento(s) confirmado(s), ${failed} falharam.`,
+    });
     if (succeeded.length > 0) {
       removeBillets(succeeded);
-    }
-    if (failed.length === 0) {
-      showSuccess(
-        succeeded.length > 1
-          ? `${succeeded.length} pagamento(s) confirmado(s) com sucesso.`
-          : "Pagamento confirmado com sucesso.",
-      );
-    } else if (succeeded.length === 0) {
-      showError(
-        failed.length > 1
-          ? `Não foi possível confirmar o pagamento de ${failed.length} boleto(s).`
-          : "Não foi possível confirmar o pagamento do boleto",
-      );
-    } else {
-      showError(
-        `${succeeded.length} pagamento(s) confirmado(s), ${failed.length} falharam.`,
-      );
     }
   };
 
@@ -151,36 +134,17 @@ export default function BoletosAbertosTab() {
   };
 
   const executeCancel = async (ids: number[]) => {
-    const succeeded: number[] = [];
-    const failed: number[] = [];
-    for (const id of ids) {
-      try {
-        await cancelBillet(id);
-        succeeded.push(id);
-      } catch (error) {
-        failed.push(id);
-        console.error(error);
-      }
-    }
+    const { succeeded } = await executeBulkAction(ids, cancelBillet, {
+      successOne: "Boleto com baixa realizada com sucesso.",
+      successMany: (count) =>
+        `${count} boletos com baixa realizada com sucesso.`,
+      failureOne: "Não foi possível dar baixa no boleto.",
+      failureMany: (count) => `Não foi possível dar baixa em ${count} boletos.`,
+      partial: (succeeded, failed) =>
+        `${succeeded} boleto(s) com baixa realizada, ${failed} falharam.`,
+    });
     if (succeeded.length > 0) {
       removeBillets(succeeded);
-    }
-    if (failed.length === 0) {
-      showSuccess(
-        succeeded.length > 1
-          ? `${succeeded.length} boletos com baixa realizada com sucesso.`
-          : "Boleto com baixa realizada com sucesso.",
-      );
-    } else if (succeeded.length === 0) {
-      showError(
-        failed.length > 1
-          ? `Não foi possível dar baixa em ${failed.length} boletos.`
-          : "Não foi possível dar baixa no boleto.",
-      );
-    } else {
-      showError(
-        `${succeeded.length} boleto(s) com baixa realizada, ${failed.length} falharam.`,
-      );
     }
   };
 

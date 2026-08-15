@@ -5,17 +5,12 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import CapturaNotaCamera from "@/components/modules/CapturaNotaCamera";
-import { API_BASE_URL } from "@/config/api";
+import {
+  CapturaSessaoExpiradaError,
+  capturaNotaService,
+} from "@/services/capturaNotaService";
 import { dispositivoService } from "@/services/dispositivoService";
 import { showError, showSuccess } from "@/utils/toastUtils";
-
-async function extrairMensagemErro(
-  response: Response,
-  fallback: string,
-): Promise<string> {
-  const body = await response.json().catch(() => null);
-  return body?.message || body?.error || fallback;
-}
 
 function nomeDispositivoPadrao(): string {
   const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
@@ -183,25 +178,13 @@ interface CapturaFotoProps {
  */
 function CapturaFoto({ onDesvincular }: CapturaFotoProps) {
   const enviar = async (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await fetch(`${API_BASE_URL}/api/compras/notas/capturas`, {
-      method: "POST",
-      credentials: "include",
-      body: formData,
-    });
-
-    if (response.status === 401) {
-      onDesvincular();
-      throw new Error(
-        "Este dispositivo foi desvinculado. Peça um novo pareamento no PC.",
-      );
-    }
-    if (!response.ok) {
-      throw new Error(
-        await extrairMensagemErro(response, "Falha ao enviar a foto."),
-      );
+    try {
+      await capturaNotaService.enviarFoto(file);
+    } catch (error) {
+      if (error instanceof CapturaSessaoExpiradaError) {
+        onDesvincular();
+      }
+      throw error;
     }
   };
 

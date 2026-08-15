@@ -23,8 +23,8 @@ import TransactionEditModal from "@/components/modals/TransactionEditModal";
 import Button from "@/components/ui/Button";
 import GameLoadingOverlay from "@/components/ui/GameLoadingOverlay";
 import Loading from "@/components/ui/Loading";
+import { useStatementImport } from "@/hooks/useStatementImport";
 import { useTransaction } from "@/hooks/useTransaction";
-import { statementApiService } from "@/services/statementApiService";
 import type {
   TransactionRequest,
   TransactionResponse,
@@ -32,24 +32,6 @@ import type {
 import { getErrorMessage } from "@/types/errorType";
 import type { Page } from "@/types/PagesType";
 import { showError, showInfo, showSuccess } from "@/utils/toastUtils";
-
-type BankGenerateStatus = "success" | "alreadyProcessed" | "error";
-
-interface SicoobGenerateResult {
-  status: BankGenerateStatus;
-  message: string;
-  mes: number;
-  ano: number;
-  diaInicial: number;
-  diaFinal: number;
-}
-
-interface BBGenerateResult {
-  status: BankGenerateStatus;
-  message: string;
-  dataInicio: string;
-  dataFim: string;
-}
 
 // A API de extratos do BB rejeita datas futuras, então o fim do "mês atual"
 // nunca deve passar de hoje.
@@ -63,17 +45,6 @@ function getCurrentMonthRange() {
     startDate: firstDay.toISOString().split("T")[0],
     endDate: clampedEnd.toISOString().split("T")[0],
   };
-}
-
-function triggerBlobDownload(blob: Blob, fileName: string) {
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.setAttribute("download", fileName);
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
 }
 
 export default function FinancialLaunchesPage() {
@@ -91,6 +62,15 @@ export default function FinancialLaunchesPage() {
     getAllCategories,
   } = useTransaction();
 
+  const {
+    extratos,
+    generateExtratos,
+    downloadSicoobPdf,
+    downloadSicoobExcel,
+    downloadBBPdf,
+    downloadBBExcel,
+  } = useStatementImport();
+
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [totalBalance, setTotalBalance] = useState(0);
@@ -107,11 +87,6 @@ export default function FinancialLaunchesPage() {
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [currentTransaction, setCurrentTransaction] =
     useState<TransactionResponse | null>(null);
-  const [extratos, setExtratos] = useState<{
-    isGenerating: boolean;
-    sicoobResult: SicoobGenerateResult | null;
-    bbResult: BBGenerateResult | null;
-  }>({ isGenerating: false, sicoobResult: null, bbResult: null });
   const [exportKind, setExportKind] = useState<"excel" | "complete" | null>(
     null,
   );
@@ -245,116 +220,30 @@ export default function FinancialLaunchesPage() {
   const isSameMonth =
     startYearStr === endYearStr && startMonthStr === endMonthStr;
 
-  const summaryMessage = (
-    alreadyProcessed: boolean,
-    periodStart: string,
-    periodEnd: string,
-    totalSaved: number,
-    totalDuplicatedSkipped: number,
-  ) =>
-    alreadyProcessed
-      ? `Período já processado (${periodStart} a ${periodEnd}).`
-      : `${totalSaved} lançamento(s) novo(s) salvo(s) (${totalDuplicatedSkipped} já existiam).`;
-
   const handleGenerateExtratos = async () => {
     if (!isSameMonth || extratos.isGenerating) return;
 
-    setExtratos({ isGenerating: true, sicoobResult: null, bbResult: null });
+    const { sicoobResult, bbResult, anySucceeded } = await generateExtratos(
+      startDate,
+      endDate,
+    );
 
-    const ano = Number(startYearStr);
-    const mes = Number(startMonthStr);
-    const diaInicial = Number(startDate.split("-")[2]);
-    const diaFinal = Number(endDate.split("-")[2]);
-
-    const [sicoobSettled, bbSettled] = await Promise.allSettled([
-      statementApiService.importSicoob(mes, ano, diaInicial, diaFinal),
-      statementApiService.importBB(startDate, endDate),
-    ]);
-
-    if (sicoobSettled.status === "fulfilled") {
-      const summary = sicoobSettled.value;
-      const message = summaryMessage(
-        summary.alreadyProcessed,
-        summary.periodStart,
-        summary.periodEnd,
-        summary.totalSaved,
-        summary.totalDuplicatedSkipped,
-      );
-      setExtratos((prev) => ({
-        ...prev,
-        sicoobResult: {
-          status: summary.alreadyProcessed ? "alreadyProcessed" : "success",
-          message,
-          mes,
-          ano,
-          diaInicial,
-          diaFinal,
-        },
-      }));
-      if (summary.alreadyProcessed) {
-        showInfo(`Sicoob: ${message}`);
-      } else {
-        showSuccess(`Sicoob: ${message}`);
-      }
+    if (sicoobResult.status === "error") {
+      showError(`Sicoob: ${sicoobResult.message}`);
+    } else if (sicoobResult.status === "alreadyProcessed") {
+      showInfo(`Sicoob: ${sicoobResult.message}`);
     } else {
-      const message = getErrorMessage(sicoobSettled.reason);
-      setExtratos((prev) => ({
-        ...prev,
-        sicoobResult: {
-          status: "error",
-          message,
-          mes,
-          ano,
-          diaInicial,
-          diaFinal,
-        },
-      }));
-      showError(`Sicoob: ${message}`);
+      showSuccess(`Sicoob: ${sicoobResult.message}`);
     }
 
-    if (bbSettled.status === "fulfilled") {
-      const summary = bbSettled.value;
-      const message = summaryMessage(
-        summary.alreadyProcessed,
-        summary.periodStart,
-        summary.periodEnd,
-        summary.totalSaved,
-        summary.totalDuplicatedSkipped,
-      );
-      setExtratos((prev) => ({
-        ...prev,
-        bbResult: {
-          status: summary.alreadyProcessed ? "alreadyProcessed" : "success",
-          message,
-          dataInicio: startDate,
-          dataFim: endDate,
-        },
-      }));
-      if (summary.alreadyProcessed) {
-        showInfo(`BB: ${message}`);
-      } else {
-        showSuccess(`BB: ${message}`);
-      }
+    if (bbResult.status === "error") {
+      showError(`BB: ${bbResult.message}`);
+    } else if (bbResult.status === "alreadyProcessed") {
+      showInfo(`BB: ${bbResult.message}`);
     } else {
-      const message = getErrorMessage(bbSettled.reason);
-      setExtratos((prev) => ({
-        ...prev,
-        bbResult: {
-          status: "error",
-          message,
-          dataInicio: startDate,
-          dataFim: endDate,
-        },
-      }));
-      showError(`BB: ${message}`);
+      showSuccess(`BB: ${bbResult.message}`);
     }
 
-    setExtratos((prev) => ({ ...prev, isGenerating: false }));
-
-    const anySucceeded =
-      (sicoobSettled.status === "fulfilled" &&
-        !sicoobSettled.value.alreadyProcessed) ||
-      (bbSettled.status === "fulfilled" && !bbSettled.value.alreadyProcessed);
     if (anySucceeded) {
       fetchSummaryData();
       fetchTransactionsData();
@@ -362,68 +251,32 @@ export default function FinancialLaunchesPage() {
   };
 
   const handleDownloadSicoobPdf = async () => {
-    if (!extratos.sicoobResult) return;
     try {
-      const blob = await statementApiService.downloadSicoobPdf(
-        extratos.sicoobResult.mes,
-        extratos.sicoobResult.ano,
-        extratos.sicoobResult.diaInicial,
-        extratos.sicoobResult.diaFinal,
-      );
-      triggerBlobDownload(
-        blob,
-        `extrato-sicoob_${extratos.sicoobResult.ano}${String(extratos.sicoobResult.mes).padStart(2, "0")}.pdf`,
-      );
+      await downloadSicoobPdf();
     } catch (err) {
       showError(`Erro ao baixar PDF do Sicoob: ${getErrorMessage(err)}`);
     }
   };
 
   const handleDownloadSicoobExcel = async () => {
-    if (!extratos.sicoobResult) return;
     try {
-      const blob = await statementApiService.downloadSicoobExcel(
-        extratos.sicoobResult.mes,
-        extratos.sicoobResult.ano,
-        extratos.sicoobResult.diaInicial,
-        extratos.sicoobResult.diaFinal,
-      );
-      triggerBlobDownload(
-        blob,
-        `extrato-sicoob_${extratos.sicoobResult.ano}${String(extratos.sicoobResult.mes).padStart(2, "0")}.xlsx`,
-      );
+      await downloadSicoobExcel();
     } catch (err) {
       showError(`Erro ao baixar Excel do Sicoob: ${getErrorMessage(err)}`);
     }
   };
 
   const handleDownloadBBPdf = async () => {
-    if (!extratos.bbResult) return;
     try {
-      const blob = await statementApiService.downloadBBPdf(
-        extratos.bbResult.dataInicio,
-        extratos.bbResult.dataFim,
-      );
-      triggerBlobDownload(
-        blob,
-        `extrato-bb_${extratos.bbResult.dataInicio}_a_${extratos.bbResult.dataFim}.pdf`,
-      );
+      await downloadBBPdf();
     } catch (err) {
       showError(`Erro ao baixar PDF do BB: ${getErrorMessage(err)}`);
     }
   };
 
   const handleDownloadBBExcel = async () => {
-    if (!extratos.bbResult) return;
     try {
-      const blob = await statementApiService.downloadBBExcel(
-        extratos.bbResult.dataInicio,
-        extratos.bbResult.dataFim,
-      );
-      triggerBlobDownload(
-        blob,
-        `extrato-bb_${extratos.bbResult.dataInicio}_a_${extratos.bbResult.dataFim}.xlsx`,
-      );
+      await downloadBBExcel();
     } catch (err) {
       showError(`Erro ao baixar Excel do BB: ${getErrorMessage(err)}`);
     }
