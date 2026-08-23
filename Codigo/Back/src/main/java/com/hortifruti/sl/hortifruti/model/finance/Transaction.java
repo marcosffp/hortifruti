@@ -47,7 +47,13 @@ public class Transaction {
 
   @NotNull
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
+  // columnDefinition explícito: sem isso, o dialect MySQL do Hibernate mapeia
+  // @Enumerated(STRING) para um ENUM nativo do banco (lista de valores fixada na criação da coluna)
+  // em vez de VARCHAR. ddl-auto=update nunca reescreve essa lista quando um valor do enum Java é
+  // renomeado depois, então uma renomeação (ex.: FAMÍLIA -> FAMILIA, ver V15 em db/migration) trava
+  // pra sempre com o valor antigo em produção, mesmo após corrigir o enum e rodar uma migration só
+  // de dado (V9/V12/V13/V14 tentaram e nenhuma funcionou por causa disso).
+  @Column(nullable = false, columnDefinition = "VARCHAR(32)")
   private Category category;
 
   @NotNull
