@@ -62,9 +62,14 @@
             <artifactId>mysql-connector-j</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!-- No Spring Boot 4, FlywayAutoConfiguration saiu do spring-boot-autoconfigure e virou
+             o módulo separado spring-boot-flyway — só é registrado via este starter. Depender só
+             de flyway-core/flyway-mysql (como antes) faz o Flyway funcionar como biblioteca pura,
+             sem nenhuma integração com Spring: spring.flyway.* fica todo inerte, sem erro nem log,
+             e flyway_schema_history nunca é criada (era a causa de V9/V12 nunca rodarem). -->
         <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
