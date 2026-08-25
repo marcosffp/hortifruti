@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera } from "lucide-react";
+import { Camera, ImageUp } from "lucide-react";
 import { useId, useState } from "react";
 import { showError, showSuccess } from "@/utils/toastUtils";
 
@@ -22,7 +22,8 @@ export default function CapturaNotaCamera({
   enviar,
   mensagemSucesso,
 }: CapturaNotaCameraProps) {
-  const inputId = useId();
+  const cameraInputId = useId();
+  const galeriaInputId = useId();
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -59,10 +60,18 @@ export default function CapturaNotaCamera({
   return (
     <div className="space-y-4">
       <input
-        id={inputId}
+        id={cameraInputId}
         type="file"
         accept="image/*"
         capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
+      <input
+        id={galeriaInputId}
+        type="file"
+        accept="image/*"
         onChange={handleFileChange}
         className="hidden"
       />
@@ -82,13 +91,23 @@ export default function CapturaNotaCamera({
         fila de revisão. Só capriche na legibilidade e evite sobrepor as notas.
       </p>
 
-      <label
-        htmlFor={inputId}
-        className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-white border-2 border-green-600 text-green-700 font-semibold hover:bg-green-50 transition-colors cursor-pointer"
-      >
-        <Camera className="w-5 h-5" />
-        {file ? "Tirar outra foto" : "Tirar foto da nota"}
-      </label>
+      <div className="grid grid-cols-2 gap-3">
+        <label
+          htmlFor={cameraInputId}
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-white border-2 border-green-600 text-green-700 font-semibold hover:bg-green-50 transition-colors cursor-pointer"
+        >
+          <Camera className="w-5 h-5" />
+          Tirar foto
+        </label>
+
+        <label
+          htmlFor={galeriaInputId}
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-white border-2 border-green-600 text-green-700 font-semibold hover:bg-green-50 transition-colors cursor-pointer"
+        >
+          <ImageUp className="w-5 h-5" />
+          Anexar foto
+        </label>
+      </div>
 
       <button
         type="button"
