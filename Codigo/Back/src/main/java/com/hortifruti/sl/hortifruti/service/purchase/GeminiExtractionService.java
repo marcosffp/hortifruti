@@ -20,6 +20,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -71,6 +72,12 @@ public class GeminiExtractionService {
   @Value("${nota.consistencia.margem:0.05}")
   private BigDecimal margemConsistencia;
 
+  @Value("${gemini.retry.max-tentativas:3}")
+  private int maxTentativas;
+
+  @Value("${gemini.retry.espera-inicial-ms:2000}")
+  private long esperaInicialMs;
+
   public NotaExtracaoResponse extrair(MultipartFile file) {
     NotaUploadService.ValidatedFile validated = notaUploadService.validate(file);
     return extrairDeArquivoValidado(validated);
@@ -95,6 +102,11 @@ public class GeminiExtractionService {
    * Caminho principal do fluxo real de captura ({@code CapturaExtracaoAsyncService}): a foto pode
    * conter uma ou várias notas manuscritas distintas fotografadas juntas — ver o {@link #PROMPT} e
    * {@link #buildResponseSchema()}, que pedem/forçam uma lista em vez de um único objeto.
+   *
+   * <p>Um 503 do Gemini normalmente é só pico de demanda passageiro (a própria API já devolve
+   * "usually temporary, please try again later") — por isso tenta de novo com backoff exponencial
+   * antes de desistir. Qualquer outro erro (4xx, JSON malformado, etc.) não é transitório e falha
+   * já na primeira tentativa.
    */
   public List<NotaExtracaoResponse> extrairMultiplasDeArquivoValidado(
       NotaUploadService.ValidatedFile validated) {
@@ -104,44 +116,76 @@ public class GeminiExtractionService {
     }
 
     long start = System.currentTimeMillis();
+    for (int tentativa = 1; tentativa <= maxTentativas; tentativa++) {
+      try {
+        ObjectNode requestBody = buildRequestBody(validated);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("x-goog-api-key", apiKey);
+        // Corpo e resposta trafegam como String pura, nunca como JsonNode/ObjectNode: o projeto
+        // roda Spring Boot 4, cujo RestTemplate usa por padrão o conversor Jackson 3
+        // (tools.jackson.databind) — incompatível com o Jackson 2 clássico
+        // (com.fasterxml.jackson.databind) usado no resto do backend (FocusNfeApiClient, etc.).
+        // Deixar o Spring serializar/desserializar JsonNode do Jackson 2 falha silenciosamente
+        // (write: ObjectNode vira bean genérico; read: "Cannot construct instance of JsonNode").
+        // Serializando/parseando com o nosso próprio ObjectMapper e só trocando String com o
+        // RestTemplate, esse conflito de versão nunca entra em jogo.
+        String requestJson = objectMapper.writeValueAsString(requestBody);
+        HttpEntity<String> entity = new HttpEntity<>(requestJson, headers);
+
+        String url = API_URL_TEMPLATE.formatted(model);
+        String responseJson = geminiRestTemplate.postForObject(url, entity, String.class);
+        JsonNode responseBody = responseJson == null ? null : objectMapper.readTree(responseJson);
+
+        List<NotaExtracaoResponse> extraction = enriquecer(parseResponse(responseBody));
+        log.info(
+            "Extração Gemini concluída: tamanhoBytes={}, tempoMs={}, tentativa={},"
+                + " notasEncontradas={}, sucesso=true",
+            validated.bytes().length,
+            System.currentTimeMillis() - start,
+            tentativa,
+            extraction.size());
+        return extraction;
+      } catch (HttpServerErrorException.ServiceUnavailable e) {
+        boolean ultimaTentativa = tentativa == maxTentativas;
+        log.warn(
+            "Gemini sobrecarregado (503): tamanhoBytes={}, tempoMs={}, tentativa={}/{},"
+                + " desistindo={}",
+            validated.bytes().length,
+            System.currentTimeMillis() - start,
+            tentativa,
+            maxTentativas,
+            ultimaTentativa);
+        if (ultimaTentativa) {
+          throw new GeminiExtractionException(
+              "A IA de extração está sobrecarregada no momento. Cadastre manualmente ou tente"
+                  + " novamente em instantes.",
+              e);
+        }
+        aguardarBackoff(tentativa);
+      } catch (RestClientException | JsonProcessingException e) {
+        log.warn(
+            "Falha na chamada ao Gemini: tamanhoBytes={}, tempoMs={}, sucesso=false, motivo={}",
+            validated.bytes().length,
+            System.currentTimeMillis() - start,
+            e.getMessage());
+        throw new GeminiExtractionException(
+            "Não foi possível extrair os dados da nota no momento. Cadastre manualmente ou tente"
+                + " novamente em instantes.",
+            e);
+      }
+    }
+    // Inalcançável: o laço sempre retorna ou lança na última tentativa.
+    throw new GeminiExtractionException("Não foi possível extrair os dados da nota no momento.");
+  }
+
+  private void aguardarBackoff(int tentativa) {
+    long esperaMs = esperaInicialMs * (1L << (tentativa - 1));
     try {
-      ObjectNode requestBody = buildRequestBody(validated);
-      HttpHeaders headers = new HttpHeaders();
-      headers.setContentType(MediaType.APPLICATION_JSON);
-      headers.set("x-goog-api-key", apiKey);
-      // Corpo e resposta trafegam como String pura, nunca como JsonNode/ObjectNode: o projeto
-      // roda Spring Boot 4, cujo RestTemplate usa por padrão o conversor Jackson 3
-      // (tools.jackson.databind) — incompatível com o Jackson 2 clássico
-      // (com.fasterxml.jackson.databind) usado no resto do backend (FocusNfeApiClient, etc.).
-      // Deixar o Spring serializar/desserializar JsonNode do Jackson 2 falha silenciosamente
-      // (write: ObjectNode vira bean genérico; read: "Cannot construct instance of JsonNode").
-      // Serializando/parseando com o nosso próprio ObjectMapper e só trocando String com o
-      // RestTemplate, esse conflito de versão nunca entra em jogo.
-      String requestJson = objectMapper.writeValueAsString(requestBody);
-      HttpEntity<String> entity = new HttpEntity<>(requestJson, headers);
-
-      String url = API_URL_TEMPLATE.formatted(model);
-      String responseJson = geminiRestTemplate.postForObject(url, entity, String.class);
-      JsonNode responseBody = responseJson == null ? null : objectMapper.readTree(responseJson);
-
-      List<NotaExtracaoResponse> extraction = enriquecer(parseResponse(responseBody));
-      log.info(
-          "Extração Gemini concluída: tamanhoBytes={}, tempoMs={}, notasEncontradas={},"
-              + " sucesso=true",
-          validated.bytes().length,
-          System.currentTimeMillis() - start,
-          extraction.size());
-      return extraction;
-    } catch (RestClientException | JsonProcessingException e) {
-      log.warn(
-          "Falha na chamada ao Gemini: tamanhoBytes={}, tempoMs={}, sucesso=false, motivo={}",
-          validated.bytes().length,
-          System.currentTimeMillis() - start,
-          e.getMessage());
-      throw new GeminiExtractionException(
-          "Não foi possível extrair os dados da nota no momento. Cadastre manualmente ou tente"
-              + " novamente em instantes.",
-          e);
+      Thread.sleep(esperaMs);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new GeminiExtractionException("Extração de nota interrompida.", e);
     }
   }
 
