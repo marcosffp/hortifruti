@@ -39,6 +39,11 @@ export function useCapturaNota() {
     [run],
   );
 
+  const reprocessar = useCallback(
+    (capturaId: number) => run(() => capturaNotaService.reprocessar(capturaId)),
+    [run],
+  );
+
   const confirmar = useCallback(
     (capturaId: number, payload: ConfirmarCapturaRequest) =>
       run(() => capturaNotaService.confirmar(capturaId, payload)),
@@ -49,6 +54,7 @@ export function useCapturaNota() {
     fetchPendentes,
     fetchImagem,
     descartar,
+    reprocessar,
     confirmar,
     isLoading,
     error,

@@ -108,6 +108,18 @@ export const capturaNotaService = {
     }
   },
 
+  async reprocessar(capturaId: number): Promise<void> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/compras/notas/pendentes/${capturaId}/reprocessar`,
+      { method: "POST", credentials: "include" },
+    );
+    if (!response.ok) {
+      throw new Error(
+        await extrairMensagemErro(response, "Falha ao reprocessar a captura."),
+      );
+    }
+  },
+
   async confirmar(
     capturaId: number,
     payload: ConfirmarCapturaRequest,

@@ -8,6 +8,7 @@ import com.hortifruti.sl.hortifruti.dto.purchase.ManualPurchaseRequest;
 import com.hortifruti.sl.hortifruti.dto.purchase.NotaExtracaoResponse;
 import com.hortifruti.sl.hortifruti.dto.purchase.PurchaseResponse;
 import com.hortifruti.sl.hortifruti.exception.purchase.CapturaNotaPendenteNaoEncontradaException;
+import com.hortifruti.sl.hortifruti.exception.purchase.PurchaseException;
 import com.hortifruti.sl.hortifruti.mapper.PurchaseMapper;
 import com.hortifruti.sl.hortifruti.model.purchase.CapturaNotaPendente;
 import com.hortifruti.sl.hortifruti.model.purchase.Purchase;
@@ -159,6 +160,27 @@ public class CapturaNotaPendenteService {
 
     captura.setStatus(StatusCaptura.DESCARTADA);
     capturaNotaPendenteRepository.save(captura);
+  }
+
+  /**
+   * Repete a extração de uma captura que falhou, reaproveitando a foto já salva no R2 (ver {@link
+   * #receberCaptura}) — evita que o usuário tenha que tirar/enviar a foto de novo só porque a IA
+   * estava sobrecarregada ou instável na 1ª tentativa. Só faz sentido pra {@code ERRO}: reprocessar
+   * uma captura {@code PRONTA}/{@code CONFIRMADA}/{@code DESCARTADA} sobrescreveria um resultado
+   * que o usuário já viu ou decidiu.
+   */
+  public void reprocessar(Long capturaId, Long usuarioId) {
+    CapturaNotaPendente captura =
+        capturaNotaPendenteRepository
+            .findByIdAndUsuarioId(capturaId, usuarioId)
+            .orElseThrow(
+                () -> new CapturaNotaPendenteNaoEncontradaException("Captura não encontrada."));
+
+    if (captura.getStatus() != StatusCaptura.ERRO) {
+      throw new PurchaseException("Só é possível reprocessar uma captura com erro na extração.");
+    }
+
+    capturaExtracaoAsyncService.processar(capturaId);
   }
 
   /**

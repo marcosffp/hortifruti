@@ -45,6 +45,7 @@ export default function NotasPendentesFila() {
     fetchPendentes,
     fetchImagem,
     descartar: descartarCaptura,
+    reprocessar: reprocessarCaptura,
   } = useCapturaNota();
 
   const carregarPendentes = useCallback(async () => {
@@ -92,6 +93,20 @@ export default function NotasPendentesFila() {
         error instanceof Error
           ? error.message
           : "Falha ao descartar a captura.",
+      );
+    }
+  };
+
+  const reprocessar = async (captura: CapturaPendente) => {
+    try {
+      await reprocessarCaptura(captura.id);
+      showInfo("Reprocessando a extração...");
+      carregarPendentes();
+    } catch (error) {
+      showError(
+        error instanceof Error
+          ? error.message
+          : "Falha ao reprocessar a captura.",
       );
     }
   };
@@ -146,6 +161,15 @@ export default function NotasPendentesFila() {
                   className="px-3 py-1.5 text-sm rounded bg-purple-600 text-white hover:bg-purple-700"
                 >
                   Revisar
+                </button>
+              )}
+              {captura.status === "ERRO" && (
+                <button
+                  type="button"
+                  onClick={() => reprocessar(captura)}
+                  className="px-3 py-1.5 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  Reprocessar
                 </button>
               )}
               {STATUS_DESCARTAVEIS.includes(captura.status) && (

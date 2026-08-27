@@ -83,6 +83,19 @@ public class NotaController {
   }
 
   /**
+   * Tenta a extração de novo pra uma captura que falhou (status ERRO), sem exigir que o usuário
+   * tire/envie a foto de novo — a imagem original já está guardada no R2 desde o upload. Resposta
+   * imediata (202), igual a {@code /capturas}: a extração roda em segundo plano e o front descobre
+   * o resultado pelo mesmo mecanismo de tempo real já usado pra fila.
+   */
+  @PreAuthorize("hasAnyRole('MANAGER', 'EMPLOYEE')")
+  @PostMapping("/pendentes/{id}/reprocessar")
+  public ResponseEntity<Void> reprocessar(@PathVariable Long id) {
+    capturaNotaPendenteService.reprocessar(id, usuarioAutenticadoId());
+    return ResponseEntity.accepted().build();
+  }
+
+  /**
    * Confirma a captura revisada como uma compra real — ver {@code
    * CapturaNotaPendenteService#confirmarComoCompra} para a decisão de manter ou descartar a foto.
    */
