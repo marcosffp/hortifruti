@@ -79,6 +79,24 @@ public class BilletQuery {
     }
   }
 
+  /**
+   * Procura, entre todos os boletos do pagador (qualquer situação), um com o {@code seuNumero}
+   * informado — usado para reconciliar uma emissão que falhou no cliente antes de sabermos se o
+   * Sicoob já criou o boleto (ver {@code BilletService#generateBillet}). Retorna {@code null} se
+   * não encontrar, em vez de lançar exceção: "não encontrado" é um resultado válido aqui (significa
+   * que a emissão de fato falhou), não uma falha de comunicação.
+   */
+  public BilletResponse findBySeuNumero(long clientId, String seuNumero) throws IOException {
+    if (seuNumero == null || seuNumero.isBlank()) {
+      return null;
+    }
+    String normalized = seuNumero.trim();
+    return listBilletByPayer(clientId, null, null, null).stream()
+        .filter(b -> normalized.equals(b.seuNumero() == null ? null : b.seuNumero().trim()))
+        .findFirst()
+        .orElse(null);
+  }
+
   public BilletResponse getBilletByCombinedScore(long combinedScoreId) throws IOException {
     CombinedScore combinedScore =
         billetInfoCombinedAndClient.findCombinedScoreById(combinedScoreId);

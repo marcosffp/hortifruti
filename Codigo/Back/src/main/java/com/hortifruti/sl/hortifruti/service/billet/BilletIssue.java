@@ -51,7 +51,16 @@ public class BilletIssue {
     CombinedScore combinedScore =
         billetInfoCombinedAndClient.findCombinedScoreById(idCombinedScore);
     billetValidation.validateHasBillet(combinedScore);
-    String nossoNumero = combinedScore.getOurNumberSicoob();
+    return issueCopyByOurNumber(combinedScore.getOurNumberSicoob());
+  }
+
+  /**
+   * Emite a 2ª via do boleto direto pelo "nossoNumero", sem depender de um CombinedScore local com
+   * {@code hasBillet} já confirmado — usado pela reconciliação em {@code
+   * BilletService#generateBillet} para recuperar o PDF quando confirmamos no Sicoob que um boleto
+   * já existe antes de termos registrado isso localmente.
+   */
+  public ResponseEntity<byte[]> issueCopyByOurNumber(String nossoNumero) throws IOException {
     String endpoint = buildEndpointIssueCopy(nossoNumero);
 
     try {

@@ -23,13 +23,17 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class IssueInvoice {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
+
+  private static final int COMPLETE = 1;
 
   private final String NATUREZA_OPERACAO = "Venda de Produtos Hortifrutigranjeiros";
 
@@ -44,17 +48,20 @@ public class IssueInvoice {
 
   @Transactional
   public InvoiceResponse issueInvoice(Long combinedScoreId, String dadosAdicionais) {
+    // Trava a linha do agrupamento (SELECT ... FOR UPDATE) para serializar requisições
+    // concorrentes: se duas chegarem juntas (ex: duplo clique), a segunda só prossegue depois
+    // que a primeira já commitou hasInvoice=true, e cai no bloqueio de duplicidade abaixo.
+    CombinedScore combinedScore = combinedScoreService.findByIdForUpdate(combinedScoreId);
+
+    if (combinedScore.isHasInvoice()) {
+      throw new InvoiceException(
+          "Nota fiscal já foi emitida para este agrupamento (id " + combinedScoreId + ").");
+    }
+
+    String ref = UUID.randomUUID().toString();
+    InvoiceResponse invoiceResponse;
+    JsonNode responseNode;
     try {
-      // Trava a linha do agrupamento (SELECT ... FOR UPDATE) para serializar requisições
-      // concorrentes: se duas chegarem juntas (ex: duplo clique), a segunda só prossegue depois
-      // que a primeira já commitou hasInvoice=true, e cai no bloqueio de duplicidade abaixo.
-      CombinedScore combinedScore = combinedScoreService.findByIdForUpdate(combinedScoreId);
-
-      if (combinedScore.isHasInvoice()) {
-        throw new InvoiceException(
-            "Nota fiscal já foi emitida para este agrupamento (id " + combinedScoreId + ").");
-      }
-
       Client client = fetchClient(combinedScore.getClientId());
 
       RecipientRequest recipient = recipientService.createRecipientRequest(client.getId());
@@ -66,31 +73,99 @@ public class IssueInvoice {
       IssueInvoiceRequest request =
           buildInvoiceRequest(recipient, items, combinedScore, dadosAdicionais);
 
-      String ref = UUID.randomUUID().toString();
-
       String payload = invoicePayloadService.buildFocusNfePayload(request, ref);
 
       String response = focusNfeApiClient.sendRequest(ref, payload);
 
-      JsonNode responseNode = objectMapper.readTree(response);
-      InvoiceResponse invoiceResponse =
-          objectMapper.treeToValue(responseNode, InvoiceResponse.class);
-
-      // A Focus NFe às vezes já resolve a autorização (ou rejeição) da Sefaz na própria resposta
-      // síncrona do POST, sem passar pelo "processando_autorizacao" assíncrono. Se não checarmos
-      // isso aqui, marcamos hasInvoice=true para uma nota que a Sefaz já rejeitou — o agrupamento
-      // fica travado mostrando "Ver NF" no front para uma NF que nunca existiu de fato.
-      if (isRejectedStatus(invoiceResponse.status())) {
-        throw new InvoiceException(buildRejectionMessage(responseNode, invoiceResponse.status()));
+      responseNode = objectMapper.readTree(response);
+      invoiceResponse = objectMapper.treeToValue(responseNode, InvoiceResponse.class);
+    } catch (Exception issueError) {
+      // Não sabemos se a Focus NFe processou o POST antes da falha (ex: timeout esperando a
+      // resposta) — como a ref é gerada por nós, sempre podemos consultá-la depois: se a Focus NFe
+      // já a reconhece, a emissão de fato aconteceu e só a resposta se perdeu. Sem essa checagem, o
+      // usuário veria erro e tentaria de novo, duplicando a NF.
+      ReconciliationResult reconciled = tryReconcileAfterIssueFailure(ref, issueError);
+      if (reconciled == null) {
+        throw new InvoiceException(
+            "Erro ao emitir nota fiscal: " + issueError.getMessage(), issueError);
       }
+      invoiceResponse = reconciled.response();
+      responseNode = reconciled.node();
+    }
 
+    // A Focus NFe às vezes já resolve a autorização (ou rejeição) da Sefaz na própria resposta
+    // síncrona do POST, sem passar pelo "processando_autorizacao" assíncrono. Se não checarmos
+    // isso aqui, marcamos hasInvoice=true para uma nota que a Sefaz já rejeitou — o agrupamento
+    // fica travado mostrando "Ver NF" no front para uma NF que nunca existiu de fato.
+    if (isRejectedStatus(invoiceResponse.status())) {
+      throw new InvoiceException(buildRejectionMessage(responseNode, invoiceResponse.status()));
+    }
+
+    // A partir daqui a Focus NFe já confirmou que aceitou a NF — qualquer falha abaixo é só no
+    // registro/pós-processamento local, NÃO significa que a NF não foi emitida. Por isso essas
+    // falhas não são mais reembrulhadas como "erro ao emitir nota fiscal" (o que sugeriria ao
+    // usuário que é seguro tentar de novo e arriscaria duplicar a NF na Focus NFe).
+    try {
       updateCombinedScoreStatus(combinedScore, invoiceResponse);
+    } catch (Exception persistError) {
+      log.error(
+          "CRÍTICO: NF emitida na Focus NFe (ref={}) mas falha ao registrar localmente para"
+              + " combinedScoreId={} — requer reconciliação manual",
+          invoiceResponse.ref(),
+          combinedScoreId,
+          persistError);
+      throw new InvoiceException(
+          "A nota fiscal FOI emitida com sucesso (ref="
+              + invoiceResponse.ref()
+              + "), mas houve uma falha ao registrar isso no sistema. NÃO gere uma nova nota"
+              + " fiscal para este agrupamento — contate o suporte informando esta referência para"
+              + " reconciliação manual.",
+          persistError);
+    }
 
+    try {
       fiscalNoteXmlStorageService.triggerSaveAfterIssuance(invoiceResponse.ref());
+    } catch (Exception xmlError) {
+      log.warn(
+          "Falha ao disparar salvamento do XML/DANFE para ref={} — não afeta a emissão, que já"
+              + " foi confirmada e registrada",
+          invoiceResponse.ref(),
+          xmlError);
+    }
 
-      return invoiceResponse;
-    } catch (Exception e) {
-      throw new InvoiceException("Erro ao emitir nota fiscal: " + e.getMessage(), e);
+    return invoiceResponse;
+  }
+
+  private record ReconciliationResult(InvoiceResponse response, JsonNode node) {}
+
+  /**
+   * Consulta a Focus NFe pela ref (gerada antes do POST, então sempre disponível) para confirmar se
+   * a emissão que falhou no cliente na verdade foi processada do outro lado. Retorna {@code null}
+   * se a reconciliação não confirmar nada — aí é seguro reportar a falha original ao usuário.
+   */
+  private ReconciliationResult tryReconcileAfterIssueFailure(String ref, Exception issueError) {
+    try {
+      String response = focusNfeApiClient.sendGetRequest(ref, COMPLETE);
+      JsonNode node = objectMapper.readTree(response);
+      InvoiceResponse reconciled = objectMapper.treeToValue(node, InvoiceResponse.class);
+      if (reconciled.status() == null || reconciled.status().isBlank()) {
+        return null;
+      }
+      log.warn(
+          "Emissão de NF-e (ref={}) falhou no cliente ({}), mas reconciliação confirmou que a"
+              + " Focus NFe já processou a requisição (status={}) — tratando como emitida para"
+              + " evitar duplicidade",
+          ref,
+          issueError.getMessage(),
+          reconciled.status());
+      return new ReconciliationResult(reconciled, node);
+    } catch (Exception reconcileError) {
+      log.warn(
+          "Não foi possível reconciliar a ref={} após falha na emissão — reportando a falha"
+              + " original: {}",
+          ref,
+          reconcileError.getMessage());
+      return null;
     }
   }
 

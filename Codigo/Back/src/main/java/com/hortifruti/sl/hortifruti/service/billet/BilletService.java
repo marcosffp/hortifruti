@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -226,6 +227,7 @@ public class BilletService {
                 "Boleto já foi gerado para este agrupamento (id " + combinedScoreId + ").");
           }
 
+          Map<String, Object> responseBody;
           try {
             Client client = billetInfoCombinedAndClient.findClientById(combinedScore.getClientId());
             Pagador pagador = billetFactory.createPagadorFromClient(client);
@@ -240,15 +242,95 @@ public class BilletService {
 
             BilletRequestSimplified billetRequest =
                 billetFactory.createBilletRequest(combinedScore, combinedScoreId, pagador, number);
-            Map<String, Object> responseBody = issueBilletAndExtractResponse(billetRequest);
-            byte[] pdfBytes = (byte[]) responseBody.get("pdf");
-            billetFileStorageService.saveBilletFile(combinedScoreId, pdfBytes);
-            updateCombinedScoreWithBilletData(combinedScore, responseBody);
-            return buildPdfResponse(pdfBytes, combinedScore.getYourNumber());
-          } catch (Exception e) {
-            throw new CombinedScoreException("Erro ao gerar o boleto: " + e.getMessage(), e);
+            responseBody = issueBilletAndExtractResponse(billetRequest);
+          } catch (Exception issueError) {
+            // Não sabemos se o Sicoob processou a requisição antes da falha (ex: timeout esperando
+            // a resposta) — como o "seuNumero" (number) é definido por nós, sempre podemos
+            // consultá-lo depois: se o Sicoob já o reconhece, o boleto de fato foi criado e só a
+            // resposta se perdeu. Sem essa checagem, o usuário veria erro e tentaria de novo,
+            // duplicando o boleto.
+            responseBody =
+                tryReconcileAfterIssueFailure(combinedScore.getClientId(), number, issueError);
+            if (responseBody == null) {
+              throw new CombinedScoreException(
+                  "Erro ao gerar o boleto: " + issueError.getMessage(), issueError);
+            }
           }
+
+          byte[] pdfBytes = (byte[]) responseBody.get("pdf");
+
+          // A partir daqui o Sicoob já confirmou que criou o boleto — qualquer falha abaixo é só
+          // no registro/pós-processamento local, NÃO significa que o boleto não foi emitido. Por
+          // isso essas falhas não são mais reembrulhadas como "erro ao gerar o boleto" (o que
+          // sugeriria ao usuário que é seguro tentar de novo e arriscaria duplicar no Sicoob).
+          try {
+            updateCombinedScoreWithBilletData(combinedScore, responseBody);
+          } catch (Exception persistError) {
+            log.error(
+                "CRÍTICO: boleto emitido no Sicoob (nossoNumero={}) mas falha ao registrar"
+                    + " localmente para combinedScoreId={} — requer reconciliação manual",
+                responseBody.get("nossoNumero"),
+                combinedScoreId,
+                persistError);
+            throw new CombinedScoreException(
+                "O boleto FOI emitido com sucesso no Sicoob (nosso número="
+                    + responseBody.get("nossoNumero")
+                    + "), mas houve uma falha ao registrar isso no sistema. NÃO gere outro boleto"
+                    + " para este agrupamento — contate o suporte informando este número para"
+                    + " reconciliação manual.",
+                persistError);
+          }
+
+          try {
+            billetFileStorageService.saveBilletFile(combinedScoreId, pdfBytes);
+          } catch (Exception storageError) {
+            log.warn(
+                "Falha ao armazenar o PDF do boleto (combinedScoreId={}) — não afeta a emissão,"
+                    + " que já foi confirmada e registrada; o PDF pode ser obtido depois via 2ª"
+                    + " via",
+                combinedScoreId,
+                storageError);
+          }
+
+          return buildPdfResponse(pdfBytes, combinedScore.getYourNumber());
         });
+  }
+
+  /**
+   * Consulta o Sicoob pelo "seuNumero" (gerado por nós antes da emissão, então sempre disponível)
+   * para confirmar se a emissão que falhou no cliente na verdade foi processada do outro lado.
+   * Retorna {@code null} se a reconciliação não confirmar nada — aí é seguro reportar a falha
+   * original ao usuário.
+   */
+  private Map<String, Object> tryReconcileAfterIssueFailure(
+      long clientId, String seuNumero, Exception issueError) {
+    try {
+      BilletResponse reconciled = billetQuery.findBySeuNumero(clientId, seuNumero);
+      if (reconciled == null) {
+        return null;
+      }
+      log.warn(
+          "Emissão de boleto (seuNumero={}) falhou no cliente ({}), mas reconciliação confirmou"
+              + " que o Sicoob já processou a requisição (nossoNumero={}) — tratando como emitido"
+              + " para evitar duplicidade",
+          seuNumero,
+          issueError.getMessage(),
+          reconciled.nossoNumero());
+
+      byte[] pdfBytes = billetIssue.issueCopyByOurNumber(reconciled.nossoNumero()).getBody();
+      Map<String, Object> responseBody = new HashMap<>();
+      responseBody.put("pdf", pdfBytes);
+      responseBody.put("nossoNumero", reconciled.nossoNumero());
+      responseBody.put("seuNumero", reconciled.seuNumero());
+      return responseBody;
+    } catch (Exception reconcileError) {
+      log.warn(
+          "Não foi possível reconciliar o boleto seuNumero={} após falha na emissão — reportando"
+              + " a falha original: {}",
+          seuNumero,
+          reconcileError.getMessage());
+      return null;
+    }
   }
 
   private Map<String, Object> issueBilletAndExtractResponse(BilletRequestSimplified billetRequest)

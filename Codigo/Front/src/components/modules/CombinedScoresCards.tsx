@@ -175,6 +175,10 @@ export default function CombinedScoresCards({
         error instanceof Error ? error.message : "Erro ao gerar boleto",
       );
       console.error(error);
+      // O backend pode ter reconciliado e registrado o boleto como emitido mesmo reportando um
+      // erro (ex: falha só no pós-processamento local) — resincroniza a tela com o estado real
+      // em vez de continuar mostrando "sem boleto" para um boleto que já existe.
+      refetch();
     } finally {
       endProcessing(scoreId);
     }
