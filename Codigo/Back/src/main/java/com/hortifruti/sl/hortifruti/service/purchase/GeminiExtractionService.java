@@ -55,10 +55,21 @@ public class GeminiExtractionService {
       conversão é feita depois, no backend, com um peso de referência cadastrado por produto.
       Extraia a quantidade de caixas exatamente como escrita (incluindo frações como "meia caixa"
       = 0.5, "caixa e meia" = 1.5) e o valor total pago, sem inventar conversão.
+      IMPORTANTE: cada campo do JSON deve conter só o valor final, NUNCA o seu raciocínio,
+      dúvidas ou cálculo intermediário usado pra chegar nele (ex.: "produtoLido" é só o nome do
+      produto, nunca um texto explicando como você decidiu a quantidade). Se um número estiver
+      ambíguo (ex.: caligrafia difícil de ler), escolha silenciosamente o valor mais provável e
+      escreva só esse valor — nunca narre a dúvida dentro de um campo.
       """;
 
   private static final String API_URL_TEMPLATE =
       "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent";
+
+  // Limites de tamanho dos campos STRING do response_schema — ver #boundedString/#nullableString.
+  private static final int PRODUTO_LIDO_MAX_LENGTH = 100;
+  private static final int CLIENTE_MAX_LENGTH = 150;
+  private static final int DATA_MAX_LENGTH = 30;
+  private static final int UNIDADE_MAX_LENGTH = 20;
 
   private final NotaUploadService notaUploadService;
   private final ProdutoMatchingService produtoMatchingService;
@@ -229,8 +240,8 @@ public class GeminiExtractionService {
     schema.put("type", "OBJECT");
 
     ObjectNode properties = schema.putObject("properties");
-    nullableField(properties, "cliente", "STRING");
-    nullableField(properties, "data", "STRING");
+    nullableString(properties, "cliente", CLIENTE_MAX_LENGTH);
+    nullableString(properties, "data", DATA_MAX_LENGTH);
     nullableField(properties, "totalGeral", "NUMBER");
 
     ObjectNode itens = properties.putObject("itens");
@@ -238,9 +249,9 @@ public class GeminiExtractionService {
     ObjectNode item = itens.putObject("items");
     item.put("type", "OBJECT");
     ObjectNode itemProperties = item.putObject("properties");
-    itemProperties.putObject("produtoLido").put("type", "STRING");
+    boundedString(itemProperties.putObject("produtoLido"), PRODUTO_LIDO_MAX_LENGTH);
     nullableField(itemProperties, "quantidade", "NUMBER");
-    nullableField(itemProperties, "unidade", "STRING");
+    nullableString(itemProperties, "unidade", UNIDADE_MAX_LENGTH);
     nullableField(itemProperties, "precoUnitario", "NUMBER");
     nullableField(itemProperties, "total", "NUMBER");
     item.putArray("required").add("produtoLido");
@@ -255,6 +266,25 @@ public class GeminiExtractionService {
     field.put("nullable", true);
   }
 
+  /**
+   * Campo STRING nulável com {@code maxLength} — guarda técnica contra o modelo escrever
+   * raciocínio/dedução dentro do campo em vez do valor final (visto na prática com o Gemini
+   * "pensando em voz alta" num número de caligrafia ambígua): o {@code maxLength} do {@code
+   * response_schema} é aplicado por decodificação restrita pela própria API, então o modelo não
+   * consegue estourar o limite mesmo tentando — validado empiricamente contra a API antes de
+   * confiar nisso.
+   */
+  private void nullableString(ObjectNode properties, String name, int maxLength) {
+    ObjectNode field = properties.putObject(name);
+    boundedString(field, maxLength);
+    field.put("nullable", true);
+  }
+
+  private void boundedString(ObjectNode field, int maxLength) {
+    field.put("type", "STRING");
+    field.put("maxLength", maxLength);
+  }
+
   private List<NotaExtracaoResponse> parseResponse(JsonNode body) {
     if (body == null) {
       throw new GeminiExtractionException("Resposta vazia da API do Gemini.");
@@ -266,7 +296,7 @@ public class GeminiExtractionService {
           "A API do Gemini não retornou nenhum candidato de extração.");
     }
 
-    String text = candidates.get(0).path("content").path("parts").path(0).path("text").asText(null);
+    String text = extrairTextoFinal(candidates.get(0).path("content").path("parts"));
     if (text == null || text.isBlank()) {
       throw new GeminiExtractionException("A API do Gemini retornou uma resposta vazia.");
     }
@@ -277,6 +307,30 @@ public class GeminiExtractionService {
       throw new GeminiExtractionException(
           "Não foi possível interpretar a resposta da API do Gemini.", e);
     }
+  }
+
+  /**
+   * Modelos "thinking" (ex.: Gemini 3.x) podem devolver mais de uma {@code part} em {@code
+   * content}, marcando a(s) de raciocínio com {@code "thought": true} antes da parte com a resposta
+   * final — pegar sempre {@code parts[0]} arriscaria ler o raciocínio em vez do JSON. Ignora
+   * qualquer parte marcada como {@code thought} e concatena o texto das demais (na prática, só uma:
+   * a resposta final em JSON).
+   */
+  private String extrairTextoFinal(JsonNode parts) {
+    if (!parts.isArray()) {
+      return null;
+    }
+    StringBuilder texto = new StringBuilder();
+    for (JsonNode part : parts) {
+      if (part.path("thought").asBoolean(false)) {
+        continue;
+      }
+      String partText = part.path("text").asText(null);
+      if (partText != null) {
+        texto.append(partText);
+      }
+    }
+    return texto.isEmpty() ? null : texto.toString();
   }
 
   private List<NotaExtracaoResponse> enriquecer(List<NotaExtracaoResponse> notas) {
