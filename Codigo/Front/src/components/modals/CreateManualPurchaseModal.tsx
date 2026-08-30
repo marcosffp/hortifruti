@@ -4,6 +4,7 @@ import { Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import MaskedDecimalInput from "@/components/ui/MaskedDecimalInput";
 import ProductAutocompleteField from "@/components/ui/ProductAutocompleteField";
+import { useCapturaNota } from "@/hooks/useCapturaNota";
 import { useFiscalProduct } from "@/hooks/useFiscalProduct";
 import { usePurchase } from "@/hooks/usePurchase";
 import type { FiscalProductType } from "@/types/purchaseType";
@@ -13,6 +14,7 @@ import {
   type NumericField,
   type NumericRow,
   recalcNumericRow,
+  round,
 } from "@/utils/numericRow";
 import { showError, showSuccess } from "@/utils/toastUtils";
 
@@ -40,8 +42,12 @@ export default function CreateManualPurchaseModal({
   const [purchaseDate, setPurchaseDate] = useState(() => todaySaoPaulo());
   const [rows, setRows] = useState<ManualItemRow[]>([emptyRow()]);
   const [submitting, setSubmitting] = useState(false);
+  const [precosVigentes, setPrecosVigentes] = useState<Record<string, number>>(
+    {},
+  );
   const { getFiscalProducts } = useFiscalProduct();
   const { createManualPurchase } = usePurchase();
+  const { buscarPrecosVigentes } = useCapturaNota();
 
   useEffect(() => {
     getFiscalProducts()
@@ -53,9 +59,43 @@ export default function CreateManualPurchaseModal({
       .finally(() => setLoadingProducts(false));
   }, [getFiscalProducts]);
 
+  useEffect(() => {
+    let cancelado = false;
+    buscarPrecosVigentes(clientId, purchaseDate)
+      .then((precos) => {
+        if (cancelado) return;
+        setPrecosVigentes(precos);
+        setRows((prev) =>
+          prev.map((row) => {
+            const precoTabela = row.code ? precos[row.code] : undefined;
+            if (precoTabela == null || precoTabela === row.price) return row;
+            return {
+              ...row,
+              price: precoTabela,
+              total: round(row.quantity * precoTabela, 2),
+            };
+          }),
+        );
+      })
+      .catch((error) => console.error(error));
+    return () => {
+      cancelado = true;
+    };
+  }, [clientId, purchaseDate, buscarPrecosVigentes]);
+
   const updateRowCode = (index: number, code: string) => {
     setRows((prev) =>
-      prev.map((row, i) => (i === index ? { ...row, code } : row)),
+      prev.map((row, i) => {
+        if (i !== index) return row;
+        const precoTabela = precosVigentes[code];
+        if (precoTabela == null) return { ...row, code };
+        return {
+          ...row,
+          code,
+          price: precoTabela,
+          total: round(row.quantity * precoTabela, 2),
+        };
+      }),
     );
   };
 
