@@ -74,12 +74,57 @@ class TabelaPrecoClienteReviewServiceTest {
   }
 
   @Test
-  void confirmarTabelaJaConfirmadaNaoPodeSerReaberta() {
+  void confirmarEmLoteBloqueiaTabelaJaConfirmada() {
     when(tabelaPrecoClienteRepository.findById(1L))
         .thenReturn(Optional.of(tabela(StatusTabelaPreco.CONFIRMADA)));
 
-    assertThatThrownBy(() -> service.confirmarItem(1L, 1L, "C5", 99L))
+    assertThatThrownBy(() -> service.confirmarEmLote(1L, 99L))
         .isInstanceOf(TabelaPrecoClienteEstadoInvalidoException.class);
+  }
+
+  @Test
+  void confirmarTabelaBloqueiaTabelaJaConfirmada() {
+    when(tabelaPrecoClienteRepository.findById(1L))
+        .thenReturn(Optional.of(tabela(StatusTabelaPreco.CONFIRMADA)));
+
+    assertThatThrownBy(() -> service.confirmarTabela(1L, 99L))
+        .isInstanceOf(TabelaPrecoClienteEstadoInvalidoException.class);
+  }
+
+  @Test
+  void confirmarItemFuncionaMesmoComTabelaJaConfirmada() {
+    when(tabelaPrecoClienteRepository.findById(1L))
+        .thenReturn(Optional.of(tabela(StatusTabelaPreco.CONFIRMADA)));
+    when(tabelaPrecoClienteItemRepository.findById(2L))
+        .thenReturn(Optional.of(item(2L, 5L, StatusMatchItemTabelaPreco.CONFIRMADO, 0.9)));
+    when(fiscalProductRepository.findByCode("C8")).thenReturn(Optional.of(produto(8L)));
+    when(clienteProdutoMapeamentoRepository.findByClienteIdAndCodigoProdutoCliente(7L, "_A1"))
+        .thenReturn(Optional.empty());
+    when(tabelaPrecoClienteItemRepository.findByTabelaPrecoClienteId(1L))
+        .thenReturn(List.of(item(2L, 8L, StatusMatchItemTabelaPreco.EDITADO_MANUALMENTE, 0.9)));
+
+    service.confirmarItem(1L, 2L, "C8", 99L);
+
+    var capturado = org.mockito.ArgumentCaptor.forClass(TabelaPrecoClienteItem.class);
+    org.mockito.Mockito.verify(tabelaPrecoClienteItemRepository).save(capturado.capture());
+    assertThat(capturado.getValue().getStatusMatch())
+        .isEqualTo(StatusMatchItemTabelaPreco.EDITADO_MANUALMENTE);
+    org.mockito.Mockito.verify(tabelaPrecoClienteRepository, org.mockito.Mockito.never())
+        .save(any(TabelaPrecoCliente.class));
+  }
+
+  @Test
+  void marcarSemCorrespondenciaFuncionaMesmoComTabelaJaConfirmada() {
+    when(tabelaPrecoClienteRepository.findById(1L))
+        .thenReturn(Optional.of(tabela(StatusTabelaPreco.CONFIRMADA)));
+    when(tabelaPrecoClienteItemRepository.findById(2L))
+        .thenReturn(Optional.of(item(2L, 5L, StatusMatchItemTabelaPreco.CONFIRMADO, 0.9)));
+    when(tabelaPrecoClienteItemRepository.findByTabelaPrecoClienteId(1L))
+        .thenReturn(List.of(item(2L, null, StatusMatchItemTabelaPreco.SEM_CORRESPONDENCIA, null)));
+
+    service.marcarSemCorrespondencia(1L, 2L);
+
+    org.mockito.Mockito.verifyNoInteractions(clienteProdutoMapeamentoRepository);
   }
 
   @Test

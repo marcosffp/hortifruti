@@ -59,7 +59,7 @@ public class TabelaPrecoClienteReviewService {
   @Transactional
   public TabelaPrecoClienteResponse confirmarItem(
       Long tabelaId, Long itemId, String fiscalProductCode, Long usuarioId) {
-    TabelaPrecoCliente tabela = travarParaEdicao(tabelaId);
+    TabelaPrecoCliente tabela = prepararItemParaEdicao(tabelaId);
     TabelaPrecoClienteItem item = buscarItemDaTabela(tabelaId, itemId);
 
     FiscalProduct produto =
@@ -86,7 +86,7 @@ public class TabelaPrecoClienteReviewService {
 
   @Transactional
   public TabelaPrecoClienteResponse marcarSemCorrespondencia(Long tabelaId, Long itemId) {
-    travarParaEdicao(tabelaId);
+    prepararItemParaEdicao(tabelaId);
     TabelaPrecoClienteItem item = buscarItemDaTabela(tabelaId, itemId);
 
     // Deliberadamente não grava/apaga ClienteProdutoMapeamento aqui: ausência de correspondência
@@ -185,6 +185,11 @@ public class TabelaPrecoClienteReviewService {
     clienteProdutoMapeamentoRepository.save(mapeamento);
   }
 
+  /**
+   * Trava usada pelas ações em lote/fechamento ({@link #confirmarEmLote} e {@link
+   * #confirmarTabela}) — essas continuam bloqueadas numa tabela {@code CONFIRMADA}, já que reabrir
+   * revisão em massa ou reconfirmar uma tabela já fechada não faz sentido.
+   */
   private TabelaPrecoCliente travarParaEdicao(Long tabelaId) {
     TabelaPrecoCliente tabela = buscarTabelaOuFalhar(tabelaId);
     if (tabela.getStatus() == StatusTabelaPreco.CONFIRMADA) {
@@ -192,6 +197,22 @@ public class TabelaPrecoClienteReviewService {
           "Tabela de preços já confirmada — não pode ser editada. Reimporte o arquivo pra criar"
               + " uma nova versão.");
     }
+    if (tabela.getStatus() == StatusTabelaPreco.RASCUNHO) {
+      tabela.setStatus(StatusTabelaPreco.EM_REVISAO);
+      tabelaPrecoClienteRepository.save(tabela);
+    }
+    return tabela;
+  }
+
+  /**
+   * Trava usada pela edição de um item individual ({@link #confirmarItem} e {@link
+   * #marcarSemCorrespondencia}) — diferente de {@link #travarParaEdicao}, permite a edição mesmo
+   * com a tabela já {@code CONFIRMADA} (corrigir o vínculo de um item específico depois de fechada
+   * não deveria exigir reimportar o mês inteiro) e não reabre a tabela pra {@code EM_REVISAO} nesse
+   * caso.
+   */
+  private TabelaPrecoCliente prepararItemParaEdicao(Long tabelaId) {
+    TabelaPrecoCliente tabela = buscarTabelaOuFalhar(tabelaId);
     if (tabela.getStatus() == StatusTabelaPreco.RASCUNHO) {
       tabela.setStatus(StatusTabelaPreco.EM_REVISAO);
       tabelaPrecoClienteRepository.save(tabela);

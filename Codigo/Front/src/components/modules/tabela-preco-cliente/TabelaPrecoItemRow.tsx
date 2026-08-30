@@ -42,7 +42,6 @@ interface TabelaPrecoItemRowProps {
   item: TabelaPrecoClienteItemResponse;
   products: FiscalProductType[];
   loadingProducts: boolean;
-  readOnly: boolean;
   onConfirmar: (code: string) => Promise<void>;
   onSemCorrespondencia: () => Promise<void>;
 }
@@ -51,7 +50,6 @@ export default function TabelaPrecoItemRow({
   item,
   products,
   loadingProducts,
-  readOnly,
   onConfirmar,
   onSemCorrespondencia,
 }: TabelaPrecoItemRowProps) {
@@ -104,42 +102,34 @@ export default function TabelaPrecoItemRow({
         )}
         <span className="text-gray-400">{formatPreco(item.preco)}</span>
       </p>
-      {readOnly ? (
-        <p className="text-sm text-gray-700">
-          {item.fiscalProductCodigo
-            ? `${item.fiscalProductCodigo} — ${item.fiscalProductDescricao}`
-            : "sem produto vinculado"}
-        </p>
-      ) : (
-        <div className="flex flex-col lg:flex-row lg:items-center gap-2">
-          <div className="flex-1">
-            <ProductAutocompleteField
-              products={products}
-              value={code}
-              onSelect={setCode}
-              disabled={loadingProducts || salvando}
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={confirmar}
-              disabled={!code || salvando}
-              className="py-2 px-3 text-sm bg-primary text-white rounded disabled:opacity-50 cursor-pointer hover:bg-[var(--primary-dark)]"
-            >
-              Confirmar
-            </button>
-            <button
-              type="button"
-              onClick={semCorrespondencia}
-              disabled={salvando}
-              className="py-2 px-3 text-sm border border-gray-300 text-gray-700 rounded disabled:opacity-50 cursor-pointer hover:bg-gray-50"
-            >
-              Sem correspondência
-            </button>
-          </div>
+      <div className="flex flex-col lg:flex-row lg:items-center gap-2">
+        <div className="flex-1">
+          <ProductAutocompleteField
+            products={products}
+            value={code}
+            onSelect={setCode}
+            disabled={loadingProducts || salvando}
+          />
         </div>
-      )}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={confirmar}
+            disabled={!code || salvando}
+            className="py-2 px-3 text-sm bg-primary text-white rounded disabled:opacity-50 cursor-pointer hover:bg-[var(--primary-dark)]"
+          >
+            Confirmar
+          </button>
+          <button
+            type="button"
+            onClick={semCorrespondencia}
+            disabled={salvando}
+            className="py-2 px-3 text-sm border border-gray-300 text-gray-700 rounded disabled:opacity-50 cursor-pointer hover:bg-gray-50"
+          >
+            Sem correspondência
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

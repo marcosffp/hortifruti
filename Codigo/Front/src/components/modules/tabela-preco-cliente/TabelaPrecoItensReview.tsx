@@ -49,7 +49,7 @@ export default function TabelaPrecoItensReview({
       .finally(() => setLoadingProducts(false));
   }, [getFiscalProducts]);
 
-  const readOnly = tabela.status === "CONFIRMADA";
+  const tabelaConfirmada = tabela.status === "CONFIRMADA";
   const pendentes = tabela.itens.filter(
     (item) => item.statusMatch === "SUGERIDO",
   ).length;
@@ -71,7 +71,7 @@ export default function TabelaPrecoItensReview({
         </span>
       </div>
 
-      {readOnly ? (
+      {tabelaConfirmada ? (
         <TabelaPrecoExportButtons
           onExportarCsv={onExportarCsv}
           onExportarPdf={onExportarPdf}
@@ -91,7 +91,6 @@ export default function TabelaPrecoItensReview({
             item={item}
             products={products}
             loadingProducts={loadingProducts}
-            readOnly={readOnly}
             onConfirmar={(code) => onConfirmarItem(item.id, code)}
             onSemCorrespondencia={() => onSemCorrespondencia(item.id)}
           />
