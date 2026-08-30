@@ -14,6 +14,7 @@ import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -35,6 +36,9 @@ import org.springframework.security.core.userdetails.UserDetails;
     name = "users",
     uniqueConstraints = @UniqueConstraint(name = "uk_users_username", columnNames = "username"))
 public class User implements UserDetails {
+
+  private static final ZoneId BRAZIL_ZONE = ZoneId.of("America/Sao_Paulo");
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -81,13 +85,13 @@ public class User implements UserDetails {
 
   @PrePersist
   protected void onCreate() {
-    this.createdAt = LocalDateTime.now();
-    this.updatedAt = LocalDateTime.now();
+    this.createdAt = LocalDateTime.now(BRAZIL_ZONE);
+    this.updatedAt = LocalDateTime.now(BRAZIL_ZONE);
   }
 
   @PreUpdate
   protected void onUpdate() {
-    this.updatedAt = LocalDateTime.now();
+    this.updatedAt = LocalDateTime.now(BRAZIL_ZONE);
   }
 
   @Override

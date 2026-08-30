@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +22,9 @@ import lombok.Setter;
 @Entity
 @Table(name = "transactions")
 public class Transaction {
+
+  private static final ZoneId BRAZIL_ZONE = ZoneId.of("America/Sao_Paulo");
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -82,13 +86,13 @@ public class Transaction {
 
   @PrePersist
   protected void onCreate() {
-    this.createdAt = LocalDateTime.now();
-    this.updatedAt = LocalDateTime.now();
+    this.createdAt = LocalDateTime.now(BRAZIL_ZONE);
+    this.updatedAt = LocalDateTime.now(BRAZIL_ZONE);
   }
 
   @PreUpdate
   protected void onUpdate() {
-    this.updatedAt = LocalDateTime.now();
+    this.updatedAt = LocalDateTime.now(BRAZIL_ZONE);
   }
 
   @Override

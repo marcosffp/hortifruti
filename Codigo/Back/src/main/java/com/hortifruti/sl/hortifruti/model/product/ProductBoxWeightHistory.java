@@ -9,6 +9,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -29,6 +30,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class ProductBoxWeightHistory {
+
+  private static final ZoneId BRAZIL_ZONE = ZoneId.of("America/Sao_Paulo");
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,6 +54,6 @@ public class ProductBoxWeightHistory {
 
   @PrePersist
   protected void onCreate() {
-    this.criadoEm = LocalDateTime.now();
+    this.criadoEm = LocalDateTime.now(BRAZIL_ZONE);
   }
 }

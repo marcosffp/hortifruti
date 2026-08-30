@@ -14,6 +14,7 @@ import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -33,6 +34,8 @@ import lombok.Setter;
             name = "uk_login_lockouts_type_identifier",
             columnNames = {"identifier_type", "identifier"}))
 public class LoginLockout {
+
+  private static final ZoneId BRAZIL_ZONE = ZoneId.of("America/Sao_Paulo");
 
   public enum IdentifierType {
     ACCOUNT,
@@ -74,11 +77,11 @@ public class LoginLockout {
 
   @PrePersist
   protected void onCreate() {
-    this.updatedAt = LocalDateTime.now();
+    this.updatedAt = LocalDateTime.now(BRAZIL_ZONE);
   }
 
   @PreUpdate
   protected void onUpdate() {
-    this.updatedAt = LocalDateTime.now();
+    this.updatedAt = LocalDateTime.now(BRAZIL_ZONE);
   }
 }

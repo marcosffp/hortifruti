@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,6 +21,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class InvoiceProduct {
+
+  private static final ZoneId BRAZIL_ZONE = ZoneId.of("America/Sao_Paulo");
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -59,12 +62,12 @@ public class InvoiceProduct {
 
   @PrePersist
   protected void onCreate() {
-    this.createdAt = LocalDateTime.now();
-    this.updatedAt = LocalDateTime.now();
+    this.createdAt = LocalDateTime.now(BRAZIL_ZONE);
+    this.updatedAt = LocalDateTime.now(BRAZIL_ZONE);
   }
 
   @PreUpdate
   protected void onUpdate() {
-    this.updatedAt = LocalDateTime.now();
+    this.updatedAt = LocalDateTime.now(BRAZIL_ZONE);
   }
 }

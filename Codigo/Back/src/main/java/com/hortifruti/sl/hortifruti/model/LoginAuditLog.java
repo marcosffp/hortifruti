@@ -12,6 +12,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -32,6 +33,8 @@ import lombok.Setter;
       @Index(name = "idx_login_audit_logs_created_at", columnList = "created_at")
     })
 public class LoginAuditLog {
+
+  private static final ZoneId BRAZIL_ZONE = ZoneId.of("America/Sao_Paulo");
 
   public enum FailureReason {
     USER_NOT_FOUND,
@@ -67,6 +70,6 @@ public class LoginAuditLog {
 
   @PrePersist
   protected void onCreate() {
-    this.createdAt = LocalDateTime.now();
+    this.createdAt = LocalDateTime.now(BRAZIL_ZONE);
   }
 }

@@ -14,6 +14,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -39,6 +40,8 @@ import lombok.Setter;
 @Builder
 public class CombinedScorePhotoFile {
 
+  private static final ZoneId BRAZIL_ZONE = ZoneId.of("America/Sao_Paulo");
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -60,7 +63,7 @@ public class CombinedScorePhotoFile {
 
   @PrePersist
   protected void onCreate() {
-    this.createdAt = LocalDateTime.now();
+    this.createdAt = LocalDateTime.now(BRAZIL_ZONE);
     if (this.status == null) {
       this.status = FileStatus.ACTIVE;
     }

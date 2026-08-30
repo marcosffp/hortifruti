@@ -11,6 +11,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,6 +35,9 @@ import lombok.Setter;
     name = "dispositivos_vinculados",
     indexes = @Index(name = "idx_dispositivos_vinculados_user_id", columnList = "user_id"))
 public class DispositivoVinculado {
+
+  private static final ZoneId BRAZIL_ZONE = ZoneId.of("America/Sao_Paulo");
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -61,6 +65,6 @@ public class DispositivoVinculado {
 
   @PrePersist
   protected void onCreate() {
-    this.pareadoEm = LocalDateTime.now();
+    this.pareadoEm = LocalDateTime.now(BRAZIL_ZONE);
   }
 }

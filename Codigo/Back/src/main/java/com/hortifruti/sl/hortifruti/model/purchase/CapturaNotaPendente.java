@@ -14,6 +14,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -37,6 +38,9 @@ import lombok.Setter;
     name = "capturas_nota_pendentes",
     indexes = @Index(name = "idx_capturas_nota_pendentes_usuario_id", columnList = "usuario_id"))
 public class CapturaNotaPendente {
+
+  private static final ZoneId BRAZIL_ZONE = ZoneId.of("America/Sao_Paulo");
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -75,12 +79,12 @@ public class CapturaNotaPendente {
 
   @PrePersist
   protected void onCreate() {
-    this.criadaEm = LocalDateTime.now();
-    this.atualizadaEm = LocalDateTime.now();
+    this.criadaEm = LocalDateTime.now(BRAZIL_ZONE);
+    this.atualizadaEm = LocalDateTime.now(BRAZIL_ZONE);
   }
 
   @PreUpdate
   protected void onUpdate() {
-    this.atualizadaEm = LocalDateTime.now();
+    this.atualizadaEm = LocalDateTime.now(BRAZIL_ZONE);
   }
 }

@@ -10,6 +10,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -33,6 +34,8 @@ import lombok.Setter;
 @Table(name = "google_oauth_tokens")
 public class GoogleOAuthToken {
 
+  private static final ZoneId BRAZIL_ZONE = ZoneId.of("America/Sao_Paulo");
+
   @Id
   @NotBlank
   @Column(name = "store_key", length = 255)
@@ -53,6 +56,6 @@ public class GoogleOAuthToken {
   @PrePersist
   @PreUpdate
   protected void onSave() {
-    this.updatedAt = LocalDateTime.now();
+    this.updatedAt = LocalDateTime.now(BRAZIL_ZONE);
   }
 }

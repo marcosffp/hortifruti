@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.*;
 
 @Entity
@@ -17,6 +18,8 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class FiscalNoteXmlStorage {
+
+  private static final ZoneId BRAZIL_ZONE = ZoneId.of("America/Sao_Paulo");
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -67,7 +70,7 @@ public class FiscalNoteXmlStorage {
 
   @PrePersist
   protected void onCreate() {
-    this.createdAt = LocalDateTime.now();
+    this.createdAt = LocalDateTime.now(BRAZIL_ZONE);
     if (this.status == null) {
       this.status = FileStatus.ACTIVE;
     }

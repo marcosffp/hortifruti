@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import lombok.*;
 
@@ -16,6 +17,8 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class CombinedScore {
+
+  private static final ZoneId BRAZIL_ZONE = ZoneId.of("America/Sao_Paulo");
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -68,12 +71,12 @@ public class CombinedScore {
     if (this.status == null) {
       this.status = Status.PENDENTE;
     }
-    this.createdAt = LocalDateTime.now();
-    this.updatedAt = LocalDateTime.now();
+    this.createdAt = LocalDateTime.now(BRAZIL_ZONE);
+    this.updatedAt = LocalDateTime.now(BRAZIL_ZONE);
   }
 
   @PreUpdate
   protected void onUpdate() {
-    this.updatedAt = LocalDateTime.now();
+    this.updatedAt = LocalDateTime.now(BRAZIL_ZONE);
   }
 }
