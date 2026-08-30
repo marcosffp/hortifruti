@@ -49,6 +49,21 @@ export default function NotaItemRow({
             ⚠ qtd × preço ≠ total
           </span>
         )}
+        {row.conversaoEstimada && row.quantidadeKgConvertida != null && (
+          <span
+            className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-blue-100 text-blue-800"
+            title="Peso calculado a partir do peso médio de caixa cadastrado para o produto, não do peso real dessa caixa"
+          >
+            convertido de caixa: ~
+            {row.quantidadeKgConvertida.toLocaleString("pt-BR", {
+              minimumFractionDigits: 3,
+              maximumFractionDigits: 3,
+            })}{" "}
+            kg
+            {row.precoPorKgConvertido != null &&
+              ` (R$ ${row.precoPorKgConvertido.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/kg)`}
+          </span>
+        )}
       </p>
       <div className="flex flex-col lg:flex-row lg:items-center gap-2">
         <div className="flex-1">

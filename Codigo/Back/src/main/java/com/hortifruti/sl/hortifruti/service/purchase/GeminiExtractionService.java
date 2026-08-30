@@ -12,6 +12,7 @@ import com.hortifruti.sl.hortifruti.exception.purchase.GeminiExtractionException
 import java.math.BigDecimal;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -50,6 +51,10 @@ public class GeminiExtractionService {
       cliente/destinatário (se houver) e o total geral daquela nota.
       Se um campo estiver ilegível, retorne null nesse campo em vez de inventar um valor.
       Preserve o nome do produto como está escrito, sem corrigir ortografia.
+      Quando o item estiver em caixas (CX), NÃO tente estimar ou converter o peso em kg — essa
+      conversão é feita depois, no backend, com um peso de referência cadastrado por produto.
+      Extraia a quantidade de caixas exatamente como escrita (incluindo frações como "meia caixa"
+      = 0.5, "caixa e meia" = 1.5) e o valor total pago, sem inventar conversão.
       """;
 
   private static final String API_URL_TEMPLATE =
@@ -58,6 +63,7 @@ public class GeminiExtractionService {
   private final NotaUploadService notaUploadService;
   private final ProdutoMatchingService produtoMatchingService;
   private final ClienteMatchingService clienteMatchingService;
+  private final ConversaoCaixaService conversaoCaixaService;
   private final ObjectMapper objectMapper;
 
   @Qualifier("geminiRestTemplate")
@@ -324,6 +330,24 @@ public class GeminiExtractionService {
       confianca = "baixa";
     }
 
-    return item.comProdutoEConfianca(resultado.produtoSugerido(), confianca);
+    ItemNotaExtraido enriquecido =
+        item.comProdutoEConfianca(resultado.produtoSugerido(), confianca);
+
+    Optional<ConversaoCaixaService.ResultadoConversao> conversao =
+        conversaoCaixaService.converterSeNecessario(enriquecido, resultado.produtoSugerido());
+    if (conversao.isPresent()) {
+      ConversaoCaixaService.ResultadoConversao resultadoConversao = conversao.get();
+      enriquecido =
+          enriquecido.comConversaoCaixa(
+              resultadoConversao.quantidadeKg(), resultadoConversao.precoPorKg());
+      // O peso usado é uma média cadastrada, não o peso real daquela caixa específica — rebaixa a
+      // confiança pra "média" mesmo quando o matching de produto foi "alta" (não rebaixa se já
+      // estava "baixa" pela checagem de consistência acima).
+      if (!"baixa".equals(enriquecido.confianca())) {
+        enriquecido = enriquecido.comProdutoEConfianca(enriquecido.produtoSugerido(), "media");
+      }
+    }
+
+    return enriquecido;
   }
 }

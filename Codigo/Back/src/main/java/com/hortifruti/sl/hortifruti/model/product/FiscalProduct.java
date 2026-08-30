@@ -2,6 +2,7 @@ package com.hortifruti.sl.hortifruti.model.product;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -55,6 +56,18 @@ public class FiscalProduct {
 
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
+
+  /**
+   * Peso de referência (kg) de uma caixa desse produto — cadastrado pelo dono da loja (import via
+   * CSV, ver {@code ConversaoCaixaImportService}) e usado pra converter itens em caixa (CX) pra kg
+   * de forma determinística na extração de nota, em vez do Gemini estimar a cada chamada. {@code
+   * null} quando o produto não tem conversão cadastrada ainda.
+   */
+  @Column(name = "peso_caixa_kg", precision = 10, scale = 3)
+  private BigDecimal pesoCaixaKg;
+
+  @Column(name = "peso_caixa_kg_atualizado_em")
+  private LocalDateTime pesoCaixaKgAtualizadoEm;
 
   @PrePersist
   protected void onCreate() {

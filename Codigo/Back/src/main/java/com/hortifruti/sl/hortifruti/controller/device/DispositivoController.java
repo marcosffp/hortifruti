@@ -82,8 +82,8 @@ public class DispositivoController {
   /**
    * Público, sem efeito no backend além de limpar o cookie do celular que está chamando — a
    * revogação "de verdade" (que invalida o token pros outros também) é {@link #revogar}, só
-   * acessível do PC autenticado. Existe porque o cookie é {@code httpOnly}: o JS do celular não
-   * tem como apagá-lo sozinho pra, por exemplo, permitir vincular com outro código.
+   * acessível do PC autenticado. Existe porque o cookie é {@code httpOnly}: o JS do celular não tem
+   * como apagá-lo sozinho pra, por exemplo, permitir vincular com outro código.
    */
   @PostMapping("/pareamento/desvincular")
   public ResponseEntity<Void> desvincularLocal() {

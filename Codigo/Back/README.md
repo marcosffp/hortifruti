@@ -23,6 +23,9 @@
 ![E-mail](https://img.shields.io/badge/E--mail-SendGrid_%7C_Gmail-1A82E2?style=for-the-badge)
 ![OpenWeather](https://img.shields.io/badge/OpenWeather-Forecast-EB6E4B?style=for-the-badge)
 ![Railway](https://img.shields.io/badge/Railway-Deploy-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
+![Gemini](https://img.shields.io/badge/Gemini-Extração_de_notas-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)
+![Flyway](https://img.shields.io/badge/Flyway-Migrations-CC0200?style=for-the-badge&logo=flyway&logoColor=white)
+![WebSocket](https://img.shields.io/badge/WebSocket-Tempo_real-010101?style=for-the-badge&logo=socketdotio&logoColor=white)
 
 ---
 
@@ -44,7 +47,7 @@
 
 ## 📖 Sobre o projeto
 
-O backend do **Hortifruti SL** é uma API REST que sustenta toda a operação administrativa e financeira do Hortifruti Santa Luzia LTDA. Ele recebe extratos bancários e notas de compra em PDF/planilha, extrai e concilia as transações automaticamente, agrupa vendas por cliente em "scores combinados" e gera boletos (Sicoob) e notas fiscais eletrônicas (Focus NFe) a partir desses agrupamentos — inclusive em um fluxo combinado que emite a NF-e e o boleto vinculado em uma única chamada, com rollback automático da NF-e se o boleto falhar. Também consulta o saldo em tempo real e importa extratos (BB e Sicoob), calcula frete (Google Maps), gera recomendações de compra baseadas em previsão do tempo (OpenWeather), envia notificações por e-mail (SendGrid, Gmail SMTP ou Gmail API — provedor plugável) e WhatsApp (Ultramsg), faz backup do banco de dados no Google Drive, armazena boletos/XMLs/extratos no Cloudflare R2 e alimenta o dashboard consolidado consumido pelo frontend. A autenticação usa JWT de curta duração com refresh token rotativo, e o login é protegido contra brute-force com lockout progressivo e auditoria de tentativas.
+O backend do **Hortifruti SL** é uma API REST que sustenta toda a operação administrativa e financeira do Hortifruti Santa Luzia LTDA. Ele recebe extratos bancários e notas de compra em PDF/planilha/foto, extrai e concilia as transações automaticamente, agrupa vendas por cliente em "scores combinados" e gera boletos (Sicoob) e notas fiscais eletrônicas (Focus NFe) a partir desses agrupamentos — inclusive em um fluxo combinado que emite a NF-e e o boleto vinculado em uma única chamada, com rollback automático da NF-e se o boleto falhar, e um fluxo de reconciliação que libera o agrupamento para reemissão quando uma NF-e ficou em erro/denegada/cancelada, evitando duplicidade. A captura de notas de compra por foto conta com extração via Gemini (com retry e backoff exponencial em erros 503), fila de revisão para capturas com falha, reprocessamento reaproveitando a imagem original sem exigir nova foto, e pareamento de dispositivo móvel (código de 6 dígitos + `device_token` em cookie httpOnly) para que o celular envie fotos direto para a fila, com notificação em tempo real via WebSocket quando a extração termina. Também consulta o saldo em tempo real e importa extratos (BB e Sicoob), calcula frete (Google Maps), gera recomendações de compra baseadas em previsão do tempo (OpenWeather), envia notificações por e-mail (SendGrid, Gmail SMTP ou Gmail API — provedor plugável) e WhatsApp (Ultramsg, incluindo um atendente automatizado/chatbot), faz backup do banco de dados no Google Drive, armazena boletos/XMLs/extratos no Cloudflare R2 e alimenta o dashboard consolidado consumido pelo frontend. A autenticação usa JWT de curta duração com refresh token rotativo, e o login é protegido contra brute-force com lockout progressivo e auditoria de tentativas.
 
 ---
 
@@ -83,6 +86,12 @@ A aplicação segue uma **arquitetura em camadas** (*layered architecture*), com
 | mTLS (certificados `.pfx` + `.pem`) | Autenticação mútua compartilhada entre Sicoob (boletos e extrato) e Banco do Brasil (saldo e extrato) |
 | Provedor de e-mail plugável (`EmailSender`) | `EMAIL_PROVIDER` escolhe em runtime entre SendGrid, Gmail SMTP e Gmail API (reaproveitando a autorização OAuth do backup no Drive), sem trocar código |
 | Armazenamento de objetos (S3-compatible) | `R2StorageService` grava/lê/move boletos, XMLs de NF-e e extratos no Cloudflare R2 |
+| Fila de captura de notas + reprocessamento | Fotos de notas de compra (upload direto ou via dispositivo pareado) caem numa fila de revisão (`CapturaNotaPendenteService`); capturas com erro de extração podem ser reprocessadas reaproveitando a imagem já salva no R2, sem pedir nova foto |
+| Retry com backoff exponencial | `GeminiExtractionService` reexecuta a extração em erro `503` da API do Gemini, com nº de tentativas e espera inicial configuráveis (`GEMINI_RETRY_MAX_TENTATIVAS`, `GEMINI_RETRY_ESPERA_INICIAL_MS`) |
+| Reconciliação de emissões fiscais | `POST /invoices/{combinedScoreId}/reconciliar` consulta o status real na Focus NFe e libera o agrupamento para nova emissão quando a NF-e ficou em erro/denegada/cancelada, evitando NF-e ou boleto duplicados |
+| Pareamento de dispositivo móvel | Código de uso único de 6 dígitos (TTL configurável) autentica o celular sem login completo; o `device_token` resultante trafega só em cookie `httpOnly` (nunca no corpo da resposta) e expira por inatividade prolongada |
+| Notificação em tempo real (WebSocket) | Ticket de curta duração (`POST /realtime/ws-ticket`) autentica a conexão WebSocket que avisa a fila de capturas pendentes assim que uma extração termina |
+| Migrações de schema versionadas (Flyway) | `spring-boot-starter-flyway` aplica os scripts de `resources/db/migration` (`V1`…`V15`) na subida da aplicação; convive, por ora, com `ddl-auto=update` em todos os perfis |
 
 ---
 
@@ -91,14 +100,18 @@ A aplicação segue uma **arquitetura em camadas** (*layered architecture*), com
 | Módulo (`service/…`) | Responsabilidade | Integração externa |
 |---|---|---|
 | `user` / `auth` (`config/auth`) | Cadastro e gestão de usuários (papéis: Manager, Employee); login com JWT + refresh token rotativo, lockout progressivo por conta/IP e auditoria de tentativas | — |
-| `purchase` | Clientes, compras, agrupamento de vendas (`CombinedScore`, inclusive agrupamento avulso "somente boleto") e produtos por nota | — |
+| `purchase` | Clientes, compras, agrupamento de vendas (`CombinedScore`, inclusive agrupamento avulso "somente boleto"), produtos por nota, captura de notas por foto (upload direto ou via dispositivo pareado) com fila de revisão e reprocessamento de capturas com erro | Gemini (extração) |
 | `finance` | Importação de extratos bancários (PDF, BB e Sicoob), transações, categorização, exportação (Excel/ZIP) e consulta de saldo/extrato em tempo real (`BBSaldoService`, `finance/bb`, `finance/sicoob`) | Apache PDFBox · Apache POI · Banco do Brasil (mTLS) · Sicoob (mTLS) |
 | `billet` | Geração, consulta, listagem de boletos em aberto, baixa manual (`mark-paid`), 2ª via, cancelamento por agrupamento ou por "nosso número" | Sicoob (mTLS) |
-| `invoice` | Emissão, consulta, cancelamento e armazenamento de notas fiscais eletrônicas (XML/DANFE), emissão combinada de NF-e + boleto (`IssueInvoiceWithBilletService`) e relatórios fiscais (ICMS, vendas, pagamentos) | Focus NFe |
-| `storage` | Geração de chaves de objeto e upload/download/move de arquivos (boletos, XMLs, extratos) | Cloudflare R2 (S3-compatible) |
+| `invoice` | Emissão, consulta, cancelamento e armazenamento de notas fiscais eletrônicas (XML/DANFE), emissão combinada de NF-e + boleto (`IssueInvoiceWithBilletService`), reconciliação de emissões com falha parcial (evita duplicidade) e relatórios fiscais (ICMS, vendas, pagamentos) | Focus NFe |
+| `product` (`service/product`) | Catálogo de produtos fiscais (`FiscalProduct`) usado na composição de notas fiscais | — |
+| `storage` | Geração de chaves de objeto e upload/download/move de arquivos (boletos, XMLs, extratos, fotos de notas) | Cloudflare R2 (S3-compatible) |
 | `freight` | Cálculo de distância e frete entre endereços | Google Maps Distance Matrix |
 | `climate` | Previsão do tempo e recomendações de compra de produtos sazonais | OpenWeather |
 | `notification` | Envio de e-mails (provedor plugável), mensagens de WhatsApp e notificações em massa para clientes e contabilidade | SendGrid · Gmail (SMTP/API) · Ultramsg |
+| `chatbot` | Atendente automatizado via WhatsApp, com limpeza periódica de sessões inativas (`ChatSessionCleanupService`) | Ultramsg |
+| `realtime` (`service/realtime`, `config/realtime`) | Notificação em tempo real via WebSocket para a fila de capturas de notas pendentes, autenticada por ticket de curta duração | — |
+| `device` (pareamento — `config/auth`) | Pareamento de dispositivo móvel via código de 6 dígitos, permitindo que o celular envie fotos de notas sem sessão de usuário completa | — |
 | `backup` | Autenticação OAuth2, geração de CSV e upload periódico (ou por período) de backups do banco | Google Drive |
 | `scheduler` | Monitoramento de armazenamento do banco (`DatabaseStorageService`), acionado sob demanda via `/api/notifications/test/database-storage-alert` | — |
 
@@ -115,24 +128,28 @@ Back/
 │       ├── java/com/hortifruti/sl/hortifruti/
 │       │   ├── HortifrutiSlApplication.java
 │       │   ├── controller/          # Controllers REST — cada subpasta = 1 domínio (README.md em cada uma)
-│       │   │   ├── backup/ · billet/ · climate/ · dashboard/ · finance/
-│       │   │   ├── freight/ · invoice/ · notification/ · purchase/ · user/
+│       │   │   ├── backup/ · billet/ · climate/ · dashboard/ · device/ · finance/
+│       │   │   ├── freight/ · invoice/ · notification/ · product/ · purchase/
+│       │   │   ├── realtime/ · user/
 │       │   ├── service/             # Services de domínio e integração
-│       │   │   ├── backup/ (auth/ · folders/ · oauth/) · billet/ · climate/ · dashboard/
-│       │   │   ├── finance/ (bb/ · sicoob/ · transaction/) · freight/
+│       │   │   ├── backup/ (auth/ · folders/ · oauth/) · billet/ · chatbot/ · climate/
+│       │   │   ├── dashboard/ · finance/ (bb/ · sicoob/ · transaction/) · freight/
 │       │   │   ├── invoice/ (factory/ · tax/…) · notification/ (email/ · whatsapp/)
-│       │   │   ├── purchase/ · scheduler/ · storage/ · user/
+│       │   │   ├── product/ · purchase/ · realtime/ · scheduler/ · storage/ · user/
 │       │   ├── repository/          # Repositórios Spring Data JPA
 │       │   ├── model/               # Entidades JPA + enums (Role, Status, FileStatus…)
-│       │   ├── dto/                 # DTOs de request/response, organizados por domínio
+│       │   │   └── product/         # FiscalProduct
+│       │   ├── dto/                 # DTOs de request/response, organizados por domínio (device/ · realtime/ · product/…)
 │       │   ├── mapper/              # Mappers MapStruct (entidade ⇄ DTO)
 │       │   ├── config/              # Beans gerais, segurança JWT, rate limiting, clientes HTTP, Swagger
-│       │   │   ├── auth/ · bb/ · billet/ · climate/ · email/ · freight/ · sicoob/ · ssl/ · storage/
+│       │   │   ├── auth/ · bb/ · billet/ · climate/ · email/ · freight/ · gemini/
+│       │   │   ├── realtime/ · sicoob/ · ssl/ · storage/
 │       │   ├── exception/           # Exceções de domínio + tratamento global (GlobalExceptionHandler)
 │       │   ├── util/                # Utilitários (Base64, datas, arquivos)
 │       │   └── tools/               # Ferramentas auxiliares de linha de comando/scripts internos
 │       └── resources/
 │           ├── application.properties (+ application-{local,hml,prod}.properties)
+│           ├── db/migration/        # Scripts versionados do Flyway (V1…V15)
 │           ├── products.yml         # Catálogo de produtos para recomendação climática
 │           ├── static/              # Scripts SQL auxiliares e imagens
 │           └── templates/email/     # Templates HTML dos e-mails enviados a clientes/contabilidade
@@ -178,16 +195,55 @@ Documentação interativa disponível em `http://localhost:8080/swagger-ui.html`
 | Método | Rota | Descrição |
 |---|---|---|
 | `POST` | `/purchases/process` | Upload e processamento de notas de compra (multipart) |
+| `POST` | `/purchases/manual` | Criar compra manualmente, sem upload de nota |
 | `GET` | `/purchases/client/{clientId}/ordered` | Compras paginadas de um cliente |
 | `GET` | `/purchases/{id}/products` · `/purchases/date-range` | Produtos da compra e busca por período |
+| `GET` | `/purchases/{id}/imagem` | Imagem da nota associada à compra |
+| `POST` | `/purchases/{id}/products` | Adicionar produtos a uma compra existente |
 | `DELETE` | `/purchases/{id}` | Remover compra |
 | `POST` | `/combined-scores/create` | Criar agrupamento de vendas (score combinado) |
 | `POST` | `/combined-scores/create-wildcard-billet` | Criar agrupamento avulso com produto coringa (R$1/kg), para clientes "somente boleto" |
 | `GET` | `/combined-scores` · `/combined-scores/last-per-client` | Listar agrupamentos paginados e o último agrupamento de cada cliente |
 | `GET` | `/combined-scores/{id}/grouped-products` | Listar produtos agrupados do agrupamento |
+| `GET` | `/combined-scores/{id}/imagens` · `/combined-scores/{id}/fotos/pdf` | Imagens das notas do agrupamento e PDF consolidado das fotos |
 | `PATCH` | `/combined-scores/confirm-payment/{id}` · `/cancel-payment/{id}` | Confirmar ou cancelar pagamento do agrupamento |
 | `DELETE` | `/combined-scores/{id}` | Cancelar agrupamento |
 | `PUT` / `DELETE` | `/invoice-products/{id}` | Editar ou remover produto de uma nota |
+
+### Captura de notas por foto (`/api/compras/notas`)
+
+Fluxo de extração automática de notas de compra a partir de uma foto (via Gemini), com fila de revisão para capturas que falharam na extração.
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/api/compras/notas/upload` | Upload simples da foto da nota |
+| `POST` | `/api/compras/notas/extrair` | Extração síncrona dos dados da nota via Gemini |
+| `POST` | `/api/compras/notas/capturas` | Recebe foto de um dispositivo pareado (`DEVICE_CAPTURE`) ou de um usuário autenticado; responde `202` e processa a extração em segundo plano |
+| `GET` | `/api/compras/notas/pendentes` | Listar a fila de capturas pendentes do usuário (tela do PC) |
+| `GET` | `/api/compras/notas/pendentes/{id}/imagem` | Baixar a foto original da captura pendente, para comparação lado a lado na revisão |
+| `POST` | `/api/compras/notas/pendentes/{id}/reprocessar` | Reprocessar uma captura com erro de extração, reaproveitando a imagem original (sem exigir nova foto); resultado chega por notificação em tempo real |
+| `POST` | `/api/compras/notas/pendentes/{id}/confirmar` | Confirmar os dados revisados da captura como uma compra real |
+| `POST` | `/api/compras/notas/pendentes/{id}/descartar` | Descartar uma captura pendente |
+
+### Dispositivos pareados (`/api/dispositivos`)
+
+Permite que um celular capture fotos de notas diretamente para a fila de revisão, sem uma sessão de usuário completa — autenticado por um `device_token` próprio, em cookie `httpOnly`.
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/api/dispositivos/pareamento/iniciar` | Gerar código de pareamento de 6 dígitos (usuário autenticado no PC) |
+| `POST` | `/api/dispositivos/pareamento/confirmar` | Público — celular confirma o código e recebe o `device_token` em cookie `httpOnly` |
+| `GET` | `/api/dispositivos/pareamento/status` | Público — verificar se o celular já possui um `device_token` válido |
+| `POST` | `/api/dispositivos/pareamento/desvincular` | Público — limpar o `device_token` local do celular |
+| `GET` | `/api/dispositivos/pareamento` | Listar dispositivos vinculados ao usuário |
+| `DELETE` | `/api/dispositivos/pareamento/{id}` | Revogar um dispositivo vinculado |
+
+### Tempo real e catálogo fiscal
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/realtime/ws-ticket` | Emitir ticket de curta duração para autenticar a conexão WebSocket da fila de capturas pendentes |
+| `GET` | `/fiscal-products` | Listar o catálogo de produtos fiscais usado na composição de notas fiscais |
 
 ### Boletos — Sicoob (`/billet`)
 
@@ -209,6 +265,7 @@ Documentação interativa disponível em `http://localhost:8080/swagger-ui.html`
 |---|---|---|
 | `POST` | `/invoices/issue/{combinedScoreId}` | Emitir NF-e |
 | `POST` | `/invoices/issue-with-billet/{combinedScoreId}` | Emitir NF-e e o boleto vinculado em um único fluxo (com rollback automático da NF-e em caso de falha) |
+| `POST` | `/invoices/{combinedScoreId}/reconciliar` | Consultar o status real da NF-e na Focus NFe e liberar o agrupamento para nova emissão quando ela ficou em erro/denegada/cancelada, evitando duplicidade |
 | `GET` | `/invoices/open` | Listar agrupamentos com NF-e emitida mas sem boleto vinculado, pendentes de confirmação manual |
 | `GET` | `/invoices/consulta/{ref}` | Consultar status da nota |
 | `GET` | `/invoices/{ref}/danfe` · `/invoices/{ref}/xml/download` | Baixar DANFE e XML |
@@ -387,6 +444,15 @@ GEMINI_MODEL=gemini-flash-latest
 # testes (mesma imagem, chamadas consecutivas) — 15000 (default original da spec) estoura
 # quase sempre. 60000 dá folga de verdade.
 GEMINI_TIMEOUT_MS=60000
+# Retry com backoff exponencial em erro 503 da API do Gemini.
+GEMINI_RETRY_MAX_TENTATIVAS=3
+GEMINI_RETRY_ESPERA_INICIAL_MS=2000
+
+# ── Pareamento de dispositivo (captura de notas via celular) ─
+# TTL do código de 6 dígitos usado para vincular o celular; dias de inatividade
+# até o device_token do dispositivo ser revogado automaticamente.
+DISPOSITIVO_PAREAMENTO_TTL_MINUTOS=5
+DISPOSITIVO_INATIVIDADE_MAX_DIAS=90
 ```
 
 ---
@@ -483,7 +549,9 @@ O projeto usa **Google Java Format** via **Spotless**, com atalhos prontos:
 
 | Regra | Motivação |
 |---|---|
-| `spring.jpa.hibernate.ddl-auto` definido por perfil (`application-{local,hml,prod}.properties`) | Cada ambiente controla sua própria estratégia de schema — hoje `update` em todos os perfis |
+| `spring.jpa.hibernate.ddl-auto` definido por perfil (`application-{local,hml,prod}.properties`) | Cada ambiente controla sua própria estratégia de schema — hoje `update` em todos os perfis (convivendo, por ora, com as migrations do Flyway) |
+| Migrations do Flyway (`resources/db/migration`, `baseline-on-migrate=true`) | Evolução do schema versionada e auditável; requer `spring-boot-starter-flyway` (o `flyway-core` puro não integra sozinho com `spring.flyway.*`) |
+| `device_token` de dispositivo pareado nunca trafega no corpo da resposta, só em cookie `httpOnly` | Mesma proteção contra XSS aplicada aos tokens de usuário; a authority `DEVICE_CAPTURE` não é um valor do enum `Role` — é resolvida por essa autenticação separada |
 | `open-in-view=false` | Previne sessões Hibernate abertas durante a renderização da resposta (N+1 fora da camada de serviço) |
 | Controllers nunca acessam `repository` diretamente | Toda regra de negócio passa pela camada `service` |
 | Endpoints sensíveis exigem `@PreAuthorize("hasRole('MANAGER')")` | Controle de acesso por papel centralizado na camada de segurança |
@@ -508,6 +576,8 @@ O projeto usa **Google Java Format** via **Spotless**, com atalhos prontos:
 | Documentação | Springdoc OpenAPI (Swagger UI) | 3.0.3 |
 | Mapeamento DTO | MapStruct + Lombok | 1.6.3 / 1.18.46 |
 | Variáveis de ambiente | spring-dotenv | 5.1.0 |
+| Migrations de schema | Flyway (spring-boot-starter-flyway + flyway-mysql) | — |
+| Extração de notas por foto | Google Gemini (REST, `gemini-flash-latest`) | — |
 | Rate limiting | Bucket4J (core + jcache) | 8.0.1 |
 | PDF | Apache PDFBox | 3.0.7 |
 | Planilhas | Apache POI OOXML | 5.5.1 |

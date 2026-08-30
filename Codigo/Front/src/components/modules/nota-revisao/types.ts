@@ -7,6 +7,9 @@ export interface RevisaoRow extends NumericRow {
   produtoSugerido: ProdutoSugerido | null;
   confianca: "alta" | "media" | "baixa" | null;
   code: string;
+  quantidadeKgConvertida: number | null;
+  precoPorKgConvertido: number | null;
+  conversaoEstimada: boolean | null;
 }
 
 export const CONFIANCA_BADGE: Record<"alta" | "media" | "baixa", string> = {

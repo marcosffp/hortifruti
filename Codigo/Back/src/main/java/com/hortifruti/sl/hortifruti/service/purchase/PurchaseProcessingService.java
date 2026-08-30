@@ -99,7 +99,8 @@ public class PurchaseProcessingService {
       // reconhecido como inválido — esperado), chegar aqui significa que nenhum dos casos
       // previstos capturou o problema: pode ser bug do parser, não só mudança de layout do
       // fornecedor. unexpected=true loga com stacktrace para permitir essa distinção.
-      throw new PurchaseException("Erro inesperado ao processar a compra: " + e.getMessage(), e, true);
+      throw new PurchaseException(
+          "Erro inesperado ao processar a compra: " + e.getMessage(), e, true);
     }
   }
 

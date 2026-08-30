@@ -19,6 +19,11 @@ export type ItemNotaExtraido = {
   total: number | null;
   produtoSugerido: ProdutoSugerido | null;
   confianca: "alta" | "media" | "baixa" | null;
+  // Preenchidos quando o item está em caixa (CX) e o produto sugerido tem peso de caixa
+  // cadastrado — ver ConversaoCaixaService no backend. `null` quando não converteu.
+  quantidadeKgConvertida: number | null;
+  precoPorKgConvertido: number | null;
+  conversaoEstimada: boolean | null;
 };
 
 export type NotaExtracaoResponse = {

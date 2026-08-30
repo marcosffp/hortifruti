@@ -30,5 +30,8 @@ export function itemToRow(item: ItemNotaExtraido): RevisaoRow {
     price: item.precoUnitario ?? 0,
     total: item.total ?? 0,
     lastEdited: ["quantity", "price"],
+    quantidadeKgConvertida: item.quantidadeKgConvertida,
+    precoPorKgConvertido: item.precoPorKgConvertido,
+    conversaoEstimada: item.conversaoEstimada,
   };
 }
