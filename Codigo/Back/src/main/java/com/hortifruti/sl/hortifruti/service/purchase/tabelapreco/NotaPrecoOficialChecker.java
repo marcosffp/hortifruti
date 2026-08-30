@@ -12,7 +12,6 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -77,8 +76,8 @@ public class NotaPrecoOficialChecker {
 
     List<Long> idsProdutos =
         itens.stream()
+            .filter(item -> item.getPreco() != null && item.getFiscalProductId() != null)
             .map(TabelaPrecoClienteItem::getFiscalProductId)
-            .filter(Objects::nonNull)
             .distinct()
             .toList();
 
