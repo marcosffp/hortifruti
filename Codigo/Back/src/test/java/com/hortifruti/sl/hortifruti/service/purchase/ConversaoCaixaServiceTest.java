@@ -29,7 +29,7 @@ class ConversaoCaixaServiceTest {
 
   private ItemNotaExtraido item(String unidade, BigDecimal quantidade, BigDecimal total) {
     return new ItemNotaExtraido(
-        "MACA", quantidade, unidade, null, total, null, null, null, null, null);
+        "MACA", quantidade, unidade, null, total, null, null, null, null, null, null, null);
   }
 
   private ProdutoSugerido produtoSugerido() {

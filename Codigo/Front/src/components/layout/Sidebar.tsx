@@ -13,6 +13,7 @@ import {
   Scale,
   ShoppingBasket,
   ShoppingCart,
+  Tag,
   Truck,
   Users,
 } from "lucide-react";
@@ -77,6 +78,12 @@ export const menu: MenuItem[] = [
         label: "Conversão Caixa→KG",
         icon: Scale,
         href: "/comercio/conversao-caixa",
+        roles: ["MANAGER"],
+      },
+      {
+        label: "Tabela de Preços do Cliente",
+        icon: Tag,
+        href: "/comercio/tabela-preco-cliente",
         roles: ["MANAGER"],
       },
     ],

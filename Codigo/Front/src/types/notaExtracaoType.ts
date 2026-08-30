@@ -24,6 +24,12 @@ export type ItemNotaExtraido = {
   quantidadeKgConvertida: number | null;
   precoPorKgConvertido: number | null;
   conversaoEstimada: boolean | null;
+  // Cross-check contra a tabela de preços do cliente (ver NotaPrecoOficialChecker no backend) —
+  // `null` quando não há tabela CONFIRMADA cobrindo a data da nota, ou o cliente/produto ainda
+  // não foi identificado. Só informativo aqui: o preço de fato persistido é sobrescrito de novo,
+  // server-side, na confirmação da compra — nunca confie só nisso pra saber o preço final.
+  precoOficialTabela: number | null;
+  divergenciaPreco: boolean | null;
 };
 
 export type NotaExtracaoResponse = {
@@ -35,4 +41,6 @@ export type NotaExtracaoResponse = {
   itensParaConferir: string[];
   clienteSugerido: ClienteSugerido | null;
   clienteConfianca: "alta" | "media" | "baixa" | null;
+  itensComDivergenciaPreco: string[];
+  semTabelaPrecoParaCompetencia: boolean | null;
 };

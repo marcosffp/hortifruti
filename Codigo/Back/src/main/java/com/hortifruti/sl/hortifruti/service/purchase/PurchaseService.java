@@ -16,13 +16,17 @@ import com.hortifruti.sl.hortifruti.repository.product.FiscalProductRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.InvoiceProductRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
+import com.hortifruti.sl.hortifruti.service.purchase.tabelapreco.NotaPrecoOficialChecker;
 import com.hortifruti.sl.hortifruti.service.storage.R2StorageService;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class PurchaseService {
@@ -42,6 +47,7 @@ public class PurchaseService {
   private final InvoiceProductRepository invoiceProductRepository;
   private final FiscalProductRepository fiscalProductRepository;
   private final R2StorageService r2StorageService;
+  private final NotaPrecoOficialChecker notaPrecoOficialChecker;
 
   @Transactional
   public Purchase processPurchaseFile(MultipartFile file) throws IOException {
@@ -97,7 +103,9 @@ public class PurchaseService {
               .code(fiscalProduct.getCode())
               .name(fiscalProduct.getDescription())
               .unitType(fiscalProduct.getUnidadeComercial())
-              .price(item.price())
+              .price(
+                  precoOficialOuInformado(
+                      client.getId(), request.purchaseDate(), fiscalProduct, item.price()))
               .quantity(item.quantity())
               .build());
     }
@@ -133,6 +141,36 @@ public class PurchaseService {
     clientRepository.save(client);
 
     return purchase;
+  }
+
+  /**
+   * Sobrescreve o preço informado (digitado manualmente ou vindo da revisão de uma nota capturada)
+   * pelo preço oficial da {@code TabelaPrecoCliente CONFIRMADA} do cliente pra esse produto/data,
+   * quando existir — este é o ponto de aplicação real de "a tabela é autoritativa" (não só uma
+   * sinalização de tela): mesmo que o revisor não tenha visto/aplicado o alerta de divergência na
+   * extração ({@code GeminiExtractionService#aplicarPrecoOficial}), o preço persistido aqui nunca
+   * diverge da tabela confirmada. Sem tabela confirmada pro período (ou cliente sem tabela
+   * nenhuma), o preço informado é usado como está — nunca inventa preço.
+   */
+  private BigDecimal precoOficialOuInformado(
+      Long clientId,
+      LocalDate purchaseDate,
+      FiscalProduct fiscalProduct,
+      BigDecimal precoInformado) {
+    Optional<BigDecimal> precoOficial =
+        notaPrecoOficialChecker.precoOficial(clientId, purchaseDate, fiscalProduct.getId());
+    if (precoOficial.isEmpty() || precoOficial.get().compareTo(precoInformado) == 0) {
+      return precoInformado;
+    }
+
+    log.warn(
+        "Preço divergente da tabela oficial sobrescrito na confirmação da compra: clientId={},"
+            + " produto={}, precoInformado={}, precoOficial={}",
+        clientId,
+        fiscalProduct.getCode(),
+        precoInformado,
+        precoOficial.get());
+    return precoOficial.get();
   }
 
   @Transactional

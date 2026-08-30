@@ -8,8 +8,13 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hortifruti.sl.hortifruti.dto.purchase.ItemNotaExtraido;
 import com.hortifruti.sl.hortifruti.dto.purchase.NotaExtracaoResponse;
+import com.hortifruti.sl.hortifruti.dto.purchase.ProdutoSugerido;
 import com.hortifruti.sl.hortifruti.exception.purchase.GeminiExtractionException;
+import com.hortifruti.sl.hortifruti.service.purchase.tabelapreco.NotaPrecoOficialChecker;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -71,10 +76,18 @@ public class GeminiExtractionService {
   private static final int DATA_MAX_LENGTH = 30;
   private static final int UNIDADE_MAX_LENGTH = 20;
 
+  // Formatos explícitos que a OCR pode produzir pra data manuscrita — qualquer coisa fora disso
+  // (data parcial, ilegível, formato inesperado) fica sem parse em vez de arriscar interpretar
+  // errado, ver #parseDataNotaOuNull.
+  private static final DateTimeFormatter[] FORMATOS_DATA_NOTA = {
+    DateTimeFormatter.ofPattern("dd/MM/yyyy"), DateTimeFormatter.ofPattern("dd/MM/yy")
+  };
+
   private final NotaUploadService notaUploadService;
   private final ProdutoMatchingService produtoMatchingService;
   private final ClienteMatchingService clienteMatchingService;
   private final ConversaoCaixaService conversaoCaixaService;
+  private final NotaPrecoOficialChecker notaPrecoOficialChecker;
   private final ObjectMapper objectMapper;
 
   @Qualifier("geminiRestTemplate")
@@ -346,8 +359,16 @@ public class GeminiExtractionService {
    * valor pra conferir primeiro quando não bate.
    */
   private NotaExtracaoResponse enriquecerNota(NotaExtracaoResponse raw) {
+    // Roda antes do loop de itens (diferente da ordem original) porque o cross-check de preço de
+    // cada item precisa do cliente já identificado — ver #aplicarPrecoOficial.
+    ClienteMatchingService.Resultado clienteResultado =
+        clienteMatchingService.buscarMelhorCandidato(raw.cliente());
+    Long clienteId =
+        clienteResultado.clienteSugerido() == null ? null : clienteResultado.clienteSugerido().id();
+    LocalDate dataNota = parseDataNotaOuNull(raw.data());
+
     List<ItemNotaExtraido> itensEnriquecidos =
-        raw.itens().stream().map(this::enriquecerItem).toList();
+        raw.itens().stream().map(item -> enriquecerItem(item, clienteId, dataNota)).toList();
 
     BigDecimal totalCalculado = NotaConsistenciaChecker.somaItens(itensEnriquecidos);
     Boolean consistente =
@@ -360,8 +381,19 @@ public class GeminiExtractionService {
             ? NotaConsistenciaChecker.itensParaConferir(itensEnriquecidos, margemConsistencia)
             : List.of();
 
-    ClienteMatchingService.Resultado clienteResultado =
-        clienteMatchingService.buscarMelhorCandidato(raw.cliente());
+    List<String> itensComDivergenciaPreco =
+        itensEnriquecidos.stream()
+            .filter(item -> Boolean.TRUE.equals(item.divergenciaPreco()))
+            .map(ItemNotaExtraido::produtoLido)
+            .distinct()
+            .toList();
+
+    // null quando não dá pra julgar ainda (cliente não identificado ou data não reconhecida) —
+    // diferente de false, que afirmaria "tem tabela" sem realmente saber.
+    Boolean semTabelaPrecoParaCompetencia =
+        clienteId == null || dataNota == null
+            ? null
+            : !notaPrecoOficialChecker.existeTabelaConfirmadaParaData(clienteId, dataNota);
 
     return new NotaExtracaoResponse(
         raw.cliente(),
@@ -371,10 +403,13 @@ public class GeminiExtractionService {
         consistente,
         itensParaConferir,
         clienteResultado.clienteSugerido(),
-        clienteResultado.confianca());
+        clienteResultado.confianca(),
+        itensComDivergenciaPreco,
+        semTabelaPrecoParaCompetencia);
   }
 
-  private ItemNotaExtraido enriquecerItem(ItemNotaExtraido item) {
+  private ItemNotaExtraido enriquecerItem(
+      ItemNotaExtraido item, Long clienteId, LocalDate dataNota) {
     ProdutoMatchingService.Resultado resultado =
         produtoMatchingService.buscarMelhorCandidato(
             item.produtoLido(), item.unidade(), item.quantidade());
@@ -402,6 +437,58 @@ public class GeminiExtractionService {
       }
     }
 
-    return enriquecido;
+    return aplicarPrecoOficial(enriquecido, clienteId, dataNota, resultado.produtoSugerido());
+  }
+
+  /**
+   * Cross-check só informativo aqui, pra sinalizar divergência na tela de revisão — o preço de fato
+   * persistido é recalculado/sobrescrito de novo, server-side, na confirmação da compra ({@code
+   * PurchaseService#createManualPurchase}), que é o ponto de aplicação real da regra "a tabela é
+   * autoritativa" (o cliente sugerido aqui ainda não foi confirmado por humano, e a conversão
+   * caixa→kg pode mudar o preço unitário efetivo). Usa o preço já convertido quando aplicável,
+   * senão o preço unitário lido.
+   */
+  private ItemNotaExtraido aplicarPrecoOficial(
+      ItemNotaExtraido item, Long clienteId, LocalDate dataNota, ProdutoSugerido produtoSugerido) {
+    if (clienteId == null || dataNota == null || produtoSugerido == null) {
+      return item;
+    }
+
+    Optional<BigDecimal> precoOficial =
+        notaPrecoOficialChecker.precoOficial(clienteId, dataNota, produtoSugerido.id());
+    if (precoOficial.isEmpty()) {
+      return item;
+    }
+
+    BigDecimal precoLido =
+        item.precoPorKgConvertido() != null ? item.precoPorKgConvertido() : item.precoUnitario();
+    Boolean divergencia =
+        precoLido == null
+            ? null
+            : precoLido.subtract(precoOficial.get()).abs().compareTo(margemConsistencia) > 0;
+
+    return item.comPrecoOficialTabela(precoOficial.get(), divergencia);
+  }
+
+  /**
+   * {@code data} vem de OCR de nota manuscrita, formato livre — tenta só os formatos explícitos
+   * mais comuns; qualquer coisa fora disso (data parcial, ilegível, formato inesperado) retorna
+   * {@code null} em vez de arriscar interpretar errado. Sem data confiável, o cross-check de preço
+   * na revisão simplesmente não roda — o enforcement real acontece na confirmação da compra, já com
+   * a data validada como {@link LocalDate} pelo revisor.
+   */
+  private LocalDate parseDataNotaOuNull(String data) {
+    if (data == null || data.isBlank()) {
+      return null;
+    }
+    String limpa = data.trim();
+    for (DateTimeFormatter formato : FORMATOS_DATA_NOTA) {
+      try {
+        return LocalDate.parse(limpa, formato);
+      } catch (DateTimeParseException e) {
+        // tenta o próximo formato
+      }
+    }
+    return null;
   }
 }

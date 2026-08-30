@@ -10,6 +10,9 @@ export interface RevisaoRow extends NumericRow {
   quantidadeKgConvertida: number | null;
   precoPorKgConvertido: number | null;
   conversaoEstimada: boolean | null;
+  precoLidoOriginal: number | null;
+  precoOficialTabela: number | null;
+  divergenciaPreco: boolean | null;
 }
 
 export const CONFIANCA_BADGE: Record<"alta" | "media" | "baixa", string> = {

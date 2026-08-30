@@ -27,6 +27,17 @@ export function itemToRow(item: ItemNotaExtraido): RevisaoRow {
   const quantidadeKgConvertida =
     item.conversaoEstimada === true ? item.quantidadeKgConvertida : null;
 
+  const precoLido =
+    quantidadeKgConvertida != null
+      ? (item.precoPorKgConvertido ?? 0)
+      : (item.precoUnitario ?? 0);
+
+  // Quando existe preço oficial confirmado pra esse produto/cliente/competência, o campo editável
+  // já nasce com ele (a tabela é autoritativa — ver NotaPrecoOficialChecker), não com o preço lido
+  // na nota; o preço lido some do campo mas fica guardado em `precoLidoOriginal` pra anotação
+  // visual (NotaDivergenciaPrecoAlert/NotaItemRow), pra não esconder o que a IA leu de fato.
+  const price = item.precoOficialTabela ?? precoLido;
+
   return {
     produtoLido: item.produtoLido,
     unidadeLida: item.unidade,
@@ -34,14 +45,14 @@ export function itemToRow(item: ItemNotaExtraido): RevisaoRow {
     confianca: item.confianca,
     code: item.produtoSugerido?.codigo ?? "",
     quantity: quantidadeKgConvertida ?? item.quantidade ?? 0,
-    price:
-      quantidadeKgConvertida != null
-        ? (item.precoPorKgConvertido ?? 0)
-        : (item.precoUnitario ?? 0),
+    price,
     total: item.total ?? 0,
     lastEdited: ["quantity", "price"],
     quantidadeKgConvertida: item.quantidadeKgConvertida,
     precoPorKgConvertido: item.precoPorKgConvertido,
     conversaoEstimada: item.conversaoEstimada,
+    precoLidoOriginal: item.precoOficialTabela != null ? precoLido : null,
+    precoOficialTabela: item.precoOficialTabela,
+    divergenciaPreco: item.divergenciaPreco,
   };
 }

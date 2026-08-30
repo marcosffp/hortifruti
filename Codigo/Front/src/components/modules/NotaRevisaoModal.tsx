@@ -7,6 +7,7 @@ import {
   parseDataLidaParaIso,
 } from "@/components/modules/nota-revisao/helpers";
 import NotaClienteDataFields from "@/components/modules/nota-revisao/NotaClienteDataFields";
+import NotaDivergenciaPrecoAlert from "@/components/modules/nota-revisao/NotaDivergenciaPrecoAlert";
 import NotaImagePanel from "@/components/modules/nota-revisao/NotaImagePanel";
 import NotaInconsistenciaAlert from "@/components/modules/nota-revisao/NotaInconsistenciaAlert";
 import NotaItensList from "@/components/modules/nota-revisao/NotaItensList";
@@ -167,6 +168,13 @@ export default function NotaRevisaoModal({
                 itensParaConferir={extraction.itensParaConferir}
               />
             )}
+
+            <NotaDivergenciaPrecoAlert
+              itensComDivergenciaPreco={extraction.itensComDivergenciaPreco}
+              semTabelaPrecoParaCompetencia={
+                extraction.semTabelaPrecoParaCompetencia
+              }
+            />
 
             <NotaClienteDataFields
               clients={clients}

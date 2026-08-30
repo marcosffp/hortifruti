@@ -3,12 +3,9 @@ package com.hortifruti.sl.hortifruti.service.purchase;
 import com.hortifruti.sl.hortifruti.dto.purchase.ClienteSugerido;
 import com.hortifruti.sl.hortifruti.model.purchase.Client;
 import com.hortifruti.sl.hortifruti.repository.purchase.ClientRepository;
-import java.text.Normalizer;
+import com.hortifruti.sl.hortifruti.util.FuzzyTextMatchUtils;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,10 +22,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ClienteMatchingService {
 
-  private static final Pattern NON_ALNUM = Pattern.compile("[^a-z0-9]+");
-  private static final Pattern DIACRITICS = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
-
-  private static final double FUZZY_TOKEN_RATIO_LIMIT = 0.34;
+  private static final double FUZZY_TOKEN_RATIO_LIMIT =
+      FuzzyTextMatchUtils.FUZZY_TOKEN_RATIO_LIMIT_PADRAO;
   private static final double COBERTURA_TOKEN_TETO = 0.9;
   private static final int SUBSTRING_TAMANHO_MINIMO = 3;
 
@@ -116,70 +111,18 @@ public class ClienteMatchingService {
   }
 
   private boolean temCorrespondenciaFuzzy(String token, Set<String> candidatos) {
-    return candidatos.stream().anyMatch(candidato -> tokensEquivalentes(token, candidato));
-  }
-
-  private boolean tokensEquivalentes(String a, String b) {
-    if (a.equals(b)) {
-      return true;
-    }
-    if (a.length() >= 3 && b.length() >= 3 && (a.startsWith(b) || b.startsWith(a))) {
-      return true;
-    }
-    return levenshteinRatio(a, b) <= FUZZY_TOKEN_RATIO_LIMIT;
+    return FuzzyTextMatchUtils.temCorrespondenciaFuzzy(token, candidatos, FUZZY_TOKEN_RATIO_LIMIT);
   }
 
   private String normalize(String text) {
-    String semAcento =
-        DIACRITICS.matcher(Normalizer.normalize(text, Normalizer.Form.NFD)).replaceAll("");
-    return semAcento.toLowerCase(Locale.ROOT).trim();
+    return FuzzyTextMatchUtils.normalize(text);
   }
 
   private Set<String> tokenize(String normalized) {
-    return NON_ALNUM
-        .splitAsStream(normalized)
-        .filter(t -> !t.isBlank())
-        .collect(Collectors.toSet());
-  }
-
-  private int levenshtein(String a, String b) {
-    int m = a.length();
-    int n = b.length();
-    if (m == 0) {
-      return n;
-    }
-    if (n == 0) {
-      return m;
-    }
-
-    int[] dp = new int[n + 1];
-    for (int j = 0; j <= n; j++) {
-      dp[j] = j;
-    }
-    for (int i = 1; i <= m; i++) {
-      int prev = dp[0];
-      dp[0] = i;
-      for (int j = 1; j <= n; j++) {
-        int temp = dp[j];
-        dp[j] =
-            a.charAt(i - 1) == b.charAt(j - 1)
-                ? prev
-                : 1 + Math.min(prev, Math.min(dp[j], dp[j - 1]));
-        prev = temp;
-      }
-    }
-    return dp[n];
-  }
-
-  private double levenshteinRatio(String a, String b) {
-    int maxLen = Math.max(a.length(), b.length());
-    if (maxLen == 0) {
-      return 0;
-    }
-    return (double) levenshtein(a, b) / maxLen;
+    return FuzzyTextMatchUtils.tokenize(normalized);
   }
 
   private double round(double value) {
-    return Math.round(value * 100) / 100.0;
+    return FuzzyTextMatchUtils.round(value);
   }
 }

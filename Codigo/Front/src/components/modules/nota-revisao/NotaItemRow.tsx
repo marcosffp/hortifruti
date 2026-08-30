@@ -49,6 +49,23 @@ export default function NotaItemRow({
             ⚠ qtd × preço ≠ total
           </span>
         )}
+        {row.precoLidoOriginal != null && (
+          <span
+            className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase ${
+              row.divergenciaPreco
+                ? "bg-orange-100 text-orange-800"
+                : "bg-gray-100 text-gray-600"
+            }`}
+            title="Preço aplicado vem da tabela de preços confirmada do cliente, não do que foi lido na nota"
+          >
+            lido: R${" "}
+            {row.precoLidoOriginal.toLocaleString("pt-BR", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}{" "}
+            — tabela aplicada
+          </span>
+        )}
         {row.conversaoEstimada && row.quantidadeKgConvertida != null && (
           <span
             className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-blue-100 text-blue-800"
