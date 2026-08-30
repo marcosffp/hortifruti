@@ -22,7 +22,7 @@ import type { NotaExtracaoResponse } from "@/types/notaExtracaoType";
 import type { FiscalProductType } from "@/types/purchaseType";
 import { todaySaoPaulo } from "@/utils/dateUtils";
 import type { NumericField } from "@/utils/numericRow";
-import { recalcNumericRow } from "@/utils/numericRow";
+import { recalcNumericRow, round } from "@/utils/numericRow";
 import { showError, showSuccess } from "@/utils/toastUtils";
 
 interface NotaRevisaoModalProps {
@@ -64,9 +64,12 @@ export default function NotaRevisaoModal({
     extraction.itens.map(itemToRow),
   );
   const [confirmando, setConfirmando] = useState(false);
+  const [precosVigentes, setPrecosVigentes] = useState<Record<string, number>>(
+    {},
+  );
   const { getFiscalProducts } = useFiscalProduct();
   const { getAllClientsForSelection } = useClient();
-  const { confirmar } = useCapturaNota();
+  const { confirmar, buscarPrecosVigentes } = useCapturaNota();
 
   useEffect(() => {
     getFiscalProducts()
@@ -89,9 +92,53 @@ export default function NotaRevisaoModal({
     setClienteNome(nome);
   };
 
+  // Assim que o cliente (selecionado/corrigido no autocomplete) e a data resolvem pra uma tabela de
+  // preços confirmada, busca os preços por produto e já aplica nas linhas cujo produto bater — a
+  // extração só aplica isso uma vez, com o cliente sugerido pelo Gemini, e não reprocessa se o
+  // usuário trocar o cliente aqui na revisão.
+  useEffect(() => {
+    if (clienteId === null) {
+      setPrecosVigentes({});
+      return;
+    }
+
+    let cancelado = false;
+    buscarPrecosVigentes(clienteId, purchaseDate)
+      .then((precos) => {
+        if (cancelado) return;
+        setPrecosVigentes(precos);
+        setRows((prev) =>
+          prev.map((row) => {
+            const precoTabela = row.code ? precos[row.code] : undefined;
+            if (precoTabela == null || precoTabela === row.price) return row;
+            return {
+              ...row,
+              price: precoTabela,
+              total: round(row.quantity * precoTabela, 2),
+            };
+          }),
+        );
+      })
+      .catch((error) => console.error(error));
+
+    return () => {
+      cancelado = true;
+    };
+  }, [clienteId, purchaseDate, buscarPrecosVigentes]);
+
   const updateRowCode = (index: number, code: string) => {
     setRows((prev) =>
-      prev.map((row, i) => (i === index ? { ...row, code } : row)),
+      prev.map((row, i) => {
+        if (i !== index) return row;
+        const precoTabela = precosVigentes[code];
+        if (precoTabela == null) return { ...row, code };
+        return {
+          ...row,
+          code,
+          price: precoTabela,
+          total: round(row.quantity * precoTabela, 2),
+        };
+      }),
     );
   };
 

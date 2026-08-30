@@ -120,6 +120,31 @@ export const capturaNotaService = {
     }
   },
 
+  /**
+   * Preços oficiais confirmados do cliente pra essa data, indexados pelo código do produto no
+   * catálogo (`FiscalProduct.code`) — usado na revisão pra sincronizar o preço de uma linha assim
+   * que o cliente ou o produto do item é escolhido/corrigido manualmente na tela.
+   */
+  async buscarPrecosVigentes(
+    clienteId: number,
+    data: string,
+  ): Promise<Record<string, number>> {
+    const params = new URLSearchParams({ clienteId: String(clienteId), data });
+    const response = await fetch(
+      `${API_BASE_URL}/api/compras/notas/tabela-preco-vigente?${params.toString()}`,
+      { credentials: "include" },
+    );
+    if (!response.ok) {
+      throw new Error(
+        await extrairMensagemErro(
+          response,
+          "Falha ao buscar a tabela de preços do cliente.",
+        ),
+      );
+    }
+    return await response.json();
+  },
+
   async confirmar(
     capturaId: number,
     payload: ConfirmarCapturaRequest,

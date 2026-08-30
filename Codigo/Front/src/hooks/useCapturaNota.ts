@@ -50,12 +50,19 @@ export function useCapturaNota() {
     [run],
   );
 
+  const buscarPrecosVigentes = useCallback(
+    (clienteId: number, data: string) =>
+      capturaNotaService.buscarPrecosVigentes(clienteId, data),
+    [],
+  );
+
   return {
     fetchPendentes,
     fetchImagem,
     descartar,
     reprocessar,
     confirmar,
+    buscarPrecosVigentes,
     isLoading,
     error,
   };

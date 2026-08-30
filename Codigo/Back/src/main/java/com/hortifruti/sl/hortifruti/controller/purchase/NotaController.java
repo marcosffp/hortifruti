@@ -10,9 +10,14 @@ import com.hortifruti.sl.hortifruti.model.User;
 import com.hortifruti.sl.hortifruti.service.purchase.CapturaNotaPendenteService;
 import com.hortifruti.sl.hortifruti.service.purchase.GeminiExtractionService;
 import com.hortifruti.sl.hortifruti.service.purchase.NotaUploadService;
+import com.hortifruti.sl.hortifruti.service.purchase.tabelapreco.NotaPrecoOficialChecker;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +40,7 @@ public class NotaController {
   private final NotaUploadService notaUploadService;
   private final GeminiExtractionService geminiExtractionService;
   private final CapturaNotaPendenteService capturaNotaPendenteService;
+  private final NotaPrecoOficialChecker notaPrecoOficialChecker;
 
   @PreAuthorize("hasAnyRole('MANAGER', 'EMPLOYEE')")
   @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -105,6 +111,21 @@ public class NotaController {
       @PathVariable Long id, @Valid @RequestBody ManualPurchaseRequest request) {
     return ResponseEntity.ok(
         capturaNotaPendenteService.confirmarComoCompra(id, usuarioAutenticadoId(), request));
+  }
+
+  /**
+   * Preços oficiais confirmados do cliente pra essa data, por código de produto do catálogo — a
+   * extração já aplica isso uma vez com o cliente sugerido pelo Gemini, mas não reprocessa a nota
+   * inteira se o usuário trocar o cliente ou o produto de uma linha na tela de revisão; o front usa
+   * esse endpoint pra sincronizar o preço nesses casos.
+   */
+  @PreAuthorize("hasAnyRole('MANAGER', 'EMPLOYEE')")
+  @GetMapping("/tabela-preco-vigente")
+  public ResponseEntity<Map<String, BigDecimal>> tabelaPrecoVigente(
+      @RequestParam Long clienteId,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data) {
+    return ResponseEntity.ok(
+        notaPrecoOficialChecker.precosVigentesPorCodigoProduto(clienteId, data));
   }
 
   /** Foto original da captura, pra tela de revisão comparar lado a lado com a extração. */
