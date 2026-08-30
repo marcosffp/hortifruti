@@ -20,14 +20,24 @@ export function itemBate(row: RevisaoRow): boolean {
 }
 
 export function itemToRow(item: ItemNotaExtraido): RevisaoRow {
+  // Quando o item veio em caixa e o backend já converteu pra kg (ConversaoCaixaService), os campos
+  // editáveis devem nascer com o valor convertido — é isso que realmente vai ser lançado na compra
+  // (o produto do catálogo é vendido em kg, não em caixa) — em vez da quantidade de caixas lida e
+  // um preço unitário que o Gemini nem preencheu (preço da nota ali é da caixa, não do kg).
+  const quantidadeKgConvertida =
+    item.conversaoEstimada === true ? item.quantidadeKgConvertida : null;
+
   return {
     produtoLido: item.produtoLido,
     unidadeLida: item.unidade,
     produtoSugerido: item.produtoSugerido,
     confianca: item.confianca,
     code: item.produtoSugerido?.codigo ?? "",
-    quantity: item.quantidade ?? 0,
-    price: item.precoUnitario ?? 0,
+    quantity: quantidadeKgConvertida ?? item.quantidade ?? 0,
+    price:
+      quantidadeKgConvertida != null
+        ? (item.precoPorKgConvertido ?? 0)
+        : (item.precoUnitario ?? 0),
     total: item.total ?? 0,
     lastEdited: ["quantity", "price"],
     quantidadeKgConvertida: item.quantidadeKgConvertida,
