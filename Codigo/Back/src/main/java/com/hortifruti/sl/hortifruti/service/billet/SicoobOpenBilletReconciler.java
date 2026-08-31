@@ -113,7 +113,7 @@ public class SicoobOpenBilletReconciler {
             cs.getId(),
             sicoobBillet.situacaoBoleto(),
             resolvedStatus);
-        combinedScoreService.updateStatus(cs.getId(), resolvedStatus);
+        combinedScoreService.updateStatusFromBilletReconciliation(cs.getId(), resolvedStatus);
         if (resolvedStatus == Status.CANCELADO_BOLETO) {
           billetFileStorageService.cancelBilletFileAfterCommit(cs.getId());
         }

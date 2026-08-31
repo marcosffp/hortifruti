@@ -8,6 +8,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -49,4 +50,15 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
   List<Purchase> findByCombinedScoreIdAndImagemR2KeyIsNotNull(Long combinedScoreId);
 
   boolean existsByImagemR2Key(String imagemR2Key);
+
+  /**
+   * Desvincula todas as compras de um agrupamento excluído (ver {@code
+   * CombinedScoreCancellationService#hardDeleteLocally}) — sem isso, {@code combinedScoreId}
+   * ficava apontando para um {@code CombinedScore} que não existe mais (não há FK real no banco
+   * para impedir isso) e essas compras nunca mais eram reconhecidas como "livres" para um novo
+   * agrupamento.
+   */
+  @Modifying
+  @Query("UPDATE Purchase p SET p.combinedScoreId = NULL WHERE p.combinedScoreId = :combinedScoreId")
+  void clearCombinedScoreId(@Param("combinedScoreId") Long combinedScoreId);
 }

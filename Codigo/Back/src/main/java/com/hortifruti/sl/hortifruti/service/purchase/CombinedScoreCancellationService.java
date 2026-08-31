@@ -9,6 +9,7 @@ import com.hortifruti.sl.hortifruti.model.purchase.Status;
 import com.hortifruti.sl.hortifruti.repository.billet.BilletFileRepository;
 import com.hortifruti.sl.hortifruti.repository.invoice.FiscalNoteXmlStorageRepository;
 import com.hortifruti.sl.hortifruti.repository.purchase.CombinedScoreRepository;
+import com.hortifruti.sl.hortifruti.repository.purchase.PurchaseRepository;
 import com.hortifruti.sl.hortifruti.service.billet.BilletService;
 import com.hortifruti.sl.hortifruti.service.invoice.InvoiceCancelService;
 import com.hortifruti.sl.hortifruti.service.invoice.InvoiceService;
@@ -44,6 +45,7 @@ public class CombinedScoreCancellationService {
   private final BilletService billetService;
   private final BilletFileRepository billetFileRepository;
   private final FiscalNoteXmlStorageRepository fiscalNoteXmlStorageRepository;
+  private final PurchaseRepository purchaseRepository;
   private final R2StorageService r2StorageService;
 
   public void cancelGrouping(Long id) {
@@ -126,6 +128,12 @@ public class CombinedScoreCancellationService {
 
     deleteBilletFiles(id);
     deleteFiscalNoteXml(combinedScore.getInvoiceRef());
+
+    // Desvincula as compras de origem antes de apagar o agrupamento — combinedScoreId não é uma
+    // FK real (ver convenção do projeto), então sem isso essas compras ficariam com o campo
+    // apontando pra um ID que não existe mais, sem nenhuma forma de saber depois que estão livres
+    // pra um novo agrupamento (ver PurchaseRepository#clearCombinedScoreId).
+    purchaseRepository.clearCombinedScoreId(id);
 
     combinedScoreRepository.delete(combinedScore);
   }

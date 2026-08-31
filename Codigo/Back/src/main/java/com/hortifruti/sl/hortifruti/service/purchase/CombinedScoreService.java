@@ -88,6 +88,23 @@ public class CombinedScoreService {
           "Nenhuma compra encontrada para o cliente no período especificado.");
     }
 
+    // combinedScoreId só fica não-nulo enquanto a compra pertence a um agrupamento ainda ativo —
+    // um agrupamento cancelado/excluído limpa esse campo (ver
+    // CombinedScoreCancellationService#hardDeleteLocally). Sem esta checagem, a mesma compra podia
+    // entrar em dois agrupamentos diferentes (ex.: períodos sobrepostos, duplo clique), contando a
+    // mesma receita duas vezes.
+    List<Long> purchasesJaAgrupadas =
+        purchases.stream()
+            .filter(purchase -> purchase.getCombinedScoreId() != null)
+            .map(Purchase::getId)
+            .toList();
+    if (!purchasesJaAgrupadas.isEmpty()) {
+      throw new PurchaseException(
+          "Não é possível criar o agrupamento: as compras "
+              + purchasesJaAgrupadas
+              + " já pertencem a outro agrupamento no período especificado.");
+    }
+
     List<GroupedProduct> groupedProducts =
         productGrouper.groupProducts(purchases, !client.isVariablePrice());
 
@@ -423,6 +440,12 @@ public class CombinedScoreService {
   /**
    * Atualiza o status de um agrupamento. Ponto único de escrita de status usado por outros domínios
    * (ex: billet) para não precisarem acessar {@link CombinedScoreRepository} diretamente.
+   *
+   * <p><b>Não sincroniza {@code hasBillet}/{@code hasInvoice}</b> — use {@link
+   * #updateStatusFromBilletReconciliation} quando o status resultante depender da situação do
+   * boleto no Sicoob (ex.: boleto baixado/cancelado fora do fluxo local de cancelamento), senão o
+   * agrupamento fica com o status indicando documento cancelado mas o booleano ainda marcado como
+   * ativo.
    */
   @Transactional
   public CombinedScore updateStatus(Long id, Status status) {
@@ -433,6 +456,31 @@ public class CombinedScoreService {
                 () ->
                     new CombinedScoreException("Agrupamento com o ID " + id + " não encontrado."));
     combinedScore.setStatus(status);
+    return combinedScoreRepository.save(combinedScore);
+  }
+
+  /**
+   * Mesmo efeito de {@link #updateStatus}, mas usado especificamente pela reconciliação automática
+   * com o Sicoob ({@code SicoobOpenBilletReconciler}), que descobre pelo boleto (não por uma ação
+   * local de cancelamento) que o agrupamento não está mais em aberto. Quando o status resultante é
+   * {@code CANCELADO_BOLETO}, zera {@code hasBillet} junto — o mesmo efeito que {@link
+   * #updateStatusAfterBilletCancellation} já garante pro cancelamento manual. Sem isso, o
+   * agrupamento ficava com o boleto marcado como cancelado no status mas ainda "ativo" em {@code
+   * hasBillet}, levando {@code CombinedScoreCancellationService#cancelGrouping} a tentar cancelar de
+   * novo no Sicoob um boleto que já tinha sido baixado.
+   */
+  @Transactional
+  public CombinedScore updateStatusFromBilletReconciliation(Long id, Status status) {
+    CombinedScore combinedScore =
+        combinedScoreRepository
+            .findById(id)
+            .orElseThrow(
+                () ->
+                    new CombinedScoreException("Agrupamento com o ID " + id + " não encontrado."));
+    combinedScore.setStatus(status);
+    if (status == Status.CANCELADO_BOLETO) {
+      combinedScore.setHasBillet(false);
+    }
     return combinedScoreRepository.save(combinedScore);
   }
 
