@@ -111,9 +111,12 @@ public class SecurityFilter extends OncePerRequestFilter {
         }
       }
     } catch (TokenException e) {
+      // 401, não 403: token ausente/inválido/expirado é "não autenticado", não "sem permissão" —
+      // ver o porquê em TokenException.getHttpStatus(). É o sinal que o cliente usa pra saber que
+      // vale a pena tentar POST /auth/refresh antes de desistir e mandar pro login.
       log.warn("Erro no filtro de segurança para {}: {}", request.getRequestURI(), e.getMessage());
-      response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-      response.getWriter().write("{\"erro\": \"Acesso negado: Token inválido ou expirado\"}");
+      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+      response.getWriter().write("{\"erro\": \"Sessão expirada ou token inválido\"}");
       return;
     } catch (Exception e) {
       // Diferente de TokenException acima: aqui o problema não é o token em si, e sim algo que

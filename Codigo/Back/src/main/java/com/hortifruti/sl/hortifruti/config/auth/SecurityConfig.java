@@ -41,6 +41,9 @@ public class SecurityConfig {
    * <ul>
    *   <li>{@code /auth/**} (login/refresh/logout/me), {@code /swagger-ui/**}/{@code
    *       /v3/api-docs/**} (docs, desabilitadas em prod — ver application-prod.properties), {@code
+   *       /actuator/health} (healthcheck do Railway — ver railway.json; quem chama é o próprio
+   *       orquestrador, sem cookie de sessão, e o endpoint só expõe UP/DOWN, sem detalhe algum, ver
+   *       {@code management.endpoint.health.show-details=never} em application.properties), {@code
    *       /backup/oauth2callback} (callback do Google) e {@code
    *       /api/dispositivos/pareamento/confirmar}/{@code status}/{@code desvincular} (o celular
    *       ainda não tem cookie de sessão/JWT nesse momento — a segurança de {@code confirmar} é o
@@ -88,6 +91,7 @@ public class SecurityConfig {
                             "/auth/me",
                             "/swagger-ui/**",
                             "/v3/api-docs/**",
+                            "/actuator/health",
                             "/backup/oauth2callback",
                             "/api/dispositivos/pareamento/confirmar",
                             "/api/dispositivos/pareamento/status",

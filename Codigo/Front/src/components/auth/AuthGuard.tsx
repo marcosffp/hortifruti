@@ -1,66 +1,49 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { publicPages } from "@/config/publicPages";
-import { authService } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
 
-const SILENT_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
-
+/**
+ * Gate de render + redirecionamento para as páginas protegidas do `(shell)`. Não faz mais sua
+ * própria checagem de sessão (`/auth/me`/`/auth/refresh`) — isso vinha duplicado com
+ * `AuthContext.checkAuth`, com dois estados (`isAuthenticated`) independentes que podiam divergir
+ * entre si (ver auditoria de sessão/autenticação, achado F3). Aqui só se lê o resultado já
+ * calculado pelo `AuthContext`, a única fonte de verdade agora.
+ *
+ * O gate de render depende de `isAuthenticated`, não só de "checagem concluída" (`isLoading`) —
+ * antes disso era um bug real (achado F4, já documentado como item B-V1 no AUDITORIA.md): como
+ * este componente vive no layout persistente do `(shell)` (não remonta em navegação interna), o
+ * estado de "checagem concluída" da rota anterior sobrevivia por um instante durante a checagem da
+ * rota nova, e o conteúdo protegido chegava a renderizar com sessão desatualizada. Como
+ * `AuthContext.checkAuth` agora reseta `isLoading` para `true` a cada troca de rota (e todos os
+ * refreshes silenciosos/reativos passam pelo mesmo estado central), essa janela deixa de existir.
+ */
 export default function AuthGuard({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isAuthChecked, setIsAuthChecked] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
+  const isPublicPage = publicPages.includes(pathname);
 
   useEffect(() => {
-    let cancelled = false;
+    if (isLoading) return;
 
-    (async () => {
-      const isPublicPage = publicPages.includes(pathname);
-      let user = await authService.me();
+    if (!isAuthenticated && !isPublicPage) {
+      router.push("/login");
+    }
+    if (isAuthenticated && pathname === "/login") {
+      router.push("/");
+    }
+  }, [isAuthenticated, isLoading, isPublicPage, pathname, router]);
 
-      if (!user && !isPublicPage) {
-        const refreshed = await authService.refresh();
-        if (refreshed) {
-          user = await authService.me();
-        }
-      }
+  if (isLoading && !isPublicPage) {
+    return null;
+  }
 
-      const authenticated = !!user;
-
-      if (cancelled) return;
-
-      if (!authenticated && !isPublicPage) {
-        router.push("/login");
-      }
-
-      if (authenticated && pathname === "/login") {
-        router.push("/");
-      }
-
-      setIsAuthenticated(authenticated);
-      setIsAuthChecked(true);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [pathname, router]);
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const intervalId = setInterval(() => {
-      authService.refresh();
-    }, SILENT_REFRESH_INTERVAL_MS);
-
-    return () => clearInterval(intervalId);
-  }, [isAuthenticated]);
-
-  if (!isAuthChecked && !publicPages.includes(pathname)) {
+  if (!isAuthenticated && !isPublicPage) {
     return null;
   }
 

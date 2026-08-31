@@ -4,7 +4,13 @@ import { useEffect, useRef } from "react";
 import { API_BASE_URL } from "@/config/api";
 
 const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080";
-const RECONECTAR_APOS_MS = 3000;
+const RECONECTAR_BASE_MS = 3000;
+/**
+ * Teto do backoff exponencial de reconexão — sem isso, uma indisponibilidade prolongada do
+ * backend (ex.: hibernação/restart longo no Railway) faria o atraso entre tentativas crescer sem
+ * limite (3s, 6s, 12s, 24s, 48s, ...), demorando cada vez mais para notar quando o backend volta.
+ */
+const RECONECTAR_MAX_MS = 30000;
 
 export type RealtimeEvent =
   | { type: "dispositivo-pareado" }
@@ -27,6 +33,10 @@ export type RealtimeEvent =
  *
  * Diferente de EventSource, WebSocket não reconecta sozinho — sem isso, uma queda de rede ou um
  * restart do backend deixaria a tela "em tempo real" parada pra sempre até um F5 manual.
+ *
+ * Reconexão usa backoff exponencial (base `RECONECTAR_BASE_MS`, teto `RECONECTAR_MAX_MS`),
+ * resetado a cada conexão bem-sucedida — uma indisponibilidade prolongada do backend não deveria
+ * fazer o cliente martelar `/realtime/ws-ticket` a cada 3s indefinidamente.
  */
 export function useRealtimeSocket(onEvent: (event: RealtimeEvent) => void) {
   const onEventRef = useRef(onEvent);
@@ -36,6 +46,17 @@ export function useRealtimeSocket(onEvent: (event: RealtimeEvent) => void) {
     let socket: WebSocket | null = null;
     let reconectarTimeoutId: ReturnType<typeof setTimeout> | null = null;
     let desmontado = false;
+    let tentativas = 0;
+
+    const agendarReconexao = () => {
+      if (desmontado) return;
+      const atraso = Math.min(
+        RECONECTAR_BASE_MS * 2 ** tentativas,
+        RECONECTAR_MAX_MS,
+      );
+      tentativas += 1;
+      reconectarTimeoutId = setTimeout(conectar, atraso);
+    };
 
     const conectar = async () => {
       let ticket: string;
@@ -48,9 +69,7 @@ export function useRealtimeSocket(onEvent: (event: RealtimeEvent) => void) {
           throw new Error("Falha ao obter ticket de tempo real");
         ({ ticket } = await response.json());
       } catch {
-        if (!desmontado) {
-          reconectarTimeoutId = setTimeout(conectar, RECONECTAR_APOS_MS);
-        }
+        agendarReconexao();
         return;
       }
 
@@ -59,6 +78,10 @@ export function useRealtimeSocket(onEvent: (event: RealtimeEvent) => void) {
       socket = new WebSocket(
         `${WS_BASE_URL}/ws/realtime?ticket=${encodeURIComponent(ticket)}`,
       );
+
+      socket.onopen = () => {
+        tentativas = 0;
+      };
 
       socket.onmessage = (event) => {
         try {
@@ -69,9 +92,7 @@ export function useRealtimeSocket(onEvent: (event: RealtimeEvent) => void) {
       };
 
       socket.onclose = () => {
-        if (!desmontado) {
-          reconectarTimeoutId = setTimeout(conectar, RECONECTAR_APOS_MS);
-        }
+        agendarReconexao();
       };
 
       socket.onerror = () => socket?.close();

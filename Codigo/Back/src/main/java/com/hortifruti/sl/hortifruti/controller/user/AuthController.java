@@ -128,11 +128,15 @@ public class AuthController {
         .build();
   }
 
+  /**
+   * 401, não 403: refresh token ausente/inválido/expirado/revogado é "não autenticado" — ver
+   * TokenException.getHttpStatus() para o porquê de separar isso de 403 (autorização/role).
+   */
   private ResponseEntity<AuthUserResponse> clearedCookiesResponse() {
     ResponseCookie accessCookie = buildCookie(COOKIE_NAME, "", 0, "/");
     ResponseCookie refreshCookie = buildCookie(REFRESH_COOKIE_NAME, "", 0, "/auth");
 
-    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
         .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
         .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
         .build();

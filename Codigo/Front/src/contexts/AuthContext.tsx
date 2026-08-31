@@ -7,9 +7,11 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { publicPages } from "@/config/publicPages";
+import type { AuthUser } from "@/services/authService";
 import { authService, LoginError } from "@/services/authService";
 
 export interface LoginResult {
@@ -31,6 +33,22 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const SILENT_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+
+/**
+ * Atraso entre tentativas quando `/auth/me`/`/auth/refresh` respondem "unavailable" (5xx, 429,
+ * erro de rede/timeout — ex.: cold start do Railway). Crescente e com poucas tentativas: o
+ * suficiente para atravessar uma instabilidade curta sem martelar o backend nem prender o usuário
+ * numa tela de carregamento por tempo demais — se todas as tentativas falharem, mantemos o último
+ * estado de sessão conhecido (nunca deslogamos por indisponibilidade) e paramos de tentar até a
+ * próxima navegação ou o próximo refresh silencioso reativar a checagem.
+ */
+const UNAVAILABLE_RETRY_DELAYS_MS = [2000, 5000, 10000];
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -40,36 +58,89 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [environment, setEnvironment] = useState<string>("");
 
-  const checkAuth = useCallback(async () => {
-    let user = await authService.me();
+  // Cada chamada de checkAuth ganha um número de geração; se uma checagem mais nova começar
+  // (troca de rota) enquanto uma mais antiga ainda está no meio do laço de retry, a antiga se
+  // reconhece como obsoleta e para de aplicar estado — sem isso, uma resposta atrasada de uma
+  // checagem já abandonada poderia sobrescrever o resultado (correto) da checagem mais recente.
+  const checkGeneration = useRef(0);
 
-    // Na tela de login nunca existe sessão a renovar — sem essa checagem, todo
-    // acesso a /login sem sessão disparava um refresh fadado a falhar com 403.
-    if (!user && !publicPages.includes(pathname)) {
-      const refreshed = await authService.refresh();
-      if (refreshed) {
-        user = await authService.me();
-      }
-    }
-
+  const applyUser = useCallback((user: AuthUser | null) => {
     setIsAuthenticated(!!user);
+    setUserName(user?.name ?? "");
+    setUserRoles(user?.roles ?? []);
+    setEnvironment(user?.environment ?? "");
+  }, []);
 
-    if (user) {
-      setUserName(user.name || "");
-      setUserRoles(user.roles || []);
-      setEnvironment(user.environment || "");
-    } else {
-      setUserName("");
-      setUserRoles([]);
-      setEnvironment("");
+  const checkAuth = useCallback(async () => {
+    const myGeneration = ++checkGeneration.current;
+    const isPublicPage = publicPages.includes(pathname);
+    const isCurrent = () => checkGeneration.current === myGeneration;
+
+    setIsLoading(true);
+
+    for (let attempt = 0; ; attempt++) {
+      const meResult = await authService.me();
+      if (!isCurrent()) return;
+
+      if (meResult.status === "authenticated") {
+        applyUser(meResult.user);
+        setIsLoading(false);
+        return;
+      }
+
+      if (meResult.status === "unauthenticated") {
+        if (isPublicPage) {
+          applyUser(null);
+          setIsLoading(false);
+          return;
+        }
+
+        const refreshResult = await authService.refresh();
+        if (!isCurrent()) return;
+
+        if (refreshResult.status === "authenticated") {
+          applyUser(refreshResult.user);
+          setIsLoading(false);
+          return;
+        }
+
+        if (refreshResult.status === "unauthenticated") {
+          applyUser(null);
+          setIsLoading(false);
+          return;
+        }
+
+        // refresh "unavailable" -> cai no retry abaixo, igual a me() indisponível
+      }
+
+      if (attempt >= UNAVAILABLE_RETRY_DELAYS_MS.length) {
+        // Desiste por agora sem mexer em isAuthenticated/userName/etc — indisponibilidade
+        // transitória nunca deve ser tratada como logout (achado F1 da auditoria de sessão).
+        setIsLoading(false);
+        return;
+      }
+      await sleep(UNAVAILABLE_RETRY_DELAYS_MS[attempt]);
+      if (!isCurrent()) return;
     }
-
-    setIsLoading(false);
-  }, [pathname]);
+  }, [pathname, applyUser]);
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  // Refresh silencioso periódico enquanto autenticado: mantém o access token fresco durante uso
+  // contínuo, sem depender só da renovação reativa em erro. O resultado é intencionalmente
+  // ignorado aqui (fire-and-forget) — se a sessão realmente tiver morrido, a próxima navegação
+  // (checkAuth acima) ou a próxima chamada de API (fetchInterceptor) vão notar e agir.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const intervalId = setInterval(() => {
+      authService.refresh();
+    }, SILENT_REFRESH_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [isAuthenticated]);
 
   const login = async (
     username: string,

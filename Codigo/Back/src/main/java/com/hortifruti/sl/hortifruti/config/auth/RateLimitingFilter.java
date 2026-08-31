@@ -37,11 +37,21 @@ public class RateLimitingFilter extends OncePerRequestFilter {
    * vinculado — sem cookie nem token, só o código de 6 dígitos de vida curta o protege (ver
    * DispositivoVinculadoService) — então recebe um limite bem mais apertado que o padrão de 10/min,
    * pra dificultar força bruta do código.
+   *
+   * <p>{@code /auth/refresh} recebe um limite mais generoso que o padrão: é chamado de forma
+   * reativa por múltiplas abas/dispositivos do mesmo usuário atrás do mesmo IP (rede residencial,
+   * NAT de escritório) sempre que o access token expira, além do refresh silencioso periódico do
+   * front — um pico legítimo de várias sessões renovando perto do mesmo instante não pode esbarrar
+   * no limite genérico e transformar uma renovação de sessão válida em 429. Login (força bruta de
+   * credencial) já tem proteção própria e mais forte em {@link LoginProtectionService} (lockout
+   * progressivo por conta/IP), então não precisa de bucket dedicado aqui.
    */
   private static final Map<String, Bandwidth> LIMITES_POR_ENDPOINT =
       Map.of(
           "/api/dispositivos/pareamento/confirmar",
-          Bandwidth.classic(5, Refill.greedy(5, Duration.ofMinutes(1))));
+          Bandwidth.classic(5, Refill.greedy(5, Duration.ofMinutes(1))),
+          "/auth/refresh",
+          Bandwidth.classic(30, Refill.greedy(30, Duration.ofMinutes(1))));
 
   /**
    * TTL bem acima da maior janela de refill (1 min) — uma entrada só é descartada quando já está

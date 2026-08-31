@@ -31,8 +31,37 @@ export class LoginError extends Error {
   }
 }
 
-let pendingMeRequest: Promise<AuthUser | null> | null = null;
-let pendingRefreshRequest: Promise<boolean> | null = null;
+/**
+ * Resultado de `me()`/`refresh()` — deliberadamente com três estados, não um booleano/`null`.
+ * Colapsar "sem sessão" e "backend indisponível" no mesmo valor falsy foi o bug central da
+ * auditoria de sessão/autenticação (achado F1): um 503/timeout durante um cold start do Railway
+ * virava, na prática, "usuário deslogado". Aqui:
+ * - "authenticated": sessão válida, veio usuário.
+ * - "unauthenticated": o backend respondeu e disse explicitamente que não há sessão válida
+ *   (`/auth/me` sem token retorna 200 com corpo `null`; token inválido/expirado retorna 401 — ver
+ *   TokenException.getHttpStatus() no backend). Só aqui vale a pena desistir e mandar pro login.
+ * - "unavailable": qualquer outra coisa (5xx, 429, erro de rede/timeout) — o chamador deve tratar
+ *   como "tente de novo depois", nunca como logout.
+ */
+export type SessionCheckResult =
+  | { status: "authenticated"; user: AuthUser }
+  | { status: "unauthenticated" }
+  | { status: "unavailable" };
+
+let pendingMeRequest: Promise<SessionCheckResult> | null = null;
+let pendingRefreshRequest: Promise<SessionCheckResult> | null = null;
+
+async function parseSessionResponse(
+  response: Response,
+): Promise<SessionCheckResult> {
+  if (response.status === 401) return { status: "unauthenticated" };
+  if (!response.ok) return { status: "unavailable" };
+
+  const user = await response.json().catch(() => null);
+  return user
+    ? { status: "authenticated", user }
+    : { status: "unauthenticated" };
+}
 
 export const authService = {
   async login(credentials: AuthRequest): Promise<AuthUser> {
@@ -64,7 +93,9 @@ export const authService = {
     }
   },
 
-  async me(): Promise<AuthUser | null> {
+  /** GET /auth/me sempre responde (200 com usuário, 200 com `null`, ou 401) — nunca precisa de
+   * corpo de erro especial: qualquer outra coisa (5xx, 429, erro de rede) é indisponibilidade. */
+  async me(): Promise<SessionCheckResult> {
     if (pendingMeRequest) return pendingMeRequest;
 
     pendingMeRequest = (async () => {
@@ -74,11 +105,9 @@ export const authService = {
           credentials: "include",
         });
 
-        if (!response.ok) return null;
-
-        return await response.json();
+        return await parseSessionResponse(response);
       } catch {
-        return null;
+        return { status: "unavailable" } as const;
       } finally {
         pendingMeRequest = null;
       }
@@ -87,7 +116,7 @@ export const authService = {
     return pendingMeRequest;
   },
 
-  async refresh(): Promise<boolean> {
+  async refresh(): Promise<SessionCheckResult> {
     if (pendingRefreshRequest) return pendingRefreshRequest;
 
     pendingRefreshRequest = (async () => {
@@ -97,9 +126,9 @@ export const authService = {
           credentials: "include",
         });
 
-        return response.ok;
+        return await parseSessionResponse(response);
       } catch {
-        return false;
+        return { status: "unavailable" } as const;
       } finally {
         pendingRefreshRequest = null;
       }
