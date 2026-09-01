@@ -15,7 +15,6 @@ import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-/** CRUD de usuários do sistema, incluindo criação, atualização de dados/role e troca de senha. */
 @Service
 @AllArgsConstructor
 public class UserService {

@@ -119,7 +119,7 @@ const FreightConfigModal = ({
         onChange={handleInputChange}
         placeholder={placeholder}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-        step="0.01" // Para campos de moeda
+        step="0.01"
         disabled={isSaving}
       />
     </div>

@@ -45,7 +45,6 @@ export default function ClientProductsTable({
       setStartDate(start);
       setEndDate(end);
     }
-    // Se for custom, não altera nada
   }, [groupBy]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey is intentionally unused inside the effect — it only exists to force a refetch when the parent bumps it

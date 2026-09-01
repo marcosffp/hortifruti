@@ -30,5 +30,5 @@ export default function SmoothScroll() {
     };
   }, []);
 
-  return null; // Este é um componente apenas para lógica
+  return null;
 }

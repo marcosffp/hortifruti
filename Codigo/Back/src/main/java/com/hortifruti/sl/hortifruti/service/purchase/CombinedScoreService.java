@@ -137,8 +137,6 @@ public class CombinedScoreService {
     purchases.forEach(purchase -> purchase.setCombinedScoreId(savedCombinedScore.getId()));
     purchaseRepository.saveAll(purchases);
 
-    // Junta as fotos de comprovante (se houver) num único PDF para download — ver
-    // CombinedScorePhotoService.
     combinedScorePhotoService.generatePhotosPdfIfNeeded(savedCombinedScore.getId());
   }
 

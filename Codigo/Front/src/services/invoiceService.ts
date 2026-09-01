@@ -58,9 +58,7 @@ export const invoiceService = {
         try {
           const errorBody = await response.json();
           if (errorBody?.message) message = errorBody.message;
-        } catch {
-          // corpo do erro não é JSON, mantém a mensagem padrão
-        }
+        } catch {}
         throw new Error(message);
       }
 
@@ -85,9 +83,7 @@ export const invoiceService = {
         try {
           const errorBody = await response.json();
           if (errorBody?.message) message = errorBody.message;
-        } catch {
-          // corpo do erro não é JSON, mantém a mensagem padrão
-        }
+        } catch {}
         throw new Error(message);
       }
 
@@ -169,9 +165,7 @@ export const invoiceService = {
         try {
           const errorBody = await response.json();
           if (errorBody?.message) message = errorBody.message;
-        } catch {
-          // corpo do erro não é JSON, mantém a mensagem padrão
-        }
+        } catch {}
         throw new Error(message);
       }
 

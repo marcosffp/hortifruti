@@ -82,7 +82,6 @@ export default function CombinedScoreModals({
 }: CombinedScoreModalsProps) {
   return (
     <>
-      {/* Modal de produtos */}
       {modal.type === "products" && (
         <GroupedProductsModal
           combinedScoreId={modal.score.id}
@@ -91,7 +90,6 @@ export default function CombinedScoreModals({
         />
       )}
 
-      {/* Modal de fotos (comprovantes) */}
       {modal.type === "images" && (
         <CombinedScoreImagesModal
           combinedScoreId={modal.score.id}
@@ -130,7 +128,6 @@ export default function CombinedScoreModals({
         }}
       />
 
-      {/* Modal de boleto recém-gerado */}
       {billetResultModal && (
         <ShowBilletModal
           isOpen={true}
@@ -168,7 +165,6 @@ export default function CombinedScoreModals({
         }}
       />
 
-      {/* Modal de Nota Fiscal recém-gerada */}
       {invoiceResultModal && (
         <ShowInvoiceModal
           isOpen={true}
@@ -191,7 +187,6 @@ export default function CombinedScoreModals({
         />
       )}
 
-      {/* Modal de Dados Adicionais */}
       {modal.type === "additionalData" && (
         <AdditionalDataModal
           isOpen={true}
@@ -216,7 +211,6 @@ export default function CombinedScoreModals({
         ]}
       />
 
-      {/* Modal de NF + Boleto gerados juntos */}
       {invoiceBilletResultModal && (
         <ShowInvoiceAndBilletModal
           isOpen={true}

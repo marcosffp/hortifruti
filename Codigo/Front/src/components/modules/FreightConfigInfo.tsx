@@ -50,7 +50,6 @@ export default function FreightConfigInfo() {
   const handleModalClose = (updatedConfig?: FreightConfigDTO) => {
     setIsModalOpen(false);
 
-    // Se o modal passar dados atualizados, atualize o estado local
     if (updatedConfig) {
       setConfig(updatedConfig);
     }
@@ -59,7 +58,6 @@ export default function FreightConfigInfo() {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {/* Skeleton Loaders */}
         {[...Array(3)].map((_, i) => (
           <div
             // biome-ignore lint/suspicious/noArrayIndexKey: static-length skeleton placeholder list, no stable identity available
@@ -96,9 +94,7 @@ export default function FreightConfigInfo() {
           Editar Configurações
         </button>
       </div>
-      {/* Cards de Informação */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {/* Card Veículo */}
         <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
           <h3 className="font-semibold text-gray-800 flex items-center mb-2">
             <Car size={18} className="mr-2 text-green-600" />
@@ -134,7 +130,6 @@ export default function FreightConfigInfo() {
           </div>
         </div>
 
-        {/* Card Entregador */}
         <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
           <h3 className="font-semibold text-gray-800 flex items-center mb-2">
             <User size={18} className="mr-2 text-green-600" />
@@ -164,7 +159,6 @@ export default function FreightConfigInfo() {
           </div>
         </div>
 
-        {/* Card Margens e Taxas */}
         <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
           <h3 className="font-semibold text-gray-800 flex items-center mb-2">
             <DollarSign size={18} className="mr-2 text-green-600" />
@@ -179,7 +173,6 @@ export default function FreightConfigInfo() {
             <InfoItem label="Taxa Fixa" value={config.fixedFee} unit="R$" />
           </div>
 
-          {/* Resumo do custo */}
           <div className="mt-4 pt-3 border-t border-gray-100">
             <h4 className="text-xs uppercase text-gray-500 mb-1">
               Custo por Km
@@ -198,7 +191,6 @@ export default function FreightConfigInfo() {
         </div>
       </div>
 
-      {/* Modal de Configuração */}
       {config && (
         <FreightConfigModal
           isOpen={isModalOpen}

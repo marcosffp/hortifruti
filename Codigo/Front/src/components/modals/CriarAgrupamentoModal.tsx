@@ -87,7 +87,6 @@ export default function CriarAgrupamentoModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
-        {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-300">
           <h3 className="text-xl font-semibold">
             Criar Agrupamento por Período
@@ -101,7 +100,6 @@ export default function CriarAgrupamentoModal({
           </button>
         </div>
 
-        {/* Body */}
         <div className="p-6 space-y-4">
           <div>
             <label
@@ -183,7 +181,6 @@ export default function CriarAgrupamentoModal({
             </p>
           </div>
 
-          {/* Info sobre o período selecionado */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
               <strong>Período selecionado:</strong>{" "}
@@ -201,7 +198,6 @@ export default function CriarAgrupamentoModal({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex justify-end gap-3 p-6 border-t border-gray-300">
           <button
             type="button"

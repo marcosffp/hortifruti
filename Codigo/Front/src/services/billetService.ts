@@ -32,9 +32,7 @@ export const billetService = {
         try {
           const errorText = await response.text();
           message = sanitizeErrorMessage(errorText, fallback);
-        } catch {
-          // corpo do erro indisponível, mantém a mensagem padrão
-        }
+        } catch {}
         throw new Error(message);
       }
 
@@ -165,9 +163,7 @@ export const billetService = {
         try {
           const errorBody = await response.json();
           if (errorBody?.message) message = errorBody.message;
-        } catch {
-          // corpo do erro indisponível, mantém a mensagem padrão
-        }
+        } catch {}
         throw new Error(message);
       }
 

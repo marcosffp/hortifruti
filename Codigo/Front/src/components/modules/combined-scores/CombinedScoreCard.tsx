@@ -50,7 +50,6 @@ export default function CombinedScoreCard({
 }: CombinedScoreCardProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
-      {/* Header do Card */}
       <div className="flex justify-between gap-2 flex-wrap items-start mb-4">
         <div>
           <h3 className="font-semibold text-lg">
@@ -63,7 +62,6 @@ export default function CombinedScoreCard({
         </div>
       </div>
 
-      {/* Informações */}
       <div className="space-y-2 mb-4 pb-4 border-b">
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">Valor Total:</span>
@@ -84,9 +82,7 @@ export default function CombinedScoreCard({
         </span>
       </div>
 
-      {/* Ações */}
       <div className="space-y-2">
-        {/* Botão Ver Produtos */}
         <button
           type="button"
           onClick={() => onViewProducts(score)}
@@ -107,7 +103,6 @@ export default function CombinedScoreCard({
           Ver Fotos
         </button>
 
-        {/* Botões de Boleto e Nota Fiscal */}
         <div className="space-y-2">
           {!client?.onlyBillet && !score.hasBillet && !score.hasInvoice && (
             <button
@@ -169,7 +164,6 @@ export default function CombinedScoreCard({
           </div>
         </div>
 
-        {/* Confirmar Pagamento e Deletar */}
         <div className="grid grid-cols-2 gap-2">
           {!score.hasBillet && (
             <button

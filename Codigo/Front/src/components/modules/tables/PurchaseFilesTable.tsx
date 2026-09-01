@@ -119,7 +119,6 @@ export default function PurchaseFilesTable({
 
   return (
     <div className="space-y-4">
-      {/* Header com título e botão */}
       <div className="flex justify-between items-center gap-2 flex-wrap">
         <h2 className="text-lg font-semibold">Arquivos de Compra</h2>
         <div className="flex items-center gap-2">
@@ -150,7 +149,6 @@ export default function PurchaseFilesTable({
         </div>
       </div>
 
-      {/* Loading skeleton */}
       {loading ? (
         <div className="space-y-2">
           {[...Array(5)].map((_, i) => (
@@ -167,7 +165,6 @@ export default function PurchaseFilesTable({
         </div>
       ) : (
         <>
-          {/* Tabela (desktop) */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
@@ -196,7 +193,6 @@ export default function PurchaseFilesTable({
             </table>
           </div>
 
-          {/* Cards (mobile) */}
           <div className="md:hidden space-y-3">
             {purchases.map((purchase) => (
               <PurchaseFileCard
@@ -209,7 +205,6 @@ export default function PurchaseFilesTable({
             ))}
           </div>
 
-          {/* Paginação */}
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-4">
               <button
@@ -236,7 +231,6 @@ export default function PurchaseFilesTable({
         </>
       )}
 
-      {/* Modal de Criar Agrupamento */}
       {showGroupingModal && clientId && (
         <CriarAgrupamentoModal
           clientId={clientId}
@@ -245,7 +239,6 @@ export default function PurchaseFilesTable({
         />
       )}
 
-      {/* Modal de criação manual de compra */}
       {showManualPurchaseModal && clientId && (
         <CreateManualPurchaseModal
           clientId={clientId}
@@ -254,7 +247,6 @@ export default function PurchaseFilesTable({
         />
       )}
 
-      {/* Modal de produtos */}
       {showModal && selectedPurchase && (
         <InvoiceProductsModal
           purchaseId={selectedPurchase.id}

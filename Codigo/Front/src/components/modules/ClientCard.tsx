@@ -137,7 +137,6 @@ export default function ClientCard({
                     ...
                   </span>
                 )}
-                {/* Tooltip para endereço completo no modo grid */}
                 {endereco && endereco.length > 0 && (
                   <div className="hidden group-hover/tooltip:block absolute z-10 bg-gray-800 text-white p-2 rounded shadow-lg text-sm left-0 mt-8 max-w-[280px]">
                     {endereco}

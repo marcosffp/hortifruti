@@ -135,25 +135,21 @@ export default function CashFlow({
 
       <FinancialSummaryCard dashboardData={dashboardData} />
 
-      {/* Gráficos Principais */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <CashFlowLineChart dashboardData={dashboardData} />
         <RevenueByTypeChart dashboardData={dashboardData} />
       </div>
 
-      {/* Gráfico de Pizza e Ranking */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <CategoryDistributionChart dashboardData={dashboardData} />
         <CategoryRankingList dashboardData={dashboardData} />
       </div>
 
-      {/* Fluxo de Vendas e Produtos em Alta */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <SalesFlowChart dashboardData={dashboardData} />
         <TopProductsList dashboardData={dashboardData} />
       </div>
 
-      {/* Top 10 Produtos por Quantidade */}
       <TopProductsByQuantityChart dashboardData={dashboardData} />
     </div>
   );

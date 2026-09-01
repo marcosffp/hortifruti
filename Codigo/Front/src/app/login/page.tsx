@@ -56,7 +56,6 @@ export default function Login() {
       <div className="w-full max-w-md animate-slideUp">
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all hover:scale-[1.01] duration-300">
           <div className="bg-gradient-to-r from-[var(--primary)] to-green-600 p-8 text-center relative overflow-hidden">
-            {/* Decoração de fundo */}
             <div className="absolute inset-0 opacity-10">
               <div className="absolute top-0 left-0 w-40 h-40 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
               <div className="absolute bottom-0 right-0 w-32 h-32 bg-white rounded-full translate-x-1/2 translate-y-1/2"></div>

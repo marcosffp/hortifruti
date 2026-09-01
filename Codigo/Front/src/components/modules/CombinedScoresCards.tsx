@@ -397,7 +397,6 @@ export default function CombinedScoresCards({
   };
 
   const handleShowInvoice = async (score: ScoreWithBilletInfo) => {
-    // Se já tem a referência e info da invoice
     if (score.invoiceRef && score.invoiceInfo) {
       setModal({ type: "invoiceData", score });
       return;
@@ -408,7 +407,6 @@ export default function CombinedScoresCards({
       return;
     }
 
-    // Tem a referência mas não tem a info, busca novamente
     showInfo("Buscando nota fiscal...");
     try {
       const invoiceInfo = await getInvoiceInfo(score.invoiceRef);
@@ -469,7 +467,6 @@ export default function CombinedScoresCards({
         </div>
       )}
 
-      {/* Loading state */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
@@ -490,7 +487,6 @@ export default function CombinedScoresCards({
         </div>
       ) : (
         <>
-          {/* Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {scores.map((score) => (
               <CombinedScoreCard
@@ -516,7 +512,6 @@ export default function CombinedScoresCards({
             ))}
           </div>
 
-          {/* Paginação */}
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-6">
               <button

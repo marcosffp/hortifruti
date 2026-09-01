@@ -77,7 +77,6 @@ public class ClientBusinessRules {
     }
   }
 
-  // Regra padrão para CNPJ (quando não encontrar regra específica para o cliente)
   public static final ClientRule CNPJ_DEFAULT_RULE =
       new ClientRule(15, WeekendAdjustment.NONE, false, null);
 

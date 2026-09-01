@@ -182,7 +182,6 @@ export function validarEmail(email: string): boolean {
 export function validarArquivos(selectedFiles: File[]): File[] | string {
   let error = "";
   const validFiles = selectedFiles.filter((file) => {
-    // Verificar o tamanho do arquivo (10MB = 10 * 1024 * 1024 bytes)
     if (file.size > 10 * 1024 * 1024) {
       error += `O arquivo ${file.name} excede o limite de 10MB.`;
       return false;
@@ -240,13 +239,11 @@ export function validarIEMinasGerais(ie: string): boolean {
     // Onde D é o dígito verificador
     const ieArray = numbers.split("").map(Number);
 
-    // Pesos para o cálculo: 1,2,1,2,1,2,1,2,1,2,1,2
     const pesos1 = [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2];
 
     let soma = 0;
     for (let i = 0; i < 12; i++) {
       let produto = ieArray[i] * pesos1[i];
-      // Se o produto for >= 10, soma os dígitos
       if (produto >= 10) {
         produto = Math.floor(produto / 10) + (produto % 10);
       }

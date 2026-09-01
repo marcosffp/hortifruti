@@ -34,9 +34,7 @@ async function parseErrorMessage(
   try {
     const data = await response.json();
     if (data?.message) return data.message;
-  } catch {
-    // corpo não é JSON, usa a mensagem padrão
-  }
+  } catch {}
   return fallback;
 }
 

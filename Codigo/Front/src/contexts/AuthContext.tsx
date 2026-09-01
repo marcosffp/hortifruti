@@ -64,6 +64,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // checagem já abandonada poderia sobrescrever o resultado (correto) da checagem mais recente.
   const checkGeneration = useRef(0);
 
+  /**
+   * `isLoading` só liga para a PRIMEIRA checagem da vida do app (carregamento inicial / F5 no
+   * navegador) — é o que os gates de render (`AuthGuard`, `RoleGuard`) usam pra decidir se já dá
+   * pra mostrar algo. As rechecagens disparadas por troca de rota depois disso são silenciosas: se
+   * concluírem "não autenticado", `isAuthenticated` vira `false` e o próprio `AuthGuard` redireciona
+   * na hora — sem precisar apagar a tela inteira a cada clique enquanto a resposta não chega. Sem
+   * este `ref`, toda navegação piscava a tela em branco (cabeçalho, menu e tudo) até a resposta de
+   * `/auth/me` voltar, mesmo no caminho feliz em que a sessão continua perfeitamente válida.
+   */
+  const hasCompletedFirstCheck = useRef(false);
+
   const applyUser = useCallback((user: AuthUser | null) => {
     setIsAuthenticated(!!user);
     setUserName(user?.name ?? "");
@@ -76,22 +87,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isPublicPage = publicPages.includes(pathname);
     const isCurrent = () => checkGeneration.current === myGeneration;
 
-    setIsLoading(true);
+    if (!hasCompletedFirstCheck.current) {
+      setIsLoading(true);
+    }
+
+    const finish = (user: AuthUser | null) => {
+      applyUser(user);
+      setIsLoading(false);
+      hasCompletedFirstCheck.current = true;
+    };
 
     for (let attempt = 0; ; attempt++) {
       const meResult = await authService.me();
       if (!isCurrent()) return;
 
       if (meResult.status === "authenticated") {
-        applyUser(meResult.user);
-        setIsLoading(false);
+        finish(meResult.user);
         return;
       }
 
       if (meResult.status === "unauthenticated") {
         if (isPublicPage) {
-          applyUser(null);
-          setIsLoading(false);
+          finish(null);
           return;
         }
 
@@ -99,14 +116,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!isCurrent()) return;
 
         if (refreshResult.status === "authenticated") {
-          applyUser(refreshResult.user);
-          setIsLoading(false);
+          finish(refreshResult.user);
           return;
         }
 
         if (refreshResult.status === "unauthenticated") {
-          applyUser(null);
-          setIsLoading(false);
+          finish(null);
           return;
         }
 
@@ -117,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Desiste por agora sem mexer em isAuthenticated/userName/etc — indisponibilidade
         // transitória nunca deve ser tratada como logout (achado F1 da auditoria de sessão).
         setIsLoading(false);
+        hasCompletedFirstCheck.current = true;
         return;
       }
       await sleep(UNAVAILABLE_RETRY_DELAYS_MS[attempt]);

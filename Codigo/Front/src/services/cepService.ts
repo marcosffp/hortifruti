@@ -36,7 +36,6 @@ export const cepService = {
 
       const data: CepResponse = await response.json();
 
-      // Verificar se a API retornou erro
       if (data.erro) {
         return null;
       }

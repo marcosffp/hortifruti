@@ -75,19 +75,16 @@ const MapComponent = ({ routeData }: { routeData: RouteData | null }) => {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            {/* Origem */}
             <Marker position={[routeData.origin.lat, routeData.origin.lng]}>
               <Popup>Origem: {routeData.origin.address}</Popup>
             </Marker>
 
-            {/* Destino */}
             <Marker
               position={[routeData.destination.lat, routeData.destination.lng]}
             >
               <Popup>Destino: {routeData.destination.address}</Popup>
             </Marker>
 
-            {/* Linha da rota obtida da API */}
             {routePoints.length > 0 && (
               <Polyline
                 positions={routePoints}

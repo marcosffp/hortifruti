@@ -39,7 +39,6 @@ export function validateClientField(
     case "stateRegistration":
       return "";
     case "cideCode":
-      // Código CIDE é obrigatório apenas para CNPJ
       if (isCNPJ && !value.trim()) {
         return "Código CIDE é obrigatório para empresas (CNPJ)";
       }

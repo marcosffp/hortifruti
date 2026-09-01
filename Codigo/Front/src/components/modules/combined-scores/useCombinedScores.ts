@@ -61,14 +61,12 @@ export function useCombinedScores({
         20,
       );
 
-      // Para cada score que tem boleto ou nota fiscal, busca as informações
       const scoresWithInfo = await Promise.all(
         data.content.map(async (score) => {
           let billetInfo: BilletResponse | null = null;
           let invoiceInfo: InvoiceResponseGet | null = null;
           let status = score.status;
 
-          // Busca informações do boleto se existir
           if (score.hasBillet) {
             try {
               billetInfo = await getBilletInfo(score.id);
@@ -83,7 +81,6 @@ export function useCombinedScores({
             }
           }
 
-          // Busca informações da nota fiscal se existir e tiver referência
           if (score.hasInvoice && score.invoiceRef) {
             try {
               invoiceInfo = await getInvoiceInfo(score.invoiceRef);
