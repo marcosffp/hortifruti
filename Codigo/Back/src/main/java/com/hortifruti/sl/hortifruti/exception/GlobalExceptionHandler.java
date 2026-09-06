@@ -224,6 +224,27 @@ public class GlobalExceptionHandler {
   }
 
   /**
+   * O proxy do MySQL do Railway às vezes fecha uma conexão ociosa do pool antes do Hikari
+   * descartá-la (ver comentário sobre {@code keepalive-time} em {@code application.properties}).
+   * Quando isso acontece bem na hora de abrir uma transação (ex.: {@code
+   * statementRepository.save(...)} em {@link com.hortifruti.sl.hortifruti.service.finance.bb.BBStatementService}),
+   * o Spring lança {@link org.springframework.transaction.CannotCreateTransactionException} — que
+   * NÃO é uma {@link org.springframework.dao.DataAccessException} (é {@code TransactionException}),
+   * logo não é coberta pelo handler acima e caía no genérico, virando um 500 sem explicação em vez
+   * de deixar claro que foi a conexão com o banco.
+   */
+  @ExceptionHandler(org.springframework.transaction.CannotCreateTransactionException.class)
+  public ResponseEntity<Map<String, String>> handleCannotCreateTransactionException(
+      org.springframework.transaction.CannotCreateTransactionException ex,
+      HttpServletRequest request) {
+    log.error("Falha ao abrir transação com o banco de dados em {}", request.getRequestURI(), ex);
+    return errorResponse(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        "Erro de Conexão com o Banco de Dados",
+        "Não foi possível conectar ao banco de dados. Por favor, tente novamente mais tarde.");
+  }
+
+  /**
    * A OpenWeather API está indisponível/instável — 503, não 500: o problema é do serviço externo,
    * não da nossa aplicação (contrato já documentado em {@code
    * WeatherForecastController#getFiveDayForecast}). {@link WeatherApiException} fica fora da
