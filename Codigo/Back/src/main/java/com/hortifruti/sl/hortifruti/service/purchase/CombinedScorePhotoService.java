@@ -100,7 +100,11 @@ public class CombinedScorePhotoService {
     if (clientName == null || clientName.isBlank()) {
       return "NOTINHAS_" + combinedScoreId + ".pdf";
     }
-    return "NOTINHAS_" + toFileNameSafe(clientName) + ".pdf";
+    return "NOTINHAS_" + toFileNameSafe(firstName(clientName)) + ".pdf";
+  }
+
+  private String firstName(String value) {
+    return value.trim().split("\\s+")[0];
   }
 
   private String toFileNameSafe(String value) {

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useCombinedScore } from "@/hooks/useCombinedScore";
 import { usePurchase } from "@/hooks/usePurchase";
 import type { PurchaseImageType } from "@/types/combinedScoreType";
-import { toFilenameSafe } from "@/utils/filenameUtils";
+import { getFirstName, toFilenameSafe } from "@/utils/filenameUtils";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { showError } from "@/utils/toastUtils";
 
@@ -72,7 +72,7 @@ export default function CombinedScoreImagesModal({
       const link = document.createElement("a");
       link.href = url;
       const fileClientName = clientName
-        ? toFilenameSafe(clientName)
+        ? toFilenameSafe(getFirstName(clientName))
         : `AGRUPAMENTO_${scoreNumber}`;
       link.setAttribute("download", `NOTINHAS_${fileClientName}.pdf`);
       document.body.appendChild(link);

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Download,
   ExternalLink,
   FileSearch,
   Filter,
@@ -24,11 +25,17 @@ import {
   isBilletCancelable,
   SITUACAO_OPTIONS,
   situacaoBadgeColor,
+  triggerPdfDownload,
 } from "./shared";
 
 export default function ConsultarBoletoTab() {
-  const { getClientBillets, cancelBillet, cancelBilletByNumber, isLoading } =
-    useBillet();
+  const {
+    getClientBillets,
+    cancelBillet,
+    cancelBilletByNumber,
+    downloadStoredBillet,
+    isLoading,
+  } = useBillet();
 
   const [selectedClient, setSelectedClient] =
     useState<ClientSelectionInfo | null>(null);
@@ -40,6 +47,9 @@ export default function ConsultarBoletoTab() {
   );
   const [loadingClientBillets, setLoadingClientBillets] = useState(false);
   const [clientBilletActionKey, setClientBilletActionKey] = useState<
+    string | null
+  >(null);
+  const [downloadingBilletKey, setDownloadingBilletKey] = useState<
     string | null
   >(null);
   const [cancelClientBilletTarget, setCancelClientBilletTarget] =
@@ -87,6 +97,25 @@ export default function ConsultarBoletoTab() {
           console.error(error);
         })
         .finally(() => setLoadingClientBillets(false));
+    }
+  };
+
+  const handleDownloadClientBillet = async (billet: BilletResponse) => {
+    if (!billet.combinedScoreId) return;
+    const combinedScoreId = billet.combinedScoreId;
+    setDownloadingBilletKey(getClientBilletKey(billet));
+    try {
+      const blob = await downloadStoredBillet(combinedScoreId);
+      triggerPdfDownload(blob, billet.seuNumero, combinedScoreId);
+    } catch (error) {
+      showError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível baixar o PDF do boleto",
+      );
+      console.error(error);
+    } finally {
+      setDownloadingBilletKey(null);
     }
   };
 
@@ -292,17 +321,38 @@ export default function ConsultarBoletoTab() {
                         <td className="py-3 px-3 text-right">
                           <div className="flex items-center justify-end gap-2">
                             {billet.combinedScoreId ? (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  selectedClient &&
-                                  goToGrouping(selectedClient.clientId)
-                                }
-                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
-                              >
-                                <ExternalLink className="w-3 h-3" />
-                                Ver Agrupamento
-                              </button>
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDownloadClientBillet(billet)
+                                  }
+                                  disabled={
+                                    downloadingBilletKey ===
+                                    getClientBilletKey(billet)
+                                  }
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {downloadingBilletKey ===
+                                  getClientBilletKey(billet) ? (
+                                    <ActionSpinner />
+                                  ) : (
+                                    <Download className="w-3 h-3" />
+                                  )}
+                                  Baixar PDF
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    selectedClient &&
+                                    goToGrouping(selectedClient.clientId)
+                                  }
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-800/80 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs cursor-pointer"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  Ver Agrupamento
+                                </button>
+                              </>
                             ) : (
                               <span className="text-xs text-gray-400">
                                 Agrupamento não localizado
