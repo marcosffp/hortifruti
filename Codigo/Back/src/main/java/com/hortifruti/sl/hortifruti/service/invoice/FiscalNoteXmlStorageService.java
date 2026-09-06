@@ -2,11 +2,14 @@ package com.hortifruti.sl.hortifruti.service.invoice;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hortifruti.sl.hortifruti.dto.invoice.FiscalNoteXmlStorageResponse;
+import com.hortifruti.sl.hortifruti.model.purchase.CombinedScore;
+import com.hortifruti.sl.hortifruti.service.purchase.CombinedScoreService;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -27,6 +30,7 @@ public class FiscalNoteXmlStorageService {
   private final FiscalNoteIssuancePoller poller;
   private final FiscalNoteXmlStorageStore store;
   private final FiscalNoteFocusNfeClient focusNfeClient;
+  private final CombinedScoreService combinedScoreService;
 
   /** Triggered async right after invoice issuance. Polls until authorized, then saves XML. */
   public void triggerSaveAfterIssuance(String ref) {
@@ -72,9 +76,67 @@ public class FiscalNoteXmlStorageService {
     store.saveDanfeIfAbsent(ref, danfeBytes);
   }
 
+  /**
+   * Reconcilia com a Focus NFe antes de listar: o job assíncrono de emissão ({@link
+   * FiscalNoteIssuancePoller}) roda só em memória, então uma NF pode ter sido autorizada na Sefaz
+   * (e por isso aparecer, por exemplo, no relatório "Relação de Vendas", que consulta a Focus NFe
+   * ao vivo por {@code CombinedScore}) sem que o XML jamais tenha sido persistido aqui — ex.: a
+   * aplicação reiniciou no meio da janela de polling. Sem essa reconciliação, a NF fica "invisível"
+   * pra sempre nesta listagem e no ZIP de exportação mensal (que usa a mesma consulta), mesmo já
+   * emitida de verdade. {@link #ensureSaved} é best-effort e barato quando não há nada pra corrigir
+   * ({@link FiscalNoteXmlStorageStore#hasXmlContent} evita a chamada HTTP nesse caso).
+   */
   @Transactional
   public List<FiscalNoteXmlStorageResponse> findByPeriod(LocalDate startDate, LocalDate endDate) {
+    reconcileMissingXmls(startDate, endDate);
     return store.findByPeriod(startDate, endDate);
+  }
+
+  private void reconcileMissingXmls(LocalDate startDate, LocalDate endDate) {
+    for (CombinedScore combinedScore :
+        combinedScoreService.getCombinedScoresWithInvoice(startDate, endDate)) {
+      String ref = combinedScore.getInvoiceRef();
+      if (ref != null && !ref.isBlank()) {
+        ensureSaved(ref);
+      }
+    }
+  }
+
+  /**
+   * Garante que o XML dessa ref esteja persistido, buscando ao vivo na Focus NFe se ainda faltar.
+   * Best-effort: uma falha aqui (nota ainda processando, erro de rede, etc.) não pode propagar — é
+   * chamado num loop de reconciliação onde uma ref problemática não pode impedir as demais.
+   *
+   * <p>Roda em transação própria (REQUIRES_NEW) pelo mesmo motivo de {@link #saveIfAbsent}.
+   */
+  @Transactional(Transactional.TxType.REQUIRES_NEW)
+  public void ensureSaved(String ref) {
+    if (store.hasXmlContent(ref)) return;
+    try {
+      JsonNode rootNode = focusNfeClient.fetchStatus(ref);
+      if (!rootNode.path("status").asText().contains("autorizado")) {
+        return;
+      }
+
+      String xmlPath = rootNode.path("caminho_xml_nota_fiscal").asText();
+      if (xmlPath == null || xmlPath.isBlank()) {
+        return;
+      }
+
+      byte[] xmlBytes = focusNfeClient.downloadFileBytes(xmlPath, MediaType.APPLICATION_XML);
+      if (xmlBytes == null || xmlBytes.length == 0) {
+        return;
+      }
+
+      byte[] danfeBytes = focusNfeClient.downloadDanfeBytesBestEffort(rootNode, ref);
+      NfMetadata metadata = focusNfeClient.extractMetadata(rootNode, ref);
+      store.persistIfAbsent(ref, new String(xmlBytes), danfeBytes, metadata);
+    } catch (Exception e) {
+      log.warn(
+          "[FiscalNoteXmlStorage] Não foi possível reconciliar XML faltante para ref={}: {}",
+          ref,
+          e.getMessage());
+    }
   }
 
   @Transactional
