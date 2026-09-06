@@ -11,7 +11,11 @@ function getSuggestions(
 ): ClientSelectionInfo[] {
   const normQuery = normalize(query);
   return clients
-    .filter((client) => normalize(client.clientName).includes(normQuery))
+    .filter(
+      (client) =>
+        normalize(client.clientName).includes(normQuery) ||
+        (client.nickname && normalize(client.nickname).includes(normQuery)),
+    )
     .sort((a, b) => a.clientName.localeCompare(b.clientName))
     .slice(0, limit);
 }
@@ -110,6 +114,9 @@ export default function ClientAutocompleteField({
                 }`}
               >
                 {client.clientName}
+                {client.nickname && (
+                  <span className="text-gray-400"> ({client.nickname})</span>
+                )}
               </button>
             </li>
           ))}

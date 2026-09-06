@@ -42,6 +42,14 @@ public class Client {
   @Column(nullable = false)
   private String clientName;
 
+  /**
+   * Apelido opcional, usado só como termo alternativo de busca/identificação (ver {@code
+   * ClienteMatchingService}); nunca deve aparecer em documentos oficiais (NF, boleto, contrato) —
+   * lá é sempre {@link #clientName}.
+   */
+  @Column(nullable = true)
+  private String nickname;
+
   @Email
   @Column(nullable = true, unique = true)
   private String email;

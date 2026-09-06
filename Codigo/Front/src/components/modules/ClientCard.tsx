@@ -15,6 +15,7 @@ import Link from "next/link";
 interface ClientCardProps {
   id: number;
   nome: string;
+  apelido?: string;
   email: string;
   telefone: string;
   endereco: string;
@@ -29,6 +30,7 @@ interface ClientCardProps {
 export default function ClientCard({
   id,
   nome,
+  apelido,
   email,
   telefone,
   endereco,
@@ -68,6 +70,11 @@ export default function ClientCard({
               <div>
                 <h3 className="font-medium text-lg text-gray-800 group-hover:text-green-600 transition-colors">
                   {nome}
+                  {apelido && (
+                    <span className="ml-1.5 text-sm font-normal text-gray-400">
+                      ({apelido})
+                    </span>
+                  )}
                 </h3>
                 <div className="mt-1 flex items-center">
                   <span
@@ -258,7 +265,14 @@ export default function ClientCard({
               <User size={18} />
             </div>
             <div className="min-w-0">
-              <div className="font-medium text-gray-800 truncate">{nome}</div>
+              <div className="font-medium text-gray-800 truncate">
+                {nome}
+                {apelido && (
+                  <span className="ml-1 font-normal text-gray-400">
+                    ({apelido})
+                  </span>
+                )}
+              </div>
               {telefone && (
                 <div className="text-sm text-gray-500 truncate">{telefone}</div>
               )}
@@ -311,6 +325,11 @@ export default function ClientCard({
           <div className="min-w-0">
             <div className="font-medium text-gray-800 group-hover:text-green-600 transition-colors truncate">
               {nome}
+              {apelido && (
+                <span className="ml-1 font-normal text-gray-400">
+                  ({apelido})
+                </span>
+              )}
             </div>
             {telefone && (
               <div className="text-sm text-gray-500 truncate">{telefone}</div>

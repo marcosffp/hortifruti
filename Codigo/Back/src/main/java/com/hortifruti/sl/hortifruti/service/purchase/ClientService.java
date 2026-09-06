@@ -36,6 +36,7 @@ public class ClientService {
 
   public Map<String, ClientResponse> saveClient(ClientRequest clientRequest) {
     Client client = clientMapper.toClient(clientRequest);
+    client.setNickname(blankToNull(client.getNickname()));
     client.setEmail(blankToNull(client.getEmail()));
     client.setPhoneNumber(blankToNull(client.getPhoneNumber()));
     Client savedClient = clientRepository.save(client);
@@ -60,6 +61,7 @@ public class ClientService {
     return new ClientResponse(
         response.id(),
         response.clientName(),
+        response.nickname(),
         response.email(),
         response.phoneNumber(),
         response.address(),
@@ -107,6 +109,7 @@ public class ClientService {
             .orElseThrow(() -> new ClientException("Cliente não encontrado"));
 
     existingClient.setClientName(clientRequest.clientName());
+    existingClient.setNickname(blankToNull(clientRequest.nickname()));
     existingClient.setEmail(blankToNull(clientRequest.email()));
     existingClient.setPhoneNumber(blankToNull(clientRequest.phoneNumber()));
     existingClient.setAddress(clientRequest.address());
@@ -150,9 +153,15 @@ public class ClientService {
   // captura de nota) quando não há match exato — nesse caso o cadastro inteiro é varrido, mas é
   // um caminho raro, não o comum.
   public Client findMatchingClient(String clientName) {
-    Optional<Client> exactMatch = clientRepository.findByClientNameIgnoreCase(clientName.trim());
+    String trimmedName = clientName.trim();
+    Optional<Client> exactMatch = clientRepository.findByClientNameIgnoreCase(trimmedName);
     if (exactMatch.isPresent()) {
       return exactMatch.get();
+    }
+
+    Optional<Client> nicknameMatch = clientRepository.findByNicknameIgnoreCase(trimmedName);
+    if (nicknameMatch.isPresent()) {
+      return nicknameMatch.get();
     }
 
     ClienteSugerido sugestao =
@@ -211,7 +220,10 @@ public class ClientService {
 
   public List<ClientSelectionInfo> getAllClientsForSelection() {
     return clientRepository.findAll().stream()
-        .map(client -> new ClientSelectionInfo(client.getId(), client.getClientName()))
+        .map(
+            client ->
+                new ClientSelectionInfo(
+                    client.getId(), client.getClientName(), client.getNickname()))
         .toList();
   }
 

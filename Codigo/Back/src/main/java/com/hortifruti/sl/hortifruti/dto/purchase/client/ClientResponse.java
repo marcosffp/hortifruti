@@ -6,6 +6,7 @@ import java.time.LocalDate;
 public record ClientResponse(
     Long id,
     String clientName,
+    String nickname,
     String email,
     String phoneNumber,
     String address,

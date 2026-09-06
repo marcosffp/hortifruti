@@ -45,7 +45,7 @@ public class FiscalNoteXmlStorageService {
    */
   @Transactional(Transactional.TxType.REQUIRES_NEW)
   public void saveIfAbsent(String ref, byte[] xmlBytes) {
-    if (store.existsByRef(ref)) return;
+    if (store.hasXmlContent(ref)) return;
     try {
       JsonNode rootNode = focusNfeClient.fetchStatus(ref);
       NfMetadata metadata = focusNfeClient.extractMetadata(rootNode, ref);

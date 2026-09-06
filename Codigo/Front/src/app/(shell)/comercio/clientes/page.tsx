@@ -26,6 +26,7 @@ import { showError, showSuccess } from "@/utils/toastUtils";
 interface ClienteUI {
   id: number;
   nome: string;
+  apelido: string;
   email: string;
   telefone: string;
   endereco: string;
@@ -71,6 +72,7 @@ export default function ClientesPage() {
           return {
             id: client.id,
             nome: client.clientName,
+            apelido: client.nickname || "",
             email: client.email || "",
             telefone: client.phoneNumber || "",
             endereco: client.address || "",
@@ -98,6 +100,7 @@ export default function ClientesPage() {
   const filteredClientes = clientes.filter(
     (cliente) =>
       cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cliente.apelido.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cliente.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cliente.telefone.toLowerCase().includes(searchTerm.toLowerCase()),
   );
@@ -156,7 +159,7 @@ export default function ClientesPage() {
               <div className="relative w-full max-w-md">
                 <input
                   type="text"
-                  placeholder="Buscar por nome ou email..."
+                  placeholder="Buscar por nome, apelido ou email..."
                   className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -349,6 +352,7 @@ export default function ClientesPage() {
                   key={cliente.id}
                   id={cliente.id}
                   nome={cliente.nome}
+                  apelido={cliente.apelido}
                   email={cliente.email}
                   telefone={cliente.telefone}
                   endereco={cliente.endereco}

@@ -1,5 +1,6 @@
 package com.hortifruti.sl.hortifruti.repository.invoice;
 
+import com.hortifruti.sl.hortifruti.model.FileStatus;
 import com.hortifruti.sl.hortifruti.model.invoice.FiscalNoteXmlStorage;
 import java.time.LocalDate;
 import java.util.List;
@@ -10,8 +11,6 @@ public interface FiscalNoteXmlStorageRepository extends JpaRepository<FiscalNote
 
   Optional<FiscalNoteXmlStorage> findByRef(String ref);
 
-  boolean existsByRef(String ref);
-
-  List<FiscalNoteXmlStorage> findByIssuedAtBetweenOrderByIssuedAtDesc(
-      LocalDate startDate, LocalDate endDate);
+  List<FiscalNoteXmlStorage> findByIssuedAtBetweenAndStatusOrderByIssuedAtDesc(
+      LocalDate startDate, LocalDate endDate, FileStatus status);
 }

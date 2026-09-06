@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 
@@ -21,6 +22,13 @@ public final class PdfReportSupport {
   public static final float LINE_HEIGHT = 20;
   public static final float BOTTOM_MARGIN = 100;
   public static final float START_Y = 750;
+
+  // Instanciadas uma única vez (não a cada célula) — cada `new PDType1Font(...)` reconsulta o
+  // FontMapper do PDFBox e, sem uma Helvetica real disponível no ambiente, loga um WARN de
+  // fallback para LiberationSans a cada chamada; num relatório com dezenas de linhas/colunas isso
+  // vira centenas de logs por PDF gerado.
+  public static final PDFont FONT_REGULAR = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+  public static final PDFont FONT_BOLD = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
 
   private PdfReportSupport() {}
 
@@ -70,10 +78,7 @@ public final class PdfReportSupport {
       contentStream.stroke();
 
       contentStream.beginText();
-      contentStream.setFont(
-          new PDType1Font(
-              bold ? Standard14Fonts.FontName.HELVETICA_BOLD : Standard14Fonts.FontName.HELVETICA),
-          10);
+      contentStream.setFont(bold ? FONT_BOLD : FONT_REGULAR, 10);
       contentStream.newLineAtOffset(x + (cellWidth * i) + 15, y - height + 10);
       contentStream.showText(cells[i]);
       contentStream.endText();

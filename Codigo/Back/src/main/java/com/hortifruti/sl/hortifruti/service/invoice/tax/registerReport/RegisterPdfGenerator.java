@@ -11,8 +11,6 @@ import java.util.List;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -49,12 +47,12 @@ public class RegisterPdfGenerator {
 
       float yPosition = PdfReportSupport.START_Y;
 
-      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+      contentStream.setFont(PdfReportSupport.FONT_BOLD, 16);
       PdfReportSupport.addText(
           contentStream, leftMargin, yPosition, "Livro de Registro de Saídas - RE - Modelo P 2/A");
       yPosition -= lineHeight * 2;
 
-      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 12);
+      contentStream.setFont(PdfReportSupport.FONT_BOLD, 12);
       PdfReportSupport.addText(contentStream, leftMargin, yPosition, "FIRMA: " + companyName);
       yPosition -= lineHeight;
 
@@ -115,7 +113,7 @@ public class RegisterPdfGenerator {
 
       yPosition -= lineHeight * 2;
 
-      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+      contentStream.setFont(PdfReportSupport.FONT_REGULAR, 10);
 
       PdfReportSupport.addText(contentStream, leftMargin, yPosition, "Legenda:");
       yPosition -= lineHeight;

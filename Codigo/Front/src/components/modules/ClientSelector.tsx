@@ -40,7 +40,13 @@ export default function ClientSelector({
   }, []);
 
   const suggestions = clientes
-    .filter((client) => normalize(client.clientName).includes(normalize(query)))
+    .filter((client) => {
+      const normQuery = normalize(query);
+      return (
+        normalize(client.clientName).includes(normQuery) ||
+        (client.nickname && normalize(client.nickname).includes(normQuery))
+      );
+    })
     .sort((a, b) => a.clientName.localeCompare(b.clientName));
 
   const selectClient = (client: ClientSelectionInfo) => {
@@ -120,6 +126,12 @@ export default function ClientSelector({
                     }`}
                   >
                     {client.clientName}
+                    {client.nickname && (
+                      <span className="text-gray-400">
+                        {" "}
+                        ({client.nickname})
+                      </span>
+                    )}
                   </button>
                 </li>
               ))}

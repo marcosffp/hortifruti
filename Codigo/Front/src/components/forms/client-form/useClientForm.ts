@@ -27,6 +27,7 @@ interface UseClientFormParams {
 export function useClientForm({ initialData, onSubmit }: UseClientFormParams) {
   const [formData, setFormData] = useState<ClientFormData>({
     nome: "",
+    apelido: "",
     email: "",
     telefone: "",
     cpfCnpj: "",

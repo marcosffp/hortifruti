@@ -1,5 +1,6 @@
 export interface ClientRequest {
   clientName: string;
+  nickname: string | null;
   variablePrice: boolean;
   document: string;
   phoneNumber: string | null;
@@ -15,6 +16,7 @@ export interface ClientRequest {
 export interface ClientResponse {
   id: number;
   clientName: string;
+  nickname: string | null;
   variablePrice: boolean;
   document: string;
   phoneNumber: string | null;
@@ -32,6 +34,7 @@ export interface ClientResponse {
 export interface ClientSelectionInfo {
   clientId: number;
   clientName: string;
+  nickname: string | null;
 }
 
 export interface ClientWithLastPurchaseResponse {

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record ClientRequest(
     @NotBlank(message = "Nome do cliente é obrigatório") String clientName,
+    String nickname,
     @NotNull(message = "Preço variável é obrigatório") Boolean variablePrice,
     @Email(message = "Email deve ser válido") String email,
     String phoneNumber,

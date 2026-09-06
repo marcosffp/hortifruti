@@ -2,6 +2,7 @@ import type { ChangeEvent, FocusEvent } from "react";
 
 export interface ClientFormData {
   nome: string;
+  apelido: string;
   email: string;
   telefone: string;
   cpfCnpj: string;

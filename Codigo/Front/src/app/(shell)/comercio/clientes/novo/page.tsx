@@ -28,6 +28,7 @@ export default function NovoClientePage() {
 
       const clientData = {
         clientName: formData.nome,
+        nickname: formData.apelido || null,
         email: formData.email,
         phoneNumber: formData.telefone,
         address: addressFormatted,

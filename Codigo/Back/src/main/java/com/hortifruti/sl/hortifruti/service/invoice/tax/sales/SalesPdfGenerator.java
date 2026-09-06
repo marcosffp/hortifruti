@@ -11,6 +11,7 @@ import java.util.List;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +19,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SalesPdfGenerator {
+
+  // Instanciadas uma única vez — ver comentário equivalente em PdfReportSupport.
+  private static final PDFont FONT_REGULAR = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+  private static final PDFont FONT_BOLD = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
 
   @Value("${company.name}")
   private String companyName;
@@ -51,11 +56,11 @@ public class SalesPdfGenerator {
 
       float yPosition = PdfReportSupport.START_Y;
 
-      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+      contentStream.setFont(FONT_BOLD, 16);
       PdfReportSupport.addText(contentStream, leftMargin, yPosition, "RELAÇÃO DE VENDAS");
       yPosition -= lineHeight * 2;
 
-      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+      contentStream.setFont(FONT_REGULAR, 12);
       PdfReportSupport.addText(contentStream, leftMargin, yPosition, "Filial: " + companyName);
       yPosition -= lineHeight;
 
@@ -133,7 +138,7 @@ public class SalesPdfGenerator {
       contentStream.stroke();
 
       contentStream.beginText();
-      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
+      contentStream.setFont(FONT_BOLD, 10);
       contentStream.newLineAtOffset(x + 5, y - height + 10);
       contentStream.showText(headers[i]);
       contentStream.endText();
@@ -159,7 +164,7 @@ public class SalesPdfGenerator {
       contentStream.stroke();
 
       contentStream.beginText();
-      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+      contentStream.setFont(FONT_REGULAR, 10);
       contentStream.newLineAtOffset(x + 5, y - height + 10);
 
       String valueToShow =

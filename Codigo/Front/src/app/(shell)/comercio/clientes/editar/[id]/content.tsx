@@ -40,6 +40,7 @@ export default function EditarClientePageContent({
 
         setInitialData({
           nome: clientData.clientName,
+          apelido: clientData.nickname || "",
           email: clientData.email || "",
           telefone: clientData.phoneNumber || "",
           cpfCnpj: clientData.document || "",
@@ -89,6 +90,7 @@ export default function EditarClientePageContent({
 
       const clientData = {
         clientName: formData.nome,
+        nickname: formData.apelido || null,
         email: formData.email,
         phoneNumber: formData.telefone,
         address: addressFormatted,

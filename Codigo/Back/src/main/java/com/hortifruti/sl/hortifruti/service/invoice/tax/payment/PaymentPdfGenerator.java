@@ -10,8 +10,6 @@ import java.util.Map;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -46,12 +44,12 @@ public class PaymentPdfGenerator {
 
       float yPosition = PdfReportSupport.START_Y;
 
-      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+      contentStream.setFont(PdfReportSupport.FONT_BOLD, 16);
       PdfReportSupport.addText(
           contentStream, leftMargin, yPosition, "RESUMO DE VENDAS POR FORMA DE PAGAMENTO");
       yPosition -= lineHeight * 2;
 
-      contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+      contentStream.setFont(PdfReportSupport.FONT_REGULAR, 12);
 
       PdfReportSupport.addText(
           contentStream, leftMargin, yPosition, "Filial \"igual\": 1 " + companyName);

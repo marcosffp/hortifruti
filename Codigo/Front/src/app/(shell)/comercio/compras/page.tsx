@@ -43,6 +43,7 @@ export default function PurchasesPage() {
         setSelectedClient({
           clientId: client.id,
           clientName: client.clientName,
+          nickname: client.nickname,
         });
       })
       .catch((error) => {

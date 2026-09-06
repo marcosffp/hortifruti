@@ -35,8 +35,18 @@ class FiscalNoteXmlStorageStore {
   @Value("${r2.environment}")
   private String environment;
 
-  boolean existsByRef(String ref) {
-    return repository.existsByRef(ref);
+  /**
+   * {@code true} só quando já existe XML de verdade salvo pra essa ref (R2 ou, legado, {@code
+   * xmlContent}) — diferente de checar só a existência da linha, que também seria {@code true} pra
+   * uma linha "fantasma" criada por {@link #saveDanfeIfAbsentLocked} (só DANFE, sem XML, quando
+   * alguém abre "Ver NF" antes do polling assíncrono terminar). Usar só a existência da linha pra
+   * decidir se ainda falta salvar o XML faria esse salvamento nunca mais acontecer pra essa ref.
+   */
+  boolean hasXmlContent(String ref) {
+    return repository
+        .findByRef(ref)
+        .map(s -> s.getObjectKey() != null || s.getXmlContent() != null)
+        .orElse(false);
   }
 
   void persistIfAbsent(String ref, String xmlContent, byte[] danfeBytes, NfMetadata metadata) {
@@ -45,30 +55,33 @@ class FiscalNoteXmlStorageStore {
 
   private void persistIfAbsentLocked(
       String ref, String xmlContent, byte[] danfeBytes, NfMetadata metadata) {
-    if (repository.existsByRef(ref)) {
+    FiscalNoteXmlStorage existing = repository.findByRef(ref).orElse(null);
+    if (existing != null && (existing.getObjectKey() != null || existing.getXmlContent() != null)) {
       return;
     }
 
     String xmlKey = StorageKeyGenerator.generate("notas-fiscais", environment, ref, "xml");
-    String danfeKey = null;
+    // Uma linha fantasma (só DANFE, criada por saveDanfeIfAbsentLocked) pode já ter um
+    // danfeObjectKey — preserva em vez de subir/perder referência a um segundo PDF.
+    String danfeKey = existing != null ? existing.getDanfeObjectKey() : null;
+    boolean uploadedDanfeNow = false;
     try {
       r2StorageService.upload(xmlContent.getBytes(), xmlKey, "application/xml");
 
-      if (danfeBytes != null && danfeBytes.length > 0) {
+      if (danfeKey == null && danfeBytes != null && danfeBytes.length > 0) {
         danfeKey = StorageKeyGenerator.generate("notas-fiscais", environment, ref, "pdf");
         r2StorageService.upload(danfeBytes, danfeKey, "application/pdf");
+        uploadedDanfeNow = true;
       }
 
       FiscalNoteXmlStorage storage =
-          FiscalNoteXmlStorage.builder()
-              .ref(ref)
-              .nfNumber(metadata.nfNumber())
-              .clientName(metadata.clientName())
-              .totalValue(metadata.totalValue())
-              .issuedAt(metadata.issuedAt())
-              .objectKey(xmlKey)
-              .danfeObjectKey(danfeKey)
-              .build();
+          existing != null ? existing : FiscalNoteXmlStorage.builder().ref(ref).build();
+      storage.setNfNumber(metadata.nfNumber());
+      storage.setClientName(metadata.clientName());
+      storage.setTotalValue(metadata.totalValue());
+      storage.setIssuedAt(metadata.issuedAt());
+      storage.setObjectKey(xmlKey);
+      storage.setDanfeObjectKey(danfeKey);
 
       repository.saveAndFlush(storage);
     } catch (DataIntegrityViolationException e) {
@@ -77,7 +90,9 @@ class FiscalNoteXmlStorageStore {
           ref,
           e.getMessage());
       deleteUploadedQuietly(xmlKey);
-      deleteUploadedQuietly(danfeKey);
+      if (uploadedDanfeNow) {
+        deleteUploadedQuietly(danfeKey);
+      }
     }
   }
 
@@ -127,8 +142,15 @@ class FiscalNoteXmlStorageStore {
     }
   }
 
+  /**
+   * NFs canceladas (e depois reemitidas sob uma nova {@code ref}) ficam no banco pra histórico, mas
+   * não devem contar aqui nem entrar no ZIP de exportação fiscal — só a versão ativa da NF importa
+   * pro período.
+   */
   List<FiscalNoteXmlStorageResponse> findByPeriod(LocalDate startDate, LocalDate endDate) {
-    return repository.findByIssuedAtBetweenOrderByIssuedAtDesc(startDate, endDate).stream()
+    return repository
+        .findByIssuedAtBetweenAndStatusOrderByIssuedAtDesc(startDate, endDate, FileStatus.ACTIVE)
+        .stream()
         .map(this::toResponse)
         .toList();
   }

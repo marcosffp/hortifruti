@@ -50,6 +50,27 @@ export default function PersonalDataSection({
         </div>
         <div>
           <label
+            htmlFor="apelido"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Apelido
+          </label>
+          <input
+            type="text"
+            id="apelido"
+            name="apelido"
+            value={formData.apelido}
+            onChange={onChange}
+            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary border-gray-300"
+            placeholder="Nome alternativo usado só para busca"
+          />
+          <p className="text-gray-400 text-xs mt-1">
+            Usado apenas para facilitar a busca do cliente no sistema. Não
+            substitui o nome oficial em documentos.
+          </p>
+        </div>
+        <div>
+          <label
             htmlFor="cpfCnpj"
             className="block text-sm font-medium text-gray-700 mb-1"
           >

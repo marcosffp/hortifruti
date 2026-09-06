@@ -193,6 +193,14 @@ export default function ClientDetailModal({
                 onCopy={handleCopy}
               />
               <CopyableField
+                icon={<User size={16} />}
+                label="Apelido"
+                value={client.nickname || "Não informado"}
+                copyValue={client.nickname || undefined}
+                fullWidth
+                onCopy={handleCopy}
+              />
+              <CopyableField
                 icon={<MapPin size={16} />}
                 label="Endereço"
                 value={client.address || "Não informado"}
