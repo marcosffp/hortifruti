@@ -540,6 +540,7 @@ export default function CombinedScoresCards({
 
       <CombinedScoreModals
         modal={modal}
+        clientName={client?.clientName ?? null}
         onCloseModal={closeModal}
         isActionProcessing={(id) => actionProcessingIds.has(id)}
         onConfirmDelete={handleDelete}

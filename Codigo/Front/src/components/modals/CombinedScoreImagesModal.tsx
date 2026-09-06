@@ -6,17 +6,29 @@ import { useCombinedScore } from "@/hooks/useCombinedScore";
 import { usePurchase } from "@/hooks/usePurchase";
 import type { PurchaseImageType } from "@/types/combinedScoreType";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { normalize } from "@/utils/textSearch";
 import { showError } from "@/utils/toastUtils";
 
 interface CombinedScoreImagesModalProps {
   combinedScoreId: number;
   scoreNumber: string;
+  clientName: string | null;
   onClose: () => void;
+}
+
+// Remove acentos e qualquer caractere que não seja seguro em nome de arquivo (mantém letras,
+// números e "_"), pra evitar nomes de PDF quebrados em downloads.
+function toFilenameSafe(value: string): string {
+  return normalize(value)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }
 
 export default function CombinedScoreImagesModal({
   combinedScoreId,
   scoreNumber,
+  clientName,
   onClose,
 }: CombinedScoreImagesModalProps) {
   const [images, setImages] = useState<PurchaseImageType[]>([]);
@@ -68,7 +80,10 @@ export default function CombinedScoreImagesModal({
       const url = URL.createObjectURL(pdfBlob);
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `FOTOS-AGRUPAMENTO-${scoreNumber}.pdf`);
+      const fileClientName = clientName
+        ? toFilenameSafe(clientName)
+        : `AGRUPAMENTO_${scoreNumber}`;
+      link.setAttribute("download", `NOTINHAS_${fileClientName}.pdf`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

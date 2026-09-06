@@ -53,7 +53,7 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
 
   /**
    * Desvincula todas as compras de um agrupamento excluído (ver {@code
-   * CombinedScoreCancellationService#hardDeleteLocally}) — sem isso, {@code combinedScoreId}
+   * CombinedScoreHardDeleteService#hardDeleteLocally}) — sem isso, {@code combinedScoreId}
    * ficava apontando para um {@code CombinedScore} que não existe mais (não há FK real no banco
    * para impedir isso) e essas compras nunca mais eram reconhecidas como "livres" para um novo
    * agrupamento.

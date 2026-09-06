@@ -90,7 +90,7 @@ public class CombinedScoreService {
 
     // combinedScoreId só fica não-nulo enquanto a compra pertence a um agrupamento ainda ativo —
     // um agrupamento cancelado/excluído limpa esse campo (ver
-    // CombinedScoreCancellationService#hardDeleteLocally). Sem esta checagem, a mesma compra podia
+    // CombinedScoreHardDeleteService#hardDeleteLocally). Sem esta checagem, a mesma compra podia
     // entrar em dois agrupamentos diferentes (ex.: períodos sobrepostos, duplo clique), contando a
     // mesma receita duas vezes.
     List<Long> purchasesJaAgrupadas =

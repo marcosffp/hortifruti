@@ -31,6 +31,7 @@ export interface InvoiceBilletResultModalState {
 
 interface CombinedScoreModalsProps {
   modal: ScoreModalState;
+  clientName: string | null;
   onCloseModal: () => void;
   isActionProcessing: (id: number) => boolean;
   onConfirmDelete: (id: number) => void;
@@ -65,6 +66,7 @@ interface CombinedScoreModalsProps {
 
 export default function CombinedScoreModals({
   modal,
+  clientName,
   onCloseModal,
   isActionProcessing,
   onConfirmDelete,
@@ -94,6 +96,7 @@ export default function CombinedScoreModals({
         <CombinedScoreImagesModal
           combinedScoreId={modal.score.id}
           scoreNumber={modal.score.number}
+          clientName={clientName}
           onClose={onCloseModal}
         />
       )}
