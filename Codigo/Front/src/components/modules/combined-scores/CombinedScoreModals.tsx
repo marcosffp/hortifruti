@@ -17,6 +17,7 @@ export interface BilletResultModalState {
   score: ScoreWithBilletInfo;
   pdf: Blob;
   clientNumber: string | null;
+  useStandardFileName?: boolean;
 }
 
 export interface InvoiceResultModalState {
@@ -44,6 +45,7 @@ interface CombinedScoreModalsProps {
     groupId: number,
     number: string,
     dueDate?: string,
+    useStandardFileName?: boolean,
   ) => void;
   onConfirmAdditionalData: (
     scoreId: number,
@@ -140,6 +142,8 @@ export default function CombinedScoreModals({
             billetResultModal.score.number || billetResultModal.score.id
           }
           clientNumber={billetResultModal.clientNumber}
+          clientName={clientName}
+          useStandardFileName={billetResultModal.useStandardFileName}
         />
       )}
 
@@ -159,11 +163,17 @@ export default function CombinedScoreModals({
       <ClientNumberModal
         open={modal.type === "clientNumber"}
         onClose={onCloseModal}
-        onConfirm={(number, dueDate) => {
+        clientName={clientName}
+        onConfirm={(number, dueDate, useStandardFileName) => {
           if (modal.type === "clientNumber") {
             const { groupId } = modal;
             onCloseModal();
-            onConfirmClientNumber(groupId, number, dueDate);
+            onConfirmClientNumber(
+              groupId,
+              number,
+              dueDate,
+              useStandardFileName,
+            );
           }
         }}
       />

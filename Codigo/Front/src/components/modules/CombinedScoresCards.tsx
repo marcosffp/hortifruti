@@ -154,6 +154,7 @@ export default function CombinedScoresCards({
     scoreId: number,
     clientNumber: string,
     dueDate?: string,
+    useStandardFileName?: boolean,
   ) => {
     if (!beginProcessing(scoreId)) return;
     try {
@@ -163,9 +164,17 @@ export default function CombinedScoresCards({
         return;
       }
 
-      const pdfBlob = await generateBillet(scoreId, clientNumber, dueDate);
+      const pdfBlob = await generateBillet(scoreId, clientNumber, dueDate, {
+        clientName: client?.clientName,
+        useStandardFileName,
+      });
 
-      setBilletResultModal({ score, pdf: pdfBlob, clientNumber });
+      setBilletResultModal({
+        score,
+        pdf: pdfBlob,
+        clientNumber,
+        useStandardFileName,
+      });
 
       showSuccess("Boleto gerado com sucesso!");
 

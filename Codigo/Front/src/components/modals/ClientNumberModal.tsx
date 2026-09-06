@@ -3,32 +3,41 @@ import { useState } from "react";
 interface ClientNumberModalProps {
   open: boolean;
   onClose: () => void;
-  onConfirm: (number: string, dueDate?: string) => void;
+  clientName?: string | null;
+  onConfirm: (
+    number: string,
+    dueDate?: string,
+    useStandardFileName?: boolean,
+  ) => void;
 }
 
 export default function ClientNumberModal({
   open,
   onClose,
+  clientName,
   onConfirm,
 }: ClientNumberModalProps) {
   const [number, setNumber] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [useStandardFileName, setUseStandardFileName] = useState(false);
 
   if (!open) return null;
 
   const handleConfirm = () => {
     if (number.trim()) {
       const dueDateValue = dueDate.trim() ? dueDate.trim() : undefined;
-      onConfirm(number.trim(), dueDateValue);
+      onConfirm(number.trim(), dueDateValue, useStandardFileName);
 
       setNumber("");
       setDueDate("");
+      setUseStandardFileName(false);
     }
   };
 
   const handleClose = () => {
     setNumber("");
     setDueDate("");
+    setUseStandardFileName(false);
     onClose();
   };
 
@@ -72,6 +81,28 @@ export default function ClientNumberModal({
             <p className="text-xs text-gray-500 mt-1">
               Se não informada, será usada a data padrão calculada
             </p>
+          </div>
+
+          <div className="flex items-start gap-2">
+            <input
+              id="client-number-standard-filename"
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+              checked={useStandardFileName}
+              onChange={(e) => setUseStandardFileName(e.target.checked)}
+              disabled={!clientName}
+            />
+            <label
+              htmlFor="client-number-standard-filename"
+              className="text-sm text-gray-700"
+            >
+              Numeração padrão
+              <p className="text-xs text-gray-500">
+                {clientName
+                  ? `Nomeia o arquivo do boleto como BOLETO_${clientName.trim().split(/\s+/)[0].toUpperCase()}.pdf`
+                  : "Indisponível: cliente sem nome cadastrado"}
+              </p>
+            </label>
           </div>
         </div>
 

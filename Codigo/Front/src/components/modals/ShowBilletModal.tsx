@@ -11,6 +11,8 @@ interface ShowBilletModalProps {
   billetData: Blob;
   scoreNumber?: string | number | null;
   clientNumber?: string | null;
+  clientName?: string | null;
+  useStandardFileName?: boolean;
 }
 
 export default function ShowBilletModal({
@@ -19,6 +21,8 @@ export default function ShowBilletModal({
   billetData,
   scoreNumber,
   clientNumber,
+  clientName,
+  useStandardFileName,
 }: ShowBilletModalProps) {
   const [pdfUrl, setPdfUrl] = useState<string>("");
   const { downloadBillet } = useBillet();
@@ -35,7 +39,10 @@ export default function ShowBilletModal({
   }, [billetData, isOpen]);
 
   const handleDownload = () => {
-    downloadBillet(billetData, Number(scoreNumber), clientNumber || "unknown")
+    downloadBillet(billetData, Number(scoreNumber), clientNumber || "unknown", {
+      clientName,
+      useStandardFileName,
+    })
       .then(() => {
         showSuccess("Boleto baixado com sucesso");
       })

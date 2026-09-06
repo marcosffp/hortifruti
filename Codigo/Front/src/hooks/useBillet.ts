@@ -8,6 +8,22 @@ import type {
   OpenBilletResponse,
 } from "@/types/billetType";
 import { getErrorMessage } from "@/types/errorType";
+import { getFirstName, toFilenameSafe } from "@/utils/filenameUtils";
+
+interface DownloadBilletOptions {
+  clientName?: string | null;
+  useStandardFileName?: boolean;
+}
+
+function buildBilletFilename(
+  number: string,
+  options?: DownloadBilletOptions,
+): string {
+  if (options?.useStandardFileName && options.clientName) {
+    return `BOLETO_${toFilenameSafe(getFirstName(options.clientName))}.pdf`;
+  }
+  return `BOL-${number}.pdf`;
+}
 
 export function useBillet() {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,11 +33,12 @@ export function useBillet() {
     blob: Blob,
     _combinedScoreId: number,
     number: string,
+    options?: DownloadBilletOptions,
   ) => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `BOL-${number}.pdf`);
+    link.setAttribute("download", buildBilletFilename(number, options));
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -32,6 +49,7 @@ export function useBillet() {
     combinedScoreId: number,
     number: string,
     dueDate?: string,
+    options?: DownloadBilletOptions,
   ) => {
     setIsLoading(true);
     setError(null);
@@ -41,7 +59,7 @@ export function useBillet() {
         number,
         dueDate,
       );
-      downloadBillet(blob, combinedScoreId, number);
+      downloadBillet(blob, combinedScoreId, number, options);
       return blob;
     } catch (err) {
       setError(getErrorMessage(err));

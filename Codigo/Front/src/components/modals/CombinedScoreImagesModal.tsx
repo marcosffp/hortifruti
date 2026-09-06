@@ -5,8 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useCombinedScore } from "@/hooks/useCombinedScore";
 import { usePurchase } from "@/hooks/usePurchase";
 import type { PurchaseImageType } from "@/types/combinedScoreType";
+import { toFilenameSafe } from "@/utils/filenameUtils";
 import { formatCurrency } from "@/utils/formatCurrency";
-import { normalize } from "@/utils/textSearch";
 import { showError } from "@/utils/toastUtils";
 
 interface CombinedScoreImagesModalProps {
@@ -14,15 +14,6 @@ interface CombinedScoreImagesModalProps {
   scoreNumber: string;
   clientName: string | null;
   onClose: () => void;
-}
-
-// Remove acentos e qualquer caractere que não seja seguro em nome de arquivo (mantém letras,
-// números e "_"), pra evitar nomes de PDF quebrados em downloads.
-function toFilenameSafe(value: string): string {
-  return normalize(value)
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
 }
 
 export default function CombinedScoreImagesModal({
