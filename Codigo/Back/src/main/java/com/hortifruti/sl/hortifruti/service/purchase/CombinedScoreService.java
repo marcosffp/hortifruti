@@ -39,7 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 @AllArgsConstructor
 public class CombinedScoreService {
 
-  private static final String WILDCARD_PRODUCT_CODE = "113";
+  private static final String WILDCARD_PRODUCT_CODE = "001";
   private static final String WILDCARD_PRODUCT_NAME = "PRODUTO CORINGA";
   private static final BigDecimal WILDCARD_PRODUCT_PRICE = new BigDecimal("1.00");
   private static final int INVOICE_ONLY_DUE_DAYS = 20;
