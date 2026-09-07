@@ -60,6 +60,12 @@ export default function CombinedScoreCard({
             {formatDate(score.confirmedAt)}
           </p>
         </div>
+        {score.hasInvoice && score.invoiceInfo?.number && (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-green-100 text-green-800 border border-green-300 text-xs font-bold whitespace-nowrap">
+            <FileText className="w-3 h-3" />
+            NF {score.invoiceInfo.number}
+          </span>
+        )}
       </div>
 
       <div className="space-y-2 mb-4 pb-4 border-b">

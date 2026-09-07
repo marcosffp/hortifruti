@@ -150,6 +150,10 @@ export default function PurchasesPage() {
                 <PurchaseFilesTable
                   clientId={selectedClient?.clientId}
                   refreshKey={refreshKey}
+                  onGroupingCreated={() => {
+                    handleUploadSuccess();
+                    setTab("grouped");
+                  }}
                 />
               </div>
             )}
