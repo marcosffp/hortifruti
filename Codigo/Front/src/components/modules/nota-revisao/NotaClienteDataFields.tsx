@@ -11,6 +11,8 @@ interface NotaClienteDataFieldsProps {
   onSelectCliente: (id: number | null, nome: string) => void;
   purchaseDate: string;
   onChangePurchaseDate: (date: string) => void;
+  useTodayDate: boolean;
+  onToggleUseTodayDate: (checked: boolean) => void;
 }
 
 export default function NotaClienteDataFields({
@@ -22,6 +24,8 @@ export default function NotaClienteDataFields({
   onSelectCliente,
   purchaseDate,
   onChangePurchaseDate,
+  useTodayDate,
+  onToggleUseTodayDate,
 }: NotaClienteDataFieldsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -59,9 +63,19 @@ export default function NotaClienteDataFields({
           id="revisao-data-compra"
           type="date"
           value={purchaseDate}
+          disabled={useTodayDate}
           onChange={(e) => onChangePurchaseDate(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500"
+          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-100 disabled:text-gray-500"
         />
+        <label className="flex items-center gap-1.5 mt-1.5 text-xs text-gray-600">
+          <input
+            type="checkbox"
+            checked={useTodayDate}
+            onChange={(e) => onToggleUseTodayDate(e.target.checked)}
+            className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+          />
+          Usar data de hoje (horário de Brasília)
+        </label>
       </div>
     </div>
   );

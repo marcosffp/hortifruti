@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
+  emptyRevisaoRow,
   itemToRow,
   parseDataLidaParaIso,
 } from "@/components/modules/nota-revisao/helpers";
@@ -60,6 +61,7 @@ export default function NotaRevisaoModal({
   const [purchaseDate, setPurchaseDate] = useState(
     () => parseDataLidaParaIso(extraction.data) ?? todaySaoPaulo(),
   );
+  const [useTodayDate, setUseTodayDate] = useState(false);
   const [rows, setRows] = useState<RevisaoRow[]>(
     extraction.itens.map(itemToRow),
   );
@@ -154,12 +156,29 @@ export default function NotaRevisaoModal({
     );
   };
 
+  const addRow = () => {
+    setRows((prev) => [...prev, emptyRevisaoRow()]);
+  };
+
   const removeRow = (index: number) => {
     setRows((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const toggleUseTodayDate = (checked: boolean) => {
+    setUseTodayDate(checked);
+    if (checked) setPurchaseDate(todaySaoPaulo());
+  };
+
+  // Itens sem quantidade (total 0 ou vazio) não fazem sentido lançar — o usuário só deixou a linha
+  // na lista pra referência visual da nota (ou criou um item manual e ainda não preencheu), sem de
+  // fato ter comprado o produto.
+  const itensComQuantidade = rows.filter((row) => row.total > 0);
+
   const podeConfirmar =
-    capturaId !== undefined && clienteId !== null && rows.length > 0;
+    capturaId !== undefined &&
+    clienteId !== null &&
+    itensComQuantidade.length > 0 &&
+    itensComQuantidade.every((row) => row.code !== "");
 
   const confirmarCompra = async () => {
     if (!podeConfirmar || clienteId === null || capturaId === undefined) return;
@@ -169,7 +188,7 @@ export default function NotaRevisaoModal({
       await confirmar(capturaId, {
         clientId: clienteId,
         purchaseDate,
-        items: rows.map((row) => ({
+        items: itensComQuantidade.map((row) => ({
           code: row.code,
           quantity: row.quantity,
           price: row.price,
@@ -232,6 +251,8 @@ export default function NotaRevisaoModal({
               onSelectCliente={selecionarCliente}
               purchaseDate={purchaseDate}
               onChangePurchaseDate={setPurchaseDate}
+              useTodayDate={useTodayDate}
+              onToggleUseTodayDate={toggleUseTodayDate}
             />
 
             <NotaItensList
@@ -241,6 +262,7 @@ export default function NotaRevisaoModal({
               onChangeRowCode={updateRowCode}
               onChangeRowField={updateRowField}
               onRemoveRow={removeRow}
+              onAddRow={addRow}
             />
 
             <NotaTotaisResumo

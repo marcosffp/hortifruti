@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import type { FiscalProductType } from "@/types/purchaseType";
 import type { NumericField } from "@/utils/numericRow";
 import NotaItemRow from "./NotaItemRow";
@@ -10,6 +11,7 @@ interface NotaItensListProps {
   onChangeRowCode: (index: number, code: string) => void;
   onChangeRowField: (index: number, field: NumericField, value: number) => void;
   onRemoveRow: (index: number) => void;
+  onAddRow: () => void;
 }
 
 export default function NotaItensList({
@@ -19,6 +21,7 @@ export default function NotaItensList({
   onChangeRowCode,
   onChangeRowField,
   onRemoveRow,
+  onAddRow,
 }: NotaItensListProps) {
   return (
     <>
@@ -51,6 +54,15 @@ export default function NotaItensList({
           </p>
         )}
       </div>
+
+      <button
+        type="button"
+        onClick={onAddRow}
+        className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+      >
+        <Plus className="w-4 h-4" />
+        Adicionar item
+      </button>
     </>
   );
 }

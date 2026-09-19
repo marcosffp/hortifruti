@@ -26,11 +26,17 @@ export default function NotaItemRow({
   return (
     <div className="border border-gray-200 rounded-lg p-3 space-y-2">
       <p className="text-xs text-gray-500 flex items-center gap-2">
-        <span>
-          Lido:{" "}
-          <span className="font-medium text-gray-700">{row.produtoLido}</span>
-          {row.unidadeLida ? ` (${row.unidadeLida})` : ""}
-        </span>
+        {row.produtoLido ? (
+          <span>
+            Lido:{" "}
+            <span className="font-medium text-gray-700">{row.produtoLido}</span>
+            {row.unidadeLida ? ` (${row.unidadeLida})` : ""}
+          </span>
+        ) : (
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-gray-100 text-gray-500">
+            item adicionado manualmente
+          </span>
+        )}
         {row.confianca && (
           <span
             className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase ${CONFIANCA_BADGE[row.confianca]}`}

@@ -19,6 +19,29 @@ export function itemBate(row: RevisaoRow): boolean {
   return Math.abs(row.quantity * row.price - row.total) < MARGEM_CONSISTENCIA;
 }
 
+// Item adicionado manualmente pelo usuário na revisão (não veio da OCR) — nasce em branco, sem
+// nenhum dos campos só-leitura de comparação (produtoLido, confiança, divergência etc.), pra
+// distinguir de um item extraído da nota.
+export function emptyRevisaoRow(): RevisaoRow {
+  return {
+    produtoLido: "",
+    unidadeLida: null,
+    produtoSugerido: null,
+    confianca: null,
+    code: "",
+    quantity: 0,
+    price: 0,
+    total: 0,
+    lastEdited: [],
+    quantidadeKgConvertida: null,
+    precoPorKgConvertido: null,
+    conversaoEstimada: null,
+    precoLidoOriginal: null,
+    precoOficialTabela: null,
+    divergenciaPreco: null,
+  };
+}
+
 export function itemToRow(item: ItemNotaExtraido): RevisaoRow {
   // Quando o item veio em caixa e o backend já converteu pra kg (ConversaoCaixaService), os campos
   // editáveis devem nascer com o valor convertido — é isso que realmente vai ser lançado na compra
