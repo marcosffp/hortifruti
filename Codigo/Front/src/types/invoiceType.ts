@@ -3,6 +3,17 @@ export interface InvoiceResponse {
   status: string;
 }
 
+/**
+ * Resposta do cancelamento de NF-e. `status` é `"CANCELADO"` quando a Focus NFe/SEFAZ já
+ * confirmou o cancelamento na hora, ou `"PROCESSANDO"` quando foi aceito mas ainda depende de
+ * confirmação assíncrona da SEFAZ — nesse caso a nota ainda não está de fato cancelada.
+ */
+export interface InvoiceCancelResponse {
+  ref: string;
+  status: "CANCELADO" | "PROCESSANDO";
+  message: string;
+}
+
 export interface InvoiceResponseGet {
   name: string;
   totalValue: number;

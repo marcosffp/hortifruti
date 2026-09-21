@@ -3,7 +3,7 @@
 import { AlertTriangle, FileX, X } from "lucide-react";
 import { useState } from "react";
 import { useInvoice } from "@/hooks/useInvoice";
-import { showError, showSuccess } from "@/utils/toastUtils";
+import { showError, showInfo, showSuccess } from "@/utils/toastUtils";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
 interface ManualCancelModalProps {
@@ -33,8 +33,15 @@ export default function ManualCancelModal({
     const ref = invoiceRef.trim();
     setCancellingInvoice(true);
     try {
-      await cancelInvoice(ref);
-      showSuccess("Nota fiscal cancelada com sucesso!");
+      const result = await cancelInvoice(ref);
+      if (result.status === "CANCELADO") {
+        showSuccess("Nota fiscal cancelada com sucesso!");
+      } else {
+        showInfo(
+          "Cancelamento enviado à SEFAZ e está em processamento. A confirmação pode levar" +
+            " alguns minutos — o status será atualizado automaticamente.",
+        );
+      }
       setInvoiceRef("");
     } catch (error) {
       showError(

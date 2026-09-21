@@ -158,9 +158,12 @@ export default function NfSemBoletoTab() {
         return cancelInvoiceApi(invoice.invoiceRef);
       },
       {
-        successOne: "Nota fiscal cancelada com sucesso.",
+        successOne:
+          "Cancelamento da nota fiscal solicitado. A confirmação pela SEFAZ pode levar alguns" +
+          " minutos.",
         successMany: (count) =>
-          `${count} notas fiscais canceladas com sucesso.`,
+          `Cancelamento de ${count} notas fiscais solicitado. A confirmação pela SEFAZ pode` +
+          " levar alguns minutos.",
         failureOne: "Não foi possível cancelar a nota fiscal.",
         failureMany: (count) =>
           `Não foi possível cancelar ${count} notas fiscais.`,

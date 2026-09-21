@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.service.invoice;
 
 import com.hortifruti.sl.hortifruti.dto.invoice.FiscalNoteXmlStorageResponse;
+import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceCancelResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
 import com.hortifruti.sl.hortifruti.dto.invoice.OpenInvoiceResponse;
@@ -50,7 +51,7 @@ public class InvoiceService {
   }
 
   @Transactional
-  public String cancelInvoice(String ref, String justificativa) {
+  public InvoiceCancelResponse cancelInvoice(String ref, String justificativa) {
     return invoiceCancelService.cancelInvoice(ref, justificativa);
   }
 
@@ -59,7 +60,7 @@ public class InvoiceService {
    * fluxo normal quanto pelo cancelamento manual/avulso (com suporte a cancelamento extemporâneo).
    */
   @Transactional
-  public String cancelInvoice(String ref, String justificativa, boolean extemporaneo) {
+  public InvoiceCancelResponse cancelInvoice(String ref, String justificativa, boolean extemporaneo) {
     return invoiceCancelService.cancelInvoice(ref, justificativa, extemporaneo);
   }
 

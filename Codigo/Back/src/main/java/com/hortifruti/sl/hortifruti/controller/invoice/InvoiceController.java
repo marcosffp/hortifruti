@@ -1,6 +1,7 @@
 package com.hortifruti.sl.hortifruti.controller.invoice;
 
 import com.hortifruti.sl.hortifruti.dto.invoice.FiscalNoteXmlStorageResponse;
+import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceCancelResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponse;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceResponseGet;
 import com.hortifruti.sl.hortifruti.dto.invoice.InvoiceWithBilletResponse;
@@ -110,8 +111,8 @@ public class InvoiceController {
    * InvoiceCancelService#MANUAL_CANCEL_JUSTIFICATIVA}.
    */
   @DeleteMapping("/{ref}/cancel")
-  public ResponseEntity<String> cancelInvoice(@PathVariable String ref) {
-    String response =
+  public ResponseEntity<InvoiceCancelResponse> cancelInvoice(@PathVariable String ref) {
+    InvoiceCancelResponse response =
         invoiceService.cancelInvoice(ref, InvoiceCancelService.MANUAL_CANCEL_JUSTIFICATIVA, true);
     return ResponseEntity.ok(response);
   }

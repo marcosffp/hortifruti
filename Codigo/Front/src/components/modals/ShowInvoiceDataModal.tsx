@@ -72,8 +72,15 @@ export default function ShowInvoiceDataModal({
     setShowCancelModal(false);
     setCancelling(true);
     try {
-      await cancelInvoice(invoiceData.reference);
-      showSuccess("Nota fiscal cancelada com sucesso!");
+      const result = await cancelInvoice(invoiceData.reference);
+      if (result.status === "CANCELADO") {
+        showSuccess("Nota fiscal cancelada com sucesso!");
+      } else {
+        showInfo(
+          "Cancelamento enviado à SEFAZ e está em processamento. A confirmação pode levar" +
+            " alguns minutos — o status será atualizado automaticamente.",
+        );
+      }
       onInvoiceCancelled?.();
       onClose();
     } catch (error) {

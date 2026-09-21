@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "@/config/api";
 import type {
+  InvoiceCancelResponse,
   InvoiceResponse,
   InvoiceResponseGet,
   InvoiceWithBilletResponse,
@@ -239,7 +240,7 @@ export const invoiceService = {
     }
   },
 
-  async cancelInvoice(ref: string): Promise<string> {
+  async cancelInvoice(ref: string): Promise<InvoiceCancelResponse> {
     try {
       // O motivo do cancelamento não é mais enviado pelo cliente — o backend
       // sempre usa a justificativa fixa "Cancelamento extemporâneo".
@@ -249,13 +250,16 @@ export const invoiceService = {
         credentials: "include",
       });
 
-      const result = await response.text();
       if (!response.ok) {
-        throw new Error(
-          result || `Erro ao cancelar nota fiscal: ${response.status}`,
-        );
+        let message = `Erro ao cancelar nota fiscal: ${response.status}`;
+        try {
+          const errorBody = await response.json();
+          if (errorBody?.message) message = errorBody.message;
+        } catch {}
+        throw new Error(message);
       }
 
+      const result: InvoiceCancelResponse = await response.json();
       return result;
     } catch (error) {
       console.error("Falha ao cancelar nota fiscal:", error);
